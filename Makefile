@@ -19,10 +19,12 @@ include tools/common/project.mk
 
 # Some example qemu invocations
 
+# note: this relies on qemu after version 2.0
 simulate-kzm:
-	qemu-arm -nographic -M kzm \
+	qemu-system-arm -nographic -M kzm \
 		-kernel images/sel4test-driver-image-arm-imx31
 
+# This relies on a helper script to build a bootable image
 simulate-beagle:
 	beagle_run_elf images/sel4test-driver-image-arm-omap3
 
