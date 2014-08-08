@@ -91,9 +91,15 @@ test_page_flush(env_t env, void *args)
     test_assert(*ptrc == 0xDEADBEEF);
     err = seL4_ARM_Page_Invalidate_Data(framec, 0, PAGE_SIZE_4K);
     assert(!err);
+
     /* In case the invalidation performs an implicit clean, write a new
-       value to RAM and make sure the cached read retrieves it */
+       value to RAM and make sure the cached read retrieves it 
+       Remember to drain any store buffer!
+    */
     *ptr = 0xBEEFCAFE;
+#ifdef CONFIG_ARCH_ARM_V7A
+    asm volatile ("dmb st" ::: "memory");
+#endif
     test_assert(*ptrc == 0xBEEFCAFE);
     test_assert(*ptr == 0xBEEFCAFE);
 
