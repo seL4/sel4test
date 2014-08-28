@@ -26,7 +26,7 @@
 /* args provided by the user */
 #define HELPER_THREAD_MAX_ARGS 4
 /* metadata helpers adds */
-#define HELPER_THREAD_META     2
+#define HELPER_THREAD_META     4
 /* total args (user + meta) */
 #define HELPER_THREAD_TOTAL_ARGS (HELPER_THREAD_MAX_ARGS + HELPER_THREAD_META)
 

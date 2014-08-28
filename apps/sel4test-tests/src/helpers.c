@@ -22,8 +22,6 @@
 #include "helpers.h"
 #include "test.h"
 
-#include <syscall_stubs_sel4.h>
-
 int
 check_zeroes(seL4_Word addr, seL4_Word size_bytes)
 {
@@ -262,14 +260,13 @@ NORETURN static void
 helper_thread(int argc, char **argv)
 {
 
-    seL4_CPtr local_endpoint = (seL4_CPtr) atoi(argv[argc - 1]);
-    helper_fn_t entry_point = (void *) atoi(argv[argc - 2]);
+    helper_fn_t entry_point = (void *) atoi(argv[2]);
+    seL4_CPtr local_endpoint = (seL4_CPtr) atoi(argv[3]);
 
     seL4_Word args[HELPER_THREAD_MAX_ARGS] = {0};
-    argc -= 2;
-    for (int i = 0; i < argc; i++) {
+    for (int i = 4; i < argc && i - 4 < HELPER_THREAD_MAX_ARGS; i++) {
         assert(argv[i] != NULL);
-        args[i] = atoi(argv[i]);
+        args[i - 4] = atoi(argv[i]);
     }
 
     /* run the thread */
@@ -278,17 +275,8 @@ helper_thread(int argc, char **argv)
     /* does not return */
 }
 
-NORETURN static void
-helper_process(int argc, char **argv, seL4_Word ipc_buffer)
-{
-    /* set up libc */
-    SET_MUSLC_SYSCALL_TABLE;
-    /* set up ipc buffer (for ia32) */
-    seL4_SetUserData(ipc_buffer);
-
-    helper_thread(argc, argv);
-    /* does not return */
-}
+extern uintptr_t _start[];
+extern uintptr_t sel4_vsyscall[];
 
 void
 start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
@@ -308,12 +296,17 @@ start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
         local_endpoint = thread->local_endpoint.cptr;
     }
 
-    create_args(thread->args_strings, thread->args, HELPER_THREAD_TOTAL_ARGS, arg0, arg1, arg2, arg3,
-                (seL4_Word) entry_point, local_endpoint);
+    /* If we are starting a process then the first two args are to get us
+     * through the standard 'main' function and end up in helper_thread
+     * if we are starting a regular thread then these will be ignored */
+    create_args(thread->args_strings, thread->args, HELPER_THREAD_TOTAL_ARGS,
+        0, helper_thread, (seL4_Word) entry_point, local_endpoint,
+        arg0, arg1, arg2, arg3);
 
     if (thread->is_process) {
-        thread->process.entry_point = helper_process;
-        error = sel4utils_spawn_process(&thread->process, &env->vka, &env->vspace,
+        thread->process.entry_point = (void*)_start;
+        thread->process.sysinfo = (uintptr_t)sel4_vsyscall;
+        error = sel4utils_spawn_process_v(&thread->process, &env->vka, &env->vspace,
                                         HELPER_THREAD_TOTAL_ARGS, thread->args, 1);
         assert(error == 0);
     } else {

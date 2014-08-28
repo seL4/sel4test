@@ -11,6 +11,10 @@
 # Targets
 TARGETS := $(notdir $(SOURCE_DIR)).bin
 
+# Set custom entry point as we are a rootserver and will not be
+# started in a standard way
+ENTRY_POINT := _sel4_start
+
 # Source files required to build the target
 CFILES   := $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
 CFILES   += $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/plat/${PLAT}/*.c))
@@ -23,12 +27,11 @@ OFILES := archive.o
 # seen.
 CFILES   += ${BUILD_DIR}/src/test_names.c
 
-ASMFILES := $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/crt/arch-${ARCH}/crt0.S))
-ASMFILES += $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/arch/${ARCH}/*.S))
+ASMFILES := $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/arch/${ARCH}/*.S))
 ASMFILES += $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/plat/${PLAT}/*.S))
 
 # Libraries required to build the target
-LIBS = muslc sel4 cpio elf sel4muslcsys sel4vka sel4allocman \
+LIBS = c sel4 cpio elf sel4muslcsys sel4vka sel4allocman \
        platsupport sel4platsupport sel4test sel4vspace \
        sel4utils sel4simple utils
 ifdef CONFIG_KERNEL_STABLE

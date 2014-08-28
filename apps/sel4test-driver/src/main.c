@@ -44,10 +44,6 @@
 
 #include "test.h"
 
-/* declare the syscall table for our libmuslc */
-#include <syscall_stubs_sel4.h>
-MUSLC_SYSCALL_TABLE;
-
 struct env {
     /* An initialised vka that may be used by the test. */
     vka_t vka;
@@ -309,12 +305,15 @@ run_test(struct testcase *test)
 
     /* set up args for the test process */
     char endpoint_string[10];
-    char *argv[1];
+    char sel4test_name[] = { TESTS_APP };
+    char zero_string[] = {"0"};
+    char *argv[] = {sel4test_name, zero_string, endpoint_string};
     argv[0] = endpoint_string;
     snprintf(endpoint_string, 10, "%d", endpoint);
     /* spawn the process */
-    sel4utils_spawn_process(&test_process, &env.vka, &env.vspace,
-                            1, argv, 1);
+    error = sel4utils_spawn_process_v(&test_process, &env.vka, &env.vspace,
+                            ARRAY_SIZE(argv), argv, 1);
+    assert(error == 0);
 
     /* send env.init_data to the new process */
     void *remote_vaddr = send_init_data(&env, test_process.fault_endpoint.cptr, &test_process);
@@ -432,7 +431,6 @@ int main_continued(void)
 
 int main(void)
 {
-    SET_MUSLC_SYSCALL_TABLE;
     seL4_BootInfo *info = seL4_GetBootInfo();
 
     compile_time_assert(init_data_fits_in_ipc_buffer, sizeof(test_init_data_t) < PAGE_SIZE_4K);
@@ -453,10 +451,10 @@ int main(void)
     /* switch to a bigger, safer stack with a guard page
      * before starting the tests */
     printf("Switching to a safer, bigger stack... ");
+    fflush(stdout);
     int res = sel4utils_run_on_stack(&env.vspace, main_continued);
     test_assert_fatal(res == 0);
 
     return 0;
 }
-
 

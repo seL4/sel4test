@@ -11,11 +11,15 @@
 # Targets
 TARGETS := $(notdir $(SOURCE_DIR)).bin
 
+# Make sure this symbol stays around as we don't reference this, but
+# whoever loads us will
+LDFLAGS += -u __vsyscall_ptr
+
 # Source files required to build the target	
 CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/tests/*.c))
 
 # Libraries
-LIBS := sel4 muslc cpio sel4muslcsys sel4utils sel4allocman sel4simple sel4test elf sel4platsupport platsupport
+LIBS := sel4 c cpio sel4muslcsys sel4utils sel4allocman sel4simple sel4test elf sel4platsupport platsupport
 
 include $(SEL4_COMMON)/common.mk
