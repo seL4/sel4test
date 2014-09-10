@@ -335,10 +335,16 @@ prio_test_func(seL4_Word my_prio, seL4_Word* last_prio, seL4_CPtr ep)
 static int
 test_all_priorities(struct env* env, void *args)
 {
+    int i;
 
-    helper_thread_t *threads = (helper_thread_t *) malloc(sizeof(helper_thread_t) * NUM_PRIOS);
-
+    helper_thread_t **threads = (helper_thread_t **) malloc(sizeof(helper_thread_t*) * NUM_PRIOS);
     assert(threads != NULL);
+
+    for (i = 0; i < NUM_PRIOS; i++) {
+        threads[i] = (helper_thread_t*) malloc(sizeof(helper_thread_t));
+        assert(threads[i]);
+    }
+
     vka_t *vka = &env->vka;
     D("Testing all thread priorities");
     volatile seL4_Word last_prio = MAX_PRIO + 1;
@@ -348,10 +354,10 @@ test_all_priorities(struct env* env, void *args)
     for (int prio = MIN_PRIO; prio <= MAX_PRIO; prio++) {
         int idx = prio - MIN_PRIO;
         test_check(idx >= 0 && idx < NUM_PRIOS);
-        create_helper_thread(env, &threads[idx]);
-        set_helper_priority(&threads[idx], prio);
+        create_helper_thread(env, threads[idx]);
+        set_helper_priority(threads[idx], prio);
 
-        start_helper(env, &threads[idx], (helper_fn_t) prio_test_func,
+        start_helper(env, threads[idx], (helper_fn_t) prio_test_func,
                      prio, (seL4_Word) &last_prio, ep, 0);
     }
 
@@ -364,7 +370,8 @@ test_all_priorities(struct env* env, void *args)
 
     for (int prio = MIN_PRIO; prio <= MAX_PRIO; prio++) {
         int idx = prio - MIN_PRIO;
-        cleanup_helper(env, &threads[idx]);
+        cleanup_helper(env, threads[idx]);
+        free(threads[idx]);
     }
     free(threads);
 
