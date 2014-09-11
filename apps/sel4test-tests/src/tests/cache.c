@@ -32,14 +32,14 @@ test_page_flush(env_t env, void *args)
 
     void *vaddr;
     void *vaddrc;
-    reservation_t *reservation, *reservationc;
+    reservation_t reservation, reservationc;
 
     reservation = vspace_reserve_range(&env->vspace,
                                        PAGE_SIZE_4K, seL4_AllRights, 0, &vaddr);
-    assert(reservation);
+    assert(reservation.res);
     reservationc = vspace_reserve_range(&env->vspace,
                                         PAGE_SIZE_4K, seL4_AllRights, 1, &vaddrc);
-    assert(reservationc);
+    assert(reservationc.res);
 
     vstart = (uint32_t)vaddr;
     assert(IS_ALIGNED(vstart, seL4_PageBits));
@@ -60,10 +60,10 @@ test_page_flush(env_t env, void *args)
     test_assert(!err);
 
     /* map in a cap with cacheability */
-    err = vspace_map_pages_at_vaddr(&env->vspace, &framec, vaddrc, 1, seL4_PageBits, reservationc);
+    err = vspace_map_pages_at_vaddr(&env->vspace, &framec, NULL, vaddrc, 1, seL4_PageBits, reservationc);
     test_assert(!err);
     /* map in a cap without cacheability */
-    err = vspace_map_pages_at_vaddr(&env->vspace, &frame, vaddr, 1, seL4_PageBits, reservation);
+    err = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
     test_assert(!err);
 
     /* Clean makes data observable to non-cached page */
@@ -119,14 +119,14 @@ test_page_directory_flush(env_t env, void *args)
 
     void *vaddr;
     void *vaddrc;
-    reservation_t *reservation, *reservationc;
+    reservation_t reservation, reservationc;
 
     reservation = vspace_reserve_range(&env->vspace,
                                        PAGE_SIZE_4K, seL4_AllRights, 0, &vaddr);
-    assert(reservation);
+    assert(reservation.res);
     reservationc = vspace_reserve_range(&env->vspace,
                                         PAGE_SIZE_4K, seL4_AllRights, 1, &vaddrc);
-    assert(reservationc);
+    assert(reservationc.res);
 
     vstart = (uint32_t)vaddr;
     assert(IS_ALIGNED(vstart, seL4_PageBits));
@@ -147,10 +147,10 @@ test_page_directory_flush(env_t env, void *args)
     test_assert(!err);
 
     /* map in a cap with cacheability */
-    err = vspace_map_pages_at_vaddr(&env->vspace, &framec, vaddrc, 1, seL4_PageBits, reservationc);
+    err = vspace_map_pages_at_vaddr(&env->vspace, &framec, NULL, vaddrc, 1, seL4_PageBits, reservationc);
     test_assert(!err);
     /* map in a cap without cacheability */
-    err = vspace_map_pages_at_vaddr(&env->vspace, &frame, vaddr, 1, seL4_PageBits, reservation);
+    err = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
     test_assert(!err);
 
     /* Clean makes data observable to non-cached page */

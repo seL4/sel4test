@@ -56,7 +56,7 @@ test_pagetable_arm(env_t env, void *args)
 
     /* Grab some free vspace big enough to hold a couple of supersections. */
     seL4_Word vstart;
-    reservation_t *reserve = vspace_reserve_range(&env->vspace, SUPSECT_SIZE * 4,
+    reservation_t reserve = vspace_reserve_range(&env->vspace, SUPSECT_SIZE * 4,
                                                   seL4_AllRights, 1, (void **) &vstart);
     vstart = ALIGN_UP(vstart, SUPSECT_SIZE * 2);
 
