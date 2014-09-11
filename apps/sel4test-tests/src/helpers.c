@@ -326,7 +326,7 @@ cleanup_helper(env_t env, helper_thread_t *thread)
         /* free the regions (no need to unmap, as the
         * entry address space / cspace is being destroyed */
         for (int i = 0; i < thread->num_regions; i++) {
-            free(thread->regions[i].reservation);
+            vspace_free_reservation(&thread->process.vspace, thread->regions[i].reservation);
         }
 
         thread->process.fault_endpoint.cptr = 0;

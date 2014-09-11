@@ -77,7 +77,7 @@ test_frame_recycle(env_t env, void *args)
 
     /* Grab some free vspace big enough to hold all the tests. */
     seL4_Word vstart;
-    reservation_t *reserve = vspace_reserve_range(&env->vspace, 2 * (1 << 25),
+    reservation_t reserve = vspace_reserve_range(&env->vspace, 2 * (1 << 25),
                                                   seL4_AllRights, 1, (void **) &vstart);
     test_assert(vstart != 0);
     vstart = ALIGN_UP(vstart, (1 << 25));
@@ -168,20 +168,20 @@ test_frame_exported(env_t env, void *args)
     ft_index = 0;
     ft_bytes = (1 << (seL4_WordBits - seL4_PageBits)) * sizeof(*ft);
 
-    reservation_t *ft_reservation = vspace_reserve_range(&env->vspace,
+    reservation_t ft_reservation = vspace_reserve_range(&env->vspace,
                                                          ft_bytes + (1 << frame_types[0].size), seL4_AllRights,
                                                          1, (void **) &ft);
-    test_assert(ft_reservation != NULL);
+    test_assert(ft_reservation.res != NULL);
     ft = (struct frame_table_entry *) ALIGN_UP((unsigned int) ft, frame_types[0].size);
 
     /* Reserve some vspace for mapping frames */
-    reservation_t *vaddr_reserve = vspace_reserve_range(&env->vspace, frame_types[0].size * 2,
+    reservation_t vaddr_reserve = vspace_reserve_range(&env->vspace, frame_types[0].size * 2,
                                                         seL4_AllRights, 1, (void **) &vaddr_scratch);
 
     vaddr_scratch = ALIGN_UP(vaddr_scratch, frame_types[0].size);
 
     test_assert(vaddr_scratch != 0);
-    test_assert(vaddr_reserve != NULL);
+    test_assert(vaddr_reserve.res != NULL);
 
     /* loop through frame sizes, allocate, map and touch them until we run out
      * of memory. */

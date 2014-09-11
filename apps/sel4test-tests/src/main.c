@@ -109,7 +109,7 @@ static void
 init_allocator(env_t env, test_init_data_t *init_data)
 {
     UNUSED int error;
-    UNUSED reservation_t *virtual_reservation;
+    UNUSED reservation_t virtual_reservation;
 
     /* initialise allocator */
     allocman_t *allocator = bootstrap_use_current_1level(init_data->root_cnode,
@@ -144,7 +144,7 @@ init_allocator(env_t env, test_init_data_t *init_data)
     void *vaddr;
     virtual_reservation = vspace_reserve_range(&env->vspace, ALLOCATOR_VIRTUAL_POOL_SIZE,
                                                seL4_AllRights, 1, &vaddr);
-    assert(virtual_reservation);
+    assert(virtual_reservation.res);
     bootstrap_configure_virtual_pool(allocator, vaddr, ALLOCATOR_VIRTUAL_POOL_SIZE,
                                      env->page_directory);
 

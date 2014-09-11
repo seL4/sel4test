@@ -11,7 +11,7 @@
 menuconfig APP_TESTS
     bool "Tests for sel4test"
     default y
-    depends on LIB_SEL4 && LIB_MUSL_C && LIB_SEL4_MUSLC_SYS && LIB_SEL4_PLAT_SUPPORT && LIB_CPIO && LIB_SEL4_ALLOCMAN && LIB_ELF
+    depends on LIB_SEL4 && LIB_MUSL_C && LIB_SEL4_MUSLC_SYS && LIB_SEL4_PLAT_SUPPORT && LIB_CPIO && LIB_SEL4_ALLOCMAN && LIB_ELF && LIB_SEL4_VSPACE
     help
         Contains all tests to be run in a separate process.
 

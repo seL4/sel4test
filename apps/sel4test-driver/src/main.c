@@ -108,7 +108,7 @@ static void
 init_env(env_t env)
 {
     allocman_t *allocman;
-    UNUSED reservation_t *virtual_reservation;
+    UNUSED reservation_t virtual_reservation;
     UNUSED int error;
 
     /* create an allocator */
@@ -128,7 +128,7 @@ init_env(env_t env)
     void *vaddr;
     virtual_reservation = vspace_reserve_range(&env->vspace,
                                                ALLOCATOR_VIRTUAL_POOL_SIZE, seL4_AllRights, 1, &vaddr);
-    assert(virtual_reservation);
+    assert(virtual_reservation.res);
     bootstrap_configure_virtual_pool(allocman, vaddr,
                                      ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&env->simple));
 }
@@ -226,7 +226,7 @@ static void *
 send_init_data(env_t env, seL4_CPtr endpoint, sel4utils_process_t *process)
 {
     /* map the cap into remote vspace */
-    void *remote_vaddr = vspace_map_pages(&process->vspace, &env->init_frame_cap_copy, seL4_AllRights, 1, PAGE_BITS_4K, 1);
+    void *remote_vaddr = vspace_map_pages(&process->vspace, &env->init_frame_cap_copy, NULL, seL4_AllRights, 1, PAGE_BITS_4K, 1);
     assert(remote_vaddr != 0);
 
     /* now send a message telling the process what address the data is at */
@@ -329,7 +329,7 @@ run_test(struct testcase *test)
     }
 
     /* unmap the env.init data frame */
-    vspace_unmap_pages(&test_process.vspace, remote_vaddr, 1, PAGE_BITS_4K);
+    vspace_unmap_pages(&test_process.vspace, remote_vaddr, 1, PAGE_BITS_4K, NULL);
 
     /* reset all the untypeds for the next test */
     for (int i = 0; i < num_untypeds; i++) {
