@@ -280,9 +280,10 @@ main(int argc, char **argv)
     seL4_SetMR(0, result);
     seL4_Send(endpoint, info);
 
-    /* we should not return, the test driver will tear us down
-     * and restart us for the next test */
-    assert(0);
+    /* It is expected that we are torn down by the test driver before we are
+     * scheduled to run again after signalling them with the above send.
+     */
+    assert(!"unreachable");
     return 0;
 }
 
