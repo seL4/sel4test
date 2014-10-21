@@ -241,7 +241,6 @@ send_init_data(env_t env, seL4_CPtr endpoint, sel4utils_process_t *process)
 static void
 copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-    UNUSED int error;
 #ifdef CONFIG_ARCH_ARM
     /* Timer frame cap (only for arm). Here we assume the sel4platsupport
      * default timer only requires one frame. */
