@@ -263,26 +263,27 @@ main(int argc, char **argv)
 
     /* find the test */
     testcase_t *test = find_test(init_data->name);
-    printf("Running test %s (%s)\n", test->name, test->description);
 
     /* run the test */
     int result = 0;
     if (test) {
+        printf("Running test %s (%s)\n", test->name, test->description);
         result = test->function(&env, test->args);
     } else {
         result = FAILURE;
-        LOG_ERROR("Cannot find test %s\n", test->name);
+        LOG_ERROR("Cannot find test %s\n", init_data->name);
     }
 
-    printf("Test %s %s\n", test->name, result == SUCCESS ? "passed" : "failed");
+    printf("Test %s %s\n", init_data->name, result == SUCCESS ? "passed" : "failed");
     /* send our result back */
     seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
     seL4_SetMR(0, result);
     seL4_Send(endpoint, info);
 
-    /* we should not return, the test driver will tear us down
-     * and restart us for the next test */
-    assert(0);
+    /* It is expected that we are torn down by the test driver before we are
+     * scheduled to run again after signalling them with the above send.
+     */
+    assert(!"unreachable");
     return 0;
 }
 
