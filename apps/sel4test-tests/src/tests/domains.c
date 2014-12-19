@@ -17,7 +17,7 @@
 
 #include "../helpers.h"
 
-#define POLL_DELAY_MS 0x700
+#define POLL_DELAY_NS 2000
 
 typedef int (*test_func_t)(seL4_Word /* id */, env_t env /* env */);
 
@@ -53,10 +53,10 @@ own_domain_badcap(struct env *env)
 
 #ifdef CONFIG_HAVE_TIMER
 void
-wait(int msecs, env_t env)
+wait(int nsecs, env_t env)
 {
 
-    UNUSED int error = timer_oneshot_relative(env->timer->timer, msecs);
+    UNUSED int error = timer_oneshot_relative(env->timer->timer, nsecs);
     assert(error == 0);
 
     wait_for_timer_interrupt(env);
@@ -67,7 +67,7 @@ int fdom1(seL4_Word id, env_t env)
     int countdown = 50;
 
     while (countdown > 0) {
-        wait(POLL_DELAY_MS, env);
+        wait(POLL_DELAY_NS, env);
         --countdown;
         printf("%2d, ", id);
     }
@@ -99,7 +99,7 @@ test_domains(struct env *env, test_func_t fdom, bool test_shift)
 
     if (CONFIG_NUM_DOMAINS > 1 && test_shift) {
         assert(0);
-        wait(POLL_DELAY_MS * 2, env);
+        wait(POLL_DELAY_NS * 2, env);
         error = seL4_DomainSet_Set(env->domain, CONFIG_NUM_DOMAINS - 1, thread[0].thread.tcb.cptr);
         assert(error == seL4_NoError);
     }
