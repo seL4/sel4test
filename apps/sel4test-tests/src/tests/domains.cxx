@@ -13,15 +13,9 @@
 
 #include <assert.h>
 #include <stdio.h>
-
-/* Our headers are not C++ friendly */
-extern "C" {
-
 #include <sel4/sel4.h>
 
 #include "../helpers.h"
-
-}
 
 #define POLL_DELAY_NS 2000
 
@@ -81,11 +75,9 @@ int fdom1(seL4_Word id, env_t env)
     return SUCCESS;
 }
 
-/* This is a very simple (and rather stupid) C++ usage. Proves that a template
- * can be defined but is not good C++ */
-template<bool shift, typename F>
+
 static int
-test_domains(struct env *env, F func)
+test_domains(struct env *env, test_func_t fdom, bool test_shift)
 {
 
     UNUSED int error;
@@ -102,10 +94,10 @@ test_domains(struct env *env, F func)
     }
 
     for (int i = 0; i < CONFIG_NUM_DOMAINS; ++i) {
-        start_helper(env, &thread[i], (helper_fn_t) func, i, (seL4_Word) env, 0, 0);
+        start_helper(env, &thread[i], (helper_fn_t) fdom, i, (seL4_Word) env, 0, 0);
     }
 
-    if (CONFIG_NUM_DOMAINS > 1 && shift) {
+    if (CONFIG_NUM_DOMAINS > 1 && test_shift) {
         assert(0);
         wait(POLL_DELAY_NS * 2, env);
         error = seL4_DomainSet_Set(env->domain, CONFIG_NUM_DOMAINS - 1, thread[0].thread.tcb.cptr);
@@ -122,39 +114,6 @@ test_domains(struct env *env, F func)
     return SUCCESS;
 }
 
-
-/* The output from this test should show alternating "domain blocks", with,
- * within each, a single thread printing. For example:
- *
- * 00, 00, ..., 00, 01, 01, ..., 01, 00, 00, ..., 00, 01, 01, ..., 01, etc.
- * +-------------+  +-------------+  +-------------+  +-------------+
- *  block 0           block 1          block 0          block 1
- */
-static int
-test_run_domains(struct env* env, void *args)
-{
-    return test_domains<false>(env, fdom1);
-}
-DEFINE_TEST(DOMAINS0004, "Run threads in domains()", test_run_domains)
-
-#if CONFIG_NUM_DOMAINS > 1
-/* The output of this test differs from that of DOMAINS0004 in that the thread
- * in domain 0 is moved into domain 1 after a short delay. This should be
- * visible in the output, where the "domain block" for domain 1 should contain
- * the alternating output of threads 0 and 1. For example:
- *
- * 00, 00, ..., 00, 01, 00, 01, 00, ..., 01, 01, 01, 01
- * +-------------+  +------------------+ +------------+
- *  initial block    alterations           final block
- *  (due to delay)   (after shift)         (01 catches up)
- */
-static int
-test_run_domains_shift(struct env* env, void *args)
-{
-    return test_domains<true>(env, fdom1);
-}
-DEFINE_TEST(DOMAINS0005, "Move thread between domains()", test_run_domains_shift)
-#endif
 #endif /* CONFIG_HAVE_TIMER */
 
 static int
@@ -177,3 +136,40 @@ test_own_domain3(struct env* env, void *args)
     return own_domain_badcap(env);
 }
 DEFINE_TEST(DOMAINS0003, "Invoke non-domain cap()", test_own_domain3)
+
+#ifdef CONFIG_HAVE_TIMER
+
+/* The output from this test should show alternating "domain blocks", with,
+ * within each, a single thread printing. For example:
+ *
+ * 00, 00, ..., 00, 01, 01, ..., 01, 00, 00, ..., 00, 01, 01, ..., 01, etc.
+ * +-------------+  +-------------+  +-------------+  +-------------+
+ *  block 0           block 1          block 0          block 1
+ */
+static int
+test_run_domains(struct env* env, void *args)
+{
+    return test_domains(env, fdom1, false);
+}
+DEFINE_TEST(DOMAINS0004, "Run threads in domains()", test_run_domains)
+
+#if CONFIG_NUM_DOMAINS > 1
+/* The output of this test differs from that of DOMAINS0004 in that the thread
+ * in domain 0 is moved into domain 1 after a short delay. This should be
+ * visible in the output, where the "domain block" for domain 1 should contain
+ * the alternating output of threads 0 and 1. For example:
+ *
+ * 00, 00, ..., 00, 01, 00, 01, 00, ..., 01, 01, 01, 01
+ * +-------------+  +------------------+ +------------+
+ *  initial block    alterations           final block
+ *  (due to delay)   (after shift)         (01 catches up)
+ */
+static int
+test_run_domains_shift(struct env* env, void *args)
+{
+    return test_domains(env, fdom1, true);
+}
+DEFINE_TEST(DOMAINS0005, "Move thread between domains()", test_run_domains_shift)
+
+#endif
+#endif /* CONFIG_HAVE_TIMER */

@@ -18,8 +18,6 @@ LDFLAGS += -u __vsyscall_ptr
 # Source files required to build the target	
 CFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c))
 CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/tests/*.c))
-CXXFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.cxx))
-CXXFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/tests/*.cxx))
 
 # Libraries
 LIBS := sel4 c cpio sel4muslcsys sel4utils sel4allocman sel4simple sel4test elf sel4platsupport platsupport sel4vspace
