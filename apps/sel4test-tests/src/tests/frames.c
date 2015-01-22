@@ -238,6 +238,17 @@ test_frame_exported(env_t env, void *args)
             *data = 'U';
             test_assert(*data == 'U');
 
+#ifndef CONFIG_KERNEL_STABLE
+            err = seL4_ARCH_Page_Remap(frame.cptr,
+                                       env->page_directory,
+                                       seL4_AllRights,
+                                       seL4_ARCH_Default_VMAttributes);
+            test_assert(!err);
+            /* Touch the memory again */
+            *data = 'V';
+            test_assert(*data == 'V');
+#endif
+
             /* Unmap the page if it is not used for our frame table */
             if (vaddr == vaddr_scratch) {
                 err = seL4_ARCH_Page_Unmap(frame.cptr);
