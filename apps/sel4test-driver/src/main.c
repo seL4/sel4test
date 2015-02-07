@@ -373,7 +373,7 @@ init_timer_caps(env_t env)
 }
 
 
-int main_continued(void)
+void *main_continued(void *arg UNUSED)
 {
 
     /* elf region data */
@@ -425,7 +425,7 @@ int main_continued(void)
     /* now run the tests */
     sel4test_run_tests("sel4test", run_test);
 
-    return 0;
+    return NULL;
 }
 
 int main(void)
@@ -451,7 +451,7 @@ int main(void)
      * before starting the tests */
     printf("Switching to a safer, bigger stack... ");
     fflush(stdout);
-    int res = sel4utils_run_on_stack(&env.vspace, main_continued);
+    int res = (int)sel4utils_run_on_stack(&env.vspace, main_continued, NULL);
     test_assert_fatal(res == 0);
 
     return 0;
