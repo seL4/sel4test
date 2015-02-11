@@ -20,7 +20,7 @@
 /* Arbitrarily start mapping 128mb into the virtual address range */
 #define EPT_MAP_BASE 0x8000000
 
-#define OFFSET_4MB (BIT(seL4_4MBits))
+#define OFFSET_4MB (BIT(22))
 #define OFFSET_2MB (OFFSET_4MB >> 1)
 
 /* None of these tests actually check that mappings succeeded. This would require
@@ -72,7 +72,7 @@ map_ept_set_large_from_pdpt(env_t env, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr 
 
     *pd = vka_alloc_ept_page_directory_leaky(&env->vka);
     test_assert_fatal(*pd);
-    *frame = vka_alloc_frame_leaky(&env->vka, seL4_4MBits);
+    *frame = vka_alloc_frame_leaky(&env->vka, seL4_LargePageBits);
     test_assert_fatal(*frame);
 
     error = seL4_IA32_EPTPageDirectory_Map(*pd, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
@@ -227,21 +227,22 @@ test_ept_no_overlapping_4k(env_t env, void *args)
 DEFINE_TEST(EPT0004, "Test EPT cannot map overlapping 4k pages", test_ept_no_overlapping_4k)
 
 static int
-test_ept_no_overlapping_4m(env_t env, void *args)
+test_ept_no_overlapping_large(env_t env, void *args)
 {
     int error;
     seL4_CPtr pdpt, pd, frame;
     error = map_ept_set_large(env, &pdpt, &pd, &frame);
     test_assert(error == seL4_NoError);
 
-    frame = vka_alloc_frame_leaky(&env->vka, seL4_4MBits);
+    frame = vka_alloc_frame_leaky(&env->vka, seL4_LargePageBits);
     test_assert_fatal(frame);
     error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
     test_assert(error != seL4_NoError);
     return SUCCESS;
 }
-DEFINE_TEST(EPT0005, "Test EPT cannot map overlapping 4m pages", test_ept_no_overlapping_4m)
+DEFINE_TEST(EPT0005, "Test EPT cannot map overlapping large pages", test_ept_no_overlapping_large)
 
+#ifndef CONFIG_PAE_PAGING
 static int
 test_ept_aligned_4m(env_t env, void *args)
 {
@@ -272,7 +273,9 @@ test_ept_aligned_4m(env_t env, void *args)
     return SUCCESS;
 }
 DEFINE_TEST(EPT0006, "Test EPT 4M mappings must be 4M aligned and cannot overlap", test_ept_aligned_4m)
+#endif
 
+#ifndef CONFIG_PAE_PAGING
 static int
 test_ept_no_overlapping_pt_4m(env_t env, void *args)
 {
@@ -314,7 +317,8 @@ test_ept_no_overlapping_pt_4m(env_t env, void *args)
 
     return SUCCESS;
 }
-DEFINE_TEST(EPT0007, "Test EPT 4M frame and PT cannot overlap", test_ept_no_overlapping_pt_4m)
+DEFINE_TEST(EPT0007, "Test EPT 4m frame and PT cannot overlap", test_ept_no_overlapping_pt_4m)
+#endif
 
 static int
 test_ept_map_remap_pd(env_t env, void *args)
