@@ -187,22 +187,6 @@ are_tcbs_distinct(seL4_CPtr tcb1, seL4_CPtr tcb2)
     return 0;
 }
 
-static void
-create_args(char strings[][WORD_STRING_SIZE], char *argv[], int argc, ...)
-{
-    va_list args;
-    va_start(args, argc);
-
-    for (int i = 0; i < argc; i++) {
-        seL4_Word arg = va_arg(args, seL4_Word);
-        argv[i] = strings[i];
-        snprintf(argv[i], WORD_STRING_SIZE, "%d", arg);
-
-    }
-
-    va_end(args);
-}
-
 void
 create_helper_process(env_t env, helper_thread_t *thread)
 {
@@ -299,7 +283,7 @@ start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
     /* If we are starting a process then the first two args are to get us
      * through the standard 'main' function and end up in helper_thread
      * if we are starting a regular thread then these will be ignored */
-    create_args(thread->args_strings, thread->args, HELPER_THREAD_TOTAL_ARGS,
+    sel4utils_create_word_args(thread->args_strings, thread->args, HELPER_THREAD_TOTAL_ARGS,
         0, helper_thread, (seL4_Word) entry_point, local_endpoint,
         arg0, arg1, arg2, arg3);
 

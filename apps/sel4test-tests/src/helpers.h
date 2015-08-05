@@ -22,7 +22,6 @@
 #include "test.h"
 
 #define OUR_PRIO (env->priority)
-#define WORD_STRING_SIZE 11
 /* args provided by the user */
 #define HELPER_THREAD_MAX_ARGS 4
 /* metadata helpers adds */
