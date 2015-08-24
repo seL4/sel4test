@@ -49,6 +49,10 @@ test_unmap_after_delete(env_t env, void *args)
     test_assert(pt != 0);
     test_assert(frame != 0);
 
+#ifndef CONFIG_KERNEL_STABLE
+    seL4_ARM_ASIDPool_Assign(env->asid_pool, pd);
+#endif
+
     /* map page table into page directory */
     error = seL4_ARM_PageTable_Map(pt, pd, map_addr, seL4_ARM_Default_VMAttributes);
     test_assert(error == seL4_NoError);
