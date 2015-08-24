@@ -33,3 +33,38 @@ test_interas_diffcspace(env_t env, void *args)
     return SUCCESS;
 }
 DEFINE_TEST(VSPACE0000, "Test threads in different cspace/vspace", test_interas_diffcspace)
+
+#ifdef ARCH_ARM
+static int
+test_unmap_after_delete(env_t env, void *args)
+{
+    seL4_Word map_addr = 0x10000000;
+    cspacepath_t path;
+    int error;
+
+    seL4_CPtr pd = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageDirectoryObject, 0);
+    seL4_CPtr pt = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageTableObject, 0);
+    seL4_CPtr frame = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
+    test_assert(pd != 0);
+    test_assert(pt != 0);
+    test_assert(frame != 0);
+
+    /* map page table into page directory */
+    error = seL4_ARM_PageTable_Map(pt, pd, map_addr, seL4_ARM_Default_VMAttributes);
+    test_assert(error == seL4_NoError);
+
+    /* map frame into the page table */
+    error = seL4_ARM_Page_Map(frame, pd, map_addr, seL4_AllRights, seL4_ARM_Default_VMAttributes);
+    test_assert(error == seL4_NoError);
+
+    /* delete the page directory */
+    vka_cspace_make_path(&env->vka, pd, &path);
+    seL4_CNode_Delete(path.root, path.capPtr, path.capDepth);
+
+    /* unmap the frame */
+    seL4_ARM_Page_Unmap(frame);
+
+    return SUCCESS;
+}
+DEFINE_TEST(VSPACE0001, "Test unmapping a page after deleting the PD", test_unmap_after_delete)
+#endif
