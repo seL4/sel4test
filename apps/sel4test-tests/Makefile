@@ -22,6 +22,6 @@ CXXFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.cxx))
 CXXFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/tests/*.cxx))
 
 # Libraries
-LIBS := sel4 c cpio sel4muslcsys sel4utils sel4allocman sel4simple sel4test elf sel4platsupport platsupport sel4vspace
+LIBS := sel4 c cpio sel4muslcsys utils sel4utils sel4allocman sel4simple sel4test elf sel4platsupport platsupport sel4vspace
 
 include $(SEL4_COMMON)/common.mk
