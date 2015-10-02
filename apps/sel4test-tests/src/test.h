@@ -81,6 +81,12 @@ typedef struct {
 
     /* the number of elf regions */
     int num_elf_regions;
+
+    /* the number of pages in the stack */
+    int stack_pages;
+
+    /* address of the stack */
+    void *stack;
 } test_init_data_t;
 
 #endif /* __TEST_H */

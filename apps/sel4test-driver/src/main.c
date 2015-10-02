@@ -275,6 +275,8 @@ run_test(struct testcase *test)
     assert(error == 0);
 
     /* set up caps about the process */
+    env.init->stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / PAGE_SIZE_4K;
+    env.init->stack = test_process.thread.stack_top - CONFIG_SEL4UTILS_STACK_SIZE;
     env.init->page_directory = copy_cap_to_process(&test_process, test_process.pd.cptr);
     env.init->root_cnode = SEL4UTILS_CNODE_SLOT;
     env.init->tcb = copy_cap_to_process(&test_process, test_process.thread.tcb.cptr);
