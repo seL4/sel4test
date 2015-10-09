@@ -13,7 +13,6 @@
 #include <sel4/sel4.h>
 #include <vka/object.h>
 
-#ifdef CONFIG_AEP_BINDING
 #include "../helpers.h"
 
 #define NUM_RUNS 10
@@ -202,4 +201,3 @@ test_aep_binding_4(env_t env, void* args)
 DEFINE_TEST(BIND0004, "Test IPC ordering 2) bound tcb waits on bound endpoint 1) another tcb sends a message",
             test_aep_binding_4)
 
-#endif /* CONFIG_AEP_BINDING */
