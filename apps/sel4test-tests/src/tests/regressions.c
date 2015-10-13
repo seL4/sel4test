@@ -357,7 +357,7 @@ static int do_ldrex(void)
                   : [rn]"r"(&dummy2));
 
     /* Force a context switch to our parent. */
-    seL4_Notify(shared_endpoint, 0);
+    seL4_Signal(shared_endpoint);
 
     /* Again, we don't care where we are storing to. This is to see whether the
      * exclusive access tag is still set.

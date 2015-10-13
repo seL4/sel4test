@@ -113,8 +113,8 @@ GENERATE_SYSCALL_TEST(SYSCALL0002, seL4_NBSend,
 GENERATE_SYSCALL_TEST(SYSCALL0003, seL4_Reply,
                       seL4_Reply(seL4_MessageInfo_new(0, 0, 0, 0)))
 
-GENERATE_SYSCALL_TEST(SYSCALL0004, seL4_Notify,
-                      seL4_Notify(env->cspace_root, 0))
+GENERATE_SYSCALL_TEST(SYSCALL0004, seL4_Signal,
+                      seL4_Signal(env->cspace_root))
 
 GENERATE_SYSCALL_TEST(SYSCALL0005, seL4_Call,
                       seL4_Call(env->cspace_root, seL4_MessageInfo_new(0, 0, 0 , 0)))
@@ -138,11 +138,11 @@ test_wait(env_t env, void *args)
 {
     /* Allocate an endpoint. */
     seL4_CPtr endpoint;
-    endpoint = vka_alloc_async_endpoint_leaky(&env->vka);
+    endpoint = vka_alloc_notification_leaky(&env->vka);
 
     for (int i = 0; i < 10; i++) {
         /* Notify it, so that we don't block. */
-        seL4_Notify(endpoint, 1);
+        seL4_Signal(endpoint);
 
         /* Wait for the endpoint. */
         TEST_REGISTERS(seL4_Wait(endpoint, NULL));
@@ -157,11 +157,11 @@ test_reply_wait(env_t env, void *args)
 {
     /* Allocate an endpoint. */
     seL4_CPtr endpoint;
-    endpoint = vka_alloc_async_endpoint_leaky(&env->vka);
+    endpoint = vka_alloc_notification_leaky(&env->vka);
 
     for (int i = 0; i < 10; i++) {
         /* Notify it, so that we don't block. */
-        seL4_Notify(endpoint, 1);
+        seL4_Signal(endpoint);
 
         /* ReplyWait for the endpoint. */
         TEST_REGISTERS(seL4_ReplyWait(endpoint, seL4_MessageInfo_new(0, 0, 0, 0), NULL));

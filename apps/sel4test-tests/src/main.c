@@ -214,7 +214,7 @@ void init_timer(env_t env, test_init_data_t *init_data)
     UNUSED int error;
 
 
-    error = vka_alloc_async_endpoint(&env->vka, &env->timer_aep);
+    error = vka_alloc_notification(&env->vka, &env->timer_aep);
     assert(error == 0);
 
     env->timer = sel4platsupport_get_default_timer(&env->vka, &env->vspace,

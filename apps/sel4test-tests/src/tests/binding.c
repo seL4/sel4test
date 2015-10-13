@@ -49,7 +49,7 @@ test_aep_binding(env_t env, void* args)
 
     /* create endpoints */
     seL4_CPtr sync_ep = vka_alloc_endpoint_leaky(&env->vka);
-    seL4_CPtr async_ep = vka_alloc_async_endpoint_leaky(&env->vka);
+    seL4_CPtr async_ep = vka_alloc_notification_leaky(&env->vka);
     seL4_CPtr badged_async_ep = badge_endpoint(env, ASYNC, async_ep);
     seL4_CPtr badged_sync_ep = badge_endpoint(env, SYNC, sync_ep);
 
@@ -61,7 +61,7 @@ test_aep_binding(env_t env, void* args)
     create_helper_thread(env, &async);
 
     /* bind the endpoint */
-    int error = seL4_TCB_BindAEP(env->tcb, async_ep);
+    int error = seL4_TCB_BindNotification(env->tcb, async_ep);
     test_assert(error == seL4_NoError);
 
     start_helper(env, &async, sender, badged_async_ep, ASYNC, NUM_RUNS, 0);
@@ -86,7 +86,7 @@ test_aep_binding(env_t env, void* args)
     test_check(num_async_messages == NUM_RUNS);
     test_check(num_sync_messages == NUM_RUNS);
 
-    error = seL4_TCB_UnbindAEP(env->tcb);
+    error = seL4_TCB_UnbindNotification(env->tcb);
     test_assert(error == seL4_NoError);
 
     cleanup_helper(env, &sync);
@@ -103,7 +103,7 @@ test_aep_binding_2(env_t env, void* args)
     helper_thread_t async;
 
     /* create endpoints */
-    seL4_CPtr async_ep = vka_alloc_async_endpoint_leaky(&env->vka);
+    seL4_CPtr async_ep = vka_alloc_notification_leaky(&env->vka);
     seL4_CPtr badged_async_ep = badge_endpoint(env, ASYNC, async_ep);
 
     test_assert(async_ep);
@@ -113,7 +113,7 @@ test_aep_binding_2(env_t env, void* args)
     create_helper_thread(env, &async);
 
     /* bind the endpoint */
-    int error = seL4_TCB_BindAEP(env->tcb, async_ep);
+    int error = seL4_TCB_BindNotification(env->tcb, async_ep);
     test_assert(error == seL4_NoError);
 
     start_helper(env, &async, sender, badged_async_ep, ASYNC, NUM_RUNS, 0);
@@ -132,7 +132,7 @@ test_aep_binding_2(env_t env, void* args)
 
     test_check(num_async_messages == NUM_RUNS);
 
-    error = seL4_TCB_UnbindAEP(env->tcb);
+    error = seL4_TCB_UnbindNotification(env->tcb);
     test_assert(error == seL4_NoError);
 
     cleanup_helper(env, &async);
@@ -156,7 +156,7 @@ test_aep_binding_prio(env_t env, uint8_t waiter_prio, uint8_t sender_prio)
     helper_thread_t waiter_thread;
     helper_thread_t sender_thread;
 
-    seL4_CPtr async_ep = vka_alloc_async_endpoint_leaky(&env->vka);
+    seL4_CPtr async_ep = vka_alloc_notification_leaky(&env->vka);
     seL4_CPtr sync_ep = vka_alloc_endpoint_leaky(&env->vka);
 
     test_assert(async_ep);
@@ -168,7 +168,7 @@ test_aep_binding_prio(env_t env, uint8_t waiter_prio, uint8_t sender_prio)
     create_helper_thread(env, &sender_thread);
     set_helper_priority(&sender_thread, sender_prio);
 
-    int error = seL4_TCB_BindAEP(waiter_thread.thread.tcb.cptr, async_ep);
+    int error = seL4_TCB_BindNotification(waiter_thread.thread.tcb.cptr, async_ep);
     test_assert(error == seL4_NoError);
 
     start_helper(env, &waiter_thread, waiter, async_ep, 0, 0, 0);
