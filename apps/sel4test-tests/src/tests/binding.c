@@ -43,31 +43,31 @@ sender(seL4_Word ep, seL4_Word id, seL4_Word runs, seL4_Word arg3)
 }
 
 static int
-test_aep_binding(env_t env, void* args)
+test_notification_binding(env_t env, void* args)
 {
-    helper_thread_t sync, async;
+    helper_thread_t sync, notification;
 
     /* create endpoints */
     seL4_CPtr sync_ep = vka_alloc_endpoint_leaky(&env->vka);
-    seL4_CPtr async_ep = vka_alloc_notification_leaky(&env->vka);
-    seL4_CPtr badged_async_ep = badge_endpoint(env, ASYNC, async_ep);
+    seL4_CPtr notification_ep = vka_alloc_notification_leaky(&env->vka);
+    seL4_CPtr badged_notification_ep = badge_endpoint(env, ASYNC, notification_ep);
     seL4_CPtr badged_sync_ep = badge_endpoint(env, SYNC, sync_ep);
 
-    assert(async_ep);
+    assert(notification_ep);
     assert(sync_ep);
 
     /* badge endpoints so we can tell them apart */
     create_helper_thread(env, &sync);
-    create_helper_thread(env, &async);
+    create_helper_thread(env, &notification);
 
     /* bind the endpoint */
-    int error = seL4_TCB_BindNotification(env->tcb, async_ep);
+    int error = seL4_TCB_BindNotification(env->tcb, notification_ep);
     test_assert(error == seL4_NoError);
 
-    start_helper(env, &async, sender, badged_async_ep, ASYNC, NUM_RUNS, 0);
+    start_helper(env, &notification, sender, badged_notification_ep, ASYNC, NUM_RUNS, 0);
     start_helper(env, &sync, sender, badged_sync_ep, SYNC, NUM_RUNS, 0);
 
-    int num_async_messages = 0;
+    int num_notification_messages = 0;
     int num_sync_messages = 0;
     for (int i = 0; i < NUM_RUNS * 2; i++) {
         seL4_Word badge = 0;
@@ -75,7 +75,7 @@ test_aep_binding(env_t env, void* args)
 
         switch (badge) {
         case ASYNC:
-            num_async_messages++;
+            num_notification_messages++;
             break;
         case SYNC:
             num_sync_messages++;
@@ -83,65 +83,65 @@ test_aep_binding(env_t env, void* args)
         }
     }
 
-    test_check(num_async_messages == NUM_RUNS);
+    test_check(num_notification_messages == NUM_RUNS);
     test_check(num_sync_messages == NUM_RUNS);
 
     error = seL4_TCB_UnbindNotification(env->tcb);
     test_assert(error == seL4_NoError);
 
     cleanup_helper(env, &sync);
-    cleanup_helper(env, &async);
+    cleanup_helper(env, &notification);
 
     return SUCCESS;
 }
-DEFINE_TEST(BIND0001, "Test that a bound tcb waiting on a sync endpoint receives normal sync ipc and async notifications.", test_aep_binding)
+DEFINE_TEST(BIND0001, "Test that a bound tcb waiting on a sync endpoint receives normal sync ipc and notification notifications.", test_notification_binding)
 
 
 static int
-test_aep_binding_2(env_t env, void* args)
+test_notification_binding_2(env_t env, void* args)
 {
-    helper_thread_t async;
+    helper_thread_t notification;
 
     /* create endpoints */
-    seL4_CPtr async_ep = vka_alloc_notification_leaky(&env->vka);
-    seL4_CPtr badged_async_ep = badge_endpoint(env, ASYNC, async_ep);
+    seL4_CPtr notification_ep = vka_alloc_notification_leaky(&env->vka);
+    seL4_CPtr badged_notification_ep = badge_endpoint(env, ASYNC, notification_ep);
 
-    test_assert(async_ep);
-    test_assert(badged_async_ep);
+    test_assert(notification_ep);
+    test_assert(badged_notification_ep);
 
     /* badge endpoints so we can tell them apart */
-    create_helper_thread(env, &async);
+    create_helper_thread(env, &notification);
 
     /* bind the endpoint */
-    int error = seL4_TCB_BindNotification(env->tcb, async_ep);
+    int error = seL4_TCB_BindNotification(env->tcb, notification_ep);
     test_assert(error == seL4_NoError);
 
-    start_helper(env, &async, sender, badged_async_ep, ASYNC, NUM_RUNS, 0);
+    start_helper(env, &notification, sender, badged_notification_ep, ASYNC, NUM_RUNS, 0);
 
-    int num_async_messages = 0;
+    int num_notification_messages = 0;
     for (int i = 0; i < NUM_RUNS; i++) {
         seL4_Word badge = 0;
-        seL4_Wait(async_ep, &badge);
+        seL4_Wait(notification_ep, &badge);
 
         switch (badge) {
         case ASYNC:
-            num_async_messages++;
+            num_notification_messages++;
             break;
         }
     }
 
-    test_check(num_async_messages == NUM_RUNS);
+    test_check(num_notification_messages == NUM_RUNS);
 
     error = seL4_TCB_UnbindNotification(env->tcb);
     test_assert(error == seL4_NoError);
 
-    cleanup_helper(env, &async);
+    cleanup_helper(env, &notification);
 
     return SUCCESS;
 }
-DEFINE_TEST(BIND0002, "Test that a bound tcb waiting on its bound endpoint recieves notifications", test_aep_binding_2)
+DEFINE_TEST(BIND0002, "Test that a bound tcb waiting on its bound notification recieves notifications", test_notification_binding_2)
 
-/* helper thread for testing the ordering of bound async endpoint operations */
+/* helper thread for testing the ordering of bound notification endpoint operations */
 static int
 waiter(seL4_Word bound_ep, seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
 {
@@ -151,15 +151,15 @@ waiter(seL4_Word bound_ep, seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
 }
 
 static int
-test_aep_binding_prio(env_t env, uint8_t waiter_prio, uint8_t sender_prio)
+test_notification_binding_prio(env_t env, uint8_t waiter_prio, uint8_t sender_prio)
 {
     helper_thread_t waiter_thread;
     helper_thread_t sender_thread;
 
-    seL4_CPtr async_ep = vka_alloc_notification_leaky(&env->vka);
+    seL4_CPtr notification_ep = vka_alloc_notification_leaky(&env->vka);
     seL4_CPtr sync_ep = vka_alloc_endpoint_leaky(&env->vka);
 
-    test_assert(async_ep);
+    test_assert(notification_ep);
     test_assert(sync_ep);
 
     create_helper_thread(env, &waiter_thread);
@@ -168,11 +168,11 @@ test_aep_binding_prio(env_t env, uint8_t waiter_prio, uint8_t sender_prio)
     create_helper_thread(env, &sender_thread);
     set_helper_priority(&sender_thread, sender_prio);
 
-    int error = seL4_TCB_BindNotification(waiter_thread.thread.tcb.cptr, async_ep);
+    int error = seL4_TCB_BindNotification(waiter_thread.thread.tcb.cptr, notification_ep);
     test_assert(error == seL4_NoError);
 
-    start_helper(env, &waiter_thread, waiter, async_ep, 0, 0, 0);
-    start_helper(env, &sender_thread, sender, async_ep, 0, 1, 0);
+    start_helper(env, &waiter_thread, waiter, notification_ep, 0, 0, 0);
+    start_helper(env, &sender_thread, sender, notification_ep, 0, 1, 0);
 
     wait_for_helper(&waiter_thread);
     wait_for_helper(&sender_thread);
@@ -184,20 +184,20 @@ test_aep_binding_prio(env_t env, uint8_t waiter_prio, uint8_t sender_prio)
 }
 
 static int
-test_aep_binding_3(env_t env, void* args)
+test_notification_binding_3(env_t env, void* args)
 {
-    test_aep_binding_prio(env, 10, 9);
+    test_notification_binding_prio(env, 10, 9);
     return SUCCESS;
 }
-DEFINE_TEST(BIND0003, "Test IPC ordering 1) bound tcb waits on bound endpoint 2) another tcb sends a message",
-            test_aep_binding_3)
+DEFINE_TEST(BIND0003, "Test IPC ordering 1) bound tcb waits on bound notification 2) another tcb sends a message",
+            test_notification_binding_3)
 
 static int
-test_aep_binding_4(env_t env, void* args)
+test_notification_binding_4(env_t env, void* args)
 {
-    test_aep_binding_prio(env, 9, 10);
+    test_notification_binding_prio(env, 9, 10);
     return SUCCESS;
 }
-DEFINE_TEST(BIND0004, "Test IPC ordering 2) bound tcb waits on bound endpoint 1) another tcb sends a message",
-            test_aep_binding_4)
+DEFINE_TEST(BIND0004, "Test IPC ordering 2) bound tcb waits on bound notification 1) another tcb sends a message",
+            test_notification_binding_4)
 

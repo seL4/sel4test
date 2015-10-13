@@ -359,6 +359,6 @@ void
 wait_for_timer_interrupt(env_t env)
 {
     seL4_Word sender_badge;
-    seL4_Wait(env->timer_aep.cptr, &sender_badge);
+    seL4_Wait(env->timer_notification.cptr, &sender_badge);
     sel4_timer_handle_single_irq(env->timer);
 }

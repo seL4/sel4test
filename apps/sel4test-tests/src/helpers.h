@@ -38,8 +38,8 @@ struct env {
     seL4_timer_t *timer;
     /* abstract interface over application init */
     simple_t simple;
-    /* aep for timer */
-    vka_object_t timer_aep;
+    /* notification for timer */
+    vka_object_t timer_notification;
 
     /* caps for the current process */
     seL4_CPtr cspace_root;
