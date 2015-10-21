@@ -142,7 +142,6 @@ init_allocator(env_t env, test_init_data_t *init_data)
     existing_frames[1] = seL4_GetIPCBuffer();
     assert(init_data->stack_pages > 0);
     for (int i = 0; i < init_data->stack_pages; i++) {
-        printf("Reserving stack at address %p\n", init_data->stack + i * (PAGE_SIZE_4K));
         existing_frames[i + 2] = init_data->stack + (i * PAGE_SIZE_4K);
     }
 
