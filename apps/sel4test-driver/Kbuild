@@ -14,7 +14,7 @@ apps-$(CONFIG_APP_SEL4TEST)        += sel4test-driver
 sel4test-driver-y                          = common libsel4 libmuslc libsel4vka libcpio libelf \
                                       libsel4allocman \
                                       libsel4platsupport libsel4platsupport libsel4muslcsys libsel4test \
-                                      libsel4simple libsel4vspace libsel4utils libutils
+                                      libsel4simple libsel4vspace libsel4utils libutils libsel4debug
 
 # set up correct simple lib for our kernel
 ifdef CONFIG_KERNEL_STABLE

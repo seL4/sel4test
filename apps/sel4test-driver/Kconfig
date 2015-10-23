@@ -11,7 +11,7 @@
 menuconfig APP_SEL4TEST
     bool "seL4 Test"
     default y
-    depends on LIB_SEL4 && (LIB_MUSL_C || LIB_SEL4_C) && LIB_SEL4_PLAT_SUPPORT && LIB_SEL4_VKA && LIB_SEL4_TEST && LIB_SEL4_UTILS && LIB_UTILS
+    depends on LIB_SEL4 && (LIB_MUSL_C || LIB_SEL4_C) && LIB_SEL4_PLAT_SUPPORT && LIB_SEL4_VKA && LIB_SEL4_TEST && LIB_SEL4_UTILS && LIB_UTILS && LIB_SEL4_DEBUG
     help
         seL4 Test application
 
