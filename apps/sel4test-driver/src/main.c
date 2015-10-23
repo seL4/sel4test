@@ -22,6 +22,7 @@
 
 #include <platsupport/timer.h>
 
+#include <sel4debug/register_dump.h>
 #include <sel4platsupport/platsupport.h>
 #include <sel4platsupport/plat/timer.h>
 #include <sel4utils/vspace.h>
@@ -329,6 +330,7 @@ run_test(struct testcase *test)
     int result = seL4_GetMR(0);
     if (seL4_MessageInfo_get_label(info) != seL4_NoFault) {
         sel4utils_print_fault_message(info, test->name);
+        sel4debug_dump_registers(test_process.thread.tcb.cptr);
         result = FAILURE;
     }
 
