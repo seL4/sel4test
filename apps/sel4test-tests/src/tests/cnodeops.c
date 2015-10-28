@@ -287,11 +287,23 @@ test_cnode_rotate(env_t env)
 }
 DEFINE_TEST(CNODEOP0008, "Basic seL4_CNode_Rotate() testing", test_cnode_rotate)
 
+static NORETURN int 
+call_fn(seL4_CPtr endpoint) 
+{
+    while (1) {
+        seL4_Call(endpoint, seL4_MessageInfo_new(0, 0, 0, 0));
+    }
+}
+
 static int
 test_cnode_savecaller(env_t env)
 {
     int error;
     seL4_Word slot;
+    vka_object_t endpoint = {0};
+
+    error = vka_alloc_endpoint(&env->vka, &endpoint);
+    test_eq(error, 0);
 
     /* A call that should succeed. */
     slot = get_free_slot(env);
@@ -303,9 +315,82 @@ test_cnode_savecaller(env_t env)
     error = cnode_savecaller(env, slot);
     test_assert(error == seL4_DeleteFirst);
     test_assert(!is_slot_empty(env, slot));
+    /* clean the slot */
+    cnode_delete(env, slot);
 
-    /* TODO: Test saving an actual reply capability. */
+    /* now set up a helper thread to call us and we'll try saving our reply cap */
+    helper_thread_t helper;
+    create_helper_thread(env, &helper);
+    start_helper(env, &helper, (helper_fn_t) call_fn, endpoint.cptr, 0, 0, 0);
+
+    /* let helper run */
+    seL4_Yield();
+
+    /* first save it to a full slot */
+    error = cnode_savecaller(env, endpoint.cptr);
+    test_eq(error, seL4_DeleteFirst);
+
+    /* now save it properly (should suceed) */
+    error = cnode_savecaller(env, slot);
+    test_eq(error, seL4_NoError);
+
+    /* now reply to it */
+    seL4_Reply(seL4_MessageInfo_new(0, 0, 0, 0));
+    
+    /* and wait for the caller to respond so we know it worked */
+    seL4_Wait(endpoint.cptr, NULL);
+
+    /* finally clean up */
+    cleanup_helper(env, &helper);
+    vka_free_object(&env->vka, &endpoint);
+
+    return SUCCESS;
+}
+DEFINE_TEST(CNODEOP0009, "seL4_CNode_SaveCaller() testing", test_cnode_savecaller)
+
+static int 
+test_cnode_saveTCBcaller(env_t env, void *args)
+{
+    vka_object_t endpoint = {0};
+    int error;
+    seL4_Word slot;
+
+    /* first test saving the reply cap of something that isn't a tcb */
+    error = vka_alloc_endpoint(&env->vka, &endpoint);
+    test_eq(error, 0);
+
+    slot = get_free_slot(env);
+    test_neq(slot, 0);
+
+    error = cnode_saveTCBcaller(env, slot, &endpoint);
+    test_eq(error, seL4_InvalidArgument);
+
+    /* now set up a helper thread to call us and we'll try saving its reply cap */
+    helper_thread_t helper;
+    create_helper_thread(env, &helper);
+    start_helper(env, &helper, (helper_fn_t) call_fn, endpoint.cptr, 0, 0, 0);
+
+    /* let helper run */
+    seL4_Yield();
+
+    /* first save it to a full slot */
+    error = cnode_saveTCBcaller(env, endpoint.cptr, &helper.thread.tcb);
+    test_eq(error, seL4_DeleteFirst);
+
+    /* now save it properly (should suceed) */
+    error = cnode_saveTCBcaller(env, slot, &helper.thread.tcb);
+    test_eq(error, seL4_NoError);
+
+    /* now reply to it */
+    seL4_Send(slot, seL4_MessageInfo_new(0, 0, 0, 0));
+    
+    /* and wait for the caller to respond so we know it worked */
+    seL4_Wait(endpoint.cptr, NULL);
+
+    /* finally clean up */
+    cleanup_helper(env, &helper);
+    vka_free_object(&env->vka, &endpoint);
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CNODEOP0009, "Basic seL4_CNode_SaveCaller() testing", test_cnode_savecaller)
+DEFINE_TEST(CNODEOP0010, "seL4_CNode_SaveTCBCaller() testing", test_cnode_saveTCBcaller)

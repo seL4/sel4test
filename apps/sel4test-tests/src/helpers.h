@@ -128,7 +128,7 @@ int cnode_recycle(env_t env, seL4_CPtr cap);
 int cnode_revoke(env_t env, seL4_CPtr cap);
 int cnode_rotate(env_t env, seL4_CPtr src, seL4_CPtr pivot, seL4_CPtr dest);
 int cnode_savecaller(env_t env, seL4_CPtr cap);
-
+int cnode_saveTCBcaller(env_t env, seL4_CPtr cap, vka_object_t *tcb);
 /* Determine whether a given slot in the init thread's CSpace is empty by
  * examining the error when moving a slot onto itself.
  *

@@ -150,7 +150,13 @@ cnode_savecaller(env_t env, seL4_CPtr cap)
     return vka_cnode_saveCaller(&path);
 }
 
-
+int
+cnode_saveTCBcaller(env_t env, seL4_CPtr cap, vka_object_t *tcb)
+{
+    cspacepath_t path;
+    vka_cspace_make_path(&env->vka, cap, &path);
+    return vka_cnode_saveTCBCaller(&path, tcb);
+}
 
 int
 are_tcbs_distinct(seL4_CPtr tcb1, seL4_CPtr tcb2)
