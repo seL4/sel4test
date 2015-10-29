@@ -92,7 +92,10 @@ void create_helper_thread(env_t env, helper_thread_t *thread);
 void create_helper_process(env_t env, helper_thread_t *thread);
 
 /* set a helper threads priority */
-void set_helper_priority(helper_thread_t *thread, seL4_Word prio);
+void set_helper_priority(helper_thread_t *thread, uint8_t prio);
+
+/* set a helper threads priority */
+void set_helper_max_priority(helper_thread_t *thread, uint8_t max_prio);
 
 /* Start a helper. Note: arguments to helper processes will be copied into
  * the address space of that process. Do not pass pointers to data only in

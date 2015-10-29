@@ -354,12 +354,21 @@ wait_for_helper(helper_thread_t *thread)
 }
 
 void
-set_helper_priority(helper_thread_t *thread, seL4_Word prio)
+set_helper_priority(helper_thread_t *thread, uint8_t prio)
 {
     UNUSED int error;
     error = seL4_TCB_SetPriority(thread->thread.tcb.cptr, prio);
     assert(error == seL4_NoError);
 }
+
+void 
+set_helper_max_priority(helper_thread_t *thread, uint8_t max_prio) 
+{
+    UNUSED int error;
+    error = seL4_TCB_SetMaxPriority(thread->thread.tcb.cptr, max_prio);
+    assert(error == seL4_NoError);
+}
+
 
 void
 wait_for_timer_interrupt(env_t env)
