@@ -144,5 +144,6 @@ seL4_Word get_free_slot(env_t env);
 
 /* timer */
 void wait_for_timer_interrupt(env_t env);
+void sleep(env_t env, uint64_t ns);
 
 #endif /* __HELPERS_H */

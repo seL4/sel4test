@@ -377,3 +377,18 @@ wait_for_timer_interrupt(env_t env)
     seL4_Wait(env->timer_notification.cptr, &sender_badge);
     sel4_timer_handle_single_irq(env->timer);
 }
+
+void 
+sleep(env_t env, uint64_t ns)
+{
+    timer_start(env->timer->timer);
+    int error = timer_oneshot_relative(env->timer->timer, ns);
+    if (error) {
+        ZF_LOGF("Sleep failed with error %d\n", error);
+        /* terminates */
+    }
+
+    wait_for_timer_interrupt(env);
+    timer_stop(env->timer->timer);
+}
+
