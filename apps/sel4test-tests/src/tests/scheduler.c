@@ -700,3 +700,78 @@ test_ipc_prios(struct env* env)
     return result;
 }
 DEFINE_TEST(SCHED0006, "Test IPC priorities for Send", test_ipc_prios)
+
+#define SCHED0007_NUM_CLIENTS 5
+#define SCHED0007_PRIO(x) (seL4_MaxPrio - 1 - SCHED0007_NUM_CLIENTS + (x))
+
+static void
+sched0007_client(seL4_CPtr endpoint, int order)
+{
+    seL4_SetMR(0, order);
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
+
+    ZF_LOGD("Client %d call", order);
+    info = seL4_Call(endpoint, info);
+}
+
+static int
+sched0007_server(seL4_CPtr endpoint)
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+
+    seL4_Wait(endpoint, NULL);
+
+    for (int i = SCHED0007_NUM_CLIENTS - 1; i >= 0; i--) {
+        test_eq(SCHED0007_PRIO(i), seL4_GetMR(0));
+        if (i > 0) {
+            seL4_ReplyWait(endpoint, info, NULL);
+        }
+    }
+
+    return 0;
+}
+
+static inline void 
+sched0007_start_client(env_t env, helper_thread_t clients[], seL4_CPtr endpoint, int i)
+{
+    start_helper(env, &clients[i], (helper_fn_t) sched0007_client, endpoint, SCHED0007_PRIO(i), 0, 0);
+}
+
+int 
+test_ipc_ordered(env_t env, void *arg)
+{
+    seL4_CPtr endpoint;
+    helper_thread_t server;
+    helper_thread_t clients[SCHED0007_NUM_CLIENTS];
+
+    endpoint = vka_alloc_endpoint_leaky(&env->vka);
+    test_assert_fatal(endpoint != 0);
+
+    /* create clients, smallest prio first */
+    for (int i = 0; i < SCHED0007_NUM_CLIENTS; i++) {
+        create_helper_thread(env, &clients[i]);
+
+        set_helper_priority(&clients[i], SCHED0007_PRIO(i));
+    }
+
+    /* create the server */
+    create_helper_thread(env, &server);
+    set_helper_priority(&server, seL4_MaxPrio - 1);
+
+
+    compile_time_assert(sched0007_clients_correct, SCHED0007_NUM_CLIENTS == 5);
+    
+    /* start the clients out of order to queue on the endpoint in order */
+    sched0007_start_client(env, clients, endpoint, 2);
+    sched0007_start_client(env, clients, endpoint, 0);
+    sched0007_start_client(env, clients, endpoint, 4);
+    sched0007_start_client(env, clients, endpoint, 1);
+    sched0007_start_client(env, clients, endpoint, 3);
+
+    /* start the server */
+    start_helper(env, &server, (helper_fn_t) sched0007_server, endpoint, 0, 0, 0);
+
+    /* server returns success if all requests are processed in order */
+    return wait_for_helper(&server);
+}
+DEFINE_TEST(SCHED0007, "Test IPC priorities", test_ipc_ordered);
