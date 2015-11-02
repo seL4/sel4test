@@ -496,6 +496,7 @@ typedef struct ipc_test_data {
     volatile seL4_Word bounces;
     volatile seL4_Word spins;
     seL4_CPtr tcb0, tcb1, tcb2, tcb3;
+    env_t env;
 } ipc_test_data_t;
 
 static int
@@ -547,7 +548,7 @@ ipc_test_helper_1(ipc_test_data_t *data)
     CHECK_STEP(ipc_test_step, 5);
     tag = seL4_Recv(data->ep1, &sender_badge);
 
-    CHECK_STEP(ipc_test_step, 8);
+    CHECK_STEP(ipc_test_step, 7);
     CHECK_TESTCASE(result, seL4_MessageInfo_get_length(tag) == 19);
     for (int i = 0; i < seL4_MessageInfo_get_length(tag); i++) {
         CHECK_TESTCASE(result, seL4_GetMR(i) == i);
@@ -602,23 +603,23 @@ ipc_test_helper_3(ipc_test_data_t *data)
     CHECK_TESTCASE(result, data->spins - last_spins == 1);
     CHECK_TESTCASE(result, data->bounces - last_bounces == 0);
 
-    /* Now bounce ourselves, to ensure that thread 1 can check its stuff. */
-    seL4_MessageInfo_ptr_set_length(&tag, 0);
-    seL4_Call(data->ep0, tag);
+    /* Now block,  to ensure that thread 1 can check its stuff. */
+    sleep(data->env, 10 * NS_IN_MS);
 
     /* Two bounces - us and thread 1. */
-    CHECK_TESTCASE(result, data->spins - last_spins == 2);
-    CHECK_TESTCASE(result, data->bounces - last_bounces == 2);
+    CHECK_TESTCASE(result, data->spins > last_spins);
+    CHECK_TESTCASE(result, data->bounces > last_bounces);
     CHECK_STEP(ipc_test_step, 4);
 
     /* TEST PART 2 */
     /* Perform a send to a thread 1, which is already waiting. */
-    /* Bounce first to let thread prepare. */
-    last_spins = data->spins;
-    last_bounces = data->bounces;
+    
+    /* suspend thread2 - we don't need your help anytmore */
+    int error = seL4_TCB_Suspend(data->tcb2);
+    test_check(error == seL4_NoError);
 
-    seL4_MessageInfo_ptr_set_length(&tag, 0);
-    seL4_Call(data->ep0, tag);
+    /* Block first to let thread prepare. */
+    sleep(data->env, 10 * NS_IN_MS); 
     CHECK_STEP(ipc_test_step, 6);
 
     /* Do the send. */
@@ -628,17 +629,14 @@ ipc_test_helper_3(ipc_test_data_t *data)
     }
     seL4_Send(data->ep1, tag);
 
-    CHECK_STEP(ipc_test_step, 7);
+    /* Block to let thread check. */
+    sleep(data->env, 10 * NS_IN_MS); 
+    CHECK_STEP(ipc_test_step, 8);
 
-    /* Bounce to let thread 1 check again. */
-    seL4_MessageInfo_ptr_set_length(&tag, 0);
-    seL4_Call(data->ep0, tag);
+    /* Block to let thread 1 check again. */
+    sleep(data->env, 10 * NS_IN_MS);
 
     CHECK_STEP(ipc_test_step, 9);
-
-    /* Five bounces in total. */
-    CHECK_TESTCASE(result, data->spins - last_spins == 2);
-    CHECK_TESTCASE(result, data->bounces - last_bounces == 5);
 
     return result;
 }
@@ -655,6 +653,8 @@ test_ipc_prios(struct env* env)
 
     ipc_test_data_t data;
     memset(&data, 0, sizeof(data));
+
+    data.env = env;
 
     data.ep0 = vka_alloc_endpoint_leaky(vka);
     data.ep1 = vka_alloc_endpoint_leaky(vka);
