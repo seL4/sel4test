@@ -218,7 +218,7 @@ create_helper_process(env_t env, helper_thread_t *thread)
 #endif
     };
 
-    error = sel4utils_configure_process_custom(&thread->process, &env->vka, &env->vspace,
+    error = sel4utils_configure_process_custom(&thread->process, &env->simple, &env->vka, &env->vspace,
                                                config);
     assert(error == 0);
 
@@ -339,7 +339,8 @@ create_helper_thread(env_t env, helper_thread_t *thread)
     thread->is_process = false;
     thread->fault_endpoint = env->endpoint;
     seL4_CapData_t data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits);
-    error = sel4utils_configure_thread(&env->vka, &env->vspace, &env->vspace, env->endpoint,
+    
+    error = sel4utils_configure_thread(&env->simple, &env->vka, &env->vspace, &env->vspace, env->endpoint,
                                        OUR_PRIO - 1, env->cspace_root, data, &thread->thread);
     assert(error == 0);
 }

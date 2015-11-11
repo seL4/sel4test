@@ -229,6 +229,9 @@ copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_pro
     assert(init->timer_irq != 0);
 
     arch_copy_timer_caps(init, env, test_process);
+    
+    init->sched_ctrl = copy_cap_to_process(test_process, simple_get_sched_ctrl(&env->simple));
+    assert(init->sched_ctrl != 0);
 }
 
 /* Run a single test.
@@ -242,7 +245,7 @@ run_test(struct testcase *test)
     /* Test intro banner. */
     printf("  %s\n", test->name);
 
-    error = sel4utils_configure_process(&test_process, &env.vka, &env.vspace,
+    error = sel4utils_configure_process(&test_process, &env.simple, &env.vka, &env.vspace,
                                         env.init->priority, TESTS_APP);
     assert(error == 0);
 

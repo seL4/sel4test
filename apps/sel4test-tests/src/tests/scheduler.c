@@ -1003,3 +1003,61 @@ test_ordered_ipc_fastpath(env_t env, void *arg)
 }
 DEFINE_TEST(SCHED0009, "Test ordered ipc on reply wait fastpath", test_ordered_ipc_fastpath)
 
+static int 
+sched0010_fn(volatile int *state) 
+{
+    state++;
+    return 0;
+}
+
+int
+test_resume_empty_or_no_sched_context(env_t env, void *arg)
+{
+    /* resuming a thread with empty or no scheduling context should work (it puts the thread in a runnable state)
+     * but the thread cannot run until it receives a scheduling context */
+
+    sel4utils_thread_t thread;
+
+    sel4utils_thread_config_t config = {
+        .priority = OUR_PRIO - 1,
+        .cspace = env->cspace_root,
+        .cspace_root_data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+        .create_sc = false
+    };
+
+    int error = sel4utils_configure_thread_config(&env->simple, &env->vka, &env->vspace, &env->vspace, 
+                                              config, &thread);
+    assert(error == 0);
+    
+    seL4_CPtr sc = vka_alloc_sched_context_leaky(&env->vka);
+    test_neq(sc, seL4_CapNull);
+
+    volatile int state = 0;
+    error = sel4utils_start_thread(&thread, (void *) sched0010_fn, (void *) &state, NULL, 1);
+    test_eq(error, seL4_NoError);
+
+    error = seL4_TCB_Resume(thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+    
+    /* let the thread 'run' */
+    sleep(env, 10 * MS_IN_S);
+    test_eq(state, 0);
+
+    /* nuke the sc */
+    error = cnode_delete(env, thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* resume it */
+    error = seL4_TCB_Resume(thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+    
+    /* let the thread 'run' */
+    sleep(env, 10 * MS_IN_S);
+    test_eq(state, 0);
+
+    return SUCCESS;
+}
+DEFINE_TEST(SCHED0010, "Test resuming a thread with empty or missing scheduling context", 
+            test_resume_empty_or_no_sched_context)
+
+

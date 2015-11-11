@@ -179,11 +179,21 @@ get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
     return error;
 }
 
+static seL4_CPtr 
+get_init_cap_fn(void *data, seL4_CPtr cap) 
+{
+    assert(cap == seL4_CapSchedControl);
+    test_init_data_t *init = (test_init_data_t *) data;
+    return init->sched_ctrl; 
+}
+
+
 void init_timer(env_t env, test_init_data_t *init_data)
 {
     /* minimal simple implementation to get the platform
      * default timer off the ground */
     env->simple.irq = get_irq;
+    env->simple.init_cap = get_init_cap_fn;
     env->simple.data = (void *) init_data;
 
     UNUSED int error;

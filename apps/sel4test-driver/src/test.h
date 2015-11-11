@@ -54,6 +54,8 @@ typedef struct {
     seL4_CPtr timer_frame;
     /* cap to the sel4platsupport default timer io port */
     seL4_CPtr io_port;
+    /* cap to the sched ctrl capability */
+    seL4_SchedControl sched_ctrl;
     /* size of the test processes cspace */
     seL4_Word cspace_size_bits;
     /* range of free slots in the cspace */
