@@ -543,7 +543,7 @@ test_fault(env_t env, int fault_type, bool inter_as)
 
                 error = seL4_TCB_Configure(faulter_thread.thread.tcb.cptr,
                                            fault_ep,
-                                           seL4_Prio_new(prio, prio),
+                                           seL4_Prio_new(prio, prio), faulter_thread.thread.sched_context.cptr,
                                            faulter_cspace,
                                            seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
                                            faulter_vspace, seL4_NilData,

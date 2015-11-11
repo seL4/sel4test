@@ -23,7 +23,7 @@ int test_tcb_null_cspace_configure(env_t env)
     create_helper_thread(env, &thread);
 
     /* This should fail because we're passing an invalid CSpace cap. */
-    error = seL4_TCB_Configure(thread.thread.tcb.cptr, 0, seL4_Prio_new(100, 100), seL4_CapNull,
+    error = seL4_TCB_Configure(thread.thread.tcb.cptr, 0, seL4_Prio_new(100, 100), seL4_CapNull, seL4_CapNull,
                                seL4_CapData_Guard_new(0, 0), env->page_directory,
                                seL4_CapData_Guard_new(0, 0), 0, 0);
 
