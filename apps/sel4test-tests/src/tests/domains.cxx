@@ -78,7 +78,7 @@ int fdom1(seL4_Word id, env_t env)
         printf("%2d, ", id);
     }
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 /* This is a very simple (and rather stupid) C++ usage. Proves that a template
@@ -119,7 +119,7 @@ test_domains(struct env *env, F func)
 
     timer_stop(env->timer->timer);
     sel4_timer_handle_single_irq(env->timer);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 

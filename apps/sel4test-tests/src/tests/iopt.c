@@ -55,7 +55,7 @@ map_iopt_from_iospace(env_t env, seL4_CPtr iospace, iopt_cptrs_t *pts, seL4_CPtr
     }
     test_assert(error == seL4_NoError);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -98,7 +98,7 @@ test_iopt_basic_iopt(env_t env, void *args)
     test_assert(error == seL4_NoError);
 
     delete_iospace(env, iospace);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(IOPT0001, "Testing basic IOPT mapping", test_iopt_basic_iopt)
 
@@ -131,7 +131,7 @@ test_iopt_basic_map_unmap(env_t env, void *args)
     test_assert(error == seL4_NoError);
 
     delete_iospace(env, iospace);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(IOPT0002, "Test basic IOPT mapping then unmapping", test_iopt_basic_map_unmap)
 
@@ -150,7 +150,7 @@ test_iopt_no_overlapping_4k(env_t env, void *args)
     test_assert(error != seL4_NoError);
 
     delete_iospace(env, iospace);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(IOPT0004, "Test IOPT cannot map overlapping 4k pages", test_iopt_no_overlapping_4k)
 
@@ -178,7 +178,7 @@ test_iopt_map_remap_top_pt(env_t env, void *args)
     test_assert(error != seL4_NoError);
 
     delete_iospace(env, iospace);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(IOPT0008, "Test IOPT map and remap top PT", test_iopt_map_remap_top_pt)
 
@@ -198,7 +198,7 @@ test_iopt_no_overlapping_pt(env_t env, void *args)
     test_assert(error != seL4_NoError);
 
     delete_iospace(env, iospace);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(iopt0009, "Test iopt no overlapping PT", test_iopt_no_overlapping_pt)
 
@@ -226,7 +226,7 @@ test_iopt_map_remap_pt(env_t env, void *args)
     test_assert(error != seL4_NoError);
 
     delete_iospace(env, iospace);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(IOPT0011, "Test IOPT map and remap PT", test_iopt_map_remap_pt)
 
@@ -254,7 +254,7 @@ test_iopt_recycle_bottom_pt(env_t env, void *args)
     test_assert(error == seL4_NoError);
 
     delete_iospace(env, iospace);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(IOPT0012, "Test IOPT recycle bottom PT", test_iopt_recycle_bottom_pt)
 
@@ -290,7 +290,7 @@ test_iopt_recycle_top_pt(env_t env, void *args)
     test_assert(error != seL4_NoError);
 
     delete_iospace(env, iospace);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(IOPT0013, "Test iopt recycle top PT", test_iopt_recycle_top_pt)
 
@@ -320,7 +320,7 @@ test_iopt_recycle_iospace(env_t env, void *args)
     test_assert(error != seL4_NoError);
 
     delete_iospace(env, iospace);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(IOPT0014, "Test IOPT recycle iospace", test_iopt_recycle_iospace)
 

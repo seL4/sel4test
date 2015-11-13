@@ -285,7 +285,7 @@ test_pagetable_arm(env_t env, void *args)
 
     vspace_free_reservation(&env->vspace, reserve);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(PT0001, "Fun with page tables on ARM", test_pagetable_arm)
 
@@ -344,7 +344,7 @@ do_test_pagetable_tlbflush_on_vaddr_reuse(seL4_CPtr cap1, seL4_CPtr cap2, seL4_W
     test_assert(error == 0);
     error = seL4_ARM_Page_Unmap(cap2);
     test_assert(error == 0);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int

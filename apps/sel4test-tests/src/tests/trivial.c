@@ -17,7 +17,7 @@
 int test_trivial(env_t env, void *arg)
 {
     test_assert_fatal(2 > 1);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(TRIVIAL0000, "Ensure the test framework functions", test_trivial)
 
@@ -34,7 +34,7 @@ int test_allocator(env_t env, void *arg)
         vka_free_object(&env->vka, &endpoint);
     }
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(TRIVIAL0001, "Ensure the allocator works", test_allocator)
 DEFINE_TEST(TRIVIAL0002, "Ensure the allocator works more than once", test_allocator)

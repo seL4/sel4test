@@ -49,7 +49,7 @@ map_ept_from_pdpt(env_t env, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr *pt, seL4_
     error = seL4_IA32_Page_Map(*frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
     test_assert(error == seL4_NoError);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -84,7 +84,7 @@ map_ept_set_large_from_pdpt(env_t env, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr 
         return error;
     }
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -107,7 +107,7 @@ test_ept_basic_ept(env_t env, void *args)
     seL4_CPtr pdpt, pd, pt, frame;
     error = map_ept_set(env, &pdpt, &pd, &pt, &frame);
     test_assert(error == seL4_NoError);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT0001, "Testing basic EPT mapping", test_ept_basic_ept)
 
@@ -136,7 +136,7 @@ test_ept_basic_map_unmap(env_t env, void *args)
     error = seL4_IA32_Page_Unmap(frame);
     test_assert(error == seL4_NoError);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT0002, "Test basic EPT mapping then unmapping", test_ept_basic_map_unmap)
 
@@ -161,7 +161,7 @@ test_ept_basic_map_unmap_large(env_t env, void *args)
     error = seL4_IA32_Page_Unmap(frame);
     test_assert(error == seL4_NoError);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT0003, "Test basic EPT mapping then unmapping of large frame", test_ept_basic_map_unmap_large)
 
@@ -181,7 +181,7 @@ test_ept_regression_1(env_t env, void *args)
     error = map_ept_set_large_from_pdpt(env, pdpt, &pd, &frame);
     test_assert(error != seL4_NoError);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT1001, "EPT Regression: Unmap large frame then invoke EPT PD unmap on frame", test_ept_regression_1)
 
@@ -206,7 +206,7 @@ test_ept_regression_2(env_t env, void *args)
     error = seL4_IA32_Page_Unmap(frame);
     test_assert(error == seL4_NoError);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT1002, "EPT Regression: Invoke EPT PD Unmap on large frame", test_ept_regression_2)
 
@@ -222,7 +222,7 @@ test_ept_no_overlapping_4k(env_t env, void *args)
     test_assert_fatal(frame);
     error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
     test_assert(error != seL4_NoError);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT0004, "Test EPT cannot map overlapping 4k pages", test_ept_no_overlapping_4k)
 
@@ -238,7 +238,7 @@ test_ept_no_overlapping_large(env_t env, void *args)
     test_assert_fatal(frame);
     error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
     test_assert(error != seL4_NoError);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT0005, "Test EPT cannot map overlapping large pages", test_ept_no_overlapping_large)
 
@@ -270,7 +270,7 @@ test_ept_aligned_4m(env_t env, void *args)
     error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE + OFFSET_2MB, seL4_AllRights, seL4_IA32_Default_VMAttributes);
     test_assert(error != seL4_NoError);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT0006, "Test EPT 4M mappings must be 4M aligned and cannot overlap", test_ept_aligned_4m)
 #endif
@@ -315,7 +315,7 @@ test_ept_no_overlapping_pt_4m(env_t env, void *args)
     error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
     test_assert(error != seL4_NoError);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT0007, "Test EPT 4m frame and PT cannot overlap", test_ept_no_overlapping_pt_4m)
 #endif
@@ -341,7 +341,7 @@ test_ept_map_remap_pd(env_t env, void *args)
     test_assert_fatal(pt);
     error = seL4_IA32_EPTPageTable_Map(pt, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
     test_assert(error != seL4_NoError);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT0008, "Test EPT map and remap PD", test_ept_map_remap_pd)
 
@@ -358,7 +358,7 @@ test_ept_no_overlapping_pt(env_t env, void *args)
     test_assert_fatal(pt);
     error = seL4_IA32_EPTPageTable_Map(pt, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
     test_assert(error != seL4_NoError);
-    return SUCCESS;
+    return sel4test_get_result();
 
 }
 DEFINE_TEST(EPT0009, "Test EPT no overlapping PT", test_ept_no_overlapping_pt)
@@ -376,7 +376,7 @@ test_ept_no_overlapping_pd(env_t env, void *args)
     test_assert_fatal(pd);
     error = seL4_IA32_EPTPageDirectory_Map(pd, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
     test_assert(error != seL4_NoError);
-    return SUCCESS;
+    return sel4test_get_result();
 
 }
 DEFINE_TEST(EPT0010, "Test EPT no overlapping PD", test_ept_no_overlapping_pd)
@@ -402,7 +402,7 @@ test_ept_map_remap_pt(env_t env, void *args)
     test_assert_fatal(frame);
     error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
     test_assert(error != seL4_NoError);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT0011, "Test EPT map and remap PT", test_ept_map_remap_pt)
 
@@ -428,7 +428,7 @@ test_ept_recycle_pt(env_t env, void *args)
     error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
     test_assert(error == seL4_NoError);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT0012, "Test EPT Recycle PT", test_ept_recycle_pt)
 
@@ -462,7 +462,7 @@ test_ept_recycle_pd(env_t env, void *args)
     error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
     test_assert(error != seL4_NoError);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT0013, "Test EPT recycle PD", test_ept_recycle_pd)
 
@@ -490,7 +490,7 @@ test_ept_recycle_pdpt(env_t env, void *args)
     error = seL4_IA32_EPTPageTable_Map(pt, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
     test_assert(error != seL4_NoError);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(EPT0014, "Test EPT recycle PDPT", test_ept_recycle_pdpt)
 

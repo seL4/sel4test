@@ -29,7 +29,7 @@ int test_tcb_null_cspace_configure(env_t env, void *arg)
 
     cleanup_helper(env, &thread);
 
-    return error ? SUCCESS : FAILURE;
+    return error ? sel4test_get_result() : FAILURE;
 }
 DEFINE_TEST(THREADS0004, "seL4_TCB_Configure with a NULL CSpace should fail", test_tcb_null_cspace_configure)
 
@@ -47,6 +47,6 @@ int test_tcb_null_cspace_setspace(env_t env, void *arg)
 
     cleanup_helper(env, &thread);
 
-    return error ? SUCCESS : FAILURE;
+    return error ? sel4test_get_result() : FAILURE;
 }
 DEFINE_TEST(THREADS0005, "seL4_TCB_SetSpace with a NULL CSpace should fail", test_tcb_null_cspace_setspace)

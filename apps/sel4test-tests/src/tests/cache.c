@@ -104,7 +104,7 @@ test_page_flush(env_t env, void *args)
     test_assert(*ptrc == 0xBEEFCAFE);
     test_assert(*ptr == 0xBEEFCAFE);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -170,7 +170,7 @@ test_large_page_flush_operation(env_t env, void *args)
         test_assert(error == 0);
     }
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 
@@ -256,7 +256,7 @@ test_page_directory_flush(env_t env, void *args)
     test_assert(*ptrc == 0xBEEFCAFE);
     test_assert(*ptr == 0xBEEFCAFE);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 DEFINE_TEST(CACHEFLUSH0001, "Test a cache maintenance on pages", test_page_flush)

@@ -50,7 +50,7 @@ call_func(seL4_CPtr ep, seL4_Word msg, volatile seL4_Word *done, seL4_Word arg3)
 
     *done = 1;
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -143,7 +143,7 @@ test_ep_recycle(env_t env, void* args)
     }
     cleanup_helper(env, &bouncer);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(RECYCLE0001, "Basic endpoint recycle testing.", test_ep_recycle)
 
@@ -160,7 +160,7 @@ static int ep_test_func(seL4_CPtr sync_ep, seL4_CPtr test_ep, volatile int *stat
         /* Reply */
         seL4_Reply(tag);
     }
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 /* RECYCLE0001 only tests if a thread gets its IPC canceled. The IPC
@@ -237,6 +237,6 @@ test_ep_recycle2(env_t env, void* args)
             }
         }
     }
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(RECYCLE0002, "Recycle deletes caps", test_ep_recycle2)

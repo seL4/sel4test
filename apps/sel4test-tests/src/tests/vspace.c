@@ -30,7 +30,7 @@ test_interas_diffcspace(env_t env, void *args)
     test_assert(ret == 42);
     cleanup_helper(env, &t);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(VSPACE0000, "Test threads in different cspace/vspace", test_interas_diffcspace)
 
@@ -68,7 +68,7 @@ test_unmap_after_delete(env_t env, void *args)
     /* unmap the frame */
     seL4_ARM_Page_Unmap(frame);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(VSPACE0001, "Test unmapping a page after deleting the PD", test_unmap_after_delete)
 #endif

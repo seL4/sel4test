@@ -575,7 +575,7 @@ test_fault(env_t env, int fault_type, bool inter_as)
         }
     }
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 #ifndef CONFIG_FT

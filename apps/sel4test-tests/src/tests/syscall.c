@@ -93,7 +93,7 @@
     static int test_ ## _syscall(env_t env, void *arg) { \
         for (int i = 0; i < 10; i++) \
             TEST_REGISTERS(_code); \
-        return SUCCESS; \
+        return sel4test_get_result(); \
     } \
     DEFINE_TEST(_test, "Basic " #_syscall "() testing", test_ ## _syscall)
 
@@ -127,7 +127,7 @@ test_debug_put_char(env_t env, void *args)
         TEST_REGISTERS(seL4_DebugPutChar(' '));
 #endif
     }
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(SYSCALL0006, "Basic seL4_DebugPutChar() testing", test_debug_put_char)
 
@@ -148,7 +148,7 @@ test_wait(env_t env, void *args)
         TEST_REGISTERS(seL4_Wait(endpoint, NULL));
     }
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(SYSCALL0010, "Basic seL4_Wait() testing", test_wait)
 
@@ -167,6 +167,6 @@ test_reply_wait(env_t env, void *args)
         TEST_REGISTERS(seL4_ReplyWait(endpoint, seL4_MessageInfo_new(0, 0, 0, 0), NULL));
     }
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(SYSCALL0011, "Basic seL4_ReplyWait() testing", test_reply_wait)

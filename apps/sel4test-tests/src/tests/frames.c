@@ -105,7 +105,7 @@ test_frame_recycle(env_t env, void *args)
 
     vspace_free_reservation(&env->vspace, reserve);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(FRAMERECYCLE0001, "Test recycling of frame caps", test_frame_recycle)
 
@@ -244,7 +244,7 @@ test_frame_exported(env_t env, void *args)
 
     vspace_free_reservation(&env->vspace, vaddr_reserve);
     vspace_free_reservation(&env->vspace, ft_reservation);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(FRAMEEXPORTS0001, "Test that we can access all exported frames", test_frame_exported)
 
@@ -392,7 +392,7 @@ retry:
     assert(err == 0);
     vmem_free((seL4_Word)dest);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int test_xn_small_frame(env_t env, void *args)

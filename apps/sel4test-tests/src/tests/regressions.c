@@ -337,7 +337,7 @@ int test_write_registers(env_t env, void *arg)
     result = seL4_MessageInfo_get_label(info);
     test_assert(result == 0);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(REGRESSIONS0001, "Ensure WriteRegisters functions correctly", test_write_registers)
 

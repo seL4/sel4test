@@ -36,7 +36,7 @@ send_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
         seL4_Send(endpoint, tag);
     }
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -51,7 +51,7 @@ nbsend_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
         seL4_NBSend(endpoint, tag);
     }
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -83,7 +83,7 @@ call_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
         }
     }
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -108,14 +108,14 @@ wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
         }
     }
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
 nbwait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word nbwait_should_wait)
 {
     if (!nbwait_should_wait) {
-        return SUCCESS;
+        return sel4test_get_result();
     }
 
     FOR_EACH_LENGTH(length) {
@@ -137,7 +137,7 @@ nbwait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word nbwait_should_wait)
         }
     }
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -185,7 +185,7 @@ replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
     /* Need to do one last reply to match call. */
     seL4_Reply(tag);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -234,7 +234,7 @@ reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
     /* Need to do one last reply to match call. */
     seL4_Reply(tag);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -313,7 +313,7 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as)
 
     error = cnode_delete(env, ep);
     test_assert(!error);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -404,6 +404,6 @@ test_ipc_abort_in_call(env_t env, void *args)
     /* And delete it. */
     cleanup_helper(env, &thread_a);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(IPC0010, "Test suspending an IPC mid-Call()", test_ipc_abort_in_call)

@@ -28,7 +28,7 @@ test_fpu_trivial(env_t env, void *arg)
     }
     b = a;
     (void)b;
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(FPU0000, "Ensure that simple FPU operations work", test_fpu_trivial)
 
@@ -127,7 +127,7 @@ test_fpu_multithreaded(struct env* env, void *args)
         iterations *= 2;
     } while (num_preemptions < 20);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(FPU0001, "Ensure multiple threads can use FPU simultaneously", test_fpu_multithreaded)
 

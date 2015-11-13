@@ -25,7 +25,7 @@ send_func(seL4_CPtr ep, seL4_Word msg, UNUSED seL4_Word arg4, UNUSED seL4_Word a
     seL4_SetMR(0, msg);
     seL4_Send(ep, tag);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 
@@ -127,7 +127,7 @@ test_nbwait(env_t env, void *args)
     vka_free_object(&env->vka, &endpoint);
     vka_free_object(&env->vka, &notification);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(NBWAIT0001, "Test seL4_NBWait", test_nbwait)
 

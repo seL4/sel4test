@@ -33,7 +33,7 @@ test_interrupt(env_t env, void *args)
     timer_stop(env->timer->timer);
     sel4_timer_handle_single_irq(env->timer);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(INTERRUPT0001, "Test interrupts with timer", test_interrupt);
 #endif

@@ -126,7 +126,7 @@ test_thread_suspend(env_t env, void *args)
     sel4_timer_handle_single_irq(env->timer);
     cleanup_helper(env, &t1);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0000, "Test suspending and resuming a thread (flaky)", test_thread_suspend)
 #endif /* CONFIG_HAVE_TIMER */
@@ -148,7 +148,7 @@ test_set_priorities(struct env* env, void *args)
     error = seL4_TCB_SetPriority(tcb, OUR_PRIO);
     test_assert(!error);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0001, "Test setting priorities", test_set_priorities)
 
@@ -165,7 +165,7 @@ test_resume_self(struct env* env, void *args)
     int error = seL4_TCB_Resume(env->tcb);
     test_assert(!error);
     D("Ending test_resume_self\n");
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0002, "Test resuming ourselves", test_resume_self)
 
@@ -198,7 +198,7 @@ suspend_test_helper_2a(seL4_CPtr *t1, seL4_CPtr *t2a, seL4_CPtr *t2b)
     error = seL4_TCB_Suspend(*t2a);
     test_check(!error);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -221,7 +221,7 @@ suspend_test_helper_2b(seL4_CPtr *t1, seL4_CPtr *t2a, seL4_CPtr *t2b)
     /* When we wake up suspend_test_step should be 4. */
     CHECK_STEP(suspend_test_step, 4);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -245,7 +245,7 @@ suspend_test_helper_1(seL4_CPtr *t1, seL4_CPtr *t2a, seL4_CPtr *t2b)
 
     CHECK_STEP(suspend_test_step, 5);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 #ifndef CONFIG_FT
@@ -307,7 +307,7 @@ test_suspend(struct env* env, void *args)
     cleanup_helper(env, &thread2a);
     cleanup_helper(env, &thread2b);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0003, "Test TCB suspend/resume", test_suspend)
 
@@ -376,7 +376,7 @@ test_all_priorities(struct env* env, void *args)
     }
     free(threads);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0004, "Test threads at all priorities", test_all_priorities)
 
@@ -469,7 +469,7 @@ test_set_priority(struct env* env, void *args)
     D("\n");
     cleanup_helper(env, &thread1);
     cleanup_helper(env, &thread2);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0005, "Test set priority", test_set_priority)
 #endif

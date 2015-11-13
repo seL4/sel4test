@@ -61,7 +61,7 @@ test_cnode_copy(env_t env, void* args)
     test_assert(error == seL4_FailedLookup);
     test_assert(are_tcbs_distinct(src, dest));
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(CNODEOP0001, "Basic seL4_CNode_Copy() testing", test_cnode_copy)
 
@@ -83,7 +83,7 @@ test_cnode_delete(env_t env, void* args)
     test_assert(!error);
     test_assert(is_slot_empty(env, slot));
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(CNODEOP0002, "Basic seL4_CNode_Delete() testing", test_cnode_delete)
 
@@ -114,7 +114,7 @@ test_cnode_mint(env_t env, void* args)
     test_assert(error == seL4_FailedLookup);
     test_assert(are_tcbs_distinct(src, dest));
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(CNODEOP0003, "Basic seL4_CNode_Mint() testing", test_cnode_mint)
 
@@ -147,7 +147,7 @@ test_cnode_move(env_t env, void* args)
     test_assert(!is_slot_empty(env, src));
     test_assert(!is_slot_empty(env, dest));
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(CNODEOP0004, "Basic seL4_CNode_Move() testing", test_cnode_move)
 
@@ -181,7 +181,7 @@ test_cnode_mutate(env_t env, void* args)
     test_assert(is_slot_empty(env, src));
     test_assert(is_slot_empty(env, dest));
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(CNODEOP0005, "Basic seL4_CNode_Mutate() testing", test_cnode_mutate)
 
@@ -203,7 +203,7 @@ test_cnode_recycle(env_t env, void* args)
     test_assert(error == seL4_IllegalOperation);
     test_assert(is_slot_empty(env, slot));
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(CNODEOP0006, "Basic seL4_CNode_Recycle() testing", test_cnode_recycle)
 
@@ -225,7 +225,7 @@ test_cnode_revoke(env_t env, void* args)
     test_assert(!error);
     test_assert(is_slot_empty(env, slot));
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(CNODEOP0007, "Basic seL4_CNode_Revoke() testing", test_cnode_revoke)
 
@@ -283,7 +283,7 @@ test_cnode_rotate(env_t env, void* args)
     test_assert(is_slot_empty(env, pivot));
     test_assert(is_slot_empty(env, dest));
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(CNODEOP0008, "Basic seL4_CNode_Rotate() testing", test_cnode_rotate)
 
@@ -306,6 +306,6 @@ test_cnode_savecaller(env_t env, void* args)
 
     /* TODO: Test saving an actual reply capability. */
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(CNODEOP0009, "Basic seL4_CNode_SaveCaller() testing", test_cnode_savecaller)

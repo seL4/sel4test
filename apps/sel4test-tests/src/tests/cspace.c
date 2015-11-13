@@ -56,7 +56,7 @@ ipc_caller(seL4_Word ep0, seL4_Word ep1, seL4_Word arg3, seL4_Word arg4)
     seL4_Send(ep1, tag);
 
     printf("%d\n", __LINE__);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 
 static int
@@ -117,6 +117,6 @@ test_32bit_cspace(env_t env, void *args)
     test_assert(seL4_GetMR(0) == SUCCESS_MAGIC);
 
     cleanup_helper(env, &t);
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(CSPACE0001, "Test full 32-bit cspace resolution", test_32bit_cspace)

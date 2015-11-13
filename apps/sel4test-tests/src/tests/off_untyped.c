@@ -22,7 +22,7 @@ test_retype(env_t env, void* args)
 
     printf("Warning: Untype tests on stable have not been written\n");
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(RETYPE0000, "Retype at offset [dummy] test", test_retype)
 
