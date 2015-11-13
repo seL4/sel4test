@@ -380,6 +380,7 @@ test_all_priorities(struct env* env, void *args)
 }
 DEFINE_TEST(SCHED0004, "Test threads at all priorities", test_all_priorities)
 
+#define SCHED0005_HIGHEST_PRIO (seL4_MaxPrio - 2)
 /*
  * Test setting the priority of a runnable thread.
  */
@@ -394,7 +395,7 @@ set_priority_helper_1(seL4_CPtr *t1, seL4_CPtr *t2)
     /*
      * Down our priority. This should force a reschedule and make thread 2 run.
      */
-    int error = seL4_TCB_SetPriority(*t1, 100);
+    int error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 4 );
     test_check(!error);
 
     test_check(set_priority_step == 2);
@@ -411,16 +412,16 @@ set_priority_helper_2(seL4_CPtr *t1, seL4_CPtr *t2)
     D("1...");
 
     /* Raise thread 1 to equal to ours, which should fail. */
-    int error = seL4_TCB_SetPriority(*t1, 110 + PRIORITY_FUDGE);
+    int error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 1 + PRIORITY_FUDGE);
     test_check(error == seL4_IllegalOperation);
 
     /* Raise thread 1 to just below us. */
-    error = seL4_TCB_SetPriority(*t1, 109);
+    error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 2);
     test_check(!error);
 
     /* Drop ours to below thread 1. Thread 1 should run. */
     set_priority_step = 2;
-    error = seL4_TCB_SetPriority(*t2, 108);
+    error = seL4_TCB_SetPriority(*t2, SCHED0005_HIGHEST_PRIO -3 );
     test_check(!error);
 
     /* Once thread 1 exits, we should run. */
@@ -431,7 +432,7 @@ set_priority_helper_2(seL4_CPtr *t1, seL4_CPtr *t2)
     return 0;
 }
 
-#if CONFIG_NUM_PRIORITIES >= 3
+#if CONFIG_NUM_PRIORITIES >= 7
 /* The enclosed test relies on the current thread being able to create two
  * threads of unequal priority, both less than the caller's own priority. For
  * this we need at least 3 priority levels, assuming that the current thread is
@@ -440,16 +441,14 @@ set_priority_helper_2(seL4_CPtr *t1, seL4_CPtr *t2)
 static int
 test_set_priority(struct env* env, void *args)
 {
-    static const seL4_Word highest_prio = CONFIG_NUM_PRIORITIES - 1;
-
     helper_thread_t thread1;
     helper_thread_t thread2;
     D("test_set_priority starting\n");
     create_helper_thread(env, &thread1);
-    set_helper_priority(&thread1, highest_prio - 1);
+    set_helper_priority(&thread1, SCHED0005_HIGHEST_PRIO);
 
     create_helper_thread(env, &thread2);
-    set_helper_priority(&thread2, highest_prio - 2);
+    set_helper_priority(&thread2, SCHED0005_HIGHEST_PRIO - 1);
 
     set_priority_step = 0;
     D("      ");
