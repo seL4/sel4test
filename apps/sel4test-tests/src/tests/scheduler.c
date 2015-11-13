@@ -8,6 +8,7 @@
  * @TAG(NICTA_BSD)
  */
 
+#include <autoconf.h>
 #include <stdio.h>
 #include <sel4/sel4.h>
 #include <stdlib.h>
@@ -430,17 +431,25 @@ set_priority_helper_2(seL4_CPtr *t1, seL4_CPtr *t2)
     return 0;
 }
 
+#if CONFIG_NUM_PRIORITIES >= 3
+/* The enclosed test relies on the current thread being able to create two
+ * threads of unequal priority, both less than the caller's own priority. For
+ * this we need at least 3 priority levels, assuming that the current thread is
+ * running at the highest priority.
+ */
 static int
 test_set_priority(struct env* env, void *args)
 {
+    static const seL4_Word highest_prio = CONFIG_NUM_PRIORITIES - 1;
+
     helper_thread_t thread1;
     helper_thread_t thread2;
     D("test_set_priority starting\n");
     create_helper_thread(env, &thread1);
-    set_helper_priority(&thread1, 254);
+    set_helper_priority(&thread1, highest_prio - 1);
 
     create_helper_thread(env, &thread2);
-    set_helper_priority(&thread2, 110);
+    set_helper_priority(&thread2, highest_prio - 2);
 
     set_priority_step = 0;
     D("      ");
@@ -464,6 +473,7 @@ test_set_priority(struct env* env, void *args)
     return SUCCESS;
 }
 DEFINE_TEST(SCHED0005, "Test set priority", test_set_priority)
+#endif
 
 /*
  * Perform IPC Send operations across priorities and ensure that strict
