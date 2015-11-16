@@ -397,19 +397,19 @@ set_priority_helper_1(seL4_CPtr *t1, seL4_CPtr *t2)
     set_priority_step = 3;
 
     /* set our priority back up - this should work as we did not down our max priority */
-    error = seL4_TCB_SetPriority(*t1, 254);
+    error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO);
     test_check(error == seL4_NoError);
 
     /* now down our max_priority */
-    error = seL4_TCB_SetMaxPriority(*t1, 100);
+    error = seL4_TCB_SetMaxPriority(*t1, SCHED0005_HIGHEST_PRIO - 4);
     test_check(error == seL4_NoError);
 
     /* try to set our prio higher than our max prio, but lower than our prio */
-    error = seL4_TCB_SetPriority(*t1, 101);
+    error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 3);
     test_check(error == seL4_IllegalOperation);
 
     /* try to set our max prio back up */
-    error = seL4_TCB_SetMaxPriority(*t1, 101);
+    error = seL4_TCB_SetMaxPriority(*t1, SCHED0005_HIGHEST_PRIO);
     test_check(error == seL4_IllegalOperation);
 
     return 0;
@@ -421,12 +421,8 @@ set_priority_helper_2(seL4_CPtr *t1, seL4_CPtr *t2)
     test_check(set_priority_step == 1);
     ZF_LOGD("1...");
 
-    /* Raise thread 1 to equal to ours, which should fail. */
-    int error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 1 + PRIORITY_FUDGE);
-    test_check(error == seL4_IllegalOperation);
-
     /* Raise thread 1 to just below us. */
-    error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 2);
+    int error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 2);
     test_check(!error);
 
     /* Drop ours to below thread 1. Thread 1 should run. */
@@ -728,7 +724,7 @@ sched0007_server(seL4_CPtr endpoint)
         }
     }
 
-    return 0;
+    return true;
 }
 
 static inline void 
@@ -820,7 +816,7 @@ check_receive_ordered(env_t env, seL4_CPtr endpoint, int pos, seL4_CPtr slots[])
 
     /* let everyone queue up again */
     sleep(env, 1 * NS_IN_S);
-    return 0;
+    return sel4test_get_result();
 }
 
 int test_change_prio_on_endpoint(env_t env, void *arg)
@@ -927,7 +923,7 @@ int test_change_prio_on_endpoint(env_t env, void *arg)
     set_helper_priority(&clients[0], lowest);
     check_receive_ordered(env, endpoint, 4, slots);
 
-    return 0;
+    return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0008, "Test changing prio while in endpoint queues results in correct message order", 
         test_change_prio_on_endpoint)
@@ -998,7 +994,7 @@ test_ordered_ipc_fastpath(env_t env, void *arg)
         }
     }
 
-    return SUCCESS;
+    return sel4test_get_result();
     
 }
 DEFINE_TEST(SCHED0009, "Test ordered ipc on reply wait fastpath", test_ordered_ipc_fastpath)
@@ -1055,7 +1051,7 @@ test_resume_empty_or_no_sched_context(env_t env, void *arg)
     sleep(env, 10 * MS_IN_S);
     test_eq(state, 0);
 
-    return SUCCESS;
+    return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0010, "Test resuming a thread with empty or missing scheduling context", 
             test_resume_empty_or_no_sched_context)
