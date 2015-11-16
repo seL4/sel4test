@@ -49,7 +49,7 @@
     do { \
         int _condition = !!(condition); \
         test_check(_condition); \
-        (result) |= !_condition; \
+        (result) |= _condition; \
     } while (0)
 
 /* We need a timer to run this test. However this test gets run on simulators,
