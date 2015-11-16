@@ -49,7 +49,7 @@ map_ept_from_pdpt(env_t env, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr *pt, seL4_
     error = seL4_IA32_Page_Map(*frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
     test_assert(error == seL4_NoError);
 
-    return sel4test_get_result();
+    return error;
 }
 
 static int
@@ -84,7 +84,7 @@ map_ept_set_large_from_pdpt(env_t env, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr 
         return error;
     }
 
-    return sel4test_get_result();
+    return error;
 }
 
 static int
