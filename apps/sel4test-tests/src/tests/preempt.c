@@ -15,12 +15,6 @@
 
 #include "../helpers.h"
 
-#if 0
-#define D(args...) printf(args)
-#else
-#define D(args...)
-#endif
-
 #if CONFIG_HAVE_TIMER
 
 static volatile int revoking = 0;
@@ -68,7 +62,7 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
 
 #define CNODE_SIZE_BITS 12
 
-    D("    Creating %d caps .", (1 << (num_cnode_bits + CNODE_SIZE_BITS)));
+    ZF_LOGD("    Creating %d caps .", (1 << (num_cnode_bits + CNODE_SIZE_BITS)));
     for (int i = 0; i < (1 << num_cnode_bits); i++) {
         seL4_CPtr ctable = vka_alloc_cnode_object_leaky(&env->vka, CNODE_SIZE_BITS);
 
@@ -81,7 +75,7 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
             test_assert_fatal(!error);
             num_caps++;
         }
-        D(".");
+        ZF_LOGD(".");
     }
     test_check(num_caps > 0);
     test_check((num_caps == (1 << (num_cnode_bits + CNODE_SIZE_BITS))));
@@ -102,7 +96,7 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
     cleanup_helper(env, &preempt_thread);
     cleanup_helper(env, &revoke_thread);
 
-    D("    %d preemptions\n", preempt_count);
+    ZF_LOGD("    %d preemptions\n", preempt_count);
 
     timer_stop(env->timer->timer);
     sel4_timer_handle_single_irq(env->timer);
@@ -119,7 +113,7 @@ test_preempt_revoke(env_t env, void *args)
         }
     }
 
-    D("Couldn't trigger preemption point with millions of caps!\n");
+    ZF_LOGD("Couldn't trigger preemption point with millions of caps!\n");
     test_assert(0);
 }
 DEFINE_TEST(PREEMPT_REVOKE, "Test preemption path in revoke", test_preempt_revoke)

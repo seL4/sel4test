@@ -23,20 +23,14 @@
 #define MAX_PRIO (OUR_PRIO - 1)
 #define NUM_PRIOS (MAX_PRIO - MIN_PRIO + 1)
 
-#if 0
-#define D(args...) printf(args)
-#else
-#define D(args...)
-#endif
-
 /*
- * Performing printf on non-debug x86 will perform IPCs. So, eliminate printf
+ * Performing printf on non-debug x86 will perform kernel invocations. So, eliminate printf
  * there, but keep it everywhere else where it's useful.
  */
 #if defined(ARCH_IA32) && !defined(SEL4_DEBUG_KERNEL)
 #define SAFE_PRINTF(x...) do { } while(0)
 #else
-#define SAFE_PRINTF(x...) D(x)
+#define SAFE_PRINTF(x...) ZF_LOGD(x)
 #endif
 
 #define CHECK_STEP(var, x) do { \
@@ -75,7 +69,7 @@ test_thread_suspend(env_t env, void *args)
 {
     helper_thread_t t1;
     volatile seL4_Word counter;
-    D("test_thread_suspend\n");
+    ZF_LOGD("test_thread_suspend\n");
     create_helper_thread(env, &t1);
 
     set_helper_priority(&t1, 100);
@@ -160,11 +154,11 @@ DEFINE_TEST(SCHED0001, "Test setting priorities", test_set_priorities)
 static int
 test_resume_self(struct env* env, void *args)
 {
-    D("Starting test_resume_self\n");
+    ZF_LOGD("Starting test_resume_self\n");
     /* Ensure nothing bad happens if we resume ourselves. */
     int error = seL4_TCB_Resume(env->tcb);
     test_assert(!error);
-    D("Ending test_resume_self\n");
+    ZF_LOGD("Ending test_resume_self\n");
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0002, "Test resuming ourselves", test_resume_self)
@@ -257,10 +251,10 @@ test_suspend(struct env* env, void *args)
     helper_thread_t thread2a;
     helper_thread_t thread2b;
 
-    D("Starting test_suspend\n");
+    ZF_LOGD("Starting test_suspend\n");
 
     create_helper_thread(env, &thread1);
-    D("Show me\n");
+    ZF_LOGD("Show me\n");
     create_helper_thread(env, &thread2a);
 
     create_helper_thread(env, &thread2b);
@@ -295,13 +289,13 @@ test_suspend(struct env* env, void *args)
     set_helper_priority(&thread2b, 101);
 
     suspend_test_step = 0;
-    D("      ");
+    ZF_LOGD("      ");
 
     wait_for_helper(&thread1);
     wait_for_helper(&thread2b);
 
     CHECK_STEP(suspend_test_step, 6);
-    D("\n");
+    ZF_LOGD("\n");
 
     cleanup_helper(env, &thread1);
     cleanup_helper(env, &thread2a);
@@ -347,7 +341,7 @@ test_all_priorities(struct env* env, void *args)
     }
 
     vka_t *vka = &env->vka;
-    D("Testing all thread priorities");
+    ZF_LOGD("Testing all thread priorities");
     volatile seL4_Word last_prio = MAX_PRIO + 1;
 
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);
@@ -389,7 +383,7 @@ static int
 set_priority_helper_1(seL4_CPtr *t1, seL4_CPtr *t2)
 {
     test_check(set_priority_step == 0);
-    D("0...");
+    ZF_LOGD("0...");
     set_priority_step = 1;
 
     /*
@@ -399,7 +393,7 @@ set_priority_helper_1(seL4_CPtr *t1, seL4_CPtr *t2)
     test_check(!error);
 
     test_check(set_priority_step == 2);
-    D("2...");
+    ZF_LOGD("2...");
     set_priority_step = 3;
 
     return 0;
@@ -409,7 +403,7 @@ static int
 set_priority_helper_2(seL4_CPtr *t1, seL4_CPtr *t2)
 {
     test_check(set_priority_step == 1);
-    D("1...");
+    ZF_LOGD("1...");
 
     /* Raise thread 1 to equal to ours, which should fail. */
     int error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 1 + PRIORITY_FUDGE);
@@ -426,7 +420,7 @@ set_priority_helper_2(seL4_CPtr *t1, seL4_CPtr *t2)
 
     /* Once thread 1 exits, we should run. */
     test_check(set_priority_step == 3);
-    D("3...");
+    ZF_LOGD("3...");
     set_priority_step = 4;
 
     return 0;
@@ -443,7 +437,7 @@ test_set_priority(struct env* env, void *args)
 {
     helper_thread_t thread1;
     helper_thread_t thread2;
-    D("test_set_priority starting\n");
+    ZF_LOGD("test_set_priority starting\n");
     create_helper_thread(env, &thread1);
     set_helper_priority(&thread1, SCHED0005_HIGHEST_PRIO);
 
@@ -451,7 +445,7 @@ test_set_priority(struct env* env, void *args)
     set_helper_priority(&thread2, SCHED0005_HIGHEST_PRIO - 1);
 
     set_priority_step = 0;
-    D("      ");
+    ZF_LOGD("      ");
 
     start_helper(env, &thread1, (helper_fn_t) set_priority_helper_1,
                  (seL4_Word) &thread1.thread.tcb.cptr,
@@ -466,7 +460,7 @@ test_set_priority(struct env* env, void *args)
 
     test_check(set_priority_step == 4);
 
-    D("\n");
+    ZF_LOGD("\n");
     cleanup_helper(env, &thread1);
     cleanup_helper(env, &thread2);
     return sel4test_get_result();
@@ -666,7 +660,7 @@ test_ipc_prios(struct env* env, void *args)
     data.tcb2 = thread2.thread.tcb.cptr;
     data.tcb3 = thread3.thread.tcb.cptr;
 
-    D("      ");
+    ZF_LOGD("      ");
     ipc_test_step = 0;
 
     start_helper(env, &thread0, (helper_fn_t) ipc_test_helper_0, (seL4_Word) &data, 0, 0, 0);
@@ -678,7 +672,7 @@ test_ipc_prios(struct env* env, void *args)
     result |= (int)wait_for_helper(&thread3);
 
     CHECK_STEP(ipc_test_step, 10);
-    D("\n");
+    ZF_LOGD("\n");
 
     cleanup_helper(env, &thread0);
     cleanup_helper(env, &thread1);

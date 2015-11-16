@@ -252,10 +252,8 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as)
     for (int sender_prio = 98; sender_prio <= 102; sender_prio++) {
         for (int waiter_prio = 100; waiter_prio <= 100; waiter_prio++) {
             for (int sender_first = 0; sender_first <= 1; sender_first++) {
-#if 0
-                fprintf(stdout, "%d %s %d\n",
+                ZF_LOGD("%d %s %d\n",
                         sender_prio, sender_first ? "->" : "<-", waiter_prio);
-#endif
                 seL4_Word thread_a_arg0, thread_b_arg0;
 
                 if (inter_as) {

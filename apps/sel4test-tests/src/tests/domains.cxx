@@ -75,7 +75,7 @@ int fdom1(seL4_Word id, env_t env)
     while (countdown > 0) {
         wait(POLL_DELAY_NS, env);
         --countdown;
-        printf("%2d, ", id);
+        ZF_LOGD("%2d, ", id);
     }
 
     return sel4test_get_result();
