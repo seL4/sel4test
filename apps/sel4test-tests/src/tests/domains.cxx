@@ -131,7 +131,7 @@ test_domains(struct env *env, F func)
  *  block 0           block 1          block 0          block 1
  */
 static int
-test_run_domains(struct env* env, void *args)
+test_run_domains(struct env* env)
 {
     return test_domains<false>(env, fdom1);
 }
@@ -149,7 +149,7 @@ DEFINE_TEST(DOMAINS0004, "Run threads in domains()", test_run_domains)
  *  (due to delay)   (after shift)         (01 catches up)
  */
 static int
-test_run_domains_shift(struct env* env, void *args)
+test_run_domains_shift(struct env* env)
 {
     return test_domains<true>(env, fdom1);
 }
@@ -158,21 +158,21 @@ DEFINE_TEST(DOMAINS0005, "Move thread between domains()", test_run_domains_shift
 #endif /* CONFIG_HAVE_TIMER */
 
 static int
-test_own_domain1(struct env* env, void *args)
+test_own_domain1(struct env* env)
 {
     return own_domain_success(env);
 }
 DEFINE_TEST(DOMAINS0001, "Change domain successfully()", test_own_domain1)
 
 static int
-test_own_domain2(struct env* env, void *args)
+test_own_domain2(struct env* env)
 {
     return own_domain_baddom(env);
 }
 DEFINE_TEST(DOMAINS0002, "Try non-existant domain()", test_own_domain2)
 
 static int
-test_own_domain3(struct env* env, void *args)
+test_own_domain3(struct env* env)
 {
     return own_domain_badcap(env);
 }

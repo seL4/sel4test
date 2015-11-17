@@ -16,7 +16,7 @@
 #ifndef CONFIG_KERNEL_STABLE
 
 static int
-test_retype(env_t env, void* args)
+test_retype(env_t env)
 {
     int error;
     int i;
@@ -107,7 +107,7 @@ test_retype(env_t env, void* args)
 DEFINE_TEST(RETYPE0000, "Retype test", test_retype)
 
 static int
-test_incretype(env_t env, void* args)
+test_incretype(env_t env)
 {
     int error;
     vka_object_t untyped;
@@ -148,7 +148,7 @@ test_incretype(env_t env, void* args)
 DEFINE_TEST(RETYPE0001, "Incremental retype test", test_incretype)
 
 static int
-test_incretype2(env_t env, void* args)
+test_incretype2(env_t env)
 {
     int error;
     seL4_Word slot[17];

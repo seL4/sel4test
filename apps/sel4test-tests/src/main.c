@@ -275,7 +275,7 @@ main(int argc, char **argv)
     int result = 0;
     if (test) {
         printf("Running test %s (%s)\n", test->name, test->description);
-        result = test->function(&env, test->args);
+        result = test->function(&env);
     } else {
         result = FAILURE;
         LOG_ERROR("Cannot find test %s\n", init_data->name);

@@ -35,7 +35,7 @@ fill_memory(seL4_Word addr, seL4_Word size_bytes)
 }
 
 static int
-test_frame_recycle(env_t env, void *args)
+test_frame_recycle(env_t env)
 {
     int num_frame_types = ARRAY_SIZE(frame_types);
     seL4_CPtr frames[num_frame_types];
@@ -110,7 +110,7 @@ test_frame_recycle(env_t env, void *args)
 DEFINE_TEST(FRAMERECYCLE0001, "Test recycling of frame caps", test_frame_recycle)
 
 static int
-test_frame_exported(env_t env, void *args)
+test_frame_exported(env_t env)
 {
     struct frame_table_entry {
         vka_object_t frame;
@@ -273,7 +273,7 @@ static void *handle(seL4_CPtr fault_ep)
     }
 }
 
-static int test_xn(env_t env, void *args, seL4_ArchObjectType frame_type)
+static int test_xn(env_t env, seL4_ArchObjectType frame_type)
 {
 
     /* Find the size of the frame type we want to test. */
@@ -395,15 +395,15 @@ retry:
     return sel4test_get_result();
 }
 
-static int test_xn_small_frame(env_t env, void *args)
+static int test_xn_small_frame(env_t env)
 {
-    return test_xn(env, args, seL4_ARM_SmallPageObject);
+    return test_xn(env, seL4_ARM_SmallPageObject);
 }
 DEFINE_TEST(FRAMEXN0001, "Test that we can map a small frame XN", test_xn_small_frame)
 
-static int test_xn_large_frame(env_t env, void *args)
+static int test_xn_large_frame(env_t env)
 {
-    return test_xn(env, args, seL4_ARM_LargePageObject);
+    return test_xn(env, seL4_ARM_LargePageObject);
 }
 DEFINE_TEST(FRAMEXN0002, "Test that we can map a large frame XN", test_xn_large_frame)
 

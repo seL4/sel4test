@@ -54,7 +54,7 @@ call_func(seL4_CPtr ep, seL4_Word msg, volatile seL4_Word *done, seL4_Word arg3)
 }
 
 static int
-test_ep_recycle(env_t env, void* args)
+test_ep_recycle(env_t env)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     struct {
@@ -170,7 +170,7 @@ static int ep_test_func(seL4_CPtr sync_ep, seL4_CPtr test_ep, volatile int *stat
  * are deleted, since deleting them did NOT delete the final capability
  * or cause a recycle so outstanding IPCs were not canceled */
 static int
-test_ep_recycle2(env_t env, void* args)
+test_ep_recycle2(env_t env)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     struct {

@@ -85,7 +85,7 @@ do_ioports(int arg1, int arg2, int arg3, int arg4)
 }
 
 static int
-test_native_ioports(env_t env, void *arg)
+test_native_ioports(env_t env)
 {
     helper_thread_t handler_thread;
     helper_thread_t faulter_thread;

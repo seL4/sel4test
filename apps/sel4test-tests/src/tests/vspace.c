@@ -19,7 +19,7 @@ remote_function(void)
 }
 
 static int
-test_interas_diffcspace(env_t env, void *args)
+test_interas_diffcspace(env_t env)
 {
     helper_thread_t t;
 
@@ -36,7 +36,7 @@ DEFINE_TEST(VSPACE0000, "Test threads in different cspace/vspace", test_interas_
 
 #ifdef ARCH_ARM
 static int
-test_unmap_after_delete(env_t env, void *args)
+test_unmap_after_delete(env_t env)
 {
     seL4_Word map_addr = 0x10000000;
     cspacepath_t path;

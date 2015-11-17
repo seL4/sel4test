@@ -50,7 +50,7 @@ check_memory(seL4_Word addr, seL4_Word size_bytes)
 }
 
 static int
-test_pagetable_arm(env_t env, void *args)
+test_pagetable_arm(env_t env)
 {
     int error;
 
@@ -348,7 +348,7 @@ do_test_pagetable_tlbflush_on_vaddr_reuse(seL4_CPtr cap1, seL4_CPtr cap2, seL4_W
 }
 
 static int
-test_pagetable_tlbflush_on_vaddr_reuse(env_t env, void *args)
+test_pagetable_tlbflush_on_vaddr_reuse(env_t env)
 {
     int error;
     int result = SUCCESS;

@@ -101,7 +101,7 @@ map_ept_set_large(env_t env, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPtr *frame)
 }
 
 static int
-test_ept_basic_ept(env_t env, void *args)
+test_ept_basic_ept(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, pt, frame;
@@ -112,7 +112,7 @@ test_ept_basic_ept(env_t env, void *args)
 DEFINE_TEST(EPT0001, "Testing basic EPT mapping", test_ept_basic_ept)
 
 static int
-test_ept_basic_map_unmap(env_t env, void *args)
+test_ept_basic_map_unmap(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, pt, frame;
@@ -141,7 +141,7 @@ test_ept_basic_map_unmap(env_t env, void *args)
 DEFINE_TEST(EPT0002, "Test basic EPT mapping then unmapping", test_ept_basic_map_unmap)
 
 static int
-test_ept_basic_map_unmap_large(env_t env, void *args)
+test_ept_basic_map_unmap_large(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, frame;
@@ -166,7 +166,7 @@ test_ept_basic_map_unmap_large(env_t env, void *args)
 DEFINE_TEST(EPT0003, "Test basic EPT mapping then unmapping of large frame", test_ept_basic_map_unmap_large)
 
 static int
-test_ept_regression_1(env_t env, void *args)
+test_ept_regression_1(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, frame;
@@ -186,7 +186,7 @@ test_ept_regression_1(env_t env, void *args)
 DEFINE_TEST(EPT1001, "EPT Regression: Unmap large frame then invoke EPT PD unmap on frame", test_ept_regression_1)
 
 static int
-test_ept_regression_2(env_t env, void *args)
+test_ept_regression_2(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, frame;
@@ -211,7 +211,7 @@ test_ept_regression_2(env_t env, void *args)
 DEFINE_TEST(EPT1002, "EPT Regression: Invoke EPT PD Unmap on large frame", test_ept_regression_2)
 
 static int
-test_ept_no_overlapping_4k(env_t env, void *args)
+test_ept_no_overlapping_4k(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, pt, frame;
@@ -227,7 +227,7 @@ test_ept_no_overlapping_4k(env_t env, void *args)
 DEFINE_TEST(EPT0004, "Test EPT cannot map overlapping 4k pages", test_ept_no_overlapping_4k)
 
 static int
-test_ept_no_overlapping_large(env_t env, void *args)
+test_ept_no_overlapping_large(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, frame;
@@ -244,7 +244,7 @@ DEFINE_TEST(EPT0005, "Test EPT cannot map overlapping large pages", test_ept_no_
 
 #ifndef CONFIG_PAE_PAGING
 static int
-test_ept_aligned_4m(env_t env, void *args)
+test_ept_aligned_4m(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, frame, frame2;
@@ -277,7 +277,7 @@ DEFINE_TEST(EPT0006, "Test EPT 4M mappings must be 4M aligned and cannot overlap
 
 #ifndef CONFIG_PAE_PAGING
 static int
-test_ept_no_overlapping_pt_4m(env_t env, void *args)
+test_ept_no_overlapping_pt_4m(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, pt, frame;
@@ -321,7 +321,7 @@ DEFINE_TEST(EPT0007, "Test EPT 4m frame and PT cannot overlap", test_ept_no_over
 #endif
 
 static int
-test_ept_map_remap_pd(env_t env, void *args)
+test_ept_map_remap_pd(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, pt, frame;
@@ -346,7 +346,7 @@ test_ept_map_remap_pd(env_t env, void *args)
 DEFINE_TEST(EPT0008, "Test EPT map and remap PD", test_ept_map_remap_pd)
 
 static int
-test_ept_no_overlapping_pt(env_t env, void *args)
+test_ept_no_overlapping_pt(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, pt, frame;
@@ -364,7 +364,7 @@ test_ept_no_overlapping_pt(env_t env, void *args)
 DEFINE_TEST(EPT0009, "Test EPT no overlapping PT", test_ept_no_overlapping_pt)
 
 static int
-test_ept_no_overlapping_pd(env_t env, void *args)
+test_ept_no_overlapping_pd(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, pt, frame;
@@ -382,7 +382,7 @@ test_ept_no_overlapping_pd(env_t env, void *args)
 DEFINE_TEST(EPT0010, "Test EPT no overlapping PD", test_ept_no_overlapping_pd)
 
 static int
-test_ept_map_remap_pt(env_t env, void *args)
+test_ept_map_remap_pt(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, pt, frame;
@@ -407,7 +407,7 @@ test_ept_map_remap_pt(env_t env, void *args)
 DEFINE_TEST(EPT0011, "Test EPT map and remap PT", test_ept_map_remap_pt)
 
 static int
-test_ept_recycle_pt(env_t env, void *args)
+test_ept_recycle_pt(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, pt, frame;
@@ -433,7 +433,7 @@ test_ept_recycle_pt(env_t env, void *args)
 DEFINE_TEST(EPT0012, "Test EPT Recycle PT", test_ept_recycle_pt)
 
 static int
-test_ept_recycle_pd(env_t env, void *args)
+test_ept_recycle_pd(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, pt, frame;
@@ -467,7 +467,7 @@ test_ept_recycle_pd(env_t env, void *args)
 DEFINE_TEST(EPT0013, "Test EPT recycle PD", test_ept_recycle_pd)
 
 static int
-test_ept_recycle_pdpt(env_t env, void *args)
+test_ept_recycle_pdpt(env_t env)
 {
     int error;
     seL4_CPtr pdpt, pd, pt, frame;

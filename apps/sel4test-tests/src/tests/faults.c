@@ -580,19 +580,19 @@ test_fault(env_t env, int fault_type, bool inter_as)
 
 #ifndef CONFIG_FT
 
-static int test_read_fault(env_t env, void *args)
+static int test_read_fault(env_t env)
 {
     return test_fault(env, FAULT_DATA_READ_PAGEFAULT, false);
 }
 DEFINE_TEST(PAGEFAULT0001, "Test read page fault", test_read_fault)
 
-static int test_write_fault(env_t env, void *args)
+static int test_write_fault(env_t env)
 {
     return test_fault(env, FAULT_DATA_WRITE_PAGEFAULT, false);
 }
 DEFINE_TEST(PAGEFAULT0002, "Test write page fault", test_write_fault)
 
-static int test_execute_fault(env_t env, void *args)
+static int test_execute_fault(env_t env)
 {
     return test_fault(env,  FAULT_INSTRUCTION_PAGEFAULT, false);
 }
@@ -600,37 +600,37 @@ DEFINE_TEST(PAGEFAULT0003, "Test execute page fault", test_execute_fault)
 
 #endif
 
-static int test_bad_syscall(env_t env, void *args)
+static int test_bad_syscall(env_t env)
 {
     return test_fault(env, FAULT_BAD_SYSCALL, false);
 }
 DEFINE_TEST(PAGEFAULT0004, "Test unknown system call", test_bad_syscall)
 
-static int test_bad_instruction(env_t env, void *args)
+static int test_bad_instruction(env_t env)
 {
     return test_fault(env, FAULT_BAD_INSTRUCTION, false);
 }
 DEFINE_TEST(PAGEFAULT0005, "Test undefined instruction", test_bad_instruction)
 
-static int test_read_fault_interas(env_t env, void *args)
+static int test_read_fault_interas(env_t env)
 {
     return test_fault(env, FAULT_DATA_READ_PAGEFAULT, true);
 }
 DEFINE_TEST(PAGEFAULT1001, "Test read page fault (inter-AS)", test_read_fault_interas)
 
-static int test_write_fault_interas(env_t env, void *args)
+static int test_write_fault_interas(env_t env)
 {
     return test_fault(env, FAULT_DATA_WRITE_PAGEFAULT, true);
 }
 DEFINE_TEST(PAGEFAULT1002, "Test write page fault (inter-AS)", test_write_fault_interas)
 
-static int test_execute_fault_interas(env_t env, void *args)
+static int test_execute_fault_interas(env_t env)
 {
     return test_fault(env, FAULT_INSTRUCTION_PAGEFAULT, true);
 }
 DEFINE_TEST(PAGEFAULT1003, "Test execute page fault (inter-AS)", test_execute_fault_interas)
 
-static int test_bad_syscall_interas(env_t env, void *args)
+static int test_bad_syscall_interas(env_t env)
 {
     return test_fault(env, FAULT_BAD_SYSCALL, true);
 }
@@ -638,7 +638,7 @@ DEFINE_TEST(PAGEFAULT1004, "Test unknown system call (inter-AS)", test_bad_sysca
 
 #if 0
 /* This test needs some work. */
-static int test_bad_instruction_interas(env_t env, void *args)
+static int test_bad_instruction_interas(env_t env)
 {
     return test_fault(&env->vka, FAULT_BAD_INSTRUCTION, true);
 }

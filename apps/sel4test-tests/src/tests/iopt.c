@@ -89,7 +89,7 @@ delete_iospace(env_t env, seL4_CPtr iospace)
 }
 
 static int
-test_iopt_basic_iopt(env_t env, void *args)
+test_iopt_basic_iopt(env_t env)
 {
     int error;
     seL4_CPtr iospace, frame;
@@ -103,7 +103,7 @@ test_iopt_basic_iopt(env_t env, void *args)
 DEFINE_TEST(IOPT0001, "Testing basic IOPT mapping", test_iopt_basic_iopt)
 
 static int
-test_iopt_basic_map_unmap(env_t env, void *args)
+test_iopt_basic_map_unmap(env_t env)
 {
     int error;
     int i;
@@ -136,7 +136,7 @@ test_iopt_basic_map_unmap(env_t env, void *args)
 DEFINE_TEST(IOPT0002, "Test basic IOPT mapping then unmapping", test_iopt_basic_map_unmap)
 
 static int
-test_iopt_no_overlapping_4k(env_t env, void *args)
+test_iopt_no_overlapping_4k(env_t env)
 {
     int error;
     iopt_cptrs_t pts;
@@ -155,7 +155,7 @@ test_iopt_no_overlapping_4k(env_t env, void *args)
 DEFINE_TEST(IOPT0004, "Test IOPT cannot map overlapping 4k pages", test_iopt_no_overlapping_4k)
 
 static int
-test_iopt_map_remap_top_pt(env_t env, void *args)
+test_iopt_map_remap_top_pt(env_t env)
 {
     int error;
     iopt_cptrs_t pts;
@@ -183,7 +183,7 @@ test_iopt_map_remap_top_pt(env_t env, void *args)
 DEFINE_TEST(IOPT0008, "Test IOPT map and remap top PT", test_iopt_map_remap_top_pt)
 
 static int
-test_iopt_no_overlapping_pt(env_t env, void *args)
+test_iopt_no_overlapping_pt(env_t env)
 {
     int error;
     iopt_cptrs_t pts;
@@ -203,7 +203,7 @@ test_iopt_no_overlapping_pt(env_t env, void *args)
 DEFINE_TEST(iopt0009, "Test iopt no overlapping PT", test_iopt_no_overlapping_pt)
 
 static int
-test_iopt_map_remap_pt(env_t env, void *args)
+test_iopt_map_remap_pt(env_t env)
 {
     int error;
     iopt_cptrs_t pts;
@@ -231,7 +231,7 @@ test_iopt_map_remap_pt(env_t env, void *args)
 DEFINE_TEST(IOPT0011, "Test IOPT map and remap PT", test_iopt_map_remap_pt)
 
 static int
-test_iopt_recycle_bottom_pt(env_t env, void *args)
+test_iopt_recycle_bottom_pt(env_t env)
 {
     int error;
     iopt_cptrs_t pts;
@@ -259,7 +259,7 @@ test_iopt_recycle_bottom_pt(env_t env, void *args)
 DEFINE_TEST(IOPT0012, "Test IOPT recycle bottom PT", test_iopt_recycle_bottom_pt)
 
 static int
-test_iopt_recycle_top_pt(env_t env, void *args)
+test_iopt_recycle_top_pt(env_t env)
 {
     int error;
     iopt_cptrs_t pts;
@@ -295,7 +295,7 @@ test_iopt_recycle_top_pt(env_t env, void *args)
 DEFINE_TEST(IOPT0013, "Test iopt recycle top PT", test_iopt_recycle_top_pt)
 
 static int
-test_iopt_recycle_iospace(env_t env, void *args)
+test_iopt_recycle_iospace(env_t env)
 {
     int error;
     iopt_cptrs_t pts;

@@ -43,7 +43,7 @@ sender(seL4_Word ep, seL4_Word id, seL4_Word runs, seL4_Word arg3)
 }
 
 static int
-test_notification_binding(env_t env, void* args)
+test_notification_binding(env_t env)
 {
     helper_thread_t sync, notification;
 
@@ -98,7 +98,7 @@ DEFINE_TEST(BIND0001, "Test that a bound tcb waiting on a sync endpoint receives
 
 
 static int
-test_notification_binding_2(env_t env, void* args)
+test_notification_binding_2(env_t env)
 {
     helper_thread_t notification;
 
@@ -184,7 +184,7 @@ test_notification_binding_prio(env_t env, uint8_t waiter_prio, uint8_t sender_pr
 }
 
 static int
-test_notification_binding_3(env_t env, void* args)
+test_notification_binding_3(env_t env)
 {
     test_notification_binding_prio(env, 10, 9);
     return sel4test_get_result();
@@ -193,7 +193,7 @@ DEFINE_TEST(BIND0003, "Test IPC ordering 1) bound tcb waits on bound notificatio
             test_notification_binding_3)
 
 static int
-test_notification_binding_4(env_t env, void* args)
+test_notification_binding_4(env_t env)
 {
     test_notification_binding_prio(env, 9, 10);
     return sel4test_get_result();

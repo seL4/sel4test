@@ -315,63 +315,63 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as)
 }
 
 static int
-test_send_wait(env_t env, void *args)
+test_send_wait(env_t env)
 {
     return test_ipc_pair(env, send_func, wait_func, false);
 }
 DEFINE_TEST(IPC0001, "Test seL4_Send + seL4_Wait", test_send_wait)
 
 static int
-test_call_replywait(env_t env, void *args)
+test_call_replywait(env_t env)
 {
     return test_ipc_pair(env, call_func, replywait_func, false);
 }
 DEFINE_TEST(IPC0002, "Test seL4_Call + seL4_ReplyWait", test_call_replywait)
 
 static int
-test_call_reply_and_wait(env_t env, void *args)
+test_call_reply_and_wait(env_t env)
 {
     return test_ipc_pair(env, call_func, reply_and_wait_func, false);
 }
 DEFINE_TEST(IPC0003, "Test seL4_Send + seL4_Reply + seL4_Wait", test_call_reply_and_wait)
 
 static int
-test_nbsend_wait(env_t env, void *args)
+test_nbsend_wait(env_t env)
 {
     return test_ipc_pair(env, nbsend_func, nbwait_func, false);
 }
 DEFINE_TEST(IPC0004, "Test seL4_NBSend + seL4_Wait", test_nbsend_wait)
 
 static int
-test_send_wait_interas(env_t env, void *args)
+test_send_wait_interas(env_t env)
 {
     return test_ipc_pair(env, send_func, wait_func, true);
 }
 DEFINE_TEST(IPC1001, "Test inter-AS seL4_Send + seL4_Wait", test_send_wait_interas)
 
 static int
-test_call_replywait_interas(env_t env, void *args)
+test_call_replywait_interas(env_t env)
 {
     return test_ipc_pair(env, call_func, replywait_func, true);
 }
 DEFINE_TEST(IPC1002, "Test inter-AS seL4_Call + seL4_ReplyWait", test_call_replywait_interas)
 
 static int
-test_call_reply_and_wait_interas(env_t env, void *args)
+test_call_reply_and_wait_interas(env_t env)
 {
     return test_ipc_pair(env, call_func, reply_and_wait_func, true);
 }
 DEFINE_TEST(IPC1003, "Test inter-AS seL4_Send + seL4_Reply + seL4_Wait", test_call_reply_and_wait_interas)
 
 static int
-test_nbsend_wait_interas(env_t env, void *args)
+test_nbsend_wait_interas(env_t env)
 {
     return test_ipc_pair(env, nbsend_func, nbwait_func, true);
 }
 DEFINE_TEST(IPC1004, "Test inter-AS seL4_NBSend + seL4_Wait", test_nbsend_wait_interas)
 
 static int
-test_ipc_abort_in_call(env_t env, void *args)
+test_ipc_abort_in_call(env_t env)
 {
     helper_thread_t thread_a;
     vka_t * vka = &env->vka;

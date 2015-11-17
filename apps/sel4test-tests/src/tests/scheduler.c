@@ -65,7 +65,7 @@ counter_func(volatile seL4_Word *counter)
  * try re-running the test suite.
  */
 static int
-test_thread_suspend(env_t env, void *args)
+test_thread_suspend(env_t env)
 {
     helper_thread_t t1;
     volatile seL4_Word counter;
@@ -131,7 +131,7 @@ DEFINE_TEST(SCHED0000, "Test suspending and resuming a thread (flaky)", test_thr
  * Test setting priorities.
  */
 static int
-test_set_priorities(struct env* env, void *args)
+test_set_priorities(struct env* env)
 {
     /* Ensure we can set our priority equal to ourselves. */
     int error = seL4_TCB_SetPriority(env->tcb, OUR_PRIO);
@@ -152,7 +152,7 @@ DEFINE_TEST(SCHED0001, "Test setting priorities", test_set_priorities)
  * Test TCB Resume on self.
  */
 static int
-test_resume_self(struct env* env, void *args)
+test_resume_self(struct env* env)
 {
     ZF_LOGD("Starting test_resume_self\n");
     /* Ensure nothing bad happens if we resume ourselves. */
@@ -245,7 +245,7 @@ suspend_test_helper_1(seL4_CPtr *t1, seL4_CPtr *t2a, seL4_CPtr *t2b)
 #ifndef CONFIG_FT
 
 static int
-test_suspend(struct env* env, void *args)
+test_suspend(struct env* env)
 {
     helper_thread_t thread1;
     helper_thread_t thread2a;
@@ -328,7 +328,7 @@ prio_test_func(seL4_Word my_prio, seL4_Word* last_prio, seL4_CPtr ep)
 
 
 static int
-test_all_priorities(struct env* env, void *args)
+test_all_priorities(struct env* env)
 {
     int i;
 
@@ -433,7 +433,7 @@ set_priority_helper_2(seL4_CPtr *t1, seL4_CPtr *t2)
  * running at the highest priority.
  */
 static int
-test_set_priority(struct env* env, void *args)
+test_set_priority(struct env* env)
 {
     helper_thread_t thread1;
     helper_thread_t thread2;
@@ -626,7 +626,7 @@ ipc_test_helper_3(ipc_test_data_t *data)
 }
 
 static int
-test_ipc_prios(struct env* env, void *args)
+test_ipc_prios(struct env* env)
 {
     vka_t *vka = &env->vka;
     helper_thread_t thread0;

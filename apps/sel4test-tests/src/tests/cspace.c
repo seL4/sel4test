@@ -59,7 +59,7 @@ ipc_caller(seL4_Word ep0, seL4_Word ep1, seL4_Word arg3, seL4_Word arg4)
 }
 
 static int
-test_32bit_cspace(env_t env, void *args)
+test_32bit_cspace(env_t env)
 {
     int error;
     seL4_CPtr cnode[32];

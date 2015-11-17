@@ -24,7 +24,7 @@ get_cap(vka_t *vka)
     return vka_alloc_tcb_leaky(vka);
 }
 static int
-test_cnode_copy(env_t env, void* args)
+test_cnode_copy(env_t env)
 {
     int error;
     seL4_Word src, dest;
@@ -66,7 +66,7 @@ test_cnode_copy(env_t env, void* args)
 DEFINE_TEST(CNODEOP0001, "Basic seL4_CNode_Copy() testing", test_cnode_copy)
 
 static int
-test_cnode_delete(env_t env, void* args)
+test_cnode_delete(env_t env)
 {
     int error;
     seL4_Word slot;
@@ -88,7 +88,7 @@ test_cnode_delete(env_t env, void* args)
 DEFINE_TEST(CNODEOP0002, "Basic seL4_CNode_Delete() testing", test_cnode_delete)
 
 static int
-test_cnode_mint(env_t env, void* args)
+test_cnode_mint(env_t env)
 {
     int error;
     seL4_Word src, dest;
@@ -119,7 +119,7 @@ test_cnode_mint(env_t env, void* args)
 DEFINE_TEST(CNODEOP0003, "Basic seL4_CNode_Mint() testing", test_cnode_mint)
 
 static int
-test_cnode_move(env_t env, void* args)
+test_cnode_move(env_t env)
 {
     int error;
     seL4_Word src, dest;
@@ -152,7 +152,7 @@ test_cnode_move(env_t env, void* args)
 DEFINE_TEST(CNODEOP0004, "Basic seL4_CNode_Move() testing", test_cnode_move)
 
 static int
-test_cnode_mutate(env_t env, void* args)
+test_cnode_mutate(env_t env)
 {
     int error;
     seL4_Word src, dest;
@@ -186,7 +186,7 @@ test_cnode_mutate(env_t env, void* args)
 DEFINE_TEST(CNODEOP0005, "Basic seL4_CNode_Mutate() testing", test_cnode_mutate)
 
 static int
-test_cnode_recycle(env_t env, void* args)
+test_cnode_recycle(env_t env)
 {
     int error;
     seL4_Word slot;
@@ -208,7 +208,7 @@ test_cnode_recycle(env_t env, void* args)
 DEFINE_TEST(CNODEOP0006, "Basic seL4_CNode_Recycle() testing", test_cnode_recycle)
 
 static int
-test_cnode_revoke(env_t env, void* args)
+test_cnode_revoke(env_t env)
 {
     int error;
     seL4_Word slot;
@@ -230,7 +230,7 @@ test_cnode_revoke(env_t env, void* args)
 DEFINE_TEST(CNODEOP0007, "Basic seL4_CNode_Revoke() testing", test_cnode_revoke)
 
 static int
-test_cnode_rotate(env_t env, void* args)
+test_cnode_rotate(env_t env)
 {
     int error;
     seL4_Word src, pivot, dest;
@@ -288,7 +288,7 @@ test_cnode_rotate(env_t env, void* args)
 DEFINE_TEST(CNODEOP0008, "Basic seL4_CNode_Rotate() testing", test_cnode_rotate)
 
 static int
-test_cnode_savecaller(env_t env, void* args)
+test_cnode_savecaller(env_t env)
 {
     int error;
     seL4_Word slot;

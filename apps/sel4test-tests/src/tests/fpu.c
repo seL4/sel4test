@@ -17,7 +17,7 @@
  * correctly.
  */
 static int
-test_fpu_trivial(env_t env, void *arg)
+test_fpu_trivial(env_t env)
 {
     int i;
     volatile double b;
@@ -87,7 +87,7 @@ static volatile double thread_state[NUM_THREADS];
 #ifndef CONFIG_FT
 
 static int
-test_fpu_multithreaded(struct env* env, void *args)
+test_fpu_multithreaded(struct env* env)
 {
 #ifndef CONFIG_X86_64
     const int NUM_THREADS = 4;

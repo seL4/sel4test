@@ -21,7 +21,7 @@
 
 #if defined(CONFIG_ARCH_ARM) && defined(CONFIG_HAVE_CACHE)
 static int
-test_page_flush(env_t env, void *args)
+test_page_flush(env_t env)
 {
     seL4_CPtr frame, framec;
     seL4_Word vstart, vstartc;
@@ -108,7 +108,7 @@ test_page_flush(env_t env, void *args)
 }
 
 static int
-test_large_page_flush_operation(env_t env, void *args)
+test_large_page_flush_operation(env_t env)
 {
     int num_frame_types = ARRAY_SIZE(frame_types);
     seL4_CPtr frames[num_frame_types];
@@ -175,7 +175,7 @@ test_large_page_flush_operation(env_t env, void *args)
 
 
 static int
-test_page_directory_flush(env_t env, void *args)
+test_page_directory_flush(env_t env)
 {
     seL4_CPtr frame, framec;
     seL4_Word vstart, vstartc;

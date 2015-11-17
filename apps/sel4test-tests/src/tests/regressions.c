@@ -250,7 +250,7 @@ asm ("\n"
 #else
 #error "Unsupported architecture"
 #endif
-int test_write_registers(env_t env, void *arg)
+int test_write_registers(env_t env)
 {
     helper_thread_t thread;
     seL4_UserContext context = { 0 };
@@ -378,7 +378,7 @@ static int do_ldrex(void)
  * mechanisms. This test checks that the monitor is cleared correctly on
  * switch. See SELFOUR-141 for more information.
  */
-int test_ldrex_cleared(env_t env, void *arg)
+int test_ldrex_cleared(env_t env)
 {
     helper_thread_t thread;
     seL4_Word result;

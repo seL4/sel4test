@@ -90,7 +90,7 @@
 
 /* Generate a stub that tests the code "_code" with TEST_REGISTERS. */
 #define GENERATE_SYSCALL_TEST(_test, _syscall, _code) \
-    static int test_ ## _syscall(env_t env, void *arg) { \
+    static int test_ ## _syscall(env_t env) { \
         for (int i = 0; i < 10; i++) \
             TEST_REGISTERS(_code); \
         return sel4test_get_result(); \
@@ -120,7 +120,7 @@ GENERATE_SYSCALL_TEST(SYSCALL0005, seL4_Call,
                       seL4_Call(env->cspace_root, seL4_MessageInfo_new(0, 0, 0 , 0)))
 
 static int
-test_debug_put_char(env_t env, void *args)
+test_debug_put_char(env_t env)
 {
     for (int i = 0; i < 10; i++) {
 #ifdef CONFIG_DEBUG_BUILD
@@ -134,7 +134,7 @@ DEFINE_TEST(SYSCALL0006, "Basic seL4_DebugPutChar() testing", test_debug_put_cha
 /* Slightly more complex tests for waiting, because we actually have
  * to wait on something real. */
 static int
-test_wait(env_t env, void *args)
+test_wait(env_t env)
 {
     /* Allocate an endpoint. */
     seL4_CPtr endpoint;
@@ -153,7 +153,7 @@ test_wait(env_t env, void *args)
 DEFINE_TEST(SYSCALL0010, "Basic seL4_Wait() testing", test_wait)
 
 static int
-test_reply_wait(env_t env, void *args)
+test_reply_wait(env_t env)
 {
     /* Allocate an endpoint. */
     seL4_CPtr endpoint;

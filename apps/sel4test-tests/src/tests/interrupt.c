@@ -18,7 +18,7 @@
 #if CONFIG_HAVE_TIMER
 
 static int
-test_interrupt(env_t env, void *args)
+test_interrupt(env_t env)
 {
 
     int error = timer_periodic(env->timer->timer, 10 * NS_IN_MS);
