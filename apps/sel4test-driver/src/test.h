@@ -38,8 +38,6 @@ typedef struct {
     seL4_CPtr root_cnode;
     /* tcb of the test process */
     seL4_CPtr tcb;
-    /* the domain cap */
-    seL4_CPtr domain;
 #ifndef CONFIG_KERNEL_STABLE
     /* asid pool cap for the test process to use when creating new processes */
     seL4_CPtr asid_pool;

@@ -255,7 +255,6 @@ run_test(struct testcase *test)
     env.init->page_directory = copy_cap_to_process(&test_process, test_process.pd.cptr);
     env.init->root_cnode = SEL4UTILS_CNODE_SLOT;
     env.init->tcb = copy_cap_to_process(&test_process, test_process.thread.tcb.cptr);
-    env.init->domain = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapDomain));
 #ifndef CONFIG_KERNEL_STABLE
     env.init->asid_pool = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapInitThreadASIDPool));
     env.init->asid_ctrl = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapASIDControl));
