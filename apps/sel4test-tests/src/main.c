@@ -60,6 +60,7 @@ abort(void)
     seL4_SetMR(0, -1);
     seL4_Send(endpoint, info);
 
+    /* we should not get here */
     assert(0);
     while (1);
 }
@@ -77,7 +78,10 @@ static testcase_t *
 find_test(char *name)
 {
     testcase_t *test = sel4test_get_test(name);
-    assert(test != NULL);
+    if (test == NULL) {
+        ZF_LOGF("Failed to find test %s", name);
+    }
+
     return test;
 }
 
@@ -112,8 +116,9 @@ init_allocator(env_t env, test_init_data_t *init_data)
                                                          init_data->cspace_size_bits, init_data->free_slots.start,
                                                          init_data->free_slots.end, ALLOCATOR_STATIC_POOL_SIZE,
                                                          allocator_mem_pool);
-    assert(allocator != NULL);
-
+    if (allocator == NULL) {
+        ZF_LOGF("Failed to bootstrap allocator");
+    }
     allocman_make_vka(&env->vka, allocator);
 
     /* fill the allocator with untypeds */
@@ -129,7 +134,9 @@ init_allocator(env_t env, test_init_data_t *init_data)
         uint32_t fake_paddr = 0;
         uint32_t size_bits = init_data->untyped_size_bits_list[size_bits_index];
         error = allocman_utspace_add_uts(allocator, 1, &path, &size_bits, &fake_paddr);
-        assert(!error);
+        if (error) {
+            ZF_LOGF("Failed to add untyped objects to allocator");
+        }
     }
 
     /* create a vspace */
@@ -147,7 +154,10 @@ init_allocator(env_t env, test_init_data_t *init_data)
     void *vaddr;
     virtual_reservation = vspace_reserve_range(&env->vspace, ALLOCATOR_VIRTUAL_POOL_SIZE,
                                                seL4_AllRights, 1, &vaddr);
-    assert(virtual_reservation.res);
+    if (virtual_reservation.res == 0) {
+        ZF_LOGF("Failed to switch allocator to virtual memory pool");
+    }
+
     bootstrap_configure_virtual_pool(allocator, vaddr, ALLOCATOR_VIRTUAL_POOL_SIZE,
                                      env->page_directory);
 
@@ -161,7 +171,10 @@ get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
 
     int error = seL4_CNode_Copy(root, index, depth, init->root_cnode,
                                 init->timer_irq, seL4_WordBits, seL4_AllRights);
-    assert(error == 0);
+    if (error != 0) {
+        ZF_LOGF("Failed to copy irq cap\n");
+    }
+
     return error;
 }
 
@@ -177,11 +190,15 @@ void init_timer(env_t env, test_init_data_t *init_data)
     arch_init_simple(&env->simple);
 
     error = vka_alloc_notification(&env->vka, &env->timer_notification);
-    assert(error == 0);
-
+    if (error != 0) {
+        ZF_LOGF("Failed to allocate notification object");
+    }
+    
     env->timer = sel4platsupport_get_default_timer(&env->vka, &env->vspace,
                                                    &env->simple, env->timer_notification.cptr);
-    assert(env->timer != NULL);
+    if (env->timer == NULL) {
+        ZF_LOGF("Failed to initialise default timer");
+    }
 }
 
 int
@@ -241,7 +258,7 @@ main(int argc, char **argv)
         result = test->function(&env);
     } else {
         result = FAILURE;
-        LOG_ERROR("Cannot find test %s\n", init_data->name);
+        ZF_LOGF("Cannot find test %s\n", init_data->name);
     }
 
     printf("Test %s %s\n", init_data->name, result == SUCCESS ? "passed" : "failed");

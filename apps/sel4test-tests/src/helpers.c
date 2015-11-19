@@ -31,7 +31,7 @@ check_zeroes(seL4_Word addr, seL4_Word size_bytes)
     seL4_Word size_words = size_bytes / sizeof(seL4_Word);
     while (size_words--) {
         if (*p++ != 0) {
-            LOG_ERROR("Found non-zero at position %d: %d\n", ((int)p) - (addr), p[-1]);
+            ZF_LOGE("Found non-zero at position %d: %d\n", ((int)p) - (addr), p[-1]);
             return 0;
         }
     }

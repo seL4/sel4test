@@ -29,7 +29,7 @@ get_frame_cap(void *data, void *paddr, int size_bits, cspacepath_t *path)
 }
 
 void
-arch_init_simple(simple_t *simple)
+arch_init_simple(simple_t *simple) 
 {
     simple->frame_cap = get_frame_cap;
 }

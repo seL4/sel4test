@@ -90,7 +90,9 @@ init_env(env_t env)
 
     /* create an allocator */
     allocman = bootstrap_use_current_simple(&env->simple, ALLOCATOR_STATIC_POOL_SIZE, allocator_mem_pool);
-    assert(allocman);
+    if (allocman == NULL) {
+        ZF_LOGF("Failed to create allocman");
+    }
 
     /* create a vka (interface for interacting with the underlying allocator) */
     allocman_make_vka(&env->vka, allocman);
@@ -99,13 +101,20 @@ init_env(env_t env)
      * boot info not because it will use capabilities from it, but so
      * it knows the address and will add it as a reserved region */
     error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&env->vspace,
-                                                           &data, simple_get_pd(&env->simple), &env->vka, seL4_GetBootInfo());
+                                                           &data, simple_get_pd(&env->simple), 
+                                                           &env->vka, seL4_GetBootInfo());
+    if (error) {
+        ZF_LOGF("Failed to bootstrap vspace");
+    }
 
     /* fill the allocator with virtual memory */
     void *vaddr;
     virtual_reservation = vspace_reserve_range(&env->vspace,
                                                ALLOCATOR_VIRTUAL_POOL_SIZE, seL4_AllRights, 1, &vaddr);
-    assert(virtual_reservation.res);
+    if (virtual_reservation.res == 0) {
+        ZF_LOGF("Failed to provide virtual memory for allocator");
+    }
+
     bootstrap_configure_virtual_pool(allocman, vaddr,
                                      ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&env->simple));
 }
@@ -120,7 +129,9 @@ copy_cap_to_process(sel4utils_process_t *process, seL4_CPtr cap)
 
     vka_cspace_make_path(&env.vka, cap, &path);
     copied_cap = sel4utils_copy_cap_to_process(process, path);
-    assert(copied_cap != 0);
+    if (copied_cap == 0) {
+        ZF_LOGF("Failed to copy cap to process");
+    }
 
     return copied_cap;
 }
@@ -175,7 +186,10 @@ populate_untypeds(vka_object_t *untypeds)
     free_objects(reserve, reserve_num);
 
     /* Return number of untypeds for tests */
-    assert(num_untypeds > 0);
+    if (num_untypeds == 0) {
+        ZF_LOGF("No untypeds for tests!");
+    }
+
     return num_untypeds;
 }
 
@@ -319,14 +333,19 @@ run_test(struct testcase *test)
 static void
 init_timer_caps(env_t env)
 {
-    /* get the timer irq cap */
+    /* get the irq control cap */
     seL4_CPtr cap;
     UNUSED int error = vka_cspace_alloc(&env->vka, &cap);
-    assert(error == 0);
+    if (error != 0) {
+        ZF_LOGF("Failed to allocate cslot, error %d", error);
+    }
 
     vka_cspace_make_path(&env->vka, cap, &env->irq_path);
     error = simple_get_IRQ_control(&env->simple, DEFAULT_TIMER_INTERRUPT, env->irq_path);
-    assert(error == 0);
+    
+    if (error != 0) {
+        ZF_LOGF("Failed to get IRQ control, error %d", error);
+    }
 
     arch_init_timer_caps(env);
 }
