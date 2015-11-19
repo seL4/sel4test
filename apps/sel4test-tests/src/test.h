@@ -16,6 +16,7 @@
 
 #include <vka/vka.h>
 #include <vka/object.h>
+#include <sel4test/test.h>
 #include <sel4utils/elf.h>
 #include <simple/simple.h>
 #include <vspace/vspace.h>
@@ -47,14 +48,10 @@ typedef struct {
 #endif /* CONFIG_IOMMU */
     /* cap to the sel4platsupport default timer irq handler */
     seL4_CPtr timer_irq;
-#ifdef CONFIG_ARCH_ARM
     /* cap to the sel4platsupport default timer physical frame */
     seL4_CPtr timer_frame;
-#endif
-#ifdef CONFIG_ARCH_IA32
     /* cap to the sel4platsupport default timer io port */
     seL4_CPtr io_port;
-#endif
 
     /* size of the test processes cspace */
     seL4_Word cspace_size_bits;
@@ -88,5 +85,7 @@ typedef struct {
     /* address of the stack */
     void *stack;
 } test_init_data_t;
+
+void arch_init_simple(simple_t *simple);
 
 #endif /* __TEST_H */

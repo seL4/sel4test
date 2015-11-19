@@ -45,30 +45,6 @@
 
 #include "test.h"
 
-struct env {
-    /* An initialised vka that may be used by the test. */
-    vka_t vka;
-    /* virtual memory management interface */
-    vspace_t vspace;
-    /* abtracts over kernel version and boot environment */
-    simple_t simple;
-    /* path for the default timer irq handler */
-    cspacepath_t irq_path;
-#ifdef CONFIG_ARCH_ARM
-    /* frame for the default timer */
-    cspacepath_t frame_path;
-#elif CONFIG_ARCH_IA32
-    /* io port for the default timer */
-    seL4_CPtr io_port_cap;
-#endif
-    /* init data frame vaddr */
-    test_init_data_t *init;
-    /* extra cap to the init data frame for mapping into the remote vspace */
-    seL4_CPtr init_frame_cap_copy;
-};
-
-#include <sel4test/test.h>
-
 #define TESTS_APP "sel4test-tests"
 
 /* ammount of untyped memory to reserve for the driver (32mb) */
@@ -136,7 +112,7 @@ init_env(env_t env)
 
 
 /* copy a cap to a process, returning the cptr in the process' cspace */
-static seL4_CPtr
+seL4_CPtr
 copy_cap_to_process(sel4utils_process_t *process, seL4_CPtr cap)
 {
     seL4_CPtr copied_cap;
@@ -242,22 +218,11 @@ send_init_data(env_t env, seL4_CPtr endpoint, sel4utils_process_t *process)
 static void
 copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-#ifdef CONFIG_ARCH_ARM
-    /* Timer frame cap (only for arm). Here we assume the sel4platsupport
-     * default timer only requires one frame. */
-    init->timer_frame = copy_cap_to_process(test_process, env->frame_path.capPtr);
-    assert(init->timer_frame != 0);
-#endif
-
     /* irq cap for the timer irq */
     init->timer_irq = copy_cap_to_process(test_process, env->irq_path.capPtr);
     assert(init->timer_irq != 0);
 
-#ifdef CONFIG_ARCH_IA32
-    /* io port cap (since the default timer on ia32 is the PIT) */
-    init->io_port = copy_cap_to_process(test_process, env->io_port_cap);
-    assert(init->io_port != 0);
-#endif
+    arch_copy_timer_caps(init, env, test_process);
 }
 
 /* Run a single test.
@@ -363,20 +328,7 @@ init_timer_caps(env_t env)
     error = simple_get_IRQ_control(&env->simple, DEFAULT_TIMER_INTERRUPT, env->irq_path);
     assert(error == 0);
 
-#ifdef CONFIG_ARCH_ARM
-    /* get the timer frame cap */
-    error = vka_cspace_alloc(&env->vka, &cap);
-    assert(error == 0);
-
-    vka_cspace_make_path(&env->vka, cap, &env->frame_path);
-    error = simple_get_frame_cap(&env->simple, (void *) DEFAULT_TIMER_PADDR, PAGE_BITS_4K, &env->frame_path);
-    assert(error == 0);
-#elif CONFIG_ARCH_IA32
-    env->io_port_cap = simple_get_IOPort_cap(&env->simple, PIT_IO_PORT_MIN, PIT_IO_PORT_MAX);
-    assert(env->io_port_cap != 0);
-#else
-#error "Unknown architecture"
-#endif
+    arch_init_timer_caps(env);
 }
 
 

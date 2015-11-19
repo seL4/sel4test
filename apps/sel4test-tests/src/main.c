@@ -24,10 +24,6 @@
 #include <sel4platsupport/plat/timer.h>
 #include <platsupport/timer.h>
 
-#ifdef CONFIG_IA32
-#include <platsupport/plat/pit.h>
-#endif
-
 #include <sel4utils/util.h>
 #include <sel4utils/mapping.h>
 #include <sel4utils/vspace.h>
@@ -157,35 +153,6 @@ init_allocator(env_t env, test_init_data_t *init_data)
 
 }
 
-/* basic simple functions */
-#ifdef CONFIG_ARCH_ARM
-static seL4_Error
-get_frame_cap(void *data, void *paddr, int size_bits, cspacepath_t *path)
-{
-    test_init_data_t *init = (test_init_data_t *) data;
-    assert(paddr == (void*) DEFAULT_TIMER_PADDR);
-    assert(size_bits == seL4_PageBits);
-
-
-    int error = seL4_CNode_Copy(path->root, path->capPtr, path->capDepth, init->root_cnode,
-                                init->timer_frame, seL4_WordBits, seL4_AllRights);
-    assert(error == seL4_NoError);
-
-    return error;
-}
-#endif /* CONFIG_ARCH_ARM */
-
-#ifdef CONFIG_ARCH_IA32
-seL4_CPtr get_IOPort_cap(void *data, uint16_t start_port, uint16_t end_port)
-{
-    test_init_data_t *init = (test_init_data_t *) data;
-    assert(start_port >= PIT_IO_PORT_MIN);
-    assert(end_port <= PIT_IO_PORT_MAX);
-
-    return init->io_port;
-}
-#endif /* CONFIG_ARCH_IA32 */
-
 static seL4_Error
 get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
 {
@@ -202,16 +169,12 @@ void init_timer(env_t env, test_init_data_t *init_data)
 {
     /* minimal simple implementation to get the platform
      * default timer off the ground */
-#ifdef CONFIG_ARCH_ARM
-    env->simple.frame_cap = get_frame_cap;
-#elif CONFIG_ARCH_IA32
-    env->simple.IOPort_cap = get_IOPort_cap;
-#endif
     env->simple.irq = get_irq;
     env->simple.data = (void *) init_data;
 
     UNUSED int error;
 
+    arch_init_simple(&env->simple);
 
     error = vka_alloc_notification(&env->vka, &env->timer_notification);
     assert(error == 0);
