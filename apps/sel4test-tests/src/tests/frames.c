@@ -127,7 +127,6 @@ test_frame_exported(env_t env)
     seL4_Word vaddr_scratch;
     seL4_Word mem_total;
     int err;
-    int i;
 
     vka = &env->vka;
 
@@ -154,7 +153,7 @@ test_frame_exported(env_t env)
     /* loop through frame sizes, allocate, map and touch them until we run out
      * of memory. */
     mem_total = 0;
-    for (i = 0; i < ARRAY_SIZE(frame_types); i++) {
+    for (int i = 0; i < ARRAY_SIZE(frame_types); i++) {
         while (1) {
             vka_object_t pt = {0};
             vka_object_t frame = {0};

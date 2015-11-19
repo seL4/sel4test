@@ -66,9 +66,9 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
     for (int i = 0; i < (1 << num_cnode_bits); i++) {
         seL4_CPtr ctable = vka_alloc_cnode_object_leaky(&env->vka, CNODE_SIZE_BITS);
 
-        for (int i = 0; i < (1 << CNODE_SIZE_BITS); i++) {
+        for (int j = 0; j < (1 << CNODE_SIZE_BITS); j++) {
             error = seL4_CNode_Copy(
-                        ctable, i, CNODE_SIZE_BITS,
+                        ctable, j, CNODE_SIZE_BITS,
                         env->cspace_root, ep, seL4_WordBits,
                         seL4_AllRights);
 
