@@ -134,39 +134,39 @@ DEFINE_TEST(SYSCALL0006, "Basic seL4_DebugPutChar() testing", test_debug_put_cha
 /* Slightly more complex tests for waiting, because we actually have
  * to wait on something real. */
 static int
-test_wait(env_t env)
+test_recv(env_t env)
 {
-    /* Allocate an endpoint. */
-    seL4_CPtr endpoint;
-    endpoint = vka_alloc_notification_leaky(&env->vka);
+    /* Allocate an notification. */
+    seL4_CPtr notification;
+    notification = vka_alloc_notification_leaky(&env->vka);
 
     for (int i = 0; i < 10; i++) {
         /* Notify it, so that we don't block. */
-        seL4_Signal(endpoint);
+        seL4_Signal(notification);
 
-        /* Wait for the endpoint. */
-        TEST_REGISTERS(seL4_Wait(endpoint, NULL));
+        /* Recv for the notification. */
+        TEST_REGISTERS(seL4_Recv(notification, NULL));
     }
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SYSCALL0010, "Basic seL4_Wait() testing", test_wait)
+DEFINE_TEST(SYSCALL0010, "Basic seL4_Recv() testing", test_recv)
 
 static int
-test_reply_wait(env_t env)
+test_reply_recv(env_t env)
 {
-    /* Allocate an endpoint. */
-    seL4_CPtr endpoint;
-    endpoint = vka_alloc_notification_leaky(&env->vka);
+    /* Allocate an notification. */
+    seL4_CPtr notification;
+    notification = vka_alloc_notification_leaky(&env->vka);
 
     for (int i = 0; i < 10; i++) {
         /* Notify it, so that we don't block. */
-        seL4_Signal(endpoint);
+        seL4_Signal(notification);
 
-        /* ReplyWait for the endpoint. */
-        TEST_REGISTERS(seL4_ReplyWait(endpoint, seL4_MessageInfo_new(0, 0, 0, 0), NULL));
+        /* ReplyRecv for the notification. */
+        TEST_REGISTERS(seL4_ReplyRecv(notification, seL4_MessageInfo_new(0, 0, 0, 0), NULL));
     }
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SYSCALL0011, "Basic seL4_ReplyWait() testing", test_reply_wait)
+DEFINE_TEST(SYSCALL0011, "Basic seL4_ReplyRecv() testing", test_reply_recv)

@@ -58,7 +58,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault, void *
     seL4_Word sender_badge = 0;
 
     while(1) {
-        tag = seL4_Wait(fault_ep, &sender_badge);
+        tag = seL4_Recv(fault_ep, &sender_badge);
 
         test_check(seL4_MessageInfo_get_label(tag) == SEL4_USER_EXCEPTION_LABEL);
 

@@ -22,9 +22,9 @@ bouncer_func(seL4_CPtr ep, seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     seL4_Word sender_badge;
-    seL4_Wait(ep, &sender_badge);
+    seL4_Recv(ep, &sender_badge);
     while (1) {
-        seL4_ReplyWait(ep, tag, &sender_badge);
+        seL4_ReplyRecv(ep, tag, &sender_badge);
     }
     return 0;
 }
@@ -109,7 +109,7 @@ test_ep_recycle(env_t env)
     for (int i = 0; i < NUM_BADGED_CLIENTS; i++) {
         seL4_Word sender_badge;
         seL4_MessageInfo_ptr_set_length(&tag, 1);
-        tag = seL4_Wait(ep, &sender_badge);
+        tag = seL4_Recv(ep, &sender_badge);
         assert(seL4_MessageInfo_get_length(tag) == 1);
         assert(seL4_GetMR(0) == sender_badge - 100);
         seL4_SetMR(0, ~seL4_GetMR(0));
@@ -152,7 +152,7 @@ static int ep_test_func(seL4_CPtr sync_ep, seL4_CPtr test_ep, volatile int *stat
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     seL4_Word sender_badge;
     while (1) {
-        seL4_Wait(sync_ep, &sender_badge);
+        seL4_Recv(sync_ep, &sender_badge);
         /* Hit up the test end point */
         seL4_MessageInfo_t reply = seL4_Call(test_ep, tag);
         /* See what the status was */

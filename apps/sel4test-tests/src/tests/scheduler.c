@@ -358,7 +358,7 @@ test_all_priorities(struct env* env)
 
     /* Now block. */
     seL4_Word sender_badge = 0;
-    seL4_Wait(ep, &sender_badge);
+    seL4_Recv(ep, &sender_badge);
 
     /* When we get woken up, last_prio should be MIN_PRIO. */
     test_check(last_prio == MIN_PRIO);
@@ -491,7 +491,7 @@ ipc_test_helper_0(ipc_test_data_t *data)
     while (1) {
         seL4_MessageInfo_t tag;
         seL4_Word sender_badge = 0;
-        tag = seL4_Wait(data->ep0, &sender_badge);
+        tag = seL4_Recv(data->ep0, &sender_badge);
         data->bounces++;
         seL4_Reply(tag);
     }
@@ -509,7 +509,7 @@ ipc_test_helper_1(ipc_test_data_t *data)
     /* TEST PART 1 */
     /* Receive a pending send. */
     CHECK_STEP(ipc_test_step, 1);
-    tag = seL4_Wait(data->ep1, &sender_badge);
+    tag = seL4_Recv(data->ep1, &sender_badge);
 
     /* As soon as the wait is performed, we should be preempted. */
 
@@ -527,7 +527,7 @@ ipc_test_helper_1(ipc_test_data_t *data)
     /* TEST PART 2 */
     /* Receive a send that is not yet pending. */
     CHECK_STEP(ipc_test_step, 5);
-    tag = seL4_Wait(data->ep1, &sender_badge);
+    tag = seL4_Recv(data->ep1, &sender_badge);
 
     CHECK_STEP(ipc_test_step, 8);
     CHECK_TESTCASE(result, seL4_MessageInfo_get_length(tag) == 19);

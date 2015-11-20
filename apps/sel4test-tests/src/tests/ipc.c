@@ -93,7 +93,7 @@ wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
         seL4_MessageInfo_t tag;
         seL4_Word sender_badge = 0;
 
-        tag = seL4_Wait(endpoint, &sender_badge);
+        tag = seL4_Recv(endpoint, &sender_badge);
         seL4_Word actual_len = length;
         if (actual_len <= seL4_MsgMaxLength) {
             test_assert(seL4_MessageInfo_get_length(tag) == actual_len);
@@ -122,7 +122,7 @@ nbwait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word nbwait_should_wait)
         seL4_MessageInfo_t tag;
         seL4_Word sender_badge = 0;
 
-        tag = seL4_Wait(endpoint, &sender_badge);
+        tag = seL4_Recv(endpoint, &sender_badge);
         seL4_Word actual_len = length;
         if (actual_len <= seL4_MsgMaxLength) {
             test_assert(seL4_MessageInfo_get_length(tag) == actual_len);
@@ -151,10 +151,10 @@ replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
 
         /* First reply/wait can't reply. */
         if (first) {
-            tag = seL4_Wait(endpoint, &sender_badge);
+            tag = seL4_Recv(endpoint, &sender_badge);
             first = 0;
         } else {
-            tag = seL4_ReplyWait(endpoint, tag, &sender_badge);
+            tag = seL4_ReplyRecv(endpoint, tag, &sender_badge);
         }
 
         seL4_Word actual_len = length;
@@ -204,7 +204,7 @@ reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
             first = 0;
         }
 
-        tag = seL4_Wait(endpoint, &sender_badge);
+        tag = seL4_Recv(endpoint, &sender_badge);
 
         seL4_Word actual_len = length;
         /* Sanity check the received message. */
@@ -319,56 +319,56 @@ test_send_wait(env_t env)
 {
     return test_ipc_pair(env, send_func, wait_func, false);
 }
-DEFINE_TEST(IPC0001, "Test seL4_Send + seL4_Wait", test_send_wait)
+DEFINE_TEST(IPC0001, "Test seL4_Send + seL4_Recv", test_send_wait)
 
 static int
 test_call_replywait(env_t env)
 {
     return test_ipc_pair(env, call_func, replywait_func, false);
 }
-DEFINE_TEST(IPC0002, "Test seL4_Call + seL4_ReplyWait", test_call_replywait)
+DEFINE_TEST(IPC0002, "Test seL4_Call + seL4_ReplyRecv", test_call_replywait)
 
 static int
 test_call_reply_and_wait(env_t env)
 {
     return test_ipc_pair(env, call_func, reply_and_wait_func, false);
 }
-DEFINE_TEST(IPC0003, "Test seL4_Send + seL4_Reply + seL4_Wait", test_call_reply_and_wait)
+DEFINE_TEST(IPC0003, "Test seL4_Send + seL4_Reply + seL4_Recv", test_call_reply_and_wait)
 
 static int
 test_nbsend_wait(env_t env)
 {
     return test_ipc_pair(env, nbsend_func, nbwait_func, false);
 }
-DEFINE_TEST(IPC0004, "Test seL4_NBSend + seL4_Wait", test_nbsend_wait)
+DEFINE_TEST(IPC0004, "Test seL4_NBSend + seL4_Recv", test_nbsend_wait)
 
 static int
 test_send_wait_interas(env_t env)
 {
     return test_ipc_pair(env, send_func, wait_func, true);
 }
-DEFINE_TEST(IPC1001, "Test inter-AS seL4_Send + seL4_Wait", test_send_wait_interas)
+DEFINE_TEST(IPC1001, "Test inter-AS seL4_Send + seL4_Recv", test_send_wait_interas)
 
 static int
 test_call_replywait_interas(env_t env)
 {
     return test_ipc_pair(env, call_func, replywait_func, true);
 }
-DEFINE_TEST(IPC1002, "Test inter-AS seL4_Call + seL4_ReplyWait", test_call_replywait_interas)
+DEFINE_TEST(IPC1002, "Test inter-AS seL4_Call + seL4_ReplyRecv", test_call_replywait_interas)
 
 static int
 test_call_reply_and_wait_interas(env_t env)
 {
     return test_ipc_pair(env, call_func, reply_and_wait_func, true);
 }
-DEFINE_TEST(IPC1003, "Test inter-AS seL4_Send + seL4_Reply + seL4_Wait", test_call_reply_and_wait_interas)
+DEFINE_TEST(IPC1003, "Test inter-AS seL4_Send + seL4_Reply + seL4_Recv", test_call_reply_and_wait_interas)
 
 static int
 test_nbsend_wait_interas(env_t env)
 {
     return test_ipc_pair(env, nbsend_func, nbwait_func, true);
 }
-DEFINE_TEST(IPC1004, "Test inter-AS seL4_NBSend + seL4_Wait", test_nbsend_wait_interas)
+DEFINE_TEST(IPC1004, "Test inter-AS seL4_NBSend + seL4_Recv", test_nbsend_wait_interas)
 
 static int
 test_ipc_abort_in_call(env_t env)
@@ -388,7 +388,7 @@ test_ipc_abort_in_call(env_t env)
     /* Wait for the endpoint that it's going to call. */
     seL4_Word sender_badge = 0;
 
-    seL4_Wait(ep, &sender_badge);
+    seL4_Recv(ep, &sender_badge);
 
     /* Now suspend the thread. */
     seL4_TCB_Suspend(thread_a.thread.tcb.cptr);

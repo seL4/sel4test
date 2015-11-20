@@ -323,7 +323,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
     seL4_Word badged = !!(badged_or_restart & 2);
     seL4_Word restart = !!(badged_or_restart & 1);
 
-    tag = seL4_Wait(fault_ep, &sender_badge);
+    tag = seL4_Recv(fault_ep, &sender_badge);
 
     if (badged) {
         test_check(sender_badge == EXPECTED_BADGE);

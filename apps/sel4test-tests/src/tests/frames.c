@@ -264,7 +264,7 @@ static void fault(void)
  */
 static void *handle(seL4_CPtr fault_ep)
 {
-    seL4_MessageInfo_t info = seL4_Wait(fault_ep, NULL);
+    seL4_MessageInfo_t info = seL4_Recv(fault_ep, NULL);
     if (seL4_MessageInfo_get_label(info) == seL4_VMFault) {
         return (void*)seL4_GetMR(1);
     } else {

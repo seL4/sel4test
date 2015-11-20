@@ -304,7 +304,7 @@ run_test(struct testcase *test)
 
     /* wait on it to finish or fault, report result */
     seL4_Word badge;
-    seL4_MessageInfo_t info = seL4_Wait(test_process.fault_endpoint.cptr, &badge);
+    seL4_MessageInfo_t info = seL4_Recv(test_process.fault_endpoint.cptr, &badge);
 
     int result = seL4_GetMR(0);
     if (seL4_MessageInfo_get_label(info) != seL4_NoFault) {

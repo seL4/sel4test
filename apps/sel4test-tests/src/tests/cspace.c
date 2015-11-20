@@ -99,7 +99,7 @@ test_32bit_cspace(env_t env)
     /* Wait for it. */
     seL4_MessageInfo_t tag;
     seL4_Word sender_badge = 0;
-    tag = seL4_Wait(ep, &sender_badge);
+    tag = seL4_Recv(ep, &sender_badge);
     test_assert(seL4_MessageInfo_get_length(tag) == 1);
     test_assert(seL4_GetMR(0) == READY_MAGIC);
 
@@ -111,7 +111,7 @@ test_32bit_cspace(env_t env)
     test_assert(!error);
 
     /* And now wait for it to do some tests and return to us. */
-    tag = seL4_Wait(ep, &sender_badge);
+    tag = seL4_Recv(ep, &sender_badge);
     test_assert(seL4_MessageInfo_get_length(tag) == 1);
     test_assert(seL4_GetMR(0) == SUCCESS_MAGIC);
 

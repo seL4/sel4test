@@ -92,7 +92,7 @@ receive_init_data(seL4_CPtr endpoint)
     seL4_Word badge;
     UNUSED seL4_MessageInfo_t info;
 
-    info = seL4_Wait(endpoint, &badge);
+    info = seL4_Recv(endpoint, &badge);
 
     /* check the label is correct */
     assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
