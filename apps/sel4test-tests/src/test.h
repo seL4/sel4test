@@ -42,6 +42,7 @@ typedef struct {
 #ifndef CONFIG_KERNEL_STABLE
     /* asid pool cap for the test process to use when creating new processes */
     seL4_CPtr asid_pool;
+    seL4_CPtr asid_ctrl;
 #endif
 #ifdef CONFIG_IOMMU
     seL4_CPtr io_space;

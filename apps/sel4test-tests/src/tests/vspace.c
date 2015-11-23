@@ -34,6 +34,29 @@ test_interas_diffcspace(env_t env)
 }
 DEFINE_TEST(VSPACE0000, "Test threads in different cspace/vspace", test_interas_diffcspace)
 
+static int
+test_asid_pool_make(env_t env)
+{
+    vka_t *vka = &env->vka;
+    cspacepath_t path;
+    seL4_CPtr pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
+    test_assert(pool);
+    int ret = vka_cspace_alloc_path(vka, &path);
+    ret = seL4_ARCH_ASIDControl_MakePool(env->asid_ctrl, pool, env->cspace_root, path.capPtr, path.capDepth);
+    test_eq(ret, seL4_NoError);
+    ret = seL4_ARCH_ASIDPool_Assign(path.capPtr, env->page_directory);
+    test_eq(ret, seL4_InvalidCapability);
+    vka_object_t vspaceroot;
+    ret = vka_alloc_vspace_root(vka, &vspaceroot);
+    test_assert(!ret);
+    ret = seL4_ARCH_ASIDPool_Assign(path.capPtr, vspaceroot.cptr);
+    test_eq(ret, seL4_NoError);
+    return sel4test_get_result();
+
+}
+
+DEFINE_TEST(VSPACE0001, "Test create ASID pool", test_asid_pool_make)
+
 #ifdef ARCH_ARM
 static int
 test_unmap_after_delete(env_t env)
