@@ -263,6 +263,7 @@ run_test(struct testcase *test)
     env.init->domain = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapDomain));
 #ifndef CONFIG_KERNEL_STABLE
     env.init->asid_pool = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapInitThreadASIDPool));
+    env.init->asid_ctrl = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapASIDControl));
 #endif /* CONFIG_KERNEL_STABLE */
 #ifdef CONFIG_IOMMU
     env.init->io_space = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapIOSpace));

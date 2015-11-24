@@ -48,6 +48,7 @@ struct env {
     seL4_CPtr tcb;
 #ifndef CONFIG_KERNEL_STABLE
     seL4_CPtr asid_pool;
+    seL4_CPtr asid_ctrl;
 #endif /* CONFIG_KERNEL_STABLE */
 #ifdef CONFIG_IOMMU
     seL4_CPtr io_space;
