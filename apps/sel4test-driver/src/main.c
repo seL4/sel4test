@@ -85,8 +85,8 @@ static void
 init_env(env_t env)
 {
     allocman_t *allocman;
-    UNUSED reservation_t virtual_reservation;
-    UNUSED int error;
+    reservation_t virtual_reservation;
+    int error;
 
     /* create an allocator */
     allocman = bootstrap_use_current_simple(&env->simple, ALLOCATOR_STATIC_POOL_SIZE, allocator_mem_pool);
@@ -336,7 +336,7 @@ init_timer_caps(env_t env)
 {
     /* get the irq control cap */
     seL4_CPtr cap;
-    UNUSED int error = vka_cspace_alloc(&env->vka, &cap);
+    int error = vka_cspace_alloc(&env->vka, &cap);
     if (error != 0) {
         ZF_LOGF("Failed to allocate cslot, error %d", error);
     }
