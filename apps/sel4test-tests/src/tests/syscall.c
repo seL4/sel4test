@@ -23,7 +23,7 @@
  * Perform the codeblock given in "code", testing registers before and after to
  * ensure that cloberring does not occur.
  */
-#if defined(ARCH_ARM)
+#if defined(CONFIG_ARCH_ARM)
 #define TEST_REGISTERS(code) \
     do { \
         register int a00 = 0xdead0000; \
@@ -60,7 +60,50 @@
         test_assert(a10 == 0xdead000a); \
         test_assert(a11 == 0xdead000b); \
     } while (0)
-#elif defined(ARCH_IA32)
+#elif defined(CONFIG_ARCH_X86_64)
+#define TEST_REGISTERS(code) \
+    do { \
+        register long a00 = 0xdeadbeefdead0000; \
+        register long a01 = 0xdeadbeefdead0001; \
+        register long a02 = 0xdeadbeefdead0002; \
+        register long a03 = 0xdeadbeefdead0003; \
+        register long a04 = 0xdeadbeefdead0004; \
+        register long a05 = 0xdeadbeefdead0005; \
+        register long a06 = 0xdeadbeefdead0006; \
+        register long a07 = 0xdeadbeefdead0007; \
+        register long a08 = 0xdeadbeefdead0008; \
+        register long a09 = 0xdeadbeefdead0009; \
+        register long a10 = 0xdeadbeefdead000a; \
+        register long a11 = 0xdeadbeefdead000b; \
+        register long a12 = 0xdeadbeefdead000c; \
+        register long a13 = 0xdeadbeefdead000d; \
+        register long a14 = 0xdeadbeefdead000e; \
+        register long a15 = 0xdeadbeefdead000f; \
+        code ; \
+        __asm__ __volatile__ ("" \
+                : "+r"(a00), "+r"(a01), "+r"(a02), "+r"(a03), \
+                  "+r"(a04), "+r"(a05), "+r"(a06), "+r"(a07), \
+                  "+r"(a08), "+r"(a10), "+r"(a11), "+r"(a12), \
+                  "+r"(a13)); \
+        test_assert(a00 == 0xdeadbeefdead0000); \
+        test_assert(a01 == 0xdeadbeefdead0001); \
+        test_assert(a02 == 0xdeadbeefdead0002); \
+        test_assert(a03 == 0xdeadbeefdead0003); \
+        test_assert(a04 == 0xdeadbeefdead0004); \
+        test_assert(a05 == 0xdeadbeefdead0005); \
+        test_assert(a06 == 0xdeadbeefdead0006); \
+        test_assert(a07 == 0xdeadbeefdead0007); \
+        test_assert(a08 == 0xdeadbeefdead0008); \
+        test_assert(a09 == 0xdeadbeefdead0009); \
+        test_assert(a10 == 0xdeadbeefdead000a); \
+        test_assert(a11 == 0xdeadbeefdead000b); \
+        test_assert(a12 == 0xdeadbeefdead000c); \
+        test_assert(a13 == 0xdeadbeefdead000d); \
+        test_assert(a14 == 0xdeadbeefdead000e); \
+        test_assert(a15 == 0xdeadbeefdead000f); \
+    } while (0)
+#elif defined(CONFIG_ARCH_IA32)
+
 #define TEST_REGISTERS(code) \
     do { \
         register int a00 = 0xdead0000; \

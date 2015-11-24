@@ -24,7 +24,7 @@ static int
 test_page_flush(env_t env)
 {
     seL4_CPtr frame, framec;
-    seL4_Word vstart, vstartc;
+    uintptr_t vstart, vstartc;
     volatile uint32_t *ptr, *ptrc;
     vka_t *vka;
     int err;
@@ -42,9 +42,9 @@ test_page_flush(env_t env)
                                         PAGE_SIZE_4K, seL4_AllRights, 1, &vaddrc);
     assert(reservationc.res);
 
-    vstart = (uint32_t)vaddr;
+    vstart = (uintptr_t)vaddr;
     assert(IS_ALIGNED(vstart, seL4_PageBits));
-    vstartc = (uint32_t)vaddrc;
+    vstartc = (uintptr_t)vaddrc;
     assert(IS_ALIGNED(vstartc, seL4_PageBits));
 
     ptr = (volatile uint32_t*)vstart;
@@ -178,7 +178,7 @@ static int
 test_page_directory_flush(env_t env)
 {
     seL4_CPtr frame, framec;
-    seL4_Word vstart, vstartc;
+    uintptr_t vstart, vstartc;
     volatile uint32_t *ptr, *ptrc;
     vka_t *vka;
     int err;
@@ -196,9 +196,9 @@ test_page_directory_flush(env_t env)
                                         PAGE_SIZE_4K, seL4_AllRights, 1, &vaddrc);
     assert(reservationc.res);
 
-    vstart = (uint32_t)vaddr;
+    vstart = (uintptr_t)vaddr;
     assert(IS_ALIGNED(vstart, seL4_PageBits));
-    vstartc = (uint32_t)vaddrc;
+    vstartc = (uintptr_t)vaddrc;
     assert(IS_ALIGNED(vstartc, seL4_PageBits));
 
     ptr = (volatile uint32_t*)vstart;

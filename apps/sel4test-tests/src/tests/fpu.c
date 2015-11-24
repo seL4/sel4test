@@ -78,22 +78,14 @@ fpu_worker(seL4_Word p1, seL4_Word p2, seL4_Word p3, seL4_Word p4)
  * Early versions of seL4 had a bug here because we were not context-switching
  * the FPU at all. Oops.
  */
-#ifdef CONFIG_X86_64
-#define NUM_THREADS  4
-static helper_thread_t thread[NUM_THREADS];
-static volatile double thread_state[NUM_THREADS];
-#endif
-
 #ifndef CONFIG_FT
 
 static int
 test_fpu_multithreaded(struct env* env)
 {
-#ifndef CONFIG_X86_64
     const int NUM_THREADS = 4;
     helper_thread_t thread[NUM_THREADS];
     volatile double thread_state[NUM_THREADS];
-#endif
     seL4_Word iterations = 1;
     int num_preemptions = 0;
 

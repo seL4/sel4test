@@ -43,7 +43,7 @@ do_read_fault(void)
     int *x = (int*)BAD_VADDR;
     int val = BAD_MAGIC;
     /* Do a read fault. */
-#if defined(ARCH_ARM)
+#if defined(CONFIG_ARCH_ARM)
     asm volatile (
         "mov r0, %[val]\n\t"
         "read_fault_address:\n\t"
@@ -54,7 +54,7 @@ do_read_fault(void)
         : [addrreg] "r" (x)
         : "r0"
     );
-#elif defined(ARCH_IA32)
+#elif defined(CONFIG_ARCH_X86)
     asm volatile (
         "mov %[val], %%eax\n\t"
         "read_fault_address:\n\t"
@@ -79,7 +79,7 @@ do_write_fault(void)
     int *x = (int*)BAD_VADDR;
     int val = BAD_MAGIC;
     /* Do a write fault. */
-#if defined(ARCH_ARM)
+#if defined(CONFIG_ARCH_ARM)
     asm volatile (
         "mov r0, %[val]\n\t"
         "write_fault_address:\n\t"
@@ -90,7 +90,7 @@ do_write_fault(void)
         : [addrreg] "r" (x)
         : "r0"
     );
-#elif defined(ARCH_IA32)
+#elif defined(CONFIG_ARCH_X86)
     asm volatile (
         "mov %[val], %%eax\n\t"
         "write_fault_address:\n\t"
@@ -114,7 +114,7 @@ do_instruction_fault(void)
     int *x = (int*)BAD_VADDR;
     int val = BAD_MAGIC;
     /* Jump to a crazy address. */
-#if defined(ARCH_ARM)
+#if defined(CONFIG_ARCH_ARM)
     asm volatile (
         "mov r0, %[val]\n\t"
         "blx %[addrreg]\n\t"
@@ -124,7 +124,7 @@ do_instruction_fault(void)
         : [addrreg] "r" (x)
         : "r0", "lr"
     );
-#elif defined(ARCH_IA32)
+#elif defined(CONFIG_ARCH_X86)
     asm volatile (
         "mov %[val], %%eax\n\t"
         "instruction_fault_address:\n\t"
@@ -149,7 +149,7 @@ do_bad_syscall(void)
     int *x = (int*)BAD_VADDR;
     int val = BAD_MAGIC;
     /* Do an undefined system call. */
-#if defined(ARCH_ARM)
+#if defined(CONFIG_ARCH_ARM)
     asm volatile (
         "mov r7, %[scno]\n\t"
         "mov r0, %[val]\n\t"
@@ -162,8 +162,7 @@ do_bad_syscall(void)
         [scno] "i" (BAD_SYSCALL_NUMBER)
         : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "memory", "cc"
     );
-#elif defined(ARCH_IA32)
-#ifdef CONFIG_X86_64
+#elif defined(CONFIG_ARCH_X86_64)
     asm volatile (
         "movl   %[val], %%eax\n\t"
         "movq   %%rsp, %%rcx\n\t"
@@ -178,7 +177,7 @@ do_bad_syscall(void)
         [scno] "i" (BAD_SYSCALL_NUMBER)
         : "rax", "rbx", "rcx", "rdx"
     );
-#else
+#elif defined(CONFIG_ARCH_IA32)
     asm volatile (
         "mov %[val], %%eax\n\t"
         "mov %%esp, %%ecx\n\t"
@@ -193,7 +192,6 @@ do_bad_syscall(void)
         [scno] "i" (BAD_SYSCALL_NUMBER)
         : "eax", "ebx", "ecx", "edx"
     );
-#endif
 #else
 #error "Unknown architecture."
 #endif
@@ -209,7 +207,7 @@ do_bad_instruction(void)
 {
     int val = BAD_MAGIC;
     /* Execute an undefined instruction. */
-#if defined(ARCH_ARM)
+#if defined(CONFIG_ARCH_ARM)
     asm volatile (
         /* Save SP */
         "str sp, [%[sp]]\n\t"
@@ -230,8 +228,7 @@ do_bad_instruction(void)
         [valptr] "r" (&val)
         : "r0", "memory"
     );
-#elif defined(ARCH_IA32)
-#ifdef CONFIG_X86_64
+#elif defined(CONFIG_ARCH_X86_64)
     asm volatile (
         /* save RSP */
         "movq   %%rsp, (%[sp])\n\t"
@@ -248,7 +245,7 @@ do_bad_instruction(void)
         [valptr] "r" (&val)
         : "rax", "memory"
     );
-#else
+#elif defined(CONFIG_ARCH_IA32)
     asm volatile (
         /* Save SP */
         "mov %%esp, (%[sp])\n\t"
@@ -270,7 +267,6 @@ do_bad_instruction(void)
         [valptr] "r" (&val)
         : "eax", "memory"
     );
-#endif
 #else
 #error "Unknown architecture."
 #endif
@@ -289,20 +285,18 @@ set_good_magic_and_set_pc(seL4_CPtr tcb, seL4_Word new_pc)
                                    sizeof(ctx) / sizeof(seL4_Word),
                                    &ctx);
     test_assert_fatal(!error);
-#if defined(ARCH_ARM)
+#if defined(CONFIG_ARCH_ARM)
     test_assert_fatal(ctx.r0 == BAD_MAGIC);
     ctx.r0 = GOOD_MAGIC;
     ctx.pc = new_pc;
-#elif defined(ARCH_IA32)
-#ifdef CONFIG_X86_64
+#elif defined(CONFIG_ARCH_X86_64)
     test_assert_fatal((int)ctx.rax == BAD_MAGIC);
     ctx.rax = GOOD_MAGIC;
     ctx.rip = new_pc;
-#else
+#elif defined(CONFIG_ARCH_IA32)
     test_assert_fatal(ctx.eax == BAD_MAGIC);
     ctx.eax = GOOD_MAGIC;
     ctx.eip = new_pc;
-#endif
 #else
 #error "Unknown architecture."
 #endif
@@ -371,7 +365,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         test_check(seL4_MessageInfo_get_length(tag) == SEL4_PFIPC_LENGTH);
         test_check(seL4_GetMR(SEL4_PFIPC_FAULT_IP) == BAD_VADDR);
         test_check(seL4_GetMR(SEL4_PFIPC_FAULT_ADDR) == BAD_VADDR);
-#if defined(ARCH_ARM)
+#if defined(CONFIG_ARCH_ARM)
         /* Prefetch fault is only set on ARM. */
         test_check(seL4_GetMR(SEL4_PFIPC_PREFETCH_FAULT) == 1);
 #endif
@@ -389,24 +383,22 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
     case FAULT_BAD_SYSCALL:
         test_check(seL4_MessageInfo_get_label(tag) == SEL4_EXCEPT_IPC_LABEL);
         test_check(seL4_MessageInfo_get_length(tag) == SEL4_EXCEPT_IPC_LENGTH);
-#if defined(ARCH_ARM)
+#if defined(CONFIG_ARCH_ARM)
         test_check(seL4_GetMR(EXCEPT_IPC_SYS_MR_R0) == BAD_MAGIC);
         test_check(seL4_GetMR(EXCEPT_IPC_SYS_MR_PC) == (seL4_Word)bad_syscall_address);
         test_check(seL4_GetMR(EXCEPT_IPC_SYS_MR_SYSCALL) == BAD_SYSCALL_NUMBER);
 
         seL4_SetMR(EXCEPT_IPC_SYS_MR_R0, GOOD_MAGIC);
         seL4_SetMR(EXCEPT_IPC_SYS_MR_PC, (seL4_Word)bad_syscall_restart_address);
-#elif defined(ARCH_IA32)
-#ifdef CONFIG_X86_64
+#elif defined(CONFIG_ARCH_X86_64)
         test_check((int)seL4_GetMR(EXCEPT_IPC_SYS_MR_RAX) == BAD_MAGIC);
         test_check(seL4_GetMR(EXCEPT_IPC_SYS_MR_RIP) == (seL4_Word)bad_syscall_restart_address);
         seL4_SetMR(EXCEPT_IPC_SYS_MR_RAX, GOOD_MAGIC);
-#else
+#elif defined(CONFIG_ARCH_IA32)
         test_check(seL4_GetMR(EXCEPT_IPC_SYS_MR_EAX) == BAD_MAGIC);
         test_check(seL4_GetMR(EXCEPT_IPC_SYS_MR_EIP) == (seL4_Word)bad_syscall_restart_address);
 
         seL4_SetMR(EXCEPT_IPC_SYS_MR_EAX, GOOD_MAGIC);
-#endif
         /* Syscalls on ia32 seem to restart themselves with sysenter. */
 #else
 #error "Unknown architecture."
@@ -428,11 +420,11 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         test_check(seL4_GetMR(0) == (seL4_Word)bad_instruction_address);
         seL4_Word *valptr = (seL4_Word*)seL4_GetMR(1);
         test_check((int)*valptr == BAD_MAGIC);
-#if defined(ARCH_ARM)
+#if defined(CONFIG_ARCH_ARM)
         test_check(seL4_GetMR(2) == bad_instruction_cpsr);
         test_check(seL4_GetMR(3) == 0);
         test_check(seL4_GetMR(4) == 0);
-#elif defined(ARCH_IA32)
+#elif defined(CONFIG_ARCH_X86)
         /*
          * Curiously, the "resume flag" (bit 16) is set between the
          * undefined syscall and seL4 grabbing the tasks's flags. This only

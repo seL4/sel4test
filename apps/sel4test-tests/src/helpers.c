@@ -31,7 +31,7 @@ check_zeroes(seL4_Word addr, seL4_Word size_bytes)
     seL4_Word size_words = size_bytes / sizeof(seL4_Word);
     while (size_words--) {
         if (*p++ != 0) {
-            ZF_LOGE("Found non-zero at position %d: %d\n", ((int)p) - (addr), p[-1]);
+            ZF_LOGE("Found non-zero at position %ld: %lu\n", ((long)p) - (addr), (unsigned long)p[-1]);
             return 0;
         }
     }
@@ -244,13 +244,13 @@ NORETURN static void
 helper_thread(int argc, char **argv)
 {
 
-    helper_fn_t entry_point = (void *) atoi(argv[2]);
-    seL4_CPtr local_endpoint = (seL4_CPtr) atoi(argv[3]);
+    helper_fn_t entry_point = (void *) atol(argv[2]);
+    seL4_CPtr local_endpoint = (seL4_CPtr) atol(argv[3]);
 
     seL4_Word args[HELPER_THREAD_MAX_ARGS] = {0};
     for (int i = 4; i < argc && i - 4 < HELPER_THREAD_MAX_ARGS; i++) {
         assert(argv[i] != NULL);
-        args[i - 4] = atoi(argv[i]);
+        args[i - 4] = atol(argv[i]);
     }
 
     /* run the thread */

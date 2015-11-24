@@ -70,33 +70,33 @@ test_nbwait(env_t env)
 
     /* NBRecv on endpoint with no messages should return 0 immediately */
     info = seL4_NBRecv(endpoint.cptr, &badge);
-    test_eq(badge, 0);
+    test_eq(badge, (seL4_Word)0);
 
     /* Poll on a notification with no messages should return 0 immediately */
     info = seL4_Poll(notification.cptr, &badge);
-    test_eq(badge, 0);
+    test_eq(badge, (seL4_Word)0);
 
     /* send a signal to the notification */
     seL4_Signal(badged_notification.capPtr);
 
     /* Polling should return the badge from the signal we just sent */
     info = seL4_Poll(notification.cptr, &badge);
-    test_eq(badge, 2);
+    test_eq(badge, (seL4_Word)2);
 
     /* Polling again should return nothign */
     info = seL4_Poll(notification.cptr, &badge);
-    test_eq(badge, 0);
+    test_eq(badge, (seL4_Word)0);
 
     /* send a signal to the notification */
     seL4_Signal(badged_notification.capPtr);
 
     /* This time NBRecv the endpoint - since we are bound, we should get the badge from the signal again */
     info = seL4_NBRecv(endpoint.cptr, &badge);
-    test_eq(badge, 2);
+    test_eq(badge, (seL4_Word)2);
 
     /* NBRecving again should return nothign */
     info = seL4_NBRecv(endpoint.cptr, &badge);
-    test_eq(badge, 0);
+    test_eq(badge, (seL4_Word)0);
 
     /* now start a helper to send a message on the badged endpoint */
     helper_thread_t thread;
@@ -108,13 +108,13 @@ test_nbwait(env_t env)
 
     /* NBRecving should return helpers message */
     info = seL4_NBRecv(endpoint.cptr, &badge);
-    test_eq(badge, 1);
-    test_eq(seL4_MessageInfo_get_length(info), 1);
-    test_eq(seL4_GetMR(0), 0xdeadbeef);
- 
+    test_eq(badge, (seL4_Word)1);
+    test_eq(seL4_MessageInfo_get_length(info), (seL4_Word)1);
+    test_eq(seL4_GetMR(0), (seL4_Word)0xdeadbeef);
+
     /* NBRecving again should return nothign */
     info = seL4_NBRecv(endpoint.cptr, &badge);
-    test_eq(badge, 0);
+    test_eq(badge, (seL4_Word)0);
 
     /* clean up */
     wait_for_helper(&thread);

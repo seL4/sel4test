@@ -475,8 +475,8 @@ DEFINE_TEST(SCHED0005, "Test set priority", test_set_priority)
 static volatile int ipc_test_step;
 typedef struct ipc_test_data {
     volatile seL4_CPtr ep0, ep1, ep2, ep3;
-    volatile uint32_t bounces;
-    volatile uint32_t spins;
+    volatile seL4_Word bounces;
+    volatile seL4_Word spins;
     seL4_CPtr tcb0, tcb1, tcb2, tcb3;
 } ipc_test_data_t;
 

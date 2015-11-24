@@ -147,7 +147,7 @@ test_ep_recycle(env_t env)
 }
 DEFINE_TEST(RECYCLE0001, "Basic endpoint recycle testing.", test_ep_recycle)
 
-static int ep_test_func(seL4_CPtr sync_ep, seL4_CPtr test_ep, volatile int *status, seL4_Word arg4)
+static int ep_test_func(seL4_CPtr sync_ep, seL4_CPtr test_ep, volatile seL4_Word *status, seL4_Word arg4)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     seL4_Word sender_badge;

@@ -20,7 +20,7 @@
 #define SYNC 2
 
 static seL4_CPtr
-badge_endpoint(env_t env, int badge, seL4_CPtr ep)
+badge_endpoint(env_t env, seL4_Word badge, seL4_CPtr ep)
 {
 
     seL4_CapData_t cap_data = seL4_CapData_Badge_new(badge);
@@ -34,7 +34,7 @@ static int
 sender(seL4_Word ep, seL4_Word id, seL4_Word runs, seL4_Word arg3)
 {
     assert(runs > 0);
-    for (int i = 0; i < runs; i++) {
+    for (seL4_Word i = 0; i < runs; i++) {
         seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
         seL4_Send((seL4_CPtr) ep, info);
     }

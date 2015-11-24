@@ -33,9 +33,9 @@ static seL4_CPtr shared_endpoint;
  * can't be called directly from asm because seL4_Send typically gets inlined
  * and its likely that no visible copy of this function exists to branch to.
  */
-void reply_to_parent(int result)
+void reply_to_parent(seL4_Word result)
 __attribute__((noinline));
-void reply_to_parent(int result)
+void reply_to_parent(seL4_Word result)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(result, 0, 0, 0);
     seL4_Word badge = 0; /* ignored */
@@ -70,7 +70,7 @@ asm ("\n"
      ".space 4096                 \n"
      "_safe_stack:                \n"
      ".text                       \n");
-#if defined(ARCH_ARM)
+#if defined(CONFIG_ARCH_ARM)
 asm ("\n"
 
      /* Trampoline for providing the thread a valid stack before entering
@@ -128,8 +128,7 @@ asm ("\n"
      "\tmov r0, #1                \n"
      "\tb reply_trampoline        \n"
     );
-#elif defined(ARCH_IA32)
-#ifdef CONFIG_X86_64
+#elif defined(CONFIG_ARCH_X86_64)
 asm ("\n\t"
      "reply_trampoline:         \n"
      "leaq  _safe_stack, %rsp   \n"
@@ -192,7 +191,7 @@ asm ("\n\t"
      "movq  $1, %rax            \n"
      "jmp   reply_trampoline    \n"
     );
-#else
+#elif defined(CONFIG_ARCH_X86)
 asm ("\n"
 
      /* As for the ARM implementation above, but we also need to massage the
@@ -246,7 +245,6 @@ asm ("\n"
      "\tmovl $1, %eax             \n"
      "\tjmp reply_trampoline      \n"
     );
-#endif
 #else
 #error "Unsupported architecture"
 #endif
@@ -264,7 +262,7 @@ int test_write_registers(env_t env)
     create_helper_thread(env, &thread);
     shared_endpoint = thread.local_endpoint.cptr;
 
-#if defined(ARCH_ARM)
+#if defined(CONFIG_ARCH_ARM)
     context.pc = (seL4_Word)&test_registers;
     context.sp = 13;
     context.r0 = 15;
@@ -283,8 +281,7 @@ int test_write_registers(env_t env)
     /* R13 == SP */
     context.r14 = 14; /* LR */
     /* R15 == PC */
-#elif defined(ARCH_IA32)
-#ifdef CONFIG_X86_64
+#elif defined(CONFIG_ARCH_X86_64)
     context.rip = (seL4_Word)&test_registers;
     context.rsp = 0x00000004UL;
     context.gs  = IPCBUF_GDT_SELECTOR;
@@ -304,7 +301,7 @@ int test_write_registers(env_t env)
     context.r13 = 0x00000013UL;
     context.r14 = 0x00000014UL;
     context.r15 = 0x00000015UL;
-#else
+#elif defined(CONFIG_ARCH_X86)
     context.eip = (seL4_Word)&test_registers;
     context.esp = 0x00000004;
     context.gs = IPCBUF_GDT_SELECTOR;
@@ -316,7 +313,6 @@ int test_write_registers(env_t env)
     context.edi = 0x00000002;
     context.ebp = 0x00000003;
     context.eflags = 0x00000001; /* Set the CF bit */
-#endif
 #else
 #error "Unsupported architecture"
 #endif
@@ -341,7 +337,7 @@ int test_write_registers(env_t env)
 }
 DEFINE_TEST(REGRESSIONS0001, "Ensure WriteRegisters functions correctly", test_write_registers)
 
-#ifdef ARCH_ARM
+#ifdef CONFIG_ARCH_ARM
 /* Performs an ldrex and strex sequence with a context switch in between. See
  * the comment in the function following for an explanation of purpose.
  */

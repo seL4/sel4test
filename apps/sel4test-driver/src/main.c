@@ -192,7 +192,7 @@ copy_untypeds_to_process(sel4utils_process_t *process, vka_object_t *untypeds, i
     seL4_SlotRegion range = {0};
 
     for (int i = 0; i < num_untypeds; i++) {
-        int slot = copy_cap_to_process(process, untypeds[i].cptr);
+        seL4_CPtr slot = copy_cap_to_process(process, untypeds[i].cptr);
 
         /* set up the cap range */
         if (i == 0) {
@@ -281,12 +281,12 @@ run_test(struct testcase *test)
 #endif
 
     /* set up args for the test process */
-    char endpoint_string[10];
+    char endpoint_string[WORD_STRING_SIZE];
     char sel4test_name[] = { TESTS_APP };
     char zero_string[] = {"0"};
     char *argv[] = {sel4test_name, zero_string, endpoint_string};
     argv[0] = endpoint_string;
-    snprintf(endpoint_string, 10, "%d", endpoint);
+    snprintf(endpoint_string, WORD_STRING_SIZE, "%lu", (unsigned long)endpoint);
     /* spawn the process */
     error = sel4utils_spawn_process_v(&test_process, &env.vka, &env.vspace,
                             ARRAY_SIZE(argv), argv, 1);

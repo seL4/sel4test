@@ -122,7 +122,8 @@ init_allocator(env_t env, test_init_data_t *init_data)
     allocman_make_vka(&env->vka, allocator);
 
     /* fill the allocator with untypeds */
-    int slot, size_bits_index;
+    seL4_CPtr slot;
+    unsigned int size_bits_index;
     for (slot = init_data->untypeds.start, size_bits_index = 0;
             slot <= init_data->untypeds.end;
             slot++, size_bits_index++) {
@@ -131,8 +132,8 @@ init_allocator(env_t env, test_init_data_t *init_data)
         vka_cspace_make_path(&env->vka, slot, &path);
         /* allocman doesn't require the paddr unless we need to ask for phys addresses,
          * which we don't. */
-        uint32_t fake_paddr = 0;
-        uint32_t size_bits = init_data->untyped_size_bits_list[size_bits_index];
+        uintptr_t fake_paddr = 0;
+        size_t size_bits = init_data->untyped_size_bits_list[size_bits_index];
         error = allocman_utspace_add_uts(allocator, 1, &path, &size_bits, &fake_paddr);
         if (error) {
             ZF_LOGF("Failed to add untyped objects to allocator");
@@ -213,7 +214,7 @@ main(int argc, char **argv)
      * main can get run multiple times. Look in src/helpers.c
      * for where this is used. Just means we check the first
      * arg, and if not NULL jmp to it */
-    void (*helper_thread)(int argc,char **argv) = (void(*)(int, char**))atoi(argv[1]);
+    void (*helper_thread)(int argc,char **argv) = (void(*)(int, char**))atol(argv[1]);
     if (helper_thread) {
         helper_thread(argc, argv);
     }
