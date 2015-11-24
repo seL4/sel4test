@@ -94,7 +94,7 @@ test_page_flush(env_t env)
     assert(!err);
 
     /* In case the invalidation performs an implicit clean, write a new
-       value to RAM and make sure the cached read retrieves it 
+       value to RAM and make sure the cached read retrieves it
        Remember to drain any store buffer!
     */
     *ptr = 0xBEEFCAFE;

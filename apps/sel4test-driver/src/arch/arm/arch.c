@@ -13,7 +13,7 @@
 #include <sel4platsupport/plat/timer.h>
 
 void
-arch_init_timer_caps(env_t env) 
+arch_init_timer_caps(env_t env)
 {
     /* get the timer frame cap */
     seL4_CPtr cap;
@@ -21,7 +21,7 @@ arch_init_timer_caps(env_t env)
     if (error) {
         ZF_LOGF("Failed to allocate cslot for timer frame cap path");
     }
-  
+
     vka_cspace_make_path(&env->vka, cap, &env->frame_path);
     error = simple_get_frame_cap(&env->simple, (void *) DEFAULT_TIMER_PADDR, PAGE_BITS_4K, &env->frame_path);
     if (error) {

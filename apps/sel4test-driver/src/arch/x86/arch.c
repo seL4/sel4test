@@ -9,14 +9,14 @@
  */
 #include "../../test.h"
 #include <sel4platsupport/plat/timer.h>
-    
+
 void
 arch_init_timer_caps(env_t env)
 {
     env->io_port_cap = simple_get_IOPort_cap(&env->simple, PIT_IO_PORT_MIN, PIT_IO_PORT_MAX);
     if (env->io_port_cap == 0) {
         ZF_LOGF("Failed to get IO port cap for range %x to %x\n", PIT_IO_PORT_MIN, PIT_IO_PORT_MAX);
-    }       
+    }
 }
 
 /* copy the caps required to set up the sel4platsupport default timer */

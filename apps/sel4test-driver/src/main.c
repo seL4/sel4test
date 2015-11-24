@@ -335,7 +335,7 @@ init_timer_caps(env_t env)
 
     vka_cspace_make_path(&env->vka, cap, &env->irq_path);
     error = simple_get_IRQ_control(&env->simple, DEFAULT_TIMER_INTERRUPT, env->irq_path);
-    
+
     if (error != 0) {
         ZF_LOGF("Failed to get IRQ control, error %d", error);
     }

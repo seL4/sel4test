@@ -193,7 +193,7 @@ void init_timer(env_t env, test_init_data_t *init_data)
     if (error != 0) {
         ZF_LOGF("Failed to allocate notification object");
     }
-    
+
     env->timer = sel4platsupport_get_default_timer(&env->vka, &env->vspace,
                                                    &env->simple, env->timer_notification.cptr);
     if (env->timer == NULL) {

@@ -29,8 +29,8 @@ send_func(seL4_CPtr ep, seL4_Word msg, UNUSED seL4_Word arg4, UNUSED seL4_Word a
 }
 
 
-static int 
-test_nbwait(env_t env) 
+static int
+test_nbwait(env_t env)
 {
 
     vka_object_t notification = {0};
