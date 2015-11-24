@@ -12,11 +12,11 @@
 
 #include <sel4/sel4.h>
 #include <vka/object.h>
+#include <utils/util.h>
 
 #include "../helpers.h"
 
 #if defined(ARCH_ARM)
-#define PAGE_SIZE    (1 << (vka_get_object_size(seL4_ARM_SmallPageObject, 0)))
 #define LPAGE_SIZE   (1 << (vka_get_object_size(seL4_ARM_LargePageObject, 0)))
 #define SECT_SIZE    (1 << (vka_get_object_size(seL4_ARM_SectionObject, 0)))
 #define SUPSECT_SIZE (1 << (vka_get_object_size(seL4_ARM_SuperSectionObject, 0)))
@@ -199,7 +199,7 @@ test_pagetable_arm(env_t env)
     test_assert(error == 0);
 
     /* Fill the small page with useful data too. */
-    fill_memory(vstart + SECT_SIZE + 3 * LPAGE_SIZE, PAGE_SIZE);
+    fill_memory(vstart + SECT_SIZE + 3 * LPAGE_SIZE, PAGE_SIZE_4K);
 
     /* Pull the plug on the page table. Apparently a recycle isn't good enough.
      * Get another pagetable! */
@@ -218,7 +218,7 @@ test_pagetable_arm(env_t env)
 
     /* Map our small page and large page back in. */
     error = seL4_ARM_Page_Map(small_page, env->page_directory,
-                              vstart + PAGE_SIZE,
+                              vstart + PAGE_SIZE_4K,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
     test_assert(error == 0);
 
@@ -228,7 +228,7 @@ test_pagetable_arm(env_t env)
     test_assert(error == 0);
 
     /* Check their contents. */
-    test_assert(check_memory(vstart + PAGE_SIZE, PAGE_SIZE));
+    test_assert(check_memory(vstart + PAGE_SIZE_4K, PAGE_SIZE_4K));
     test_assert(check_memory(vstart + LPAGE_SIZE, LPAGE_SIZE));
 
     /* Recycle the small page. */
@@ -261,7 +261,7 @@ test_pagetable_arm(env_t env)
     test_assert(error == 0);
 
     /* And the small page should be filled with zeroes. */
-    test_assert(check_zeroes(vstart + LPAGE_SIZE, PAGE_SIZE));
+    test_assert(check_zeroes(vstart + LPAGE_SIZE, PAGE_SIZE_4K));
 
     /* Recycle it. */
     error = seL4_CNode_Recycle(env->cspace_root, small_page,
@@ -275,13 +275,13 @@ test_pagetable_arm(env_t env)
     test_assert(error == 0);
 
     /* Fill it in with stuff. */
-    fill_memory(vstart + LPAGE_SIZE, PAGE_SIZE);
+    fill_memory(vstart + LPAGE_SIZE, PAGE_SIZE_4K);
 
     /* Now unmap the original page. */
     error = seL4_ARM_Page_Unmap(small_page);
 
     /* Should still be able to access the new page. */
-    test_assert(check_memory(vstart + LPAGE_SIZE, PAGE_SIZE));
+    test_assert(check_memory(vstart + LPAGE_SIZE, PAGE_SIZE_4K));
 
     vspace_free_reservation(&env->vspace, reserve);
 
@@ -389,7 +389,7 @@ test_pagetable_tlbflush_on_vaddr_reuse(env_t env)
     /* small page */
     cap1 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
     cap2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
-    if (do_test_pagetable_tlbflush_on_vaddr_reuse(cap1, cap2, vstart, PAGE_SIZE) == FAILURE) {
+    if (do_test_pagetable_tlbflush_on_vaddr_reuse(cap1, cap2, vstart, PAGE_SIZE_4K) == FAILURE) {
         result = FAILURE;
     }
 
