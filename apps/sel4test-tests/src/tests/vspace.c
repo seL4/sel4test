@@ -73,6 +73,7 @@ test_unmap_after_delete(env_t env)
 DEFINE_TEST(VSPACE0001, "Test unmapping a page after deleting the PD", test_unmap_after_delete)
 #endif
 
+#ifndef CONFIG_KERNEL_STABLE
 static int
 test_asid_pool_make(env_t env)
 {
@@ -93,5 +94,6 @@ test_asid_pool_make(env_t env)
     return sel4test_get_result();
 
 }
+#endif /* CONFIG_KERNEL_STABLE */
 
 DEFINE_TEST(VSPACE0002, "Test create ASID pool", test_asid_pool_make)
