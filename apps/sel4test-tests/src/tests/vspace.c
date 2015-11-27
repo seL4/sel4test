@@ -94,6 +94,6 @@ test_asid_pool_make(env_t env)
     return sel4test_get_result();
 
 }
+DEFINE_TEST(VSPACE0002, "Test create ASID pool", test_asid_pool_make)
 #endif /* CONFIG_KERNEL_STABLE */
 
-DEFINE_TEST(VSPACE0002, "Test create ASID pool", test_asid_pool_make)
