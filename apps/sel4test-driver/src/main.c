@@ -285,7 +285,6 @@ run_test(struct testcase *test)
     char sel4test_name[] = { TESTS_APP };
     char zero_string[] = {"0"};
     char *argv[] = {sel4test_name, zero_string, endpoint_string};
-    argv[0] = endpoint_string;
     snprintf(endpoint_string, WORD_STRING_SIZE, "%lu", (unsigned long)endpoint);
     /* spawn the process */
     error = sel4utils_spawn_process_v(&test_process, &env.vka, &env.vspace,
