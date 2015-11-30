@@ -114,59 +114,43 @@ test_large_page_flush_operation(env_t env)
     seL4_CPtr frames[num_frame_types];
     int error;
     vka_t *vka = &env->vka;
-    bool pt_mapped = false;
 
     /* Grab some free vspace big enough to hold all the tests. */
     seL4_Word vstart;
-    reservation_t reserve = vspace_reserve_range(&env->vspace, 2 * (1 << 25),
+    reservation_t reserve = vspace_reserve_range_aligned(&env->vspace, VSPACE_RV_SIZE, VSPACE_RV_ALIGN_BITS,
                                                   seL4_AllRights, 1, (void **) &vstart);
     test_assert(reserve.res != 0);
-    vstart = ALIGN_UP(vstart, (1 << 25));
 
     /* Create us some frames to play with. */
     for (int i = 0; i < num_frame_types; i++) {
-        frames[i] = vka_alloc_frame_leaky(vka, CTZ(frame_types[i].size));
+        frames[i] = vka_alloc_frame_leaky(vka, frame_types[i].size_bits);
         assert(frames[i]);
     }
 
-    /* Also create a pagetable to map the pages into. */
-    seL4_CPtr pt = vka_alloc_page_table_leaky(vka);
-
     /* Map the pages in. */
     for (int i = 0; i < num_frame_types; i++) {
-        if (frame_types[i].need_pt && !pt_mapped) {
-            /* Map the pagetable in. */
-            error = seL4_ARCH_PageTable_Map(pt, env->page_directory,
-                                            vstart + frame_types[i].vaddr_offset,
-                                            seL4_ARCH_Default_VMAttributes);
-            test_assert(error == 0);
-
-            pt_mapped = true;
-        }
-
-        error = seL4_ARCH_Page_Map(frames[i], env->page_directory,
-                                   vstart + frame_types[i].vaddr_offset, seL4_AllRights,
-                                   seL4_ARCH_Default_VMAttributes);
-        test_assert(error == 0);
+        uintptr_t cookie = 0;
+        error = vspace_map_pages_at_vaddr(&env->vspace, &frames[i], &cookie, (void*)(vstart + frame_types[i].vaddr_offset), 1, frame_types[i].size_bits, reserve);
+        test_assert(error == seL4_NoError);
     }
 
     /* See if we can invoke page flush on each of them */
     for (int i = 0; i < num_frame_types; i++) {
-        error = seL4_ARM_Page_Invalidate_Data(frames[i], 0, frame_types[i].size);
+        error = seL4_ARM_Page_Invalidate_Data(frames[i], 0, BIT(frame_types[i].size_bits));
         test_assert(error == 0);
-        error = seL4_ARM_Page_Clean_Data(frames[i], 0, frame_types[i].size);
+        error = seL4_ARM_Page_Clean_Data(frames[i], 0, BIT(frame_types[i].size_bits));
         test_assert(error == 0);
-        error = seL4_ARM_Page_CleanInvalidate_Data(frames[i], 0, frame_types[i].size);
+        error = seL4_ARM_Page_CleanInvalidate_Data(frames[i], 0, BIT(frame_types[i].size_bits));
         test_assert(error == 0);
-        error = seL4_ARM_Page_Unify_Instruction(frames[i], 0, frame_types[i].size);
+        error = seL4_ARM_Page_Unify_Instruction(frames[i], 0, BIT(frame_types[i].size_bits));
         test_assert(error == 0);
-        error = seL4_ARM_PageDirectory_Invalidate_Data(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + frame_types[i].size);
+        error = seL4_ARM_PageDirectory_Invalidate_Data(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
         test_assert(error == 0);
-        error = seL4_ARM_PageDirectory_Clean_Data(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + frame_types[i].size);
+        error = seL4_ARM_PageDirectory_Clean_Data(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
         test_assert(error == 0);
-        error = seL4_ARM_PageDirectory_CleanInvalidate_Data(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + frame_types[i].size);
+        error = seL4_ARM_PageDirectory_CleanInvalidate_Data(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
         test_assert(error == 0);
-        error = seL4_ARM_PageDirectory_Unify_Instruction(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + frame_types[i].size);
+        error = seL4_ARM_PageDirectory_Unify_Instruction(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
         test_assert(error == 0);
     }
 

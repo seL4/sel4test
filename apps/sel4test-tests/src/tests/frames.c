@@ -41,45 +41,29 @@ test_frame_recycle(env_t env)
     seL4_CPtr frames[num_frame_types];
     int error;
     vka_t *vka = &env->vka;
-    bool pt_mapped = false;
 
     /* Grab some free vspace big enough to hold all the tests. */
-    seL4_Word vstart;
-    reservation_t reserve = vspace_reserve_range(&env->vspace, 2 * (1 << 25),
+    uintptr_t vstart;
+    reservation_t reserve = vspace_reserve_range_aligned(&env->vspace, VSPACE_RV_SIZE, VSPACE_RV_ALIGN_BITS,
                                                   seL4_AllRights, 1, (void **) &vstart);
-    test_assert(vstart != 0);
-    vstart = ALIGN_UP(vstart, (1 << 25));
+    test_assert(reserve.res != 0);
 
     /* Create us some frames to play with. */
     for (int i = 0; i < num_frame_types; i++) {
-        frames[i] = vka_alloc_frame_leaky(vka, CTZ(frame_types[i].size));
+        frames[i] = vka_alloc_frame_leaky(vka, frame_types[i].size_bits);
         assert(frames[i]);
     }
 
-    /* Also create a pagetable to map the pages into. */
-    seL4_CPtr pt = vka_alloc_page_table_leaky(vka);
-
     /* Map the pages in. */
     for (int i = 0; i < num_frame_types; i++) {
-        if (frame_types[i].need_pt && !pt_mapped) {
-            /* Map the pagetable in. */
-            error = seL4_ARCH_PageTable_Map(pt, env->page_directory,
-                                            vstart + frame_types[i].vaddr_offset,
-                                            seL4_ARCH_Default_VMAttributes);
-            test_assert(error == 0);
-
-            pt_mapped = true;
-        }
-
-        error = seL4_ARCH_Page_Map(frames[i], env->page_directory,
-                                   vstart + frame_types[i].vaddr_offset, seL4_AllRights,
-                                   seL4_ARCH_Default_VMAttributes);
-        test_assert(error == 0);
+        uintptr_t cookie = 0;
+        error = vspace_map_pages_at_vaddr(&env->vspace, &frames[i], &cookie, (void*)(vstart + frame_types[i].vaddr_offset), 1, frame_types[i].size_bits, reserve);
+        test_assert(error == seL4_NoError);
 
         /* Fill each of these with random junk and then recycle them. */
         fill_memory(
             vstart + frame_types[i].vaddr_offset,
-            frame_types[i].size);
+            BIT(frame_types[i].size_bits));
     }
 
     /* Now recycle all of them. */
@@ -94,13 +78,13 @@ test_frame_recycle(env_t env)
         error = seL4_ARCH_Page_Map(frames[i], env->page_directory,
                                    vstart + frame_types[i].vaddr_offset, seL4_AllRights,
                                    seL4_ARCH_Default_VMAttributes);
-        test_assert(error == 0);
+        test_assert(error == seL4_NoError);
     }
 
     /* Now check they are zero. */
     for (int i = 0; i < num_frame_types; i++) {
         test_assert(check_zeroes(vstart + frame_types[i].vaddr_offset,
-                                 frame_types[i].size));
+                                 BIT(frame_types[i].size_bits)));
     }
 
     vspace_free_reservation(&env->vspace, reserve);
@@ -112,101 +96,38 @@ DEFINE_TEST(FRAMERECYCLE0001, "Test recycling of frame caps", test_frame_recycle
 static int
 test_frame_exported(env_t env)
 {
-    struct frame_table_entry {
-        vka_object_t frame;
-        vka_object_t pt;
-        char is_ft;
-    };
-
-    vka_t *vka;
-
-    struct frame_table_entry* ft;
-    seL4_Word ft_index;
-    seL4_Word ft_bytes;
-
-    seL4_Word vaddr_scratch;
-    seL4_Word mem_total;
-    int err;
-
-    vka = &env->vka;
-
-
-    /* Initialise a lazily allocated frame table */
-    ft_index = 0;
-    ft_bytes = (1 << (seL4_WordBits - seL4_PageBits)) * sizeof(*ft);
-
-    reservation_t ft_reservation = vspace_reserve_range(&env->vspace,
-                                                         ft_bytes + (1 << frame_types[0].size), seL4_AllRights,
-                                                         1, (void **) &ft);
-    test_assert(ft_reservation.res != NULL);
-    ft = (struct frame_table_entry *) ALIGN_UP((unsigned int) ft, frame_types[0].size);
-
-    /* Reserve some vspace for mapping frames */
-    reservation_t vaddr_reserve = vspace_reserve_range(&env->vspace, frame_types[0].size * 2,
-                                                        seL4_AllRights, 1, (void **) &vaddr_scratch);
-
-    vaddr_scratch = ALIGN_UP(vaddr_scratch, frame_types[0].size);
-
-    test_assert(vaddr_scratch != 0);
-    test_assert(vaddr_reserve.res != NULL);
+    /* Reserve a location that is aligned and large enough to map our
+     * largest kind of frame */
+    void *vaddr;
+    reservation_t reserve = vspace_reserve_range_aligned(&env->vspace, VSPACE_RV_SIZE, VSPACE_RV_ALIGN_BITS,
+                                                         seL4_AllRights, 1, &vaddr);
+    test_assert(reserve.res);
 
     /* loop through frame sizes, allocate, map and touch them until we run out
      * of memory. */
-    mem_total = 0;
+    size_t mem_total = 0;
+    int err;
     for (int i = 0; i < ARRAY_SIZE(frame_types); i++) {
         while (1) {
-            vka_object_t pt = {0};
-            vka_object_t frame = {0};
-            seL4_CPtr vaddr;
-            char* data;
             /* Allocate the frame */
-            err = vka_alloc_frame(&env->vka, CTZ(frame_types[i].size), &frame);
-
-            if (err) {
+            seL4_CPtr frame = vka_alloc_frame_leaky(&env->vka, frame_types[i].size_bits);
+            if (!frame) {
                 break;
             }
+            mem_total += BIT(frame_types[i].size_bits);
 
-            /* Decide if the frame will be used for the frame table */
-            if (mem_total < ft_bytes) {
-                vaddr = (seL4_Word)ft + mem_total;
-            } else {
-                vaddr = vaddr_scratch;
-            }
-            mem_total += frame_types[i].size;
-            /* Map in the page */
-            err = seL4_ARCH_Page_Map(frame.cptr,
-                                     env->page_directory,
-                                     vaddr,
-                                     seL4_AllRights,
-                                     seL4_ARCH_Default_VMAttributes);
-            /* Retry with a page table */
-            if (err == seL4_FailedLookup) {
-                /* Map in a page table */
-                err = vka_alloc_page_table(vka, &pt);
+            uintptr_t cookie = 0;
+            err = vspace_map_pages_at_vaddr(&env->vspace, &frame, &cookie, (void*)vaddr, 1, frame_types[i].size_bits, reserve);
+            test_assert(err == seL4_NoError);
 
-                test_assert(pt.cptr != seL4_CapNull);
-                err = seL4_ARCH_PageTable_Map(pt.cptr,
-                                              env->page_directory,
-                                              vaddr,
-                                              seL4_ARCH_Default_VMAttributes);
-                test_assert(!err);
-                err = seL4_ARCH_Page_Map(frame.cptr,
-                                         env->page_directory,
-                                         vaddr,
-                                         seL4_AllRights,
-                                         seL4_ARCH_Default_VMAttributes);
-                test_assert(!err);
-            }
-
-            test_assert(!err);
             /* Touch the memory */
-            data = (char*)vaddr;
+            char *data = (char*)vaddr;
 
             *data = 'U';
             test_assert(*data == 'U');
 
 #ifndef CONFIG_KERNEL_STABLE
-            err = seL4_ARCH_Page_Remap(frame.cptr,
+            err = seL4_ARCH_Page_Remap(frame,
                                        env->page_directory,
                                        seL4_AllRights,
                                        seL4_ARCH_Default_VMAttributes);
@@ -216,33 +137,10 @@ test_frame_exported(env_t env)
             test_assert(*data == 'V');
 #endif
 
-            /* Unmap the page if it is not used for our frame table */
-            if (vaddr == vaddr_scratch) {
-                err = seL4_ARCH_Page_Unmap(frame.cptr);
-            }
-
-            /* Update the frame table. This must be done last because
-             * it may be backed by the frame that we just tested. */
-            ft[ft_index].frame = frame;
-            ft[ft_index].pt = pt;
-            ft[ft_index].is_ft = (vaddr != vaddr_scratch);
-            ft_index++;
-
+            vspace_unmap_pages(&env->vspace, (void*)vaddr, 1, frame_types[i].size_bits, VSPACE_PRESERVE);
+            test_assert(err == seL4_NoError);
         }
     }
-
-    /* clean up -- backwards, so we don't step on our own feet */
-    for (int i = 0; i < ft_index; i++) {
-        if (!ft[i].is_ft) {
-            vka_free_object(&env->vka, &ft[i].frame);
-            if (ft[i].pt.cptr != 0) {
-                vka_free_object(vka, &ft[i].pt);
-            }
-        }
-    }
-
-    vspace_free_reservation(&env->vspace, vaddr_reserve);
-    vspace_free_reservation(&env->vspace, ft_reservation);
     return sel4test_get_result();
 }
 DEFINE_TEST(FRAMEEXPORTS0001, "Test that we can access all exported frames", test_frame_exported)
