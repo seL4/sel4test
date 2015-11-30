@@ -296,8 +296,7 @@ run_test(struct testcase *test)
     void *remote_vaddr = send_init_data(&env, test_process.fault_endpoint.cptr, &test_process);
 
     /* wait on it to finish or fault, report result */
-    seL4_Word badge;
-    seL4_MessageInfo_t info = seL4_Recv(test_process.fault_endpoint.cptr, &badge);
+    seL4_MessageInfo_t info = seL4_Recv(test_process.fault_endpoint.cptr, NULL);
 
     int result = seL4_GetMR(0);
     if (seL4_MessageInfo_get_label(info) != seL4_NoFault) {
