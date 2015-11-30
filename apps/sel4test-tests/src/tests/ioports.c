@@ -21,7 +21,7 @@
 #include "../test.h"
 #include "../helpers.h"
 
-#ifdef ARCH_IA32
+#ifdef CONFIG_X86
 
 #define START_PORT 0
 #define END_PORT BIT(16)
@@ -40,8 +40,13 @@ increment_pc(seL4_CPtr tcb, seL4_Word inc)
                                    0,
                                    sizeof(ctx) / sizeof(seL4_Word),
                                    &ctx);
+#ifdef CONFIG_ARCH_X86_64
+    ctx.rax = 1;
+    ctx.rip += inc;
+#else
     ctx.eax = 1;
     ctx.eip += inc;
+#endif
     error = seL4_TCB_WriteRegisters(tcb,
                                     true,
                                     0,
