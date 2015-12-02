@@ -21,6 +21,8 @@
 #include <simple/simple.h>
 #include <vspace/vspace.h>
 
+#include <sel4platsupport/timer.h>
+
 /* max test name size */
 #define TEST_NAME_MAX 20
 

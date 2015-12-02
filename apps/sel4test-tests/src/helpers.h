@@ -114,5 +114,7 @@ seL4_Word get_free_slot(env_t env);
 /* timer */
 void wait_for_timer_interrupt(env_t env);
 void sleep(env_t env, uint64_t ns);
+/* returns an increasing timestamp in ns (may rollover on platforms without 64 bit upcounters) */
+uint64_t timestamp(env_t env);
 
 #endif /* __HELPERS_H */

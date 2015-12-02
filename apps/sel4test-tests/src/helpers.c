@@ -410,3 +410,9 @@ sleep(env_t env, uint64_t ns)
     timer_stop(env->timer->timer);
 }
 
+uint64_t
+timestamp(env_t env)
+{
+    return timer_get_time(env->clock_timer->timer);
+}
+
