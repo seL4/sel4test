@@ -721,7 +721,7 @@ sched0007_server(seL4_CPtr endpoint)
     for (int i = SCHED0007_NUM_CLIENTS - 1; i >= 0; i--) {
         test_eq(SCHED0007_PRIO(i), seL4_GetMR(0));
         if (i > 0) {
-            seL4_ReplyWait(endpoint, info, NULL);
+            seL4_ReplyRecv(endpoint, info, NULL);
         }
     }
 
