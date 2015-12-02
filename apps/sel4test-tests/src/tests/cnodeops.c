@@ -348,8 +348,8 @@ test_cnode_savecaller(env_t env)
 }
 DEFINE_TEST(CNODEOP0009, "seL4_CNode_SaveCaller() testing", test_cnode_savecaller)
 
-static int 
-test_cnode_saveTCBcaller(env_t env, void *args)
+static int
+test_cnode_saveTCBcaller(env_t env)
 {
     vka_object_t endpoint = {0};
     int error;

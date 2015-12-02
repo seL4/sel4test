@@ -15,8 +15,8 @@
 
 #include "../helpers.h"
 
-int 
-test_sched_control_configure(env_t env, void *args) 
+int
+test_sched_control_configure(env_t env)
 {
     int error;
     seL4_SchedContext sc = vka_alloc_sched_context_leaky(&env->vka);
@@ -51,7 +51,7 @@ sched_context_0002_fn(void)
 
 
 int
-test_sched_control_reconfigure(env_t env, void *arg)
+test_sched_control_reconfigure(env_t env)
 {
     helper_thread_t thread;
     int error;

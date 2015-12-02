@@ -733,8 +733,8 @@ sched0007_start_client(env_t env, helper_thread_t clients[], seL4_CPtr endpoint,
     start_helper(env, &clients[i], (helper_fn_t) sched0007_client, endpoint, SCHED0007_PRIO(i), 0, 0);
 }
 
-int 
-test_ipc_ordered(env_t env, void *arg)
+int
+test_ipc_ordered(env_t env)
 {
     seL4_CPtr endpoint;
     helper_thread_t server;
@@ -819,7 +819,7 @@ check_receive_ordered(env_t env, seL4_CPtr endpoint, int pos, seL4_CPtr slots[])
     return sel4test_get_result();
 }
 
-int test_change_prio_on_endpoint(env_t env, void *arg)
+int test_change_prio_on_endpoint(env_t env)
 {
 
     int error;
@@ -933,20 +933,21 @@ static NORETURN void
 sched0009_server(seL4_CPtr endpoint, int id)
 {
     /* wait to start */
+    ZF_LOGD("Server %d: awake", id);
     seL4_Word badge;
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
     seL4_Wait(endpoint, &badge);
 
     while (1) {
-        ZF_LOGD("Server %d: ReplyWait", id);
+        ZF_LOGD("Server %d: ReplyRecv", id);
         seL4_SetMR(0, id);
-        seL4_ReplyWait(endpoint, info, &badge);
+        seL4_ReplyRecv(endpoint, info, &badge);
     }
 }
 
 
-static int 
-test_ordered_ipc_fastpath(env_t env, void *arg)
+static int
+test_ordered_ipc_fastpath(env_t env)
 {
     helper_thread_t threads[SCHED0009_SERVERS];
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
@@ -1007,7 +1008,7 @@ sched0010_fn(volatile int *state)
 }
 
 int
-test_resume_empty_or_no_sched_context(env_t env, void *arg)
+test_resume_empty_or_no_sched_context(env_t env)
 {
     /* resuming a thread with empty or no scheduling context should work (it puts the thread in a runnable state)
      * but the thread cannot run until it receives a scheduling context */
