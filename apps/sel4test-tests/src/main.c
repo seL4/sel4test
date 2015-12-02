@@ -168,27 +168,24 @@ static seL4_Error
 get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
 {
     test_init_data_t *init = (test_init_data_t *) data;
-    assert(irq == DEFAULT_TIMER_INTERRUPT);
-
-    int error = seL4_CNode_Copy(root, index, depth, init->root_cnode,
-                                init->timer_irq, seL4_WordBits, seL4_AllRights);
-    if (error != 0) {
-        ZF_LOGF("Failed to copy irq cap\n");
+    if (irq == DEFAULT_TIMER_INTERRUPT) {
+        return seL4_CNode_Copy(root, index, depth, init->root_cnode,
+                               init->timer_irq, seL4_WordBits, seL4_AllRights);
     }
 
-    return error;
+    return plat_get_irq(data, irq, root, index, depth);
 }
 
-static seL4_CPtr 
-get_init_cap_fn(void *data, seL4_CPtr cap) 
+static seL4_CPtr
+get_init_cap_fn(void *data, seL4_CPtr cap)
 {
     assert(cap == seL4_CapSchedControl);
     test_init_data_t *init = (test_init_data_t *) data;
-    return init->sched_ctrl; 
+    return init->sched_ctrl;
 }
 
 
-void init_timer(env_t env, test_init_data_t *init_data)
+void init_timers(env_t env, test_init_data_t *init_data)
 {
     /* minimal simple implementation to get the platform
      * default timer off the ground */
@@ -205,11 +202,9 @@ void init_timer(env_t env, test_init_data_t *init_data)
         ZF_LOGF("Failed to allocate notification object");
     }
 
-    env->timer = sel4platsupport_get_default_timer(&env->vka, &env->vspace,
-                                                   &env->simple, env->timer_notification.cptr);
-    if (env->timer == NULL) {
-        ZF_LOGF("Failed to initialise default timer");
-    }
+
+    ZF_LOGV("Init env\n");
+    plat_init_env(env, init_data);
 }
 
 int
@@ -251,14 +246,18 @@ main(int argc, char **argv)
     env.io_space = init_data->io_space;
 #endif
     env.num_regions = init_data->num_elf_regions;
+    ZF_LOGV("Copying data\n");
     memcpy(env.regions, init_data->elf_regions, sizeof(sel4utils_elf_region_t) * env.num_regions);
 
     /* initialse cspace, vspace and untyped memory allocation */
+    ZF_LOGV("Init allocator\n");
     init_allocator(&env, init_data);
 
     /* initialise the timer */
-    init_timer(&env, init_data);
+    ZF_LOGV("Init timers\n");
+    init_timers(&env, init_data);
 
+    ZF_LOGV("Finding test\n");
     /* find the test */
     testcase_t *test = find_test(init_data->name);
 

@@ -17,15 +17,13 @@ static seL4_Error
 get_frame_cap(void *data, void *paddr, int size_bits, cspacepath_t *path)
 {
     test_init_data_t *init = (test_init_data_t *) data;
-    assert(paddr == (void*) DEFAULT_TIMER_PADDR);
-    assert(size_bits == seL4_PageBits);
 
+    if (paddr == (void*) DEFAULT_TIMER_PADDR && size_bits == seL4_PageBits) {
+        return seL4_CNode_Copy(path->root, path->capPtr, path->capDepth, init->root_cnode,
+                               init->timer_frame, seL4_WordBits, seL4_AllRights);
+    }
 
-    int error = seL4_CNode_Copy(path->root, path->capPtr, path->capDepth, init->root_cnode,
-                                init->timer_frame, seL4_WordBits, seL4_AllRights);
-    assert(error == seL4_NoError);
-
-    return error;
+    return plat_get_frame_cap(data, paddr, size_bits, path);
 }
 
 void

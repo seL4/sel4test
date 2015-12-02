@@ -222,14 +222,11 @@ send_init_data(env_t env, seL4_CPtr endpoint, sel4utils_process_t *process)
 
 /* copy the caps required to set up the sel4platsupport default timer */
 static void
-copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
+copy_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-    /* irq cap for the timer irq */
-    init->timer_irq = copy_cap_to_process(test_process, env->irq_path.capPtr);
-    assert(init->timer_irq != 0);
-
     arch_copy_timer_caps(init, env, test_process);
-    
+
+    ZF_LOGV("Copying sched ctrl cap\n");
     init->sched_ctrl = copy_cap_to_process(test_process, simple_get_sched_ctrl(&env->simple));
     assert(init->sched_ctrl != 0);
 }
@@ -250,6 +247,7 @@ run_test(struct testcase *test)
     assert(error == 0);
 
     /* set up caps about the process */
+    env.init->tsc_freq = env.tsc_freq;
     env.init->stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / PAGE_SIZE_4K;
     env.init->stack = test_process.thread.stack_top - CONFIG_SEL4UTILS_STACK_SIZE;
     env.init->page_directory = copy_cap_to_process(&test_process, test_process.pd.cptr);
@@ -264,7 +262,7 @@ run_test(struct testcase *test)
 #endif /* CONFIG_IOMMU */
     /* setup data about untypeds */
     env.init->untypeds = copy_untypeds_to_process(&test_process, untypeds, num_untypeds);
-    copy_timer_caps(env.init, &env, &test_process);
+    copy_caps(env.init, &env, &test_process);
     /* copy the fault endpoint - we wait on the endpoint for a message
      * or a fault to see when the test finishes */
     seL4_CPtr endpoint = copy_cap_to_process(&test_process, test_process.fault_endpoint.cptr);
@@ -323,8 +321,8 @@ run_test(struct testcase *test)
     return result;
 }
 
-static void
-init_timer_caps(env_t env)
+void
+init_irq_cap(env_t env, int irq, cspacepath_t *path)
 {
     /* get the irq control cap */
     seL4_CPtr cap;
@@ -333,16 +331,29 @@ init_timer_caps(env_t env)
         ZF_LOGF("Failed to allocate cslot, error %d", error);
     }
 
-    vka_cspace_make_path(&env->vka, cap, &env->irq_path);
-    error = simple_get_IRQ_control(&env->simple, DEFAULT_TIMER_INTERRUPT, env->irq_path);
+    vka_cspace_make_path(&env->vka, cap, path);
+    error = simple_get_IRQ_control(&env->simple, irq, *path);
 
     if (error != 0) {
         ZF_LOGF("Failed to get IRQ control, error %d", error);
     }
-
-    arch_init_timer_caps(env);
 }
 
+void
+init_frame_cap(env_t env, void *paddr, cspacepath_t *path)
+{
+    seL4_CPtr cap;
+    int error = vka_cspace_alloc(&env->vka, &cap);
+    if (error) {
+        ZF_LOGF("Failed to allocate cslot for timer frame cap path");
+    }
+
+    vka_cspace_make_path(&env->vka, cap, path);
+    error = simple_get_frame_cap(&env->simple, (void *) paddr, PAGE_BITS_4K, path);
+    if (error) {
+        ZF_LOGF("Failed to get frame cap for %p\n", (void *) paddr);
+    }
+}
 
 void *main_continued(void *arg UNUSED)
 {
@@ -388,7 +399,7 @@ void *main_continued(void *arg UNUSED)
     env.init->num_elf_regions = num_elf_regions;
 
     /* get the caps we need to send to tests to set up a timer */
-    init_timer_caps(&env);
+    plat_init_caps(&env);
 
     /* setup init data that won't change test-to-test */
     env.init->priority = seL4_MaxPrio - 1;
@@ -421,6 +432,9 @@ int main(void)
 
     /* enable serial driver */
     platsupport_serial_setup_simple(NULL, &env.simple, &env.vka);
+
+    /* platform specific init */
+    plat_init(&env);
 
     /* switch to a bigger, safer stack with a guard page
      * before starting the tests */

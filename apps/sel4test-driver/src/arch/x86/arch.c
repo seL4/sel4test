@@ -23,7 +23,10 @@ arch_init_timer_caps(env_t env)
 void
 arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-    /* io port cap (since the default timer on ia32 is the PIT) */
-    init->io_port = copy_cap_to_process(test_process, env->io_port_cap);
+    ZF_LOGV("Copying timer irq\n");
+    init->timer_irq = copy_cap_to_process(test_process, env->irq_path.capPtr);
+
+    ZF_LOGV("Copying timer frame cap\n");
+    init->timer_frame = copy_cap_to_process(test_process, env->frame_path.capPtr);
 }
- 
+

@@ -15,18 +15,15 @@
 
 #include <platsupport/plat/pit.h>
 
-static seL4_CPtr
-get_IOPort_cap(void *data, uint16_t start_port, uint16_t end_port)
+static seL4_Error
+get_frame_cap(void *data, void *paddr, int size_bits, cspacepath_t *path)
 {
-    test_init_data_t *init = (test_init_data_t *) data;
-    assert(start_port >= PIT_IO_PORT_MIN);
-    assert(end_port <= PIT_IO_PORT_MAX);
-
-    return init->io_port;
+    return plat_get_frame_cap(data, paddr, size_bits, path);
 }
 
 void
-arch_init_simple(simple_t *simple) {
-    simple->IOPort_cap = get_IOPort_cap;
+arch_init_simple(simple_t *simple)
+{
+    simple->frame_cap = get_frame_cap;
 }
 

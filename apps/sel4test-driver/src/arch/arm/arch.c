@@ -13,31 +13,29 @@
 #include <sel4platsupport/plat/timer.h>
 
 void
-arch_init_timer_caps(env_t env)
-{
-    /* get the timer frame cap */
-    seL4_CPtr cap;
-    int error = vka_cspace_alloc(&env->vka, &cap);
-    if (error) {
-        ZF_LOGF("Failed to allocate cslot for timer frame cap path");
-    }
-
-    vka_cspace_make_path(&env->vka, cap, &env->frame_path);
-    error = simple_get_frame_cap(&env->simple, (void *) DEFAULT_TIMER_PADDR, PAGE_BITS_4K, &env->frame_path);
-    if (error) {
-        ZF_LOGF("Failed to get frame cap for %p\n", (void *) DEFAULT_TIMER_PADDR);
-    }
-}
-
-void
 arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
 
     /* Timer frame cap (only for arm). Here we assume the sel4platsupport
      * default timer only requires one frame. */
+    ZF_LOGV("Copying timer frame cap\n");
     init->timer_frame = copy_cap_to_process(test_process, env->frame_path.capPtr);
     if (init->timer_frame == 0) {
         ZF_LOGF("Failed to copy timer frame cap to process");
     }
+
+    ZF_LOGV("Copying clock timer frame cap\n");
+    init->clock_timer_frame = copy_cap_to_process(test_process, env->clock_frame_path.capPtr);
+    if (init->clock_timer_frame == 0) {
+        ZF_LOGF("Failed to copy clock timer frame cap to process");
+    }
+
+    ZF_LOGV("Copying timer irq\n");
+    init->timer_irq = copy_cap_to_process(test_process, env->irq_path.capPtr);
+    assert(init->timer_irq != 0);
+
+    ZF_LOGV("Copying clock timer irq\n");
+    init->clock_timer_irq = copy_cap_to_process(test_process, env->clock_irq_path.capPtr);
+
 }
 
