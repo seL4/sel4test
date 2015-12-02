@@ -386,17 +386,27 @@ wait_for_timer_interrupt(env_t env)
     sel4_timer_handle_single_irq(env->timer);
 }
 
-void 
+void
 sleep(env_t env, uint64_t ns)
 {
-    timer_start(env->timer->timer);
-    int error = timer_oneshot_relative(env->timer->timer, ns);
-    if (error) {
-        ZF_LOGF("Sleep failed with error %d\n", error);
-        /* terminates */
-    }
+    uint64_t start, end;
 
-    wait_for_timer_interrupt(env);
+    start = timer_get_time(env->clock_timer->timer);
+    timer_start(env->timer->timer);
+    do {
+        int error = timer_oneshot_relative(env->timer->timer, ns);
+        if (error) {
+            ZF_LOGF("Sleep failed with error %d\n", error);
+            /* terminates */
+        }
+        ZF_LOGV("Waiting for timer irq");
+        wait_for_timer_interrupt(env);
+        end = timer_get_time(env->clock_timer->timer);
+        ZF_LOGV("Got it");
+        if (end - start < ns) {
+            ZF_LOGD("Wanted to wait: %llu, actually %llu\n", ns, end - start);
+        }
+    } while (end - start < ns);
     timer_stop(env->timer->timer);
 }
 
