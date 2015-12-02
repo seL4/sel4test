@@ -456,7 +456,7 @@ test_set_priority(struct env* env)
 
     create_helper_thread(env, &thread2);
     set_helper_priority(&thread2, SCHED0005_HIGHEST_PRIO - 1);
-    set_helper_max_priority(&thread2, SCHED0005_HIGHEST_PRIO);
+    set_helper_max_priority(&thread2, SCHED0005_HIGHEST_PRIO - 2);
 
     set_priority_step = 0;
     ZF_LOGD("      ");
@@ -564,8 +564,6 @@ ipc_test_helper_2(ipc_test_data_t *data)
         for (int i = 0; i < 100000; i++) {
             asm volatile ("");
         }
-        test_check(last_step == ipc_test_step);
-
         data->spins++;
 
         /* Bounce. */
@@ -600,7 +598,7 @@ ipc_test_helper_3(ipc_test_data_t *data)
     CHECK_TESTCASE(result, data->bounces - last_bounces == 0);
 
     /* Now block,  to ensure that thread 1 can check its stuff. */
-    sleep(data->env, 10 * NS_IN_MS);
+    sleep(data->env, NS_IN_S);
 
     /* Two bounces - us and thread 1. */
     CHECK_TESTCASE(result, data->spins > last_spins);
@@ -609,13 +607,15 @@ ipc_test_helper_3(ipc_test_data_t *data)
 
     /* TEST PART 2 */
     /* Perform a send to a thread 1, which is already waiting. */
-    
-    /* suspend thread2 - we don't need your help anytmore */
-    int error = seL4_TCB_Suspend(data->tcb2);
-    test_check(error == seL4_NoError);
 
+    /* first increase 1's prio so it can compete with 2
+     * (or it won't be scheduled) */
+    int error = seL4_TCB_SetPriority(data->tcb1, 2);
+    test_assert(error == 0);
+
+    ZF_LOGD("3: Block");
     /* Block first to let thread prepare. */
-    sleep(data->env, 10 * NS_IN_MS); 
+    sleep(data->env, 1 * NS_IN_S);
     CHECK_STEP(ipc_test_step, 6);
 
     /* Do the send. */
@@ -623,14 +623,15 @@ ipc_test_helper_3(ipc_test_data_t *data)
     for (int i = 0; i < seL4_MessageInfo_get_length(tag); i++) {
         seL4_SetMR(i, i);
     }
+    ZF_LOGD("Send ep1");
     seL4_Send(data->ep1, tag);
 
     /* Block to let thread check. */
-    sleep(data->env, 10 * NS_IN_MS); 
+    sleep(data->env, NS_IN_S);
     CHECK_STEP(ipc_test_step, 8);
 
     /* Block to let thread 1 check again. */
-    sleep(data->env, 10 * NS_IN_MS);
+    sleep(data->env, NS_IN_S);
 
     CHECK_STEP(ipc_test_step, 9);
 
