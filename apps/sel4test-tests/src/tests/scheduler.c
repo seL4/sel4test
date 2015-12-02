@@ -1048,14 +1048,55 @@ test_resume_empty_or_no_sched_context(env_t env)
     /* resume it */
     error = seL4_TCB_Resume(thread.tcb.cptr);
     test_eq(error, seL4_NoError);
-    
+
     /* let the thread 'run' */
     sleep(env, 10 * MS_IN_S);
     test_eq(state, 0);
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0010, "Test resuming a thread with empty or missing scheduling context", 
+DEFINE_TEST(SCHED0010, "Test resuming a thread with empty or missing scheduling context",
             test_resume_empty_or_no_sched_context)
 
+
+void
+sched0011_helper(void)
+{
+    while (1);
+}
+
+
+int
+test_scheduler_accuracy(env_t env)
+{
+    /*
+     * Start a thread with a 1s timeslice at our priority, and make sure it
+     * runs for that long
+     */
+    helper_thread_t helper;
+
+    create_helper_thread(env, &helper);
+    start_helper(env, &helper, (helper_fn_t) sched0011_helper, 0, 0, 0, 0);
+    set_helper_priority(&helper, OUR_PRIO);
+    set_helper_sched_params(env, &helper, US_IN_S);
+
+
+    for (int i = 0; i < 10; i++) {
+        uint64_t start = timestamp(env);
+        seL4_Yield();
+        uint64_t end = timestamp(env);
+        uint64_t diff = end - start;
+        test_geq(diff, (uint64_t) (NS_IN_S - 3 * US_IN_S));
+        test_leq(diff, (uint64_t) (NS_IN_S + 3 * US_IN_S));
+        if (diff > NS_IN_S) {
+            ZF_LOGD("Too late: accuracy within %llu", (diff - NS_IN_S) / NS_IN_US);
+        } else if (diff <= NS_IN_S) {
+            ZF_LOGD("Too soon: Accuracy within %llu", (NS_IN_S - diff) / NS_IN_US);
+        }
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0011, "Test scheduler accuracy",
+            test_scheduler_accuracy)
 
