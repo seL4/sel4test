@@ -61,35 +61,30 @@ counter_func(volatile seL4_Word *counter)
 
 /*
  * Test that thread suspending works when idling the system.
- * Note: This test non-deterministically fails. If you find only this test
- * try re-running the test suite.
  */
 static int
 test_thread_suspend(env_t env)
 {
     helper_thread_t t1;
-    volatile seL4_Word counter;
+    volatile seL4_Word counter = 0;
     ZF_LOGD("test_thread_suspend\n");
     create_helper_thread(env, &t1);
 
     set_helper_priority(&t1, 100);
     start_helper(env, &t1, (helper_fn_t) counter_func, (seL4_Word) &counter, 0, 0, 0);
 
-    timer_periodic(env->timer->timer, 10 * NS_IN_MS);
-    timer_start(env->timer->timer);
-    sel4_timer_handle_single_irq(env->timer);
-
     seL4_Word old_counter;
 
     /* Let the counter thread run. We might have a pending interrupt, so
      * wait twice. */
-    wait_for_timer_interrupt(env);
-    wait_for_timer_interrupt(env);
+    ZF_LOGD("Sleep");
+    sleep(env, NS_IN_S);
 
     old_counter = counter;
 
     /* Let it run again. */
-    wait_for_timer_interrupt(env);
+    ZF_LOGD("Sleep");
+    sleep(env, NS_IN_S);
 
     /* Now, counter should have moved. */
     test_check(counter != old_counter);
@@ -97,14 +92,16 @@ test_thread_suspend(env_t env)
 
     /* Suspend the thread, and wait again. */
     seL4_TCB_Suspend(t1.thread.tcb.cptr);
-    wait_for_timer_interrupt(env);
+    ZF_LOGD("Sleep");
+    sleep(env, NS_IN_S);
 
     /* Counter should not have moved. */
     test_check(counter == old_counter);
     old_counter = counter;
 
     /* Check once more for good measure. */
-    wait_for_timer_interrupt(env);
+    ZF_LOGD("Sleep");
+    sleep(env, NS_IN_S);
 
     /* Counter should not have moved. */
     test_check(counter == old_counter);
@@ -112,17 +109,16 @@ test_thread_suspend(env_t env)
 
     /* Resume the thread and check it does move. */
     seL4_TCB_Resume(t1.thread.tcb.cptr);
-    wait_for_timer_interrupt(env);
+    ZF_LOGD("Sleep");
+    sleep(env, NS_IN_S);
     test_check(counter != old_counter);
 
     /* Done. */
-    timer_stop(env->timer->timer);
-    sel4_timer_handle_single_irq(env->timer);
     cleanup_helper(env, &t1);
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0000, "Test suspending and resuming a thread (flaky)", test_thread_suspend)
+DEFINE_TEST(SCHED0000, "Test suspending and resuming a thread", test_thread_suspend)
 #endif /* CONFIG_HAVE_TIMER */
 
 #ifdef CONFIG_KERNEL_STABLE
