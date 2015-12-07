@@ -6,7 +6,7 @@
 
 
 void 
-plat_init_env(env_t env)
+plat_init_env(env_t env, test_init_data_t *data)
 {
     env->timer = sel4platsupport_get_default_timer(&env->vka, &env->vspace,
                                                    &env->simple, env->timer_notification.cptr);
