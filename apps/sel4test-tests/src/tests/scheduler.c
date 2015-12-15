@@ -547,7 +547,6 @@ ipc_test_helper_2(ipc_test_data_t *data)
      * to thread 0 to let other code execute. */
     while (1) {
         /* Ensure nothing happens whilst we are busy. */
-        int last_step = ipc_test_step;
         for (int i = 0; i < 100000; i++) {
             asm volatile ("");
         }
