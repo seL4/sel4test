@@ -197,7 +197,6 @@ suspend_test_helper_2b(seL4_CPtr *t1, seL4_CPtr *t2a, seL4_CPtr *t2b)
     /* Wait for 2a to get suspend_test_step set to 1. */
     test_check(suspend_test_step == 0 || suspend_test_step == 1);
     while (suspend_test_step == 0) {
-        seL4_Yield();
     }
 
     /* Timer tick should bring us back here. */
@@ -205,7 +204,6 @@ suspend_test_helper_2b(seL4_CPtr *t1, seL4_CPtr *t2a, seL4_CPtr *t2b)
 
     /* Now spin and wait for us to be suspended. */
     while (suspend_test_step == 2) {
-        seL4_Yield();
     }
 
     /* When we wake up suspend_test_step should be 4. */
@@ -225,13 +223,6 @@ suspend_test_helper_1(seL4_CPtr *t1, seL4_CPtr *t2a, seL4_CPtr *t2b)
 
     /* We should have been preempted immediately, so by the time we run again,
      * the suspend_test_step should be 5. */
-
-#if 1 // WE HAVE A BROKEN SCHEDULER IN SEL4
-    /* FIXME: The seL4 scheduler is broken, and seL4_TCB_Resume will not
-     * preempt. The only way to get preempted is to force it ourselves (or wait
-     * for a timer tick). */
-    seL4_Yield();
-#endif
 
     CHECK_STEP(suspend_test_step, 5);
 
