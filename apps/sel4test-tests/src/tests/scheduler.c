@@ -1074,7 +1074,7 @@ test_scheduler_accuracy(env_t env)
     create_helper_thread(env, &helper);
     start_helper(env, &helper, (helper_fn_t) sched0011_helper, 0, 0, 0, 0);
     set_helper_priority(&helper, OUR_PRIO);
-    set_helper_sched_params(env, &helper, US_IN_S);
+    set_helper_sched_params(env, &helper, US_IN_S, US_IN_S);
 
 
     for (int i = 0; i < 10; i++) {

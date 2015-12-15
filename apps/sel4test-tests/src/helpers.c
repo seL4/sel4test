@@ -371,11 +371,11 @@ set_helper_max_priority(helper_thread_t *thread, uint8_t max_prio)
 }
 
 int
-set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget)
+set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget, seL4_Time period)
 {
     return seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple),
                                        thread->thread.sched_context.cptr,
-                                       budget);
+                                       budget, period);
 }
 
 void
