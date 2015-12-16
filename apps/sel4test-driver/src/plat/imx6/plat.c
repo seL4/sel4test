@@ -25,6 +25,20 @@ plat_init_caps(env_t env)
 }
 
 void
+plat_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
+{
+
+    ZF_LOGV("Copying clock timer frame cap\n");
+    init->clock_timer_frame = copy_cap_to_process(test_process, env->clock_frame_path.capPtr);
+    if (init->clock_timer_frame == 0) {
+        ZF_LOGF("Failed to copy clock timer frame cap to process");
+    }
+
+    ZF_LOGV("Copying clock timer irq\n");
+    init->clock_timer_irq = copy_cap_to_process(test_process, env->clock_irq_path.capPtr);
+}
+
+void
 plat_init(env_t env)
 {
     int error;

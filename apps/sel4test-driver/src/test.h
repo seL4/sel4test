@@ -118,6 +118,7 @@ struct env {
 void plat_init(env_t env);
 void plat_init_caps(env_t env);
 void arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process);
+void plat_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process);
 seL4_CPtr copy_cap_to_process(sel4utils_process_t *process, seL4_CPtr cap);
 
 void init_irq_cap(env_t env, int irq, cspacepath_t *path);

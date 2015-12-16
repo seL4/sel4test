@@ -3,7 +3,7 @@
 #include "../../test.h"
 
 #include <sel4platsupport/plat/timer.h>
-
+#include <platsupport/arch/generic_timer.h>
 
 void 
 plat_init_env(env_t env, test_init_data_t *data)
