@@ -405,3 +405,226 @@ test_ipc_abort_in_call(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(IPC0010, "Test suspending an IPC mid-Call()", test_ipc_abort_in_call)
+
+//TODO used??? 
+static void
+sender(seL4_CPtr endpoint, seL4_CPtr tcb)
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
+    ZF_LOGD("Client send\n");
+
+    seL4_SetMR(0, (seL4_Word) tcb);
+    seL4_Send(endpoint, info);
+
+    int error = seL4_TCB_SetPriority(tcb, 0);
+    test_check(error == seL4_NoError);
+
+}
+
+static void
+wait_server(seL4_CPtr endpoint, int runs)
+{
+    int i = 0;
+    while (i < runs) {
+        ZF_LOGD("Server wait\n");
+        seL4_Recv(endpoint, NULL);
+        i++;
+    }
+}
+
+static void
+server_fn(seL4_CPtr endpoint, int runs, int *state)
+{
+
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+
+    /* signal the intialiser that we are done */
+    ZF_LOGD("Server call");
+    *state = *state + 1;
+    seL4_NBSendRecv(endpoint, info, endpoint, NULL);
+    /* from here on we are running on borrowed time */
+
+    int i = 0;
+    while (i < runs) {
+        test_assert_fatal(seL4_GetMR(0) == 12345678);
+
+        uint32_t length = seL4_GetMR(1);
+        seL4_SetMR(0, 0xdeadbeef);
+        info = seL4_MessageInfo_new(0, 0, 0, length);
+
+        *state = *state + 1;
+        ZF_LOGD("Server replyWait\n");
+        seL4_ReplyRecv(endpoint, info, NULL);
+        i++;
+    }
+
+}
+
+static void
+proxy_fn(seL4_CPtr receive_endpoint, seL4_CPtr call_endpoint, int runs, int *state)
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+
+    /* signal the initialiser that we are awake */
+    ZF_LOGD("Proxy Call");
+    *state = *state + 1;
+    seL4_NBSendRecv(call_endpoint, info, receive_endpoint, NULL);
+    /* when we get here we are running on a donated scheduling context, 
+       as the initialiser has taken ours away */
+
+    int i = 0;
+    while (i < runs) {
+        test_assert_fatal(seL4_GetMR(0) == 12345678);
+
+        uint32_t length = seL4_GetMR(1);
+        seL4_SetMR(0, 12345678);
+        seL4_SetMR(1, length);
+        info = seL4_MessageInfo_new(0, 0, 0, length);
+
+        ZF_LOGD("Proxy call\n");
+        seL4_Call(call_endpoint, info);
+
+        test_assert_fatal(seL4_GetMR(0) == 0xdeadbeef);
+
+        seL4_SetMR(0, 0xdeadbeef);
+        ZF_LOGD("Proxy replyWait\n");
+        *state = *state + 1;
+        seL4_ReplyRecv(receive_endpoint, info, NULL);
+        i++;
+    }
+
+}
+
+static void
+client_fn(seL4_CPtr endpoint, bool fastpath, int runs, int *state)
+{
+
+    /* make the message greater than 4 in size if we do not want to hit the fastpath */
+    uint32_t length = fastpath ? 2 : 5;
+
+    int i = 0;
+    while (i < runs) {
+        seL4_SetMR(0, 12345678);
+        seL4_SetMR(1, length);
+        seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, length);
+
+        ZF_LOGD("Client call\n");
+        info = seL4_Call(endpoint, info);
+
+        test_assert_fatal(seL4_GetMR(0) == 0xdeadbeef);
+        i++;
+        *state = *state + 1;
+    }
+}
+
+static int
+single_client_server_chain_test(env_t env, int fastpath, int prio_diff)
+{
+    int error;
+    const int runs = 10;
+    const int num_proxies = 5;
+    int client_prio = 10;
+    int server_prio = client_prio + (prio_diff * num_proxies);
+    helper_thread_t client, server;
+    helper_thread_t proxies[num_proxies];
+    volatile int client_state = 0;
+    volatile int server_state = 0;
+    volatile int proxy_state[num_proxies];
+
+
+    /* create client */
+    create_helper_thread(env, &client);
+    set_helper_sched_params(env, &client, 1000llu, 1000llu);
+    set_helper_priority(&client, client_prio);
+
+    
+    seL4_CPtr receive_endpoint = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr first_endpoint = receive_endpoint;
+    /* create proxies */
+    for (int i = 0; i < num_proxies; i++) {
+        int prio = server_prio + (prio_diff * i);
+        proxy_state[i] = 0;
+        seL4_CPtr call_endpoint = vka_alloc_endpoint_leaky(&env->vka);
+        create_helper_thread(env, &proxies[i]);
+        set_helper_priority(&proxies[i], prio);
+        ZF_LOGD("Start proxy\n");
+        start_helper(env, &proxies[i], (helper_fn_t) proxy_fn, receive_endpoint,
+                     call_endpoint, runs, (seL4_Word) &proxy_state[i]);
+        
+        /* wait for proxy to initialise */
+        ZF_LOGD("Wait for proxy\n");
+        seL4_Recv(call_endpoint, NULL);
+        test_eq(proxy_state[i], 1);
+        /* now take away its scheduling context */
+        error = seL4_SchedContext_UnbindTCB(proxies[i].thread.sched_context.cptr);
+        test_eq(error, seL4_NoError);
+
+        receive_endpoint = call_endpoint;
+    }
+
+    /* create the server */
+    create_helper_thread(env, &server);
+    set_helper_priority(&server, server_prio); 
+    ZF_LOGD("Start server");
+    start_helper(env, &server, (helper_fn_t) server_fn, receive_endpoint, runs, 
+                 (seL4_Word) &server_state, 0);
+    /* wait for server to initialise on our time */
+    ZF_LOGD("Wait for server");
+    seL4_Recv(receive_endpoint, NULL);
+    test_eq(server_state, 1);
+    /* now take it's scheduling context away */
+    error = seL4_SchedContext_UnbindTCB(server.thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    ZF_LOGD("Start client");
+    start_helper(env, &client, (helper_fn_t) client_fn, first_endpoint, 
+                 fastpath, runs, (seL4_Word) &client_state); 
+    
+    /* sleep and let the testrun */
+    ZF_LOGD("Wait for client");
+    wait_for_helper(&client);
+
+    test_eq(server_state, runs + 1);
+    test_eq(client_state, runs);
+    for (int i = 0; i < num_proxies; i++) {
+        test_eq(proxy_state[i], runs + 1);
+    }
+
+    return sel4test_get_result();
+}
+
+int
+test_single_client_slowpath_same_prio(env_t env)
+{
+    return single_client_server_chain_test(env, 0, 0);
+}
+DEFINE_TEST(IPC0011, "Client-server inheritance: slowpath, same prio", test_single_client_slowpath_same_prio)
+
+int
+test_single_client_slowpath_higher_prio(env_t env)
+{
+    return single_client_server_chain_test(env, 0, 1);
+}
+DEFINE_TEST(IPC0012, "Client-server inheritance: slowpath, client higher prio", test_single_client_slowpath_higher_prio)
+
+int
+test_single_client_slowpath_lower_prio(env_t env)
+{
+    return single_client_server_chain_test(env, 0, -1);
+}
+DEFINE_TEST(IPC0013, "Client-server inheritance: slowpath, client lower prio", test_single_client_slowpath_lower_prio)
+
+int
+test_single_client_fastpath_higher_prio(env_t env)
+{
+    return single_client_server_chain_test(env, 1, 1);
+}
+DEFINE_TEST(IPC0014, "Client-server inheritance: fastpath, client higher prio", test_single_client_fastpath_higher_prio)
+
+int
+test_single_client_fastpath_same_prio(env_t env)
+{
+    return single_client_server_chain_test(env, 1, 0);
+}
+DEFINE_TEST(IPC0015, "Client-server inheritance: fastpath, client same prio", test_single_client_fastpath_same_prio)
+
