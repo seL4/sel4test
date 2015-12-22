@@ -628,3 +628,76 @@ test_single_client_fastpath_same_prio(env_t env)
 }
 DEFINE_TEST(IPC0015, "Client-server inheritance: fastpath, client same prio", test_single_client_fastpath_same_prio)
 
+static void
+ipc0016_call_once_fn(seL4_CPtr endpoint, int *state)
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+  
+    *state = *state + 1;
+    ZF_LOGD("Call %d\n", *state);
+    seL4_Call(endpoint, info);
+    ZF_LOGD("Resumed with reply\n");
+    *state = *state + 1;
+ 
+}
+
+static void
+ipc0016_reply_once_fn(seL4_CPtr endpoint)
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+  
+    /* send initialisation context back */
+    ZF_LOGD("seL4_NBSendRecv\n");
+    seL4_NBSendRecv(endpoint, info, endpoint, NULL);
+  
+    /* reply */
+    ZF_LOGD("Reply\n");
+    seL4_Reply(info);
+      
+    /* wait (keeping sc) */
+    ZF_LOGD("Wait\n");
+    seL4_Wait(endpoint, NULL);
+
+    test_assert_fatal(!"should not get here");
+}
+
+static int
+test_transfer_on_reply(env_t env)
+{
+    volatile int state = 1;
+    int error;
+    helper_thread_t client, server;
+    seL4_CPtr endpoint;
+
+    endpoint = vka_alloc_endpoint_leaky(&env->vka);
+    create_helper_thread(env, &client); 
+    create_helper_thread(env, &server);
+
+    set_helper_priority(&client, 10);
+    set_helper_priority(&server, 11);
+
+    start_helper(env, &server, (helper_fn_t) ipc0016_reply_once_fn, endpoint, 0, 0, 0);
+
+    /* wait for server to initialise */
+    seL4_Recv(endpoint, NULL);
+    /* now remove the schedluing context */
+    error = seL4_SchedContext_UnbindTCB(server.thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* start the client */
+    start_helper(env, &client, (helper_fn_t) ipc0016_call_once_fn, endpoint, 
+                 (seL4_Word) &state, 0, 0);
+    
+    /* the server will attempt to steal the clients scheduling context 
+     * by using seL4_Reply instead of seL4_ReplyWait. However, 
+     * a reply cap is a guarantee that a scheduling context will be returned,
+     * so it does return to the client and the server hangs.
+     */
+    wait_for_helper(&client);
+
+    test_eq(state, 3);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(IPC0016, "Test reply does returns scheduling scheduling context", 
+        test_transfer_on_reply);
