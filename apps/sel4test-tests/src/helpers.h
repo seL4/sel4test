@@ -75,6 +75,9 @@ void start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
 /* wait for a helper thread to finish */
 int wait_for_helper(helper_thread_t *thread);
 
+/* end timeslice - this may block until the thread is due to have its timeslice recharged */
+void helper_yield(helper_thread_t *thread);
+
 /* free all resources associated with a helper and tear it down */
 void cleanup_helper(env_t env, helper_thread_t *thread);
 /*

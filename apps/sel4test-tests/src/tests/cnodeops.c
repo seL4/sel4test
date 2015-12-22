@@ -324,7 +324,7 @@ test_cnode_savecaller(env_t env)
     start_helper(env, &helper, (helper_fn_t) call_fn, endpoint.cptr, 0, 0, 0);
 
     /* let helper run */
-    seL4_Yield();
+    helper_yield(&helper);
 
     /* first save it to a full slot */
     error = cnode_savecaller(env, endpoint.cptr);
@@ -371,7 +371,7 @@ test_cnode_saveTCBcaller(env_t env)
     start_helper(env, &helper, (helper_fn_t) call_fn, endpoint.cptr, 0, 0, 0);
 
     /* let helper run */
-    seL4_Yield();
+    helper_yield(&helper);
 
     /* first save it to a full slot */
     error = cnode_saveTCBcaller(env, endpoint.cptr, &helper.thread.tcb);

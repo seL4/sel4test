@@ -144,9 +144,6 @@
  * Generate testing stubs for each of the basic system calls.
  */
 
-GENERATE_SYSCALL_TEST(SYSCALL0000, seL4_Yield,
-                      seL4_Yield());
-
 GENERATE_SYSCALL_TEST(SYSCALL0001, seL4_Send,
                       seL4_Send(env->cspace_root, seL4_MessageInfo_new(0, 0, 0, 0)))
 

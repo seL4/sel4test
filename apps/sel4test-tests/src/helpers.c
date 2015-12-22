@@ -417,3 +417,9 @@ timestamp(env_t env)
     return timer_get_time(env->clock_timer->timer);
 }
 
+void
+helper_yield(helper_thread_t *thread)
+{
+    seL4_SchedContext_Yield(thread->thread.sched_context.cptr);
+}
+

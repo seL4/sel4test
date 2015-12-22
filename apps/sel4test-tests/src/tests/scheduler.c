@@ -1069,7 +1069,8 @@ test_scheduler_accuracy(env_t env)
 
     for (int i = 0; i < 10; i++) {
         uint64_t start = timestamp(env);
-        seL4_Yield();
+        int error = seL4_SchedContext_Yield(env->sched_context);
+        test_eq(error, seL4_NoError);
         uint64_t end = timestamp(env);
         uint64_t diff = end - start;
         test_geq(diff, (uint64_t) (NS_IN_S - 3 * US_IN_S));
@@ -1088,14 +1089,14 @@ DEFINE_TEST(SCHED0011, "Test scheduler accuracy",
 
 /* used by sched0012, 0013, 0014 */
 static void
-periodic_thread(int id, volatile unsigned long *counters)
+periodic_thread(int id, volatile unsigned long *counters, seL4_CPtr sc_cap)
 {
     counters[id] = 0;
 
     while (1) {
         counters[id]++;
         test_assert_fatal(counters[id] < 1000);
-        seL4_Yield();
+        seL4_SchedContext_Yield(sc_cap);
     }
 }
 
@@ -1113,7 +1114,8 @@ test_one_periodic_thread(env_t env)
     create_helper_thread(env, &helper);
     set_helper_priority(&helper, env->priority);
     set_helper_sched_params(env, &helper, 0.2 * US_IN_S, US_IN_S);
-    start_helper(env, &helper, (helper_fn_t) periodic_thread, 0, (seL4_Word) &counter, 0, 0);
+    start_helper(env, &helper, (helper_fn_t) periodic_thread, 0, (seL4_Word) &counter, 
+                 helper.thread.sched_context.cptr, 0);
 
     while (counter < 10) {
         sleep(env, NS_IN_S);
@@ -1143,7 +1145,8 @@ test_two_periodic_threads(env_t env)
     set_helper_sched_params(env, &helpers[1], 0.1 * US_IN_S, 3 * US_IN_S);
 
     for (int i = 0; i < num_threads; i++) {
-        start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 0, 0);
+        start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 
+                helpers[i].thread.sched_context.cptr, 0);
     }
 
     while (counters[0] < 3 && counters[1] < 3) {
@@ -1181,7 +1184,8 @@ test_ordering_periodic_threads(env_t env)
     set_helper_sched_params(env, &helpers[2], 10 * US_IN_MS, 800 * US_IN_MS);
 
     for (int i = 0; i < num_threads; i++) {
-        start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 0, 0);
+        start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 
+                     helpers[i].thread.sched_context.cptr, 0);
     }
 
     /* stop once 2 reaches 11 increments */
@@ -1280,12 +1284,12 @@ DEFINE_TEST(SCHED0015, "Test periodic threads that do not yield", test_budget_ov
 
 
 static void
-sched0016_helper(volatile int *state)
+sched0016_helper(volatile int *state, seL4_CPtr sc_cap)
 {
     while (1) {
         printf("Hello\n");
         *state = *state + 1;
-        seL4_Yield();
+        seL4_SchedContext_Yield(sc_cap);
     }
 
     ZF_LOGF("Should not get here!");
@@ -1309,8 +1313,9 @@ test_resume_no_overflow(env_t env)
     /* this thread only runs for 1 second every 10 minutes */
     set_helper_sched_params(env, &helper, 1 * US_IN_S, 10 * SEC_IN_MINUTE * US_IN_S);
    
-    start_helper(env, &helper,  (helper_fn_t) sched0016_helper, (seL4_Word) &state, 0, 0, 0);
-    seL4_Yield();
+    start_helper(env, &helper,  (helper_fn_t) sched0016_helper, (seL4_Word) &state, 
+                 helper.thread.sched_context.cptr, 0, 0);
+    seL4_SchedContext_Yield(env->sched_context);
     test_eq(state, 1);
 
     for (int i = 0; i < 10; i++) {
@@ -1320,7 +1325,7 @@ test_resume_no_overflow(env_t env)
         error = seL4_TCB_Resume(helper.thread.tcb.cptr);
         test_eq(error, 0);
 
-        seL4_Yield();
+        seL4_SchedContext_Yield(env->sched_context);
 
         test_eq(state, 1);
     }
