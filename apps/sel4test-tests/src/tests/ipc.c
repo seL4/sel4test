@@ -406,32 +406,6 @@ test_ipc_abort_in_call(env_t env)
 }
 DEFINE_TEST(IPC0010, "Test suspending an IPC mid-Call()", test_ipc_abort_in_call)
 
-//TODO used??? 
-static void
-sender(seL4_CPtr endpoint, seL4_CPtr tcb)
-{
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
-    ZF_LOGD("Client send\n");
-
-    seL4_SetMR(0, (seL4_Word) tcb);
-    seL4_Send(endpoint, info);
-
-    int error = seL4_TCB_SetPriority(tcb, 0);
-    test_check(error == seL4_NoError);
-
-}
-
-static void
-wait_server(seL4_CPtr endpoint, int runs)
-{
-    int i = 0;
-    while (i < runs) {
-        ZF_LOGD("Server wait\n");
-        seL4_Recv(endpoint, NULL);
-        i++;
-    }
-}
-
 static void
 server_fn(seL4_CPtr endpoint, int runs, int *state)
 {
@@ -701,3 +675,100 @@ test_transfer_on_reply(env_t env)
 }
 DEFINE_TEST(IPC0016, "Test reply does returns scheduling scheduling context", 
         test_transfer_on_reply);
+
+/* used by ipc0017 */
+static void
+sender(seL4_CPtr endpoint, seL4_CPtr tcb, int *state)
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
+    ZF_LOGD("Client send\n");
+    *state = 1;
+    seL4_SetMR(0, (seL4_Word) tcb);
+    seL4_Send(endpoint, info);
+    *state = 2;
+}
+
+static void
+wait_server(seL4_CPtr endpoint, int runs)
+{
+    /* signal test that we are initialised */
+    seL4_Send(endpoint, seL4_MessageInfo_new(0, 0, 0, 0));
+
+    int i = 0;
+    while (i < runs) {
+        ZF_LOGD("Server wait\n");
+        seL4_Recv(endpoint, NULL);
+        i++;
+    }
+}
+
+static int
+test_send_to_no_sc(env_t env)
+{
+    /* sends should block until the server gets a scheduling context.
+     * nb sends should not block */
+    int error;
+    helper_thread_t server, client1, client2;
+    volatile int state1, state2;
+    seL4_CPtr endpoint;
+
+    endpoint = vka_alloc_endpoint_leaky(&env->vka);
+
+    create_helper_thread(env, &server);
+    create_helper_thread(env, &client1);
+    create_helper_thread(env, &client2);
+
+    set_helper_priority(&server, 10);
+    set_helper_priority(&client1, 9);
+    set_helper_priority(&client2, 9);
+    
+    const int num_server_messages = 4;
+    start_helper(env, &server, (helper_fn_t) wait_server, endpoint, num_server_messages, 0, 0);
+    seL4_Recv(endpoint, NULL);
+
+    error = seL4_SchedContext_UnbindTCB(server.thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* this message should not result in the server being scheduled */
+    ZF_LOGD("NBSend");
+    seL4_SetMR(0, 12345678);
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
+    seL4_NBSend(endpoint, info);
+    test_eq(seL4_GetMR(0), 12345678);
+
+    /* start clients */
+    state1 = 0;
+    state2 = 0;
+    start_helper(env, &client1, (helper_fn_t) sender, endpoint, client1.thread.tcb.cptr, 
+                 (seL4_Word) &state1, 0);
+    start_helper(env, &client2, (helper_fn_t) sender, endpoint, client2.thread.tcb.cptr, 
+                 (seL4_Word) &state2, 0);
+    
+    /* set our prio down, both clients should block as the server cannot 
+     * run without a schedluing context */
+    error = seL4_TCB_SetPriority(env->tcb, 8);
+    test_eq(error, seL4_NoError);
+    test_eq(state1, 1);
+    test_eq(state2, 1);
+
+    /* restore the servers schedluing context */
+    error = seL4_SchedContext_BindTCB(server.thread.sched_context.cptr, server.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+   /* now the clients should be unblocked */
+    test_eq(state1, 2);
+    test_eq(state2, 2);
+
+    /* this should work */
+    seL4_NBSend(endpoint, info);
+   
+    /* and so should this */
+    seL4_Send(endpoint, info);
+
+    /* if the server received the correct number of messages it should now be done */
+    wait_for_helper(&server);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(IPC0017, "Test seL4_Send/seL4_NBSend to a server with no scheduling context", test_send_to_no_sc)
+
