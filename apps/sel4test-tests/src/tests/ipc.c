@@ -772,3 +772,69 @@ test_send_to_no_sc(env_t env)
 }
 DEFINE_TEST(IPC0017, "Test seL4_Send/seL4_NBSend to a server with no scheduling context", test_send_to_no_sc)
 
+static void
+ipc0018_helper(seL4_CPtr endpoint, int *state) 
+{
+    *state = 1;
+
+    while (1) {
+        ZF_LOGD("Send");
+        seL4_Send(endpoint, seL4_MessageInfo_new(0, 0, 0, 0));
+        *state = *state + 1;
+    }
+}
+
+static int
+test_receive_no_sc(env_t env) 
+{
+    helper_thread_t client;
+    int error; 
+    volatile int state;
+    seL4_CPtr endpoint;
+
+    endpoint = vka_alloc_endpoint_leaky(&env->vka);
+    create_helper_thread(env, &client);
+    set_helper_priority(&client, 10);
+    error = seL4_TCB_SetPriority(env->tcb, 9);
+    test_eq(error, seL4_NoError);
+
+    /* start the client, it will increment state and send a message */
+    start_helper(env, &client, (helper_fn_t) ipc0018_helper, endpoint, 
+                 (seL4_Word) &state, 0, 0);
+
+    test_eq(state, 1);
+
+    /* clear the clients scheduling context */
+    ZF_LOGD("Unbind scheduling context");
+    error = seL4_SchedContext_UnbindTCB(client.thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* now we should be able to receive the message, but since the client
+     * no longer has a schedluing context it should not run 
+     */
+    ZF_LOGD("Recv");
+    seL4_Recv(endpoint, NULL);
+    
+    /* check thread has not run */
+    test_eq(state, 1);
+
+    /* now set the schedluing context again */
+    error = seL4_SchedContext_BindTCB(client.thread.sched_context.cptr, 
+                                      client.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+    test_eq(state, 2);
+
+    /* now get another message */
+    seL4_Recv(endpoint, NULL);
+    test_eq(state, 3);
+
+    /* and another, to check client is well and truly running */
+    seL4_Recv(endpoint, NULL);
+    test_eq(state, 4);
+
+    return sel4test_get_result();
+}   
+DEFINE_TEST(IPC0018, "Test receive from a client with no scheduling context", 
+            test_receive_no_sc);
+
+
