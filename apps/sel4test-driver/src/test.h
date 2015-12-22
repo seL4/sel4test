@@ -58,6 +58,8 @@ typedef struct {
     seL4_Word tsc_freq;
     /* cap to the sched ctrl capability */
     seL4_SchedControl sched_ctrl;
+    /* cap to the tests scheduling context */
+    seL4_CPtr sched_context;
     /* size of the test processes cspace */
     seL4_Word cspace_size_bits;
     /* range of free slots in the cspace */

@@ -238,6 +238,7 @@ main(int argc, char **argv)
     env.priority = init_data->priority;
     env.cspace_size_bits = init_data->cspace_size_bits;
     env.tcb = init_data->tcb;
+    env.sched_context = init_data->sched_context;
 #ifndef CONFIG_KERNEL_STABLE
     env.asid_pool = init_data->asid_pool;
     env.asid_ctrl = init_data->asid_ctrl;

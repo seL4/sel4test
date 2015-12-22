@@ -59,6 +59,8 @@ typedef struct {
     seL4_Word tsc_freq;
     /* cap to the sched ctrl capability */
     seL4_SchedControl sched_ctrl;
+    /* cap to the test threads scheduling context */
+    seL4_CPtr sched_context;
     /* size of the test processes cspace */
     seL4_Word cspace_size_bits;
     /* range of free slots in the cspace */
@@ -119,6 +121,7 @@ struct env {
     seL4_CPtr io_space;
 #endif /* CONFIG_IOMMU */
     seL4_CPtr domain;
+    seL4_CPtr sched_context;
 
     int priority;
     int cspace_size_bits;

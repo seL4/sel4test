@@ -206,6 +206,7 @@ create_helper_process(env_t env, helper_thread_t *thread)
     sel4utils_process_config_t config = {
         .is_elf = false,
         .create_cspace = true,
+        .create_sc = true,
         .one_level_cspace_size_bits = env->cspace_size_bits,
         .create_vspace = true,
         .reservations = env->regions,

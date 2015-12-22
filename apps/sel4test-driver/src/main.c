@@ -220,17 +220,6 @@ send_init_data(env_t env, seL4_CPtr endpoint, sel4utils_process_t *process)
     return remote_vaddr;
 }
 
-/* copy the caps required to set up the sel4platsupport default timer */
-static void
-copy_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
-{
-    arch_copy_timer_caps(init, env, test_process);
-
-    ZF_LOGV("Copying sched ctrl cap\n");
-    init->sched_ctrl = copy_cap_to_process(test_process, simple_get_sched_ctrl(&env->simple));
-    assert(init->sched_ctrl != 0);
-}
-
 /* Run a single test.
  * Each test is launched as its own process. */
 int
@@ -262,7 +251,10 @@ run_test(struct testcase *test)
 #endif /* CONFIG_IOMMU */
     /* setup data about untypeds */
     env.init->untypeds = copy_untypeds_to_process(&test_process, untypeds, num_untypeds);
-    copy_caps(env.init, &env, &test_process);
+    env.init->sched_ctrl = copy_cap_to_process(&test_process, simple_get_sched_ctrl(&env.simple));
+    env.init->sched_context = copy_cap_to_process(&test_process, test_process.thread.sched_context.cptr);
+
+    arch_copy_timer_caps(env.init, &env, &test_process);
     /* copy the fault endpoint - we wait on the endpoint for a message
      * or a fault to see when the test finishes */
     seL4_CPtr endpoint = copy_cap_to_process(&test_process, test_process.fault_endpoint.cptr);
