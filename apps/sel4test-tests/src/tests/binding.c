@@ -201,3 +201,58 @@ test_notification_binding_4(env_t env)
 DEFINE_TEST(BIND0004, "Test IPC ordering 2) bound tcb waits on bound notification 1) another tcb sends a message",
             test_notification_binding_4)
 
+static void
+bind0005_helper(seL4_CPtr endpoint, volatile int *state)
+{
+    *state = 1;
+    seL4_Recv(endpoint, NULL);
+    *state = 2;
+}
+
+static int
+test_notification_binding_no_sc(env_t env)
+{
+    seL4_CPtr endpoint, notification;
+    int error;
+    helper_thread_t helper;
+    volatile int state = 0;
+
+    endpoint = vka_alloc_endpoint_leaky(&env->vka);
+    notification = vka_alloc_notification_leaky(&env->vka);
+
+    create_helper_thread(env, &helper);
+
+    /* set our prio lower so the helper thread runs when we start it */
+    set_helper_priority(&helper, 10);
+    error = seL4_TCB_SetPriority(env->tcb, 9);
+    
+    error = seL4_TCB_BindNotification(helper.thread.tcb.cptr, notification);
+    test_eq(error, seL4_NoError);
+
+    /* start the helper so it is waiting on the endpoint */
+    start_helper(env, &helper, (helper_fn_t) bind0005_helper, endpoint,
+                 (seL4_Word) &state, 0, 0);
+    test_eq(state, 1);
+    
+    /* clear its sc */
+    error = seL4_SchedContext_UnbindTCB(helper.thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* signal it */
+    seL4_Signal(notification);
+
+    /* it should not have run */
+    test_eq(state, 1);
+
+    /* now give back the scheduling context */
+    error = seL4_SchedContext_BindTCB(helper.thread.sched_context.cptr, 
+                              helper.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* now it should have got the signal */
+    test_eq(state, 2);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(BIND005, "Test scheduling context donation interplay with notification binding", test_notification_binding_no_sc)
+
