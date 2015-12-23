@@ -407,7 +407,7 @@ test_ipc_abort_in_call(env_t env)
 DEFINE_TEST(IPC0010, "Test suspending an IPC mid-Call()", test_ipc_abort_in_call)
 
 static void
-server_fn(seL4_CPtr endpoint, int runs, int *state)
+server_fn(seL4_CPtr endpoint, int runs, volatile int *state)
 {
 
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
@@ -435,7 +435,7 @@ server_fn(seL4_CPtr endpoint, int runs, int *state)
 }
 
 static void
-proxy_fn(seL4_CPtr receive_endpoint, seL4_CPtr call_endpoint, int runs, int *state)
+proxy_fn(seL4_CPtr receive_endpoint, seL4_CPtr call_endpoint, int runs, volatile int *state)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
 
@@ -470,7 +470,7 @@ proxy_fn(seL4_CPtr receive_endpoint, seL4_CPtr call_endpoint, int runs, int *sta
 }
 
 static void
-client_fn(seL4_CPtr endpoint, bool fastpath, int runs, int *state)
+client_fn(seL4_CPtr endpoint, bool fastpath, int runs, volatile int *state)
 {
 
     /* make the message greater than 4 in size if we do not want to hit the fastpath */
@@ -603,7 +603,7 @@ test_single_client_fastpath_same_prio(env_t env)
 DEFINE_TEST(IPC0015, "Client-server inheritance: fastpath, client same prio", test_single_client_fastpath_same_prio)
 
 static void
-ipc0016_call_once_fn(seL4_CPtr endpoint, int *state)
+ipc0016_call_once_fn(seL4_CPtr endpoint, volatile int *state)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
   
@@ -676,14 +676,13 @@ test_transfer_on_reply(env_t env)
 DEFINE_TEST(IPC0016, "Test reply does returns scheduling scheduling context", 
         test_transfer_on_reply);
 
-/* used by ipc0017 */
+/* used by ipc0017 and ipc0019 */
 static void
-sender(seL4_CPtr endpoint, seL4_CPtr tcb, int *state)
+sender(seL4_CPtr endpoint, volatile int *state)
 {
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
     ZF_LOGD("Client send\n");
     *state = 1;
-    seL4_SetMR(0, (seL4_Word) tcb);
     seL4_Send(endpoint, info);
     *state = 2;
 }
@@ -739,10 +738,8 @@ test_send_to_no_sc(env_t env)
     /* start clients */
     state1 = 0;
     state2 = 0;
-    start_helper(env, &client1, (helper_fn_t) sender, endpoint, client1.thread.tcb.cptr, 
-                 (seL4_Word) &state1, 0);
-    start_helper(env, &client2, (helper_fn_t) sender, endpoint, client2.thread.tcb.cptr, 
-                 (seL4_Word) &state2, 0);
+    start_helper(env, &client1, (helper_fn_t) sender, endpoint, (seL4_Word) &state1, 0, 0);
+    start_helper(env, &client2, (helper_fn_t) sender, endpoint, (seL4_Word) &state2, 0 , 0);
     
     /* set our prio down, both clients should block as the server cannot 
      * run without a schedluing context */
@@ -773,7 +770,7 @@ test_send_to_no_sc(env_t env)
 DEFINE_TEST(IPC0017, "Test seL4_Send/seL4_NBSend to a server with no scheduling context", test_send_to_no_sc)
 
 static void
-ipc0018_helper(seL4_CPtr endpoint, int *state) 
+ipc0018_helper(seL4_CPtr endpoint, volatile int *state) 
 {
     *state = 1;
 
