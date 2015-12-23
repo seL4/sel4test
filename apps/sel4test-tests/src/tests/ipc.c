@@ -13,7 +13,7 @@
 #include <stdlib.h>
 #include <sel4/sel4.h>
 #include <vka/object.h>
-
+#include <vka/capops.h>
 #include "../helpers.h"
 
 #define MIN_LENGTH 0
@@ -869,6 +869,58 @@ delete_sc_client_sending_on_endpoint(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(IPC0019, "Test deleteing the scheduling context while a client is sending on an endpoint", delete_sc_client_sending_on_endpoint);
+
+static void
+ipc0020_helper(seL4_CPtr endpoint, volatile int *state)
+{
+    *state = 1;
+    while (1) {
+        ZF_LOGD("Recv");
+        seL4_Recv(endpoint, NULL);
+        *state = *state + 1;
+    }
+}
+
+static int
+delete_sc_client_waiting_on_endpoint(env_t env)
+{
+    helper_thread_t waiter;
+    volatile int state = 0;
+    int error;
+    seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
+
+    create_helper_thread(env, &waiter);
+    set_helper_priority(&waiter, 10);
+    error = seL4_TCB_SetPriority(env->tcb, 9);
+    start_helper(env, &waiter, (helper_fn_t) ipc0020_helper, endpoint, (seL4_Word) &state, 0, 0);
+
+    /* helper should run and block receiving on endpoint */
+    test_eq(state, 1);
+ 
+    /* destroy scheduling context */
+    vka_free_object(&env->vka, &waiter.thread.sched_context);
+
+    /* send message */
+    seL4_Send(endpoint, seL4_MessageInfo_new(0, 0, 0, 0));
+    
+    /* thread should not have moved */
+    test_eq(state, 1);
+
+    /* now create a new scheduling context and give it to the thread */
+    seL4_CPtr sched_context = vka_alloc_sched_context_leaky(&env->vka);
+    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple), sched_context,
+                                        1000 * US_IN_S, 1000 * US_IN_S); 
+    test_eq(error, seL4_NoError);
+
+    error = seL4_SchedContext_BindTCB(sched_context, waiter.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* now the thread should run and receive the message */
+    test_eq(state, 2);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(IPC0020, "test deleting a scheduling context while the client is waiting on an endpoint", delete_sc_client_waiting_on_endpoint);
 
 
 
