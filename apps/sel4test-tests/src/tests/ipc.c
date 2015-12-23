@@ -922,5 +922,78 @@ delete_sc_client_waiting_on_endpoint(env_t env)
 }
 DEFINE_TEST(IPC0020, "test deleting a scheduling context while the client is waiting on an endpoint", delete_sc_client_waiting_on_endpoint);
 
+static void 
+ipc21_faulter_fn(int *addr) 
+{
+    ZF_LOGD("Fault at %p\n", addr);
+    *addr = 0xdeadbeef;
+                   
+    ZF_LOGD("Resumed\n");
+}
+
+static void
+ipc21_fault_handler_fn(seL4_CPtr endpoint, vspace_t *vspace, reservation_t *res)
+{
+    int error;
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+    
+    info = seL4_NBSendRecv(endpoint, info, endpoint, NULL);
+    while (1) { 
+        test_check(seL4_isPageFault_Tag(info));
+        void *addr = (void *) seL4_PF_Addr();
+        ZF_LOGD("Handling fault at %p\n", addr);
+  
+        error = vspace_new_pages_at_vaddr(vspace, addr, 1, seL4_PageBits, *res);
+        test_eq(error, seL4_NoError);
+  
+        seL4_ReplyRecv(endpoint, info, NULL);
+    }
+}
+
+static int 
+test_fault_handler_donated_sc(env_t env)
+{
+    helper_thread_t handler, faulter;
+    void *vaddr = NULL;
+    reservation_t res;
+    seL4_CPtr endpoint;
+
+    endpoint = vka_alloc_endpoint_leaky(&env->vka);
+   
+    res = vspace_reserve_range(&env->vspace, PAGE_SIZE_4K, seL4_AllRights, 1, &vaddr);
+    test_check(vaddr != NULL);
+
+    create_helper_thread(env, &handler);
+    create_helper_thread(env, &faulter);
+
+    /* start fault handler */
+    start_helper(env, &handler, (helper_fn_t) ipc21_fault_handler_fn, 
+                 endpoint, (seL4_Word) &env->vspace, (seL4_Word) &res, 
+                 0);
+    
+    /* wait for it to initialise */ 
+    seL4_Recv(endpoint, NULL);
+
+    /* now remove its scheduling context */
+    int error = seL4_SchedContext_UnbindTCB(handler.thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* set fault handler */
+    seL4_CapData_t data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits);
+    seL4_CapData_t null = {{0}};
+    error = seL4_TCB_SetSpace(faulter.thread.tcb.cptr, endpoint, env->cspace_root, data, env->page_directory, null);
+    test_eq(error, seL4_NoError);
+
+    /* start the fault handler */
+    start_helper(env, &faulter, (helper_fn_t) ipc21_faulter_fn, (seL4_Word) vaddr, 0, 0, 0); 
+    
+    /* the faulter handler will restore the faulter and we should not block here */
+    wait_for_helper(&faulter);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(IPC0021, "Test fault handler on donated scheduling context", 
+        test_fault_handler_donated_sc);
+
 
 
