@@ -834,4 +834,41 @@ test_receive_no_sc(env_t env)
 DEFINE_TEST(IPC0018, "Test receive from a client with no scheduling context", 
             test_receive_no_sc);
 
+static int 
+delete_sc_client_sending_on_endpoint(env_t env) 
+{
+    helper_thread_t client;
+    seL4_CPtr endpoint;
+    volatile int state = 0;
+    int error;
+
+    endpoint = vka_alloc_endpoint_leaky(&env->vka);
+
+    create_helper_thread(env, &client);
+    set_helper_priority(&client, 10);
+    
+    /* set our prio below the helper */
+    error = seL4_TCB_SetPriority(env->tcb, 9);
+    test_eq(error, seL4_NoError);
+
+    start_helper(env, &client, (helper_fn_t) sender, endpoint, (seL4_Word) &state, 0, 0);
+       
+    /* the client will run and send on the endpoint */
+    test_eq(state, 1);
+
+    /* now delete the scheduling context - this should unbind the client 
+     * but not remove the message */
+
+    ZF_LOGD("Destroying schedluing context");
+    vka_free_object(&env->vka, &client.thread.sched_context);
+
+    ZF_LOGD("seL4_Recv");
+    seL4_Recv(endpoint, NULL);
+    test_eq(state, 1);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(IPC0019, "Test deleteing the scheduling context while a client is sending on an endpoint", delete_sc_client_sending_on_endpoint);
+
+
 
