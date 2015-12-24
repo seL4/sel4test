@@ -427,7 +427,7 @@ server_fn(seL4_CPtr endpoint, int runs, volatile int *state)
         info = seL4_MessageInfo_new(0, 0, 0, length);
 
         *state = *state + 1;
-        ZF_LOGD("Server replyWait\n");
+        ZF_LOGD("Server replyRecv\n");
         seL4_ReplyRecv(endpoint, info, NULL);
         i++;
     }
@@ -461,7 +461,7 @@ proxy_fn(seL4_CPtr receive_endpoint, seL4_CPtr call_endpoint, int runs, volatile
         test_assert_fatal(seL4_GetMR(0) == 0xdeadbeef);
 
         seL4_SetMR(0, 0xdeadbeef);
-        ZF_LOGD("Proxy replyWait\n");
+        ZF_LOGD("Proxy replyRecv\n");
         *state = *state + 1;
         seL4_ReplyRecv(receive_endpoint, info, NULL);
         i++;
@@ -526,7 +526,7 @@ single_client_server_chain_test(env_t env, int fastpath, int prio_diff)
                      call_endpoint, runs, (seL4_Word) &proxy_state[i]);
         
         /* wait for proxy to initialise */
-        ZF_LOGD("Wait for proxy\n");
+        ZF_LOGD("Recv for proxy\n");
         seL4_Recv(call_endpoint, NULL);
         test_eq(proxy_state[i], 1);
         /* now take away its scheduling context */
@@ -543,7 +543,7 @@ single_client_server_chain_test(env_t env, int fastpath, int prio_diff)
     start_helper(env, &server, (helper_fn_t) server_fn, receive_endpoint, runs, 
                  (seL4_Word) &server_state, 0);
     /* wait for server to initialise on our time */
-    ZF_LOGD("Wait for server");
+    ZF_LOGD("Recv for server");
     seL4_Recv(receive_endpoint, NULL);
     test_eq(server_state, 1);
     /* now take it's scheduling context away */
@@ -555,7 +555,7 @@ single_client_server_chain_test(env_t env, int fastpath, int prio_diff)
                  fastpath, runs, (seL4_Word) &client_state); 
     
     /* sleep and let the testrun */
-    ZF_LOGD("Wait for client");
+    ZF_LOGD("Recv for client");
     wait_for_helper(&client);
 
     test_eq(server_state, runs + 1);
@@ -629,8 +629,8 @@ ipc0016_reply_once_fn(seL4_CPtr endpoint)
     seL4_Reply(info);
       
     /* wait (keeping sc) */
-    ZF_LOGD("Wait\n");
-    seL4_Wait(endpoint, NULL);
+    ZF_LOGD("Recv\n");
+    seL4_Recv(endpoint, NULL);
 
     test_assert_fatal(!"should not get here");
 }
