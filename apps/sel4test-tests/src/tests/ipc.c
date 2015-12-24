@@ -995,5 +995,129 @@ test_fault_handler_donated_sc(env_t env)
 DEFINE_TEST(IPC0021, "Test fault handler on donated scheduling context", 
         test_fault_handler_donated_sc);
 
+static void
+ipc22_client_fn(seL4_CPtr endpoint, volatile int *state) 
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+
+    ZF_LOGD("Client init");
+   
+    seL4_Call(endpoint, info);
+        *state = *state + 1;
+    ZF_LOGD("Client receive reply");
+}
+
+static seL4_CPtr ipc22_go;
+
+static void
+ipc22_server_fn(seL4_CPtr init_ep, seL4_CPtr reply_cap)
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+    
+    ZF_LOGD("Server init\n");
+    
+    /* wait for the signal to go from the test runner - 
+     * we have to block here to wait for all the clients to 
+     * start and queue up - otherwise they will all be served
+     * by the same server and the point is to test stack spawning  */
+    seL4_NBSendRecv(init_ep, info, init_ep, NULL);
+
+    ZF_LOGD("Server reply to fwded cap\n");
+    seL4_Send(reply_cap, info);
+    
+}
+
+static void
+ipc22_stack_spawner_fn(env_t env, seL4_CPtr endpoint, int server_prio, int runs)
+{
+    helper_thread_t servers[runs];
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+    seL4_CPtr init_ep = vka_alloc_endpoint_leaky(&env->vka);
+
+    ZF_LOGD("Stack spawner init");
+    /* send init sched context back */
+    seL4_NBSendRecv(endpoint, info, endpoint, NULL);
+    /* we are now running on borrowed time */
+    
+    for (int i = 0; i < runs; i++) {
+        cspacepath_t path;
+        vka_cspace_alloc_path(&env->vka, &path);
+        /* save the reply cap */
+        vka_cnode_saveCaller(&path);
+
+        create_helper_thread(env, &servers[i]);
+        set_helper_priority(&servers[i], server_prio);
+
+        /* start helper and allow to initialise */
+        ZF_LOGD("Spawn server\n");
+        start_helper(env, &servers[i], (helper_fn_t) ipc22_server_fn, init_ep,
+                path.capPtr, 0, 0);
+        /* wait for it to block */
+        seL4_Recv(init_ep, NULL);
+        
+        /*  now remove the schedling context */
+        int error =  seL4_SchedContext_UnbindTCB(servers[i].thread.sched_context.cptr);
+        test_eq(error, seL4_NoError);
+        
+        /* and forward the one we have */
+        ZF_LOGD("Send to server, wait for another client");
+        seL4_NBSendRecv(init_ep, info, endpoint, NULL);
+        ZF_LOGD("Got another client\n");
+    }
+}
+
+static int
+test_stack_spawning_server(env_t env) 
+{
+    const int runs = 3;
+    helper_thread_t clients[runs];
+    helper_thread_t stack_spawner;
+    seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
+    ipc22_go = vka_alloc_endpoint_leaky(&env->vka);
+    volatile int state = 0;
+    int error;
+    int our_prio = 10;
+    
+    create_helper_thread(env, &stack_spawner);
+    start_helper(env, &stack_spawner, (helper_fn_t) ipc22_stack_spawner_fn, 
+                (seL4_Word) env, endpoint, our_prio + 1, runs);
+
+    /* wait for stack spawner to init */
+    ZF_LOGD("Wait for stack spawner to init");
+    seL4_Recv(endpoint, NULL);
+    
+    /* take away scheduling context */
+    error = seL4_SchedContext_UnbindTCB(stack_spawner.thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    error = seL4_TCB_SetPriority(env->tcb, our_prio);
+    test_eq(error, seL4_NoError);
+    set_helper_priority(&stack_spawner, our_prio + 2);
+    set_helper_max_priority(&stack_spawner, seL4_MaxPrio - 1);
+    
+    ZF_LOGD("Starting clients");
+    /* create and start clients */
+    for (int i = 0; i < runs; i++) {
+        create_helper_thread(env, &clients[i]);
+        set_helper_priority(&clients[i], our_prio + 1);
+        start_helper(env, &clients[i], (helper_fn_t) ipc22_client_fn, endpoint, (seL4_Word) &state, 0, 0);
+    }
+
+    /* set our priority down so servers can run */
+    error = seL4_TCB_SetPriority(env->tcb, our_prio - 2);
+    test_eq(error, seL4_NoError);
+
+    for (int i = 0; i < runs; i++) {
+        wait_for_helper(&clients[i]);
+    }
+
+    ZF_LOGD("Done");
+    /* make sure all the clients got served */
+    test_eq(state, runs);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(IPC0022, "Test stack spawning server with scheduling context donation", test_stack_spawning_server);
+
 
 
