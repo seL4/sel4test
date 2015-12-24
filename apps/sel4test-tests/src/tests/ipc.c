@@ -1119,5 +1119,147 @@ test_stack_spawning_server(env_t env)
 }
 DEFINE_TEST(IPC0022, "Test stack spawning server with scheduling context donation", test_stack_spawning_server);
 
+/* used by ipc0023 and 0024 */
+static void
+ipc23_client_fn(seL4_CPtr ep, volatile int *state)
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
 
+    *state = 1;
+
+    ZF_LOGD("Call");
+    seL4_Call(ep, info);
+
+    /* should not get here */
+    *state = 2;
+}
+
+/* used by ipc0023 and 0024 */
+static void 
+ipc23_server_fn(seL4_CPtr client_ep, seL4_CPtr wait_ep)
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+
+    /* send to the wait_ep to tell the test we are initialised,
+     * then wait on the client_ep to receive a scheduling context */
+    seL4_NBSendRecv(wait_ep, info, client_ep, NULL);
+
+    /* now block */
+    seL4_Recv(wait_ep, NULL);
+}
+
+static int
+test_delete_reply_cap_sc(env_t env) 
+{
+    helper_thread_t client, server;
+    seL4_CPtr client_ep, server_ep;
+    volatile int state = 0;
+    int error;
+    client_ep = vka_alloc_endpoint_leaky(&env->vka);
+    server_ep = vka_alloc_endpoint_leaky(&env->vka);
+
+    create_helper_thread(env, &client);
+    create_helper_thread(env, &server);
+
+    start_helper(env, &client, (helper_fn_t) ipc23_client_fn, client_ep, 
+                 (seL4_Word) &state, 0, 0);
+    start_helper(env, &server, (helper_fn_t) ipc23_server_fn, client_ep, 
+                 server_ep, 0, 0);
+
+    /* wait for server to init */
+    seL4_Recv(server_ep, NULL);
+    /* take its scheduling context away */
+    error = seL4_SchedContext_UnbindTCB(server.thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* set the client and server prio higher than ours so they can run */
+    error = seL4_TCB_SetPriority(env->tcb, 10);
+    test_eq(error, seL4_NoError);
+
+    set_helper_priority(&client, 11);
+    set_helper_priority(&server, 11);
+
+    /* now the client should have run and called the server*/
+    test_eq(state, 1);
+
+    /* steal the reply cap */
+    cspacepath_t path;
+    vka_cspace_alloc_path(&env->vka, &path);
+    error = vka_cnode_saveTCBCaller(&path, &server.thread.tcb);
+    test_eq(error, seL4_NoError);
+
+    /* delete scheduling context */
+    vka_free_object(&env->vka,& client.thread.sched_context);
+
+    /* try to reply, the client should not run as it has no scheduling context */
+    seL4_Signal(path.capPtr);
+
+    test_eq(state, 1);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(IPC0023, "Test deleting the scheduling context tracked in a reply cap", 
+        test_delete_reply_cap_sc)
+
+static int 
+test_delete_reply_cap_then_sc(env_t env) 
+{
+
+    helper_thread_t client, server;
+    seL4_CPtr client_ep, server_ep;
+    volatile int state = 0;
+    int error;
+
+    client_ep = vka_alloc_endpoint_leaky(&env->vka);
+    server_ep = vka_alloc_endpoint_leaky(&env->vka);
+
+    create_helper_thread(env, &client);
+    create_helper_thread(env, &server);
+
+    set_helper_priority(&client, 11);
+    set_helper_priority(&server, 11);
+     /* start server */
+    start_helper(env, &server, (helper_fn_t) ipc23_server_fn, client_ep, 
+                 server_ep, 0, 0);
+
+    ZF_LOGD("Waiting for server");
+    /* wait for server to init */
+    seL4_Recv(server_ep, NULL);
+
+    /* set our prio down so client can run */
+    error = seL4_TCB_SetPriority(env->tcb, 10);
+    test_eq(error, 0);
+    
+    ZF_LOGD("Removed sc\n");
+    /* remove schedluing context */
+    error = seL4_SchedContext_UnbindTCB(server.thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    ZF_LOGD("Start client");
+    /* start client */
+    start_helper(env, &client, (helper_fn_t) ipc23_client_fn, client_ep, 
+                 (seL4_Word) &state, 0, 0);
+    /* client should have started */
+    test_eq(state, 1);
+     
+    ZF_LOGD("Steal reply cap ");
+    /* steal the reply cap */
+    cspacepath_t path;
+    vka_cspace_alloc_path(&env->vka, &path);
+    error = vka_cnode_saveTCBCaller(&path, &server.thread.tcb);
+    test_eq(error, seL4_NoError);
+
+    /* nuke the reply cap */
+    vka_cnode_delete(&path);
+    /* nuke the sc */
+    vka_free_object(&env->vka, &client.thread.sched_context);
+
+    ZF_LOGD("Done");
+    /* caller should not run */
+    test_eq(1, state);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(IPC0024, "Test deleting the reply cap in the scheduling context", 
+            test_delete_reply_cap_then_sc);
 
