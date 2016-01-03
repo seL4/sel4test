@@ -213,3 +213,42 @@ test_reply_recv(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SYSCALL0011, "Basic seL4_ReplyRecv() testing", test_reply_recv)
+
+static int
+test_nb_recv(env_t env)
+{
+    /* Allocate an notification. */
+    seL4_CPtr notification;
+    notification = vka_alloc_notification_leaky(&env->vka);
+
+    for (int i = 0; i < 10; i++) {
+        /* Notify it, so that we don't block. */
+        seL4_Signal(notification);
+
+        /* Recv for the notification. */
+        TEST_REGISTERS(seL4_NBRecv(notification, NULL));
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SYSCALL0012, "Basic seL4_NBRecv() testing", test_nb_recv)
+
+static int
+test_wait(env_t env)
+{
+    /* Allocate an notification. */
+    seL4_CPtr notification;
+    notification = vka_alloc_notification_leaky(&env->vka);
+
+    for (int i = 0; i < 10; i++) {
+        /* Notify it, so that we don't block. */
+        seL4_Signal(notification);
+
+        /* Recv for the notification. */
+        TEST_REGISTERS(seL4_Wait(notification, NULL));
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SYSCALL0013, "Basic seL4_Wait() testing", test_wait)
+
