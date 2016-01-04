@@ -237,6 +237,50 @@ reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
     return sel4test_get_result();
 }
 
+/* this function is expected to talk to another version of itself, second implies
+ * that this is the second to be executed */
+static int
+nbsendrecv_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2, seL4_Word second)
+{
+    FOR_EACH_LENGTH(length) {
+        seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length);
+ 
+        /* Construct a message. */
+        if (length > MIN_LENGTH || second) {
+            /* the first of the nbsendrecv pair will not 
+             * send a message as the second is not waiting on the endpoint
+             * yet and the nbsend will fail, to keep the seeds in sync
+             * skip this for the first thread on the first loop */
+            seL4_Word actual_len = length > seL4_MsgMaxLength ? seL4_MsgMaxLength : length;
+            for (int i = 0; i < actual_len; i++) {
+                seL4_SetMR(i, seed);
+                seed++;
+            }
+        }
+
+        tag = seL4_NBSendRecv(endpoint, tag, endpoint, NULL);
+
+        seL4_Word actual_len = seL4_MessageInfo_get_length(tag);
+        if (length < seL4_MsgMaxLength) {
+            test_geq(actual_len, length);
+        }
+        
+        /* skip the last check for the second thread */
+        if (!(second && length == MAX_LENGTH)) {
+            for (int i = 0; i < seL4_MessageInfo_get_length(tag); i++) {
+                seL4_Word mr = seL4_GetMR(i);
+                test_eq(mr, seed);
+                seed++;
+            }
+        }
+    }
+   
+    /* signal we're done to hanging second thread */
+    seL4_NBSend(endpoint, seL4_MessageInfo_new(0, 0, 0, MAX_LENGTH));
+
+    return sel4test_get_result();
+}
+
 static int
 test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as)
 {
@@ -288,14 +332,14 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as)
                  * thread enqueued last will be run first, for a given priority. */
                 if (sender_first) {
                     start_helper(env, &thread_b, (helper_fn_t) fb, thread_b_arg0, start_number,
-                                 nbwait_should_wait, 0);
+                                 nbwait_should_wait, waiter_prio <= sender_prio);
                     start_helper(env, &thread_a, (helper_fn_t) fa, thread_a_arg0, start_number,
-                                 nbwait_should_wait, 0);
+                                 nbwait_should_wait, sender_prio < waiter_prio);
                 } else {
                     start_helper(env, &thread_a, (helper_fn_t) fa, thread_a_arg0, start_number,
-                                 nbwait_should_wait, 0);
+                                 nbwait_should_wait, sender_prio <= waiter_prio);
                     start_helper(env, &thread_b, (helper_fn_t) fb, thread_b_arg0, start_number,
-                                 nbwait_should_wait, 0);
+                                 nbwait_should_wait, waiter_prio < sender_prio);
                 }
 
                 wait_for_helper(&thread_a);
@@ -1262,4 +1306,18 @@ test_delete_reply_cap_then_sc(env_t env)
 }
 DEFINE_TEST(IPC0024, "Test deleting the reply cap in the scheduling context", 
             test_delete_reply_cap_then_sc);
+
+static int
+test_nbsendrecv(env_t env)
+{
+    return test_ipc_pair(env, (test_func_t) nbsendrecv_func, (test_func_t) nbsendrecv_func, false);
+}
+DEFINE_TEST(IPC0025, "Test seL4_NBSendRecv + seL4_NBSendRecv", test_nbsendrecv)
+
+static int
+test_nbsendrecv_interas(env_t env)
+{
+    return test_ipc_pair(env, (test_func_t) nbsendrecv_func, (test_func_t) nbsendrecv_func, false);
+}
+DEFINE_TEST(IPC0026, "Test interas seL4_NBSendRecv + seL4_NBSendRecv", test_nbsendrecv_interas)
 
