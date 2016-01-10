@@ -717,7 +717,7 @@ test_transfer_on_reply(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0016, "Test reply does returns scheduling scheduling context", 
+DEFINE_TEST(IPC0016, "Test reply returns scheduling context", 
         test_transfer_on_reply);
 
 /* used by ipc0017 and ipc0019 */

@@ -228,5 +228,5 @@ test_nb_send_recv(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SYSCALL0014, "Basic seL4_NBSendRecv() testing", test_reply_recv)
+DEFINE_TEST(SYSCALL0014, "Basic seL4_NBSendRecv() testing", test_nb_send_recv)
 

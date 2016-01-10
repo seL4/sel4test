@@ -205,7 +205,7 @@ static void
 bind0005_helper(seL4_CPtr endpoint, volatile int *state)
 {
     *state = 1;
-    seL4_Recv(endpoint, NULL);
+    seL4_Wait(endpoint, NULL);
     *state = 2;
 }
 
@@ -225,6 +225,7 @@ test_notification_binding_no_sc(env_t env)
     /* set our prio lower so the helper thread runs when we start it */
     set_helper_priority(&helper, 10);
     error = seL4_TCB_SetPriority(env->tcb, 9);
+    test_eq(error, seL4_NoError);
     
     error = seL4_TCB_BindNotification(helper.thread.tcb.cptr, notification);
     test_eq(error, seL4_NoError);
