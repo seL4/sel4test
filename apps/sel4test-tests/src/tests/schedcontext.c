@@ -261,5 +261,52 @@ test_delete_tcb_on_notification_context(env_t env)
 }
 DEFINE_TEST(SCHED_CONTEXT_0006, "Test deleting a tcb running on a notifications scheduling context returns it", test_delete_tcb_on_notification_context);
 
+int
+sched_context_007_helper_fn(void)
+{
+    return 1;
+}
 
+int
+test_passive_thread_start(env_t env)
+{
+    helper_thread_t helper;
+    int error;
 
+    ZF_LOGD("z");
+    create_helper_thread(env, &helper);
+ 
+    ZF_LOGD("z");
+    error = seL4_SchedContext_UnbindTCB(helper.thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* resume then bind */
+    start_helper(env, &helper, (helper_fn_t) sched_context_007_helper_fn, 0, 0, 0, 0);
+    
+    error = seL4_SchedContext_BindTCB(helper.thread.sched_context.cptr, helper.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+   
+    error = wait_for_helper(&helper);
+    test_eq(error, 1);
+
+    /* bind then resume */
+    create_helper_thread(env, &helper);
+    
+    error = seL4_SchedContext_UnbindTCB(helper.thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+    
+    error = seL4_SchedContext_BindTCB(helper.thread.sched_context.cptr, helper.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+    
+    start_helper(env, &helper, (helper_fn_t) sched_context_007_helper_fn, 0, 0, 0, 0);
+    
+    error = seL4_TCB_Resume(helper.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+    
+    error = wait_for_helper(&helper);
+    test_eq(error, 1);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT0007, "test resuming a passive thread and binding scheduling context", 
+            test_passive_thread_start)
