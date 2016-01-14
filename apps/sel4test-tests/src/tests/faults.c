@@ -513,13 +513,9 @@ test_fault(env_t env, int fault_type, bool inter_as)
                     create_helper_process(env, &faulter_thread);
                     create_helper_process(env, &handler_thread);
 
-                    /* copy the fault endpoint to the faulter */
+                    /* copy the fault endpoint to the handler */
                     cspacepath_t path;
                     vka_cspace_make_path(&env->vka,  fault_ep, &path);
-                    fault_ep = sel4utils_copy_cap_to_process(&faulter_thread.process, path);
-                    assert(fault_ep != -1);
-
-                    /* copy the fault endpoint to the handler */
                     handler_arg0 = sel4utils_copy_cap_to_process(&handler_thread.process, path);
                     assert(handler_arg0 != -1);
 
