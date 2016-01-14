@@ -1062,10 +1062,9 @@ test_scheduler_accuracy(env_t env)
     helper_thread_t helper;
 
     create_helper_thread(env, &helper);
+    set_helper_sched_params(env, &helper, US_IN_S, US_IN_S);
     start_helper(env, &helper, (helper_fn_t) sched0011_helper, 0, 0, 0, 0);
     set_helper_priority(&helper, OUR_PRIO);
-    set_helper_sched_params(env, &helper, US_IN_S, US_IN_S);
-
 
     for (int i = 0; i < 10; i++) {
         uint64_t start = timestamp(env);
