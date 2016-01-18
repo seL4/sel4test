@@ -552,7 +552,7 @@ single_client_server_chain_test(env_t env, int fastpath, int prio_diff)
 
     /* create client */
     create_helper_thread(env, &client);
-    set_helper_sched_params(env, &client, 1000llu, 1000llu);
+    set_helper_sched_params(env, &client, 1000llu, 1000llu, 0);
     set_helper_priority(&client, client_prio);
 
     
@@ -953,7 +953,7 @@ delete_sc_client_waiting_on_endpoint(env_t env)
     /* now create a new scheduling context and give it to the thread */
     seL4_CPtr sched_context = vka_alloc_sched_context_leaky(&env->vka);
     error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple), sched_context,
-                                        1000 * US_IN_S, 1000 * US_IN_S); 
+                                        1000 * US_IN_S, 1000 * US_IN_S, 0); 
     test_eq(error, seL4_NoError);
 
     error = seL4_SchedContext_BindTCB(sched_context, waiter.thread.tcb.cptr);
@@ -1025,7 +1025,8 @@ test_fault_handler_donated_sc(env_t env)
     /* set fault handler */
     seL4_CapData_t data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits);
     seL4_CapData_t null = {{0}};
-    error = seL4_TCB_SetSpace(faulter.thread.tcb.cptr, endpoint, env->cspace_root, data, env->page_directory, null);
+    error = seL4_TCB_SetSpace(faulter.thread.tcb.cptr, endpoint, seL4_CapNull,
+                              env->cspace_root, data, env->page_directory, null);
     test_eq(error, seL4_NoError);
 
     /* start the fault handler */

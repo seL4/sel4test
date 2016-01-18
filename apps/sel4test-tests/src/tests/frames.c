@@ -330,7 +330,7 @@ retry:
     helper_thread_t faulter;
     create_helper_thread(&faulter, &env->vka, (helper_func_t)dest, 0, 0, 0, 0, 0);
     set_helper_thread_name(&faulter, "faulter");
-    err = seL4_TCB_Configure(faulter.tcb, fault_ep, 100,
+    err = seL4_TCB_Configure(faulter.tcb, fault_ep, seL4_CapNull, 100,
                              env->cspace_root, seL4_NilData, env->page_directory,
                              seL4_NilData, faulter.ipc_buffer_vaddr, faulter.ipc_buffer_frame);
     test_assert(err == 0);
@@ -369,7 +369,7 @@ retry:
     /* Recreate our two threads. */
     create_helper_thread(&faulter, &env->vka, (helper_func_t)dest, 0, 0, 0, 0, 0);
     set_helper_thread_name(&faulter, "faulter");
-    err = seL4_TCB_Configure(faulter.tcb, fault_ep, 100,
+    err = seL4_TCB_Configure(faulter.tcb, fault_ep, seL4_CapNull, 100,
                              env->cspace_root, seL4_NilData, env->page_directory,
                              seL4_NilData, faulter.ipc_buffer_vaddr, faulter.ipc_buffer_frame);
 

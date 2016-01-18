@@ -109,7 +109,7 @@ test_native_ioports(env_t env)
     set_helper_priority(&handler_thread, 100);
 
     error = seL4_TCB_Configure(faulter_thread.thread.tcb.cptr,
-                               fault_ep,
+                               fault_ep, seL4_CapNull,
                                seL4_Prio_new(100, 100),
                                faulter_thread.thread.sched_context.cptr,
                                faulter_cspace,

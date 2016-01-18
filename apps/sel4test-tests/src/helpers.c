@@ -371,12 +371,34 @@ set_helper_max_priority(helper_thread_t *thread, uint8_t max_prio)
     assert(error == seL4_NoError);
 }
 
+void
+set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep)
+{
+    int error;
+    seL4_CapData_t null = {{0}};
+    if (thread->is_process) {
+        error = seL4_TCB_SetSpace(thread->thread.tcb.cptr,
+                      thread->fault_endpoint, tfep, thread->process.cspace.cptr,
+                      seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                      thread->process.pd.cptr, null);
+    } else {
+        error = seL4_TCB_SetSpace(thread->thread.tcb.cptr, thread->fault_endpoint, tfep, 
+                                  env->cspace_root, 
+                                  seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                                  vspace_get_root(&env->vspace), null);
+    }
+    if (error != seL4_NoError) {
+        ZF_LOGF("Failed to set tfep\n");
+    }
+}
+
 int
-set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget, seL4_Time period)
+set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget, seL4_Time period, 
+                        seL4_Word data)
 {
     return seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple),
                                        thread->thread.sched_context.cptr,
-                                       budget, period);
+                                       budget, period, data);
 }
 
 void

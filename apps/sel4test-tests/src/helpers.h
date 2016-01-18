@@ -64,7 +64,11 @@ void set_helper_priority(helper_thread_t *thread, uint8_t prio);
 void set_helper_max_priority(helper_thread_t *thread, uint8_t max_prio);
 
 /* set a helper threads scheduling parameters */
-int set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget, seL4_Time period);
+int set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget, 
+                            seL4_Time period, seL4_Word data);
+
+/* set a helpers temporal fault endpoint */
+void set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep);
 
 /* Start a helper. Note: arguments to helper processes will be copied into
  * the address space of that process. Do not pass pointers to data only in

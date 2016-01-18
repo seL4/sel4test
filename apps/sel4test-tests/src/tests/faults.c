@@ -538,7 +538,7 @@ test_fault(env_t env, int fault_type, bool inter_as)
                 set_helper_priority(&handler_thread, 101);
 
                 error = seL4_TCB_Configure(faulter_thread.thread.tcb.cptr,
-                                           fault_ep,
+                                           fault_ep, seL4_CapNull,
                                            seL4_Prio_new(prio, prio), faulter_thread.thread.sched_context.cptr,
                                            faulter_cspace,
                                            seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
@@ -632,3 +632,235 @@ static int test_bad_instruction_interas(env_t env)
 }
 DEFINE_TEST(PAGEFAULT1005, "Test undefined instruction (inter-AS)", test_bad_instruction_interas)
 #endif
+
+static void
+temporal_fault_0001_fn(void)
+{
+    while (1);
+}
+
+int
+test_temporal_fault(env_t env)
+{
+    seL4_CPtr endpoint;
+    helper_thread_t helper;
+    seL4_Word data = 1;
+    seL4_MessageInfo_t info;
+
+    endpoint = vka_alloc_endpoint_leaky(&env->vka);
+
+    create_helper_thread(env, &helper);
+    set_helper_sched_params(env, &helper, 0.1 * US_IN_S, US_IN_S, 1); 
+    set_helper_tfep(env, &helper, endpoint);
+    start_helper(env, &helper, (helper_fn_t) temporal_fault_0001_fn, 0, 0, 0, 0);
+
+    /* wait for temporal fault */
+    info = seL4_Recv(endpoint, NULL);
+    test_eq(seL4_MessageInfo_get_length(info), SEL4_TFIPC_LENGTH);
+    test_check(seL4_isTemporalFault_Tag(info));
+    test_eq(seL4_TF_DataWord(), data);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(TEMPORALFAULT0001, "Test temporal fault", test_temporal_fault)
+
+void
+temporal_fault_server_fn(seL4_CPtr ep, pstimer_t *timer)
+{
+    /* signal to initialiser that we are done, and wait for a message from
+     * the client */
+    seL4_NBSendRecv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL);
+    uint64_t start = timer_get_time(timer);
+    uint64_t end = start;
+    /* spin, this will use up all of the clients budget */
+    while (end - start < (NS_IN_S / 2)) {
+        end = timer_get_time(timer);
+    }
+    /* we should not get here, as a temporal fault should have been raised
+     * and the handler will reset us */
+    ZF_LOGF("Should not get here");
+}
+
+static int 
+temporal_fault_client_fn(seL4_CPtr ep)
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+    while (1) {
+        info = seL4_Call(ep, info);
+        /* call should have failed, temporal fault handler will send a -1 */
+        test_eq(seL4_GetMR(0), -1);
+    }
+    return 0;
+}
+
+static int
+handle_temporal_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread_t *server, 
+                      seL4_CPtr reply, sel4utils_checkpoint_t *cp, seL4_CPtr ep, 
+                      seL4_Word expected_data, env_t env)
+{
+    seL4_Word badge;
+    seL4_MessageInfo_t info;
+    int error;
+
+    /* wait for temporal fault */
+    ZF_LOGD("Wait for tf");
+    info = seL4_Recv(tfep, &badge);
+    test_eq(badge, expected_badge);
+    test_check(seL4_isTemporalFault_Tag(info));
+    test_eq(seL4_TF_DataWord(), expected_data);
+    test_eq(seL4_MessageInfo_get_length(info), SEL4_TFIPC_LENGTH);
+
+    /* reply to client on behalf of server */
+    ZF_LOGD("Got it, reply to client");
+    error = cnode_saveTCBcaller(env, reply, &server->tcb);
+    test_eq(error, seL4_NoError);
+    seL4_SetMR(0, -1);
+    seL4_Send(reply, info);
+
+    /* restore server */
+    ZF_LOGD("Restoring server");
+    error = seL4_SchedContext_BindTCB(server->sched_context.cptr, server->tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    error = sel4utils_checkpoint_restore(cp, false, true);
+    test_eq(error, 0);
+
+    ZF_LOGD("Waiting for server to init");
+    seL4_Wait(ep, NULL);
+
+    error = seL4_SchedContext_UnbindTCB(server->sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    return 0;
+}
+
+static int
+create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CPtr tfep,
+                                seL4_Word badge, helper_fn_t fn, seL4_CPtr ep, seL4_Word arg1, 
+                                sel4utils_checkpoint_t *cp)
+{
+    seL4_CPtr minted_tfep;
+    int error;
+
+    minted_tfep = get_free_slot(env);
+    error = cnode_mint(env, tfep, minted_tfep, seL4_AllRights, seL4_CapData_Badge_new(badge));
+    test_eq(error, seL4_NoError);
+
+    create_helper_thread(env, passive);
+    set_helper_tfep(env, passive, minted_tfep);
+    start_helper(env, passive, fn, ep, arg1, 0, 0);
+
+    /* Wait for helper to signal it has initialised */
+    ZF_LOGD("Wait for passive thread to init");
+    seL4_Wait(ep, NULL);
+    ZF_LOGD("Done");
+    
+    /* convert to passive */
+    error = seL4_SchedContext_UnbindTCB(passive->thread.sched_context.cptr);
+    test_eq(error, 0);
+
+    /* checkpoint */
+    error = sel4utils_checkpoint_thread(&passive->thread, cp, false);
+    test_eq(error, 0);
+
+    return 0;
+}
+
+static int 
+test_temporal_fault_in_server(env_t env)
+{
+    helper_thread_t client, server;
+    seL4_CPtr tfep, ep;
+    int error;
+    seL4_Word client_data = 1;
+    seL4_Word server_badge = 2;
+    sel4utils_checkpoint_t cp;
+
+    tfep = vka_alloc_endpoint_leaky(&env->vka);
+    ep = vka_alloc_endpoint_leaky(&env->vka);
+
+    /* create the server */
+    error = create_passive_thread_with_tfep(env, &server, tfep, server_badge, 
+                                            (helper_fn_t) temporal_fault_server_fn, ep, 
+                                            (seL4_Word) env->clock_timer->timer, &cp);
+    test_eq(error, 0);
+
+    /* create the client */
+    create_helper_thread(env, &client);
+    set_helper_sched_params(env, &client, 0.1 * US_IN_S, US_IN_S, client_data);
+    start_helper(env, &client, (helper_fn_t) temporal_fault_client_fn, ep, 0, 0, 0);
+
+    seL4_CPtr reply = get_free_slot(env);
+    /* handle a few faults */
+    for (int i = 0; i < 5; i++) {
+        ZF_LOGD("Handling fault");
+        error = handle_temporal_fault(tfep, server_badge, &server.thread, reply, &cp, ep, 
+                                      client_data, env);
+        test_eq(error, 0);    
+    }
+
+    return sel4test_get_result();
+
+}
+DEFINE_TEST(TEMPORALFAULT0002, "Handle a temporal fault in a server",
+            test_temporal_fault_in_server) 
+
+static void
+temporal_fault_proxy_fn(seL4_CPtr in, seL4_CPtr out)
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
+    info = seL4_NBSendRecv(in, info, in, NULL);
+    while (1) {
+        info = seL4_Call(out, info);
+        seL4_ReplyRecv(in, info, NULL);
+    }
+}
+
+static int 
+test_temporal_fault_nested_servers(env_t env)
+{
+    helper_thread_t client, server, proxy;
+    seL4_CPtr client_proxy_ep, proxy_server_ep, tfep;
+    int error;
+    seL4_Word client_data, server_badge, proxy_badge;
+    sel4utils_checkpoint_t proxy_cp, server_cp;
+    
+    client_proxy_ep = vka_alloc_endpoint_leaky(&env->vka);
+    proxy_server_ep = vka_alloc_endpoint_leaky(&env->vka);
+    tfep = vka_alloc_endpoint_leaky(&env->vka);
+
+    /* create server */
+    error = create_passive_thread_with_tfep(env, &server, tfep, server_badge, 
+                                            (helper_fn_t) temporal_fault_server_fn, proxy_server_ep, 
+                                            (seL4_Word) env->clock_timer->timer, &server_cp);
+    test_eq(error, 0);
+
+    /* create proxy */
+    error = create_passive_thread_with_tfep(env, &proxy, tfep, proxy_badge, 
+                                            (helper_fn_t) temporal_fault_proxy_fn, client_proxy_ep, 
+                                            proxy_server_ep, &proxy_cp);
+    test_eq(error, 0);
+
+    /* create client */
+    create_helper_thread(env, &client);
+    set_helper_sched_params(env, &client, 0.1 * US_IN_S, US_IN_S, client_data);
+    start_helper(env, &client, (helper_fn_t) temporal_fault_client_fn, client_proxy_ep, 0, 0, 0);
+
+    /* handle some faults */
+    seL4_CPtr reply = get_free_slot(env);
+    for (int i = 0; i < 5; i++) {
+        /* server fault */
+        error = handle_temporal_fault(tfep, server_badge, &server.thread, reply, &server_cp, 
+                                      proxy_server_ep, client_data, env);
+        test_eq(error, 0);
+
+        /* proxy fault */
+        error = handle_temporal_fault(tfep, proxy_badge, &proxy.thread, reply, &proxy_cp,
+                                      client_proxy_ep, client_data, env);
+        test_eq(error, 0);
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(TEMPORALFAULT0003, "Nested temporal fault", test_temporal_fault_nested_servers)
+

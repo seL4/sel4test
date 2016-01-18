@@ -1062,7 +1062,7 @@ test_scheduler_accuracy(env_t env)
     helper_thread_t helper;
 
     create_helper_thread(env, &helper);
-    set_helper_sched_params(env, &helper, US_IN_S, US_IN_S);
+    set_helper_sched_params(env, &helper, US_IN_S, US_IN_S, 0);
     start_helper(env, &helper, (helper_fn_t) sched0011_helper, 0, 0, 0, 0);
     set_helper_priority(&helper, OUR_PRIO);
 
@@ -1112,7 +1112,7 @@ test_one_periodic_thread(env_t env)
 
     create_helper_thread(env, &helper);
     set_helper_priority(&helper, env->priority);
-    set_helper_sched_params(env, &helper, 0.2 * US_IN_S, US_IN_S);
+    set_helper_sched_params(env, &helper, 0.2 * US_IN_S, US_IN_S, 0);
     start_helper(env, &helper, (helper_fn_t) periodic_thread, 0, (seL4_Word) &counter, 
                  helper.thread.sched_context.cptr, 0);
 
@@ -1140,8 +1140,8 @@ test_two_periodic_threads(env_t env)
         set_helper_priority(&helpers[i], env->priority);
     }
 
-    set_helper_sched_params(env, &helpers[0], 0.1 * US_IN_S, 2 * US_IN_S);
-    set_helper_sched_params(env, &helpers[1], 0.1 * US_IN_S, 3 * US_IN_S);
+    set_helper_sched_params(env, &helpers[0], 0.1 * US_IN_S, 2 * US_IN_S, 0);
+    set_helper_sched_params(env, &helpers[1], 0.1 * US_IN_S, 3 * US_IN_S, 0);
 
     for (int i = 0; i < num_threads; i++) {
         start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 
@@ -1178,9 +1178,9 @@ test_ordering_periodic_threads(env_t env)
         set_helper_priority(&helpers[i], env->priority);
     }
 
-    set_helper_sched_params(env, &helpers[0], 10 * US_IN_MS, 100 * US_IN_MS);
-    set_helper_sched_params(env, &helpers[1], 10 * US_IN_MS, 200 * US_IN_MS);
-    set_helper_sched_params(env, &helpers[2], 10 * US_IN_MS, 800 * US_IN_MS);
+    set_helper_sched_params(env, &helpers[0], 10 * US_IN_MS, 100 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[1], 10 * US_IN_MS, 200 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[2], 10 * US_IN_MS, 800 * US_IN_MS, 0);
 
     for (int i = 0; i < num_threads; i++) {
         start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 
@@ -1246,8 +1246,8 @@ test_budget_overrun(env_t env)
     set_helper_priority(&thirty, env->priority);
     set_helper_priority(&fifty, env->priority);
    
-    set_helper_sched_params(env, &fifty, 0.1 * US_IN_S, 0.2 * US_IN_S);
-    set_helper_sched_params(env, &thirty, 0.1 * US_IN_S, 0.3 * US_IN_S);
+    set_helper_sched_params(env, &fifty, 0.1 * US_IN_S, 0.2 * US_IN_S, 0);
+    set_helper_sched_params(env, &thirty, 0.1 * US_IN_S, 0.3 * US_IN_S, 0);
    
     start_helper(env, &fifty,  (helper_fn_t) sched0015_helper, 1, (seL4_Word) env->clock_timer->timer,
                  (seL4_Word) counters, 0);
@@ -1310,7 +1310,7 @@ test_resume_no_overflow(env_t env)
     set_helper_priority(&helper, env->priority);
    
     /* this thread only runs for 1 second every 10 minutes */
-    set_helper_sched_params(env, &helper, 1 * US_IN_S, 10 * SEC_IN_MINUTE * US_IN_S);
+    set_helper_sched_params(env, &helper, 1 * US_IN_S, 10 * SEC_IN_MINUTE * US_IN_S, 0);
    
     start_helper(env, &helper,  (helper_fn_t) sched0016_helper, (seL4_Word) &state, 
                  helper.thread.sched_context.cptr, 0, 0);
