@@ -734,38 +734,6 @@ handle_temporal_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread
     return 0;
 }
 
-static int
-create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CPtr tfep,
-                                seL4_Word badge, helper_fn_t fn, seL4_CPtr ep, seL4_Word arg1, 
-                                sel4utils_checkpoint_t *cp)
-{
-    seL4_CPtr minted_tfep;
-    int error;
-
-    minted_tfep = get_free_slot(env);
-    error = cnode_mint(env, tfep, minted_tfep, seL4_AllRights, seL4_CapData_Badge_new(badge));
-    test_eq(error, seL4_NoError);
-
-    create_helper_thread(env, passive);
-    set_helper_tfep(env, passive, minted_tfep);
-    start_helper(env, passive, fn, ep, arg1, 0, 0);
-
-    /* Wait for helper to signal it has initialised */
-    ZF_LOGD("Wait for passive thread to init");
-    seL4_Wait(ep, NULL);
-    ZF_LOGD("Done");
-    
-    /* convert to passive */
-    error = seL4_SchedContext_UnbindTCB(passive->thread.sched_context.cptr);
-    test_eq(error, 0);
-
-    /* checkpoint */
-    error = sel4utils_checkpoint_thread(&passive->thread, cp, false);
-    test_eq(error, 0);
-
-    return 0;
-}
-
 static int 
 test_temporal_fault_in_server(env_t env)
 {
@@ -782,7 +750,7 @@ test_temporal_fault_in_server(env_t env)
     /* create the server */
     error = create_passive_thread_with_tfep(env, &server, tfep, server_badge, 
                                             (helper_fn_t) temporal_fault_server_fn, ep, 
-                                            (seL4_Word) env->clock_timer->timer, &cp);
+                                            (seL4_Word) env->clock_timer->timer, 0, 0, &cp);
     test_eq(error, 0);
 
     /* create the client */
@@ -824,7 +792,11 @@ test_temporal_fault_nested_servers(env_t env)
     int error;
     seL4_Word client_data, server_badge, proxy_badge;
     sel4utils_checkpoint_t proxy_cp, server_cp;
-    
+   
+    client_data = 1;
+    server_badge = 2;
+    proxy_badge = 3;
+
     client_proxy_ep = vka_alloc_endpoint_leaky(&env->vka);
     proxy_server_ep = vka_alloc_endpoint_leaky(&env->vka);
     tfep = vka_alloc_endpoint_leaky(&env->vka);
@@ -832,13 +804,13 @@ test_temporal_fault_nested_servers(env_t env)
     /* create server */
     error = create_passive_thread_with_tfep(env, &server, tfep, server_badge, 
                                             (helper_fn_t) temporal_fault_server_fn, proxy_server_ep, 
-                                            (seL4_Word) env->clock_timer->timer, &server_cp);
+                                            (seL4_Word) env->clock_timer->timer, 0, 0, &server_cp);
     test_eq(error, 0);
 
     /* create proxy */
     error = create_passive_thread_with_tfep(env, &proxy, tfep, proxy_badge, 
                                             (helper_fn_t) temporal_fault_proxy_fn, client_proxy_ep, 
-                                            proxy_server_ep, &proxy_cp);
+                                            proxy_server_ep, 0, 0, &proxy_cp);
     test_eq(error, 0);
 
     /* create client */

@@ -310,3 +310,86 @@ test_passive_thread_start(env_t env)
 }
 DEFINE_TEST(SCHED_CONTEXT0007, "test resuming a passive thread and binding scheduling context", 
             test_passive_thread_start)
+
+
+static void
+sched_context0008_client_fn(seL4_CPtr send_ep, seL4_CPtr wait_ep)
+{
+    ZF_LOGD("Client send\n");
+    seL4_NBSendRecv(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
+}
+
+static void
+sched_context0008_proxy_fn(seL4_CPtr send_ep, seL4_CPtr wait_ep)
+{
+    /* signal to test runner that we are initialised and waiting for client */
+    ZF_LOGD("Proxy init\n");
+    seL4_NBSendRecv(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
+
+    /* forward on the message we got */
+    ZF_LOGD("Proxy fwd\n");
+    seL4_NBSendRecv(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
+
+    ZF_LOGF("Should not get here");
+}
+
+static void
+sched_context0008_server_fn(seL4_CPtr init_ep, seL4_CPtr wait_ep)
+{
+    ZF_LOGD("Server init\n");
+    /* tell test runner we are done by sending to init ep, then wait for proxy message */
+    seL4_NBSendRecv(init_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
+    ZF_LOGD("Server exit\n");
+    /* hold on to scheduling context */
+}
+
+static int 
+test_delete_sendwait_tcb(env_t env)
+{
+    helper_thread_t client, proxy, server;
+    seL4_CPtr client_send, client_wait, proxy_send, server_ep;
+    int error;
+    
+    client_send = vka_alloc_endpoint_leaky(&env->vka);
+    client_wait = vka_alloc_endpoint_leaky(&env->vka);
+    proxy_send = vka_alloc_endpoint_leaky(&env->vka);
+    server_ep = vka_alloc_endpoint_leaky(&env->vka);
+
+    /* set up and start server */
+    ZF_LOGD("Create server\n");
+    error = create_passive_thread(env, &server, (helper_fn_t) sched_context0008_server_fn, 
+                                  server_ep, proxy_send, 0, 0);
+    test_eq(error, 0);
+
+    /* setup and start proxy */
+    ZF_LOGD("Create proxy\n");
+    error = create_passive_thread(env, &proxy, (helper_fn_t) sched_context0008_proxy_fn, proxy_send, 
+                                  client_send, 0, 0);
+    test_eq(error, 0);
+
+    ZF_LOGD("Create client\n");
+    /* create and start the client */
+    create_helper_thread(env, &client);
+    start_helper(env, &client, (helper_fn_t) sched_context0008_client_fn, client_send, 
+                 client_wait, 0, 0);
+    
+    ZF_LOGD("Wait for server\n");
+    /* wait for the server to finish, who was stolen the scheduling context */
+    wait_for_helper(&server);
+
+    ZF_LOGD("Kill server\n");
+    /* kill the server */
+    vka_free_object(&env->vka, &server.thread.tcb);
+
+    ZF_LOGD("Signal client\n");
+    seL4_Signal(client_wait);
+
+    ZF_LOGD("Wait for client\n");
+    /* now the client should finish */
+    wait_for_helper(&client);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT_0008, "Test deleting a tcb sends donated scheduling context home", 
+            test_delete_sendwait_tcb)
+

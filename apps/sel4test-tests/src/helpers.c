@@ -445,3 +445,36 @@ helper_yield(helper_thread_t *thread)
     seL4_SchedContext_Yield(thread->thread.sched_context.cptr);
 }
 
+int 
+create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep, 
+                      seL4_Word arg1, seL4_Word arg2, seL4_Word arg3) 
+{
+    create_helper_thread(env, passive);
+    start_helper(env, passive, fn, ep, arg1, arg2, arg3);
+
+    /* Wait for helper to signal it has initialised */
+    ZF_LOGD("Wait for passive thread to init");
+    seL4_Wait(ep, NULL);
+    ZF_LOGD("Done");
+    
+    /* convert to passive */
+    return seL4_SchedContext_UnbindTCB(passive->thread.sched_context.cptr);
+}
+
+int
+create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CPtr tfep,
+                                seL4_Word badge, helper_fn_t fn, seL4_CPtr ep, seL4_Word arg1, 
+                                seL4_Word arg2, seL4_Word arg3, sel4utils_checkpoint_t *cp)
+{
+    seL4_CPtr minted_tfep = get_free_slot(env);
+    int error = cnode_mint(env, tfep, minted_tfep, seL4_AllRights, seL4_CapData_Badge_new(badge));
+    test_eq(error, seL4_NoError);
+
+    error = create_passive_thread(env, passive, fn, ep, arg1, arg2, arg3);
+    set_helper_tfep(env, passive, minted_tfep);
+    test_eq(error, 0);
+    
+    /* checkpoint */
+    return sel4utils_checkpoint_thread(&passive->thread, cp, false);
+}
+

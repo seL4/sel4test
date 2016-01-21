@@ -57,6 +57,12 @@ void create_helper_thread(env_t env, helper_thread_t *thread);
  * and a new cspace */
 void create_helper_process(env_t env, helper_thread_t *thread);
 
+int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep, 
+                      seL4_Word arg1, seL4_Word arg2, seL4_Word arg3);
+int create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CPtr tfep,
+                                seL4_Word badge, helper_fn_t fn, seL4_CPtr ep, seL4_Word arg1, 
+                                seL4_Word arg2, seL4_Word arg3, sel4utils_checkpoint_t *cp);
+
 /* set a helper threads priority */
 void set_helper_priority(helper_thread_t *thread, uint8_t prio);
 
