@@ -367,7 +367,7 @@ void
 set_helper_max_priority(helper_thread_t *thread, uint8_t max_prio) 
 {
     UNUSED int error;
-    error = seL4_TCB_SetMaxPriority(thread->thread.tcb.cptr, max_prio);
+    error = seL4_TCB_SetMCPriority(thread->thread.tcb.cptr, max_prio);
     assert(error == seL4_NoError);
 }
 

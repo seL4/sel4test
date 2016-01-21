@@ -388,7 +388,7 @@ set_priority_helper_1(seL4_CPtr *t1, seL4_CPtr *t2)
     test_check(error == seL4_NoError);
 
     /* now down our max_priority */
-    error = seL4_TCB_SetMaxPriority(*t1, SCHED0005_HIGHEST_PRIO - 4);
+    error = seL4_TCB_SetMCPriority(*t1, SCHED0005_HIGHEST_PRIO - 4);
     test_check(error == seL4_NoError);
 
     /* try to set our prio higher than our max prio, but lower than our prio */
@@ -396,7 +396,7 @@ set_priority_helper_1(seL4_CPtr *t1, seL4_CPtr *t2)
     test_check(error == seL4_IllegalOperation);
 
     /* try to set our max prio back up */
-    error = seL4_TCB_SetMaxPriority(*t1, SCHED0005_HIGHEST_PRIO);
+    error = seL4_TCB_SetMCPriority(*t1, SCHED0005_HIGHEST_PRIO);
     test_check(error == seL4_IllegalOperation);
 
     return 0;
