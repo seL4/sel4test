@@ -61,6 +61,26 @@ simulate-ia32:
 		-m 512 -nographic -kernel images/kernel-ia32-pc99 \
 		-initrd images/sel4test-driver-image-ia32-pc99
 
+# Some example image builds (NOTE: may need to adapt addresses)
+build-binary: images/sel4test-driver-image-${ARCH}-${PLAT}
+	${CONFIG_CROSS_COMPILER_PREFIX}objcopy -O binary \
+	images/sel4test-driver-image-${ARCH}-${PLAT} images/sel4test.bin
+	@echo "1. put file images/sel4test.bin into SD card root directory"
+	@echo "2. At U-Boot prompt, enter:"
+	@echo "    > mmc dev 1"
+	@echo "    > ext2load mmc ${disk}:1 20000000 sel4test.bin"
+	@echo "    > go 20000000"
+
+build-uImage: images/sel4test-driver-image-${ARCH}-${PLAT}
+	mkimage -A arm -a 0x30000000 -e 0x30000000 -C none \
+	-A ${ARCH} -T kernel -O qnx \
+	-d images/sel4test-driver-image-${ARCH}-${PLAT} images/sel4test.uImage
+	@echo "1. put file images/sel4test.uImage into SD card root directory"
+	@echo "2. At U-Boot prompt, enter:"
+	@echo "    > mmc dev 1"
+	@echo "    > ext2load mmc ${disk}:1 10800000 sel4test.uImage"
+	@echo "    > bootm 10800000"
+
 .PHONY: help
 help:
 	@echo "sel4test - unit and regression tests for seL4"
