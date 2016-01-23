@@ -8,6 +8,7 @@
  * @TAG(NICTA_BSD)
  */
 
+#define ZF_LOG_LEVEL ZF_LOG_DEBUG
 #include <assert.h>
 #include <stdio.h>
 #include <sel4/sel4.h>

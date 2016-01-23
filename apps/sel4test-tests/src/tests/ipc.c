@@ -1138,7 +1138,7 @@ test_stack_spawning_server(env_t env)
     error = seL4_TCB_SetPriority(env->tcb, our_prio);
     test_eq(error, seL4_NoError);
     set_helper_priority(&stack_spawner, our_prio + 2);
-    set_helper_max_priority(&stack_spawner, seL4_MaxPrio - 1);
+    set_helper_mcp(&stack_spawner, seL4_MaxPrio - 1);
     
     ZF_LOGD("Starting clients");
     /* create and start clients */

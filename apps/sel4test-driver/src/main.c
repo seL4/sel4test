@@ -235,6 +235,18 @@ run_test(struct testcase *test)
                                         env.init->priority, TESTS_APP);
     assert(error == 0);
 
+    /* set test runner to highest criticality */
+    error = seL4_TCB_SetMCCriticality(test_process.thread.tcb.cptr, seL4_MaxCrit);
+    if (error != seL4_NoError) {
+        ZF_LOGF("Failed to set criticality for test runner thread, error %d", error);
+    }
+
+    /* set test environment to lowest criticality */
+    error = seL4_SchedControl_SetCriticality(simple_get_sched_ctrl(&env.simple), seL4_MinCrit);
+    if (error != seL4_NoError) {
+        ZF_LOGF("Failed to set system criticality, error %d", error);
+    }
+
     /* set up caps about the process */
     env.init->tsc_freq = env.tsc_freq;
     env.init->stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / PAGE_SIZE_4K;

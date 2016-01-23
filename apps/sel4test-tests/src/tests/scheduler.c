@@ -439,11 +439,11 @@ test_set_priority(struct env* env)
     ZF_LOGD("test_set_priority starting\n");
     create_helper_thread(env, &thread1);
     set_helper_priority(&thread1, SCHED0005_HIGHEST_PRIO);
-    set_helper_max_priority(&thread1, SCHED0005_HIGHEST_PRIO);
+    set_helper_mcp(&thread1, SCHED0005_HIGHEST_PRIO);
 
     create_helper_thread(env, &thread2);
     set_helper_priority(&thread2, SCHED0005_HIGHEST_PRIO - 1);
-    set_helper_max_priority(&thread2, SCHED0005_HIGHEST_PRIO - 2);
+    set_helper_mcp(&thread2, SCHED0005_HIGHEST_PRIO - 2);
 
     set_priority_step = 0;
     ZF_LOGD("      ");

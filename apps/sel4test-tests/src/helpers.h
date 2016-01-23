@@ -66,8 +66,14 @@ int create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CP
 /* set a helper threads priority */
 void set_helper_priority(helper_thread_t *thread, uint8_t prio);
 
-/* set a helper threads priority */
-void set_helper_max_priority(helper_thread_t *thread, uint8_t max_prio);
+/* set a helper threads maximum controlled priority */
+void set_helper_mcp(helper_thread_t *thread, uint8_t mcp);
+
+/* set a helper threads criticality */
+void set_helper_criticality(helper_thread_t *thread, uint8_t crit);
+
+/* set a helper threads maximum controlled criticality */
+void set_helper_mcc(helper_thread_t *thread, uint8_t mcc); 
 
 /* set a helper threads scheduling parameters */
 int set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget, 

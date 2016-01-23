@@ -110,7 +110,7 @@ test_native_ioports(env_t env)
 
     error = seL4_TCB_Configure(faulter_thread.thread.tcb.cptr,
                                fault_ep, seL4_CapNull,
-                               seL4_Prio_new(100, 100),
+                               seL4_Prio_new(100, 100, seL4_MinCrit, seL4_MinCrit),
                                faulter_thread.thread.sched_context.cptr,
                                faulter_cspace,
                                seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),

@@ -364,10 +364,26 @@ set_helper_priority(helper_thread_t *thread, uint8_t prio)
 }
 
 void 
-set_helper_max_priority(helper_thread_t *thread, uint8_t max_prio) 
+set_helper_mcp(helper_thread_t *thread, uint8_t mcp) 
 {
     UNUSED int error;
-    error = seL4_TCB_SetMCPriority(thread->thread.tcb.cptr, max_prio);
+    error = seL4_TCB_SetMCPriority(thread->thread.tcb.cptr, mcp);
+    assert(error == seL4_NoError);
+}
+
+void
+set_helper_criticality(helper_thread_t *thread, uint8_t crit)
+{
+    UNUSED int error;
+    error = seL4_TCB_SetCriticality(thread->thread.tcb.cptr, crit);
+    assert(error == seL4_NoError);
+}
+
+void 
+set_helper_mcc(helper_thread_t *thread, uint8_t mcc) 
+{
+    UNUSED int error;
+    error = seL4_TCB_SetMCCriticality(thread->thread.tcb.cptr, mcc);
     assert(error == seL4_NoError);
 }
 
