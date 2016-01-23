@@ -655,6 +655,7 @@ test_ipc_prios(struct env* env)
 
     create_helper_thread(env, &thread3);
     set_helper_priority(&thread3, 3);
+    set_helper_mcp(&thread3, 3);
 
     data.tcb0 = thread0.thread.tcb.cptr;
     data.tcb1 = thread1.thread.tcb.cptr;

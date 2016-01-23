@@ -141,7 +141,7 @@ nbwait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word nbwait_should_wait)
 }
 
 static int
-replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
+replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word passive)
 {
     int first = 1;
 
@@ -151,9 +151,15 @@ replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
 
         /* First reply/wait can't reply. */
         if (first) {
-            tag = seL4_Recv(endpoint, &sender_badge);
+            ZF_LOGD("Recv");
+            if (passive) {
+                seL4_NBSendRecv(endpoint, tag, endpoint, NULL);
+            } else {
+                tag = seL4_Recv(endpoint, &sender_badge);
+            }
             first = 0;
         } else {
+            ZF_LOGD("ReplyRecv");
             tag = seL4_ReplyRecv(endpoint, tag, &sender_badge);
         }
 
@@ -182,9 +188,11 @@ replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
         }
     }
 
+    ZF_LOGD("Reply");
     /* Need to do one last reply to match call. */
     seL4_Reply(tag);
 
+    ZF_LOGD("Done");
     return sel4test_get_result();
 }
 
@@ -1322,3 +1330,44 @@ test_nbsendrecv_interas(env_t env)
 }
 DEFINE_TEST(IPC0026, "Test interas seL4_NBSendRecv + seL4_NBSendRecv", test_nbsendrecv_interas)
 
+static int
+test_sched_donation_low_prio_server(env_t env)
+{
+    helper_thread_t client, server, server2;
+    seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
+
+    create_helper_thread(env, &client);
+    int error = create_passive_thread(env, &server, (helper_fn_t) replywait_func, ep, 0, true, 0); 
+    test_eq(error, seL4_NoError);
+
+    /* make client higher prio than server */
+    set_helper_priority(&server, 1);
+    set_helper_priority(&client, 2);
+
+    ZF_LOGD("Start client");
+    start_helper(env, &client, (helper_fn_t) call_func, ep, 0, 0, 0);
+
+    ZF_LOGD("Wait for helper");
+    wait_for_helper(&client);
+    
+    /* give server a sc to finish on */
+    error = seL4_SchedContext_BindTCB(server.thread.sched_context.cptr, 
+                                      server.thread.tcb.cptr);
+    test_eq(error, 0);
+    wait_for_helper(&server);
+
+    /* now try again, but start the client first */
+    start_helper(env, &client, (helper_fn_t) call_func, ep, 0, 0, 0);
+    error = create_passive_thread(env, &server2, (helper_fn_t) replywait_func, ep, 0, true, 0); 
+    test_eq(error, seL4_NoError);
+
+    ZF_LOGD("Wait for helper");
+    wait_for_helper(&client);
+    error = seL4_SchedContext_BindTCB(server2.thread.sched_context.cptr, 
+                                      server2.thread.tcb.cptr);
+    test_eq(error, 0);
+    wait_for_helper(&server2);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(IPC0027, "Test sched donation to low prio server", test_sched_donation_low_prio_server)
