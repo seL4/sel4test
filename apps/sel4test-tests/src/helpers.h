@@ -46,6 +46,7 @@ struct env {
     seL4_CPtr page_directory;
     seL4_CPtr endpoint;
     seL4_CPtr tcb;
+    seL4_CPtr timer_frame;
     seL4_CPtr asid_pool;
     seL4_CPtr asid_ctrl;
 #ifdef CONFIG_IOMMU

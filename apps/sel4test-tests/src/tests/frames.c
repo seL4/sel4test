@@ -16,6 +16,7 @@
 #include <sel4/sel4.h>
 #include <sel4/messages.h>
 #include <vka/object.h>
+#include <vka/capops.h>
 #include <sel4utils/util.h>
 #include <sel4utils/mapping.h>
 
@@ -287,5 +288,75 @@ static int test_xn_large_frame(env_t env)
     return test_xn(env, seL4_ARM_LargePageObject);
 }
 DEFINE_TEST(FRAMEXN0002, "Test that we can map a large frame XN", test_xn_large_frame)
+
+#endif
+
+#ifdef CONFIG_ARCH_ARM
+
+static int test_device_frame_ipcbuf(env_t env)
+{
+    cspacepath_t path;
+    cspacepath_t frame_path;
+    int error;
+    error = vka_cspace_alloc_path(&env->vka, &path);
+    vka_cspace_make_path(&env->vka, env->timer_frame, &frame_path);
+    vka_cnode_copy(&path, &frame_path, seL4_AllRights);
+    test_assert(error == 0);
+
+    helper_thread_t other;
+    create_helper_thread(env, &other);
+    /* Try and create a thread with a device frame as its IPC buffer */
+    error = seL4_TCB_Configure(other.thread.tcb.cptr,
+                               0,
+                               100,
+                               env->cspace_root,
+                               seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                               env->page_directory, seL4_NilData,
+                               other.thread.ipc_buffer_addr,
+                               path.capPtr);
+    test_neq(error, 0);
+    cleanup_helper(env, &other);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(FRAMEDIPC0001, "Test that we cannot create a thread with an IPC buffer that is a frame", test_device_frame_ipcbuf)
+
+static int wait_func(seL4_Word ep)
+{
+    seL4_Send(ep, seL4_MessageInfo_new(0, 0, 0, 0));
+    seL4_Send(ep, seL4_MessageInfo_new(0, 0, 0, 0));
+    return 0;
+}
+
+static int test_switch_device_frame_ipcbuf(env_t env)
+{
+    cspacepath_t path;
+    cspacepath_t frame_path;
+    int error;
+    seL4_CPtr ep;
+    error = vka_cspace_alloc_path(&env->vka, &path);
+    vka_cspace_make_path(&env->vka, env->timer_frame, &frame_path);
+    vka_cnode_copy(&path, &frame_path, seL4_AllRights);
+    test_assert(error == 0);
+
+    ep = vka_alloc_endpoint_leaky(&env->vka);
+    test_assert(ep != seL4_CapNull);
+
+    helper_thread_t other;
+    create_helper_thread(env, &other);
+    /* start the thread and make sure it works */
+    start_helper(env, &other, (helper_fn_t)wait_func, (seL4_Word)ep, 0, 0, 0);
+    seL4_Recv(ep, NULL);
+    /* now switch its IPC buffer, which should fail */
+    error = seL4_TCB_SetIPCBuffer(other.thread.tcb.cptr, other.thread.ipc_buffer_addr, path.capPtr);
+    test_neq(error, 0);
+    /* thread should still be working */
+    seL4_Recv(ep, NULL);
+    /* all done */
+    wait_for_helper(&other);
+    cleanup_helper(env, &other);
+    return sel4test_get_result();
+}
+DEFINE_TEST(FRAMEDIPC0002, "Test that we cannot switch a threads IPC buffer to a device frame", test_switch_device_frame_ipcbuf)
 
 #endif
