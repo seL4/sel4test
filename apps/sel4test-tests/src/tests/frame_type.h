@@ -41,8 +41,8 @@ static const struct frame_type {
     { seL4_X64_2M, 0, 1 << 21, false, },
     { seL4_X64_4K, 1 << 22, 1 << 12, true, },
 #else
-    { seL4_IA32_LargePage, 0, 1 << seL4_LargePageBits, false, },
-    { seL4_IA32_4K, 1 << 22, 1 << 12, true, },
+    { seL4_X86_LargePageObject, 0, 1 << seL4_LargePageBits, false, },
+    { seL4_X86_4K, 1 << 22, 1 << 12, true, },
 #endif
 #else
 #error
