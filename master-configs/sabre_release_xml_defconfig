@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Project Configuration
-# Thu Feb 11 18:05:13 2016
+# Wed Feb 17 14:18:35 2016
 #
 
 #
@@ -22,9 +22,9 @@ CONFIG_ARCH_AARCH32=y
 CONFIG_ARM_CORTEX_A9=y
 # CONFIG_ARM_CORTEX_A15 is not set
 # CONFIG_PLAT_EXYNOS54XX is not set
-# CONFIG_PLAT_IMX6 is not set
-CONFIG_PLAT_EXYNOS4=y
-# CONFIG_PLAT_SABRE is not set
+CONFIG_PLAT_IMX6=y
+# CONFIG_PLAT_EXYNOS4 is not set
+CONFIG_PLAT_SABRE=y
 # CONFIG_PLAT_WANDQ is not set
 # CONFIG_PLAT_ZYNQ7000 is not set
 # CONFIG_EXPORT_PMU_USER is not set
