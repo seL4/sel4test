@@ -18,13 +18,14 @@ arch_init_timer_caps(env_t env)
 {
     /* get the timer frame cap */
     seL4_CPtr cap;
+    seL4_Word cookie;
     int error = vka_cspace_alloc(&env->vka, &cap);
     if (error) {
         ZF_LOGF("Failed to allocate cslot for timer frame cap path");
     }
 
     vka_cspace_make_path(&env->vka, cap, &env->frame_path);
-    error = simple_get_frame_cap(&env->simple, (void *) DEFAULT_TIMER_PADDR, PAGE_BITS_4K, &env->frame_path);
+    error = vka_utspace_alloc_at(&env->vka, &env->frame_path, kobject_get_type(KOBJECT_FRAME, PAGE_BITS_4K), PAGE_BITS_4K, DEFAULT_TIMER_PADDR, &cookie);
     if (error) {
         ZF_LOGF("Failed to get frame cap for %p\n", (void *) DEFAULT_TIMER_PADDR);
     }

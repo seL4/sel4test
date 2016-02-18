@@ -132,7 +132,7 @@ init_allocator(env_t env, test_init_data_t *init_data)
          * which we don't. */
         uintptr_t fake_paddr = 0;
         size_t size_bits = init_data->untyped_size_bits_list[size_bits_index];
-        error = allocman_utspace_add_uts(allocator, 1, &path, &size_bits, &fake_paddr);
+        error = allocman_utspace_add_uts(allocator, 1, &path, &size_bits, &fake_paddr, ALLOCMAN_UT_KERNEL);
         if (error) {
             ZF_LOGF("Failed to add untyped objects to allocator");
         }

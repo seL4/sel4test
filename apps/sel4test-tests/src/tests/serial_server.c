@@ -616,7 +616,7 @@ setup_client_process_allocman_vka_and_vspace(seL4_CPtr ut_cap, size_t ut_size_bi
     vka_cspace_make_path(vka, ut_cap, &ut_cspath);
     error = allocman_utspace_add_uts(*allocman, 1, &ut_cspath,
                                      &ut_size_bits,
-                                     &paddr);
+                                     &paddr, ALLOCMAN_UT_KERNEL);
     if (error != 0) {
         return error;
     }
