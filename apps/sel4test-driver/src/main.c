@@ -424,6 +424,7 @@ int main(void)
     /* initialise libsel4simple, which abstracts away which kernel version
      * we are running on */
     simple_default_init_bootinfo(&env.simple, info);
+    simple_print(&env.simple);
 
     /* initialise the test environment - allocator, cspace manager, vspace manager, timer */
     init_env(&env);
