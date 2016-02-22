@@ -104,41 +104,43 @@ test_bind_errors(env_t env)
     seL4_CPtr notification = vka_alloc_notification_leaky(&env->vka);
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
 
-    /* not a tcb or ntfn */
+    /* binding an object that is not a tcb or ntfn should fail */
     int error = seL4_SchedContext_Bind(sched_context, endpoint);
     test_eq(error, seL4_InvalidCapability);
 
     error = seL4_SchedContext_Bind(sched_context, tcb);
     test_eq(error, seL4_NoError);
 
-    /* tcb already bound to tcb */
+    /* so should trying to bind a schedcontext that is already bound to tcb */
     error = seL4_SchedContext_Bind(sched_context, tcb);
     test_eq(error, seL4_IllegalOperation);
 
+    /* similarly we cannot bind a notification if a tcb is bound */
     error = seL4_SchedContext_Bind(sched_context, notification);
     test_eq(error, seL4_IllegalOperation);
 
-    /* tcb already bound to notification */
     error = seL4_SchedContext_UnbindObject(sched_context, tcb);
     test_eq(error, seL4_NoError);
 
     error = seL4_SchedContext_Bind(sched_context, notification);
     test_eq(error, seL4_NoError);
 
+    /* and you can't bind a notification if a notification is already bound*/
     error = seL4_SchedContext_Bind(sched_context, notification);
     test_eq(error, seL4_IllegalOperation);
 
+    /* and you can't bind a tcb if a notification is already bound */
     error = seL4_SchedContext_Bind(sched_context, tcb);
     test_eq(error, seL4_IllegalOperation);
 
     error = seL4_SchedContext_UnbindObject(sched_context, notification);
     test_eq(error, seL4_NoError);   
 
-    /* unbind not a tcb or notification */
+    /* check unbinding an object that is not a tcb or notification fails */
     error = seL4_SchedContext_UnbindObject(sched_context, endpoint);
     test_eq(error, seL4_InvalidCapability);
 
-    /* unbind not bound */
+    /* check trying to unbind a valid object that is not bounnd fails */
     error = seL4_SchedContext_UnbindObject(sched_context, notification);
     test_eq(error, seL4_InvalidCapability);
 
@@ -395,4 +397,323 @@ test_delete_sendwait_tcb(env_t env)
 }
 DEFINE_TEST(SCHED_CONTEXT_0008, "Test deleting a tcb sends donated scheduling context home", 
             test_delete_sendwait_tcb)
+
+void 
+sched_context_0009_server_fn(seL4_CPtr ep, volatile int *state)
+{
+    ZF_LOGD("Server init\n");
+    seL4_NBSendRecv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL);
+    while (1) {
+        *state = *state + 1;
+    }
+}
+
+void
+sched_context_0009_client_fn(seL4_CPtr ep)
+{
+    ZF_LOGD("Client call\n");
+    seL4_Call(ep, seL4_MessageInfo_new(0, 0, 0, 0));
+}
+
+void
+sched_context_0010_client_fn(seL4_CPtr ep)
+{
+    seL4_NBSendRecv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL);
+}
+
+int
+test_sched_context_goes_to_to_caller_on_reply_cap_delete(env_t env) 
+{
+    helper_thread_t client, server;
+    seL4_CPtr ep;
+    volatile int state = 0;
+    int prev_state = state;
+    int error;
+
+    ep = vka_alloc_endpoint_leaky(&env->vka);
+    test_neq(ep, 0);
+
+    /* create server */
+    create_passive_thread(env, &server, (helper_fn_t) sched_context_0009_server_fn, ep, 
+                          (seL4_Word) &state, 0, 0);
+    
+    /* create client */
+    create_helper_thread(env, &client);
+
+    /* client calls blocking server */
+    start_helper(env, &client, (helper_fn_t) sched_context_0009_client_fn, ep, 0, 0, 0);
+
+    /* wait a bit, client should have called server */
+    sleep(env, 0.2 * NS_IN_S);
+    test_ge(state, prev_state);
+    prev_state = state;
+
+    /* delete reply cap */
+    seL4_CPtr reply = get_free_slot(env);
+    error = cnode_saveTCBcaller(env, reply, &server.thread.tcb);
+    test_eq(error, seL4_NoError);
+    error = cnode_delete(env, reply);
+    test_eq(error, seL4_NoError);
+
+    /* wait a bit, check server not running anymore */
+    sleep(env, 0.2 * NS_IN_S);
+    test_eq(state, prev_state);
+
+    /* save and resume client */
+    restart_after_syscall(env, &client);
+
+    printf("Waiting for client\n");
+    wait_for_helper(&client);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT_0009, "Test scheduling context goes to caller if reply cap deleted", test_sched_context_goes_to_to_caller_on_reply_cap_delete)
+
+int
+test_sched_context_goes_to_caller_on_unbind(env_t env) 
+{
+    helper_thread_t client, server;
+    seL4_CPtr ep;
+    volatile int state = 0;
+    int prev_state = state;
+    int error;
+
+    ep = vka_alloc_endpoint_leaky(&env->vka);
+    test_neq(ep, 0);
+
+    /* create server */
+    create_passive_thread(env, &server, (helper_fn_t) sched_context_0009_server_fn, ep, 
+                          (seL4_Word) &state, 0, 0);
+    
+    /* create client */
+    create_helper_thread(env, &client);
+
+    /* client calls blocking server */
+    start_helper(env, &client, (helper_fn_t) sched_context_0010_client_fn, ep, 0, 0, 0);
+
+    /* wait a bit, client should have called server */
+    sleep(env, 0.2 * NS_IN_S);
+    test_ge(state, prev_state);
+    prev_state = state;
+
+    /* unbind scheduling context */
+    error = seL4_SchedContext_UnbindObject(client.thread.sched_context.cptr, server.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* wait a bit, check server not running anymore */
+    sleep(env, 0.2 * NS_IN_S);
+    test_eq(state, prev_state);
+
+    /* save and resume client */
+    restart_after_syscall(env, &client);
+
+    printf("Waiting for client\n");
+    wait_for_helper(&client);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT_0010, "Test scheduling context goes to to caller on unbind when no reply cap present", test_sched_context_goes_to_caller_on_unbind)
+
+
+void
+sched_context_0011_proxy_fn(seL4_CPtr in, seL4_CPtr out)
+{
+    ZF_LOGD("Proxy init\n");
+    seL4_NBSendRecv(in, seL4_MessageInfo_new(0, 0, 0, 0), in, NULL);
+
+    ZF_LOGD("Proxy call\n");
+    seL4_Call(out, seL4_MessageInfo_new(0, 0, 0, 0));
+
+    printf("Proxy here\n");
+}
+
+int
+test_revoke_reply_on_call_chain_returns_sc(env_t env)
+{
+    helper_thread_t client, proxy, server;
+    seL4_CPtr ep, ep2;
+    volatile int state = 0;
+    int error;
+
+    ep = vka_alloc_endpoint_leaky(&env->vka);
+    ep2 = vka_alloc_endpoint_leaky(&env->vka);
+
+    create_passive_thread(env, &server, (helper_fn_t) sched_context_0009_server_fn, ep2, 
+                          (seL4_Word) &state, 0, 0);
+    
+    create_passive_thread(env, &proxy, (helper_fn_t) sched_context_0011_proxy_fn, ep, ep2, 0, 0);
+    
+    create_helper_thread(env, &client);
+    start_helper(env, &client, (helper_fn_t) sched_context_0009_client_fn, ep, 0, 0, 0);
+
+    /* let a call b which calls the server, let the server run a bit */
+    sleep(env, 0.2 * NS_IN_S);
+    test_ge(state, 0);
+
+    /* kill the servers reply cap */
+    seL4_CPtr slot;
+    slot = get_free_slot(env);
+    error = cnode_saveTCBcaller(env, slot, &server.thread.tcb); 
+    test_eq(error, seL4_NoError);
+    error = cnode_delete(env, slot);
+    test_eq(error, seL4_NoError);
+    
+    /* check server stopped running */
+    int prev_state = state;
+    sleep(env, 0.2 * NS_IN_S);
+    test_eq(prev_state, state);
+
+    /* kill the proxies reply cap */
+    error = cnode_saveTCBcaller(env, slot, &proxy.thread.tcb);
+    test_eq(error, seL4_NoError);
+    error = cnode_delete(env, slot);
+    test_eq(error, seL4_NoError);
+
+    /* save and resume client */
+    restart_after_syscall(env, &client);
+    
+    ZF_LOGD("Waiting for client\n");
+    wait_for_helper(&client);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT_0011, "Test revoking a reply on a call chain returns scheduling context along chain", test_revoke_reply_on_call_chain_returns_sc)
+
+
+/* sched 0011 but unordered */
+int
+test_revoke_reply_on_call_chain_unordered(env_t env)
+{
+    helper_thread_t client, proxy, server;
+    seL4_CPtr ep, ep2;
+    volatile int state = 0;
+    int error;
+
+    ep = vka_alloc_endpoint_leaky(&env->vka);
+    ep2 = vka_alloc_endpoint_leaky(&env->vka);
+
+    create_passive_thread(env, &server, (helper_fn_t) sched_context_0009_server_fn, ep2, 
+                          (seL4_Word) &state, 0, 0);
+    
+    create_passive_thread(env, &proxy, (helper_fn_t) sched_context_0011_proxy_fn, ep, ep2, 0, 0);
+    
+    create_helper_thread(env, &client);
+    start_helper(env, &client, (helper_fn_t) sched_context_0009_client_fn, ep, 0, 0, 0);
+
+    /* let a call b which calls the server, let the server run a bit */
+    sleep(env, 0.2 * NS_IN_S);
+    test_ge(state, 0);
+
+    /* kill the proxies reply cap */
+    seL4_CPtr slot;
+    ZF_LOGD("Nuke proxy reply cap");
+    slot = get_free_slot(env);
+    error = cnode_saveTCBcaller(env, slot, &proxy.thread.tcb);
+    test_eq(error, seL4_NoError);
+    error = cnode_delete(env, slot);
+    test_eq(error, seL4_NoError);
+
+    /* kill the servers reply cap */
+    ZF_LOGD("Nuke server reply cap\n");
+    error = cnode_saveTCBcaller(env, slot, &server.thread.tcb); 
+    test_eq(error, seL4_NoError);
+    error = cnode_delete(env, slot);
+    test_eq(error, seL4_NoError);
+    
+    /* check server is still running - reply chain was broken when proxy's reply cap was deleted */
+    int prev_state = state;
+    sleep(env, 0.2 * NS_IN_S);
+    test_ge(state, prev_state);
+
+    /* unbind the sc from the server - it should go home */
+    error = seL4_SchedContext_UnbindObject(client.thread.sched_context.cptr, server.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    prev_state = state;
+    sleep(env, 0.2 * NS_IN_S);
+    /* check server stopped */
+    test_eq(state, prev_state);
+    
+    /* save and resume client */
+    restart_after_syscall(env, &client);
+
+    /* check the client got its scheduling context back and is now running */
+    ZF_LOGD("Waiting for client\n");
+    wait_for_helper(&client);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT_0012, "Test revoking a reply on a call chain unorderd", test_revoke_reply_on_call_chain_unordered)
+
+int
+test_revoke_sched_context_on_call_chain(env_t env)
+{
+    helper_thread_t client, proxy, server;
+    seL4_CPtr ep, ep2;
+    volatile int state = 0;
+    int error;
+
+    ep = vka_alloc_endpoint_leaky(&env->vka);
+    ep2 = vka_alloc_endpoint_leaky(&env->vka);
+
+    create_passive_thread(env, &server, (helper_fn_t) sched_context_0009_server_fn, ep2, 
+                          (seL4_Word) &state, 0, 0);
+    
+    create_passive_thread(env, &proxy, (helper_fn_t) sched_context_0011_proxy_fn, ep, ep2, 0, 0);
+    
+    create_helper_thread(env, &client);
+    start_helper(env, &client, (helper_fn_t) sched_context_0009_client_fn, ep, 0, 0, 0);
+
+    /* let client call proxy which calls the server, let the server run a bit */
+    sleep(env, 0.2 * NS_IN_S);
+    test_ge(state, 0);
+
+    /* nuke the scheduling context */
+    vka_free_object(&env->vka, &client.thread.sched_context);
+
+    /* check server stopped running */
+    int prev_state = state;
+    sleep(env, 0.2 * NS_IN_S);
+    test_eq(prev_state, state);
+
+    /* nuke the reply cap */
+    seL4_CPtr slot = get_free_slot(env);
+    error = cnode_saveTCBcaller(env, slot, &server.thread.tcb); 
+    test_eq(error, seL4_NoError);
+    error = cnode_delete(env, slot);
+    test_eq(error, seL4_NoError);
+
+    /* give the proxy a scheduling context */
+    seL4_CPtr sched_context = vka_alloc_sched_context_leaky(&env->vka);
+    test_neq(sched_context, 0);
+
+    error = seL4_SchedContext_Bind(sched_context, proxy.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple), sched_context, 
+                                        5 * NS_IN_S, 5 * NS_IN_S, 0);
+    test_eq(error, seL4_NoError);
+
+    restart_after_syscall(env, &proxy);
+
+    ZF_LOGD("Waiting for proxy\n");
+    wait_for_helper(&proxy);
+
+    error = seL4_SchedContext_UnbindObject(sched_context, proxy.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+    
+    /* give the client a scheduling context */
+    error = seL4_SchedContext_Bind(sched_context, client.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    restart_after_syscall(env, &client);
+
+    ZF_LOGD("Waiting for Client\n");
+    wait_for_helper(&client);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT_0013, "Test revoking a scheduling context on a call chain", test_revoke_sched_context_on_call_chain)
+
+
 

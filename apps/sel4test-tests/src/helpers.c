@@ -494,3 +494,24 @@ create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CPtr t
     return sel4utils_checkpoint_thread(&passive->thread, cp, false);
 }
 
+int
+restart_after_syscall(env_t env, helper_thread_t *helper)
+{
+    /* save and resume helper->*/
+    seL4_UserContext regs; 
+    int error;
+
+    error = seL4_TCB_ReadRegisters(helper->thread.tcb.cptr, false, 0,
+                                   sizeof(seL4_UserContext) / sizeof(seL4_Word), &regs);
+    test_eq(error, seL4_NoError);
+  
+    /* skip the call */
+    sel4utils_set_instruction_pointer(&regs, sel4utils_get_instruction_pointer(regs) + ARCH_SYSCALL_INSTRUCTION_SIZE); 
+      
+    error = seL4_TCB_WriteRegisters(helper->thread.tcb.cptr, true, 0, 
+                                    sizeof(seL4_UserContext) / sizeof(seL4_Word), &regs);
+    test_eq(error, seL4_NoError);
+    
+    return 0;
+}
+
