@@ -74,10 +74,10 @@ test_interrupt_notification_sc(env_t env)
     test_eq(state, 1);
 
     /* take away scheduling context and give it to notification object */
-    error = seL4_SchedContext_UnbindTCB(helper.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(helper.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
-    error = seL4_SchedContext_BindNotification(helper.thread.sched_context.cptr, 
+    error = seL4_SchedContext_Bind(helper.thread.sched_context.cptr, 
                                                env->timer_notification.cptr);
     test_eq(error, seL4_NoError);
 
@@ -130,11 +130,11 @@ test_interrupt_notification_and_tcb_sc(env_t env)
     test_eq(state_without_sc, 1);
 
     /* take away scheduling context from helper_without_sc and give it to notification object */
-    error = seL4_SchedContext_UnbindTCB(helper_without_sc.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(helper_without_sc.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
-    error = seL4_SchedContext_BindNotification(helper_without_sc.thread.sched_context.cptr, 
-                                               env->timer_notification.cptr);
+    error = seL4_SchedContext_Bind(helper_without_sc.thread.sched_context.cptr, 
+                                   env->timer_notification.cptr);
     test_eq(error, seL4_NoError);
 
     error = timer_periodic(env->timer->timer, 10 * NS_IN_MS);
@@ -179,7 +179,7 @@ test_interrupt_no_sc(env_t env)
     test_eq(state, 1);
 
     /* take away scheduling context and give it to notification object */
-    error = seL4_SchedContext_UnbindTCB(helper.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(helper.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
     error = timer_periodic(env->timer->timer, 10 * NS_IN_MS);
@@ -228,14 +228,14 @@ test_interrupt_notification_sc_two_clients(env_t env)
     test_eq(state_second, 1);
 
     /* take away scheduling context from both, give one to a notification object */
-    error = seL4_SchedContext_UnbindTCB(helper_first.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(helper_first.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
-    error = seL4_SchedContext_UnbindTCB(helper_second.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(helper_second.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
     
-    error = seL4_SchedContext_BindNotification(helper_first.thread.sched_context.cptr, 
-                                               env->timer_notification.cptr);
+    error = seL4_SchedContext_Bind(helper_first.thread.sched_context.cptr, 
+                                   env->timer_notification.cptr);
     test_eq(error, seL4_NoError);
 
     error = timer_periodic(env->timer->timer, 10 * NS_IN_MS);
@@ -281,10 +281,10 @@ test_interrupt_delete_sc(env_t env)
     test_eq(state, 1);
 
     /* take away scheduling context and give it to notification object */
-    error = seL4_SchedContext_UnbindTCB(helper.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(helper.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
-    error = seL4_SchedContext_BindNotification(helper.thread.sched_context.cptr, 
+    error = seL4_SchedContext_Bind(helper.thread.sched_context.cptr, 
                                                env->timer_notification.cptr);
     test_eq(error, seL4_NoError);
 

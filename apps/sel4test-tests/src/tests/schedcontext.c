@@ -97,55 +97,57 @@ DEFINE_TEST(SCHED_CONTEXT_0002, "Test reconfiguring a thread", test_sched_contro
 
 /* test bindTCB errors */
 int
-test_bindTCB_errors(env_t env)
+test_bind_errors(env_t env)
 {
     seL4_CPtr tcb = vka_alloc_tcb_leaky(&env->vka);
-    seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
-    seL4_CPtr sched_context = vka_alloc_sched_context_leaky(&env->vka);
-
-    /* not a tcb */
-    int error = seL4_SchedContext_BindTCB(sched_context, endpoint);
-    test_eq(error, seL4_InvalidCapability);
-
-    error = seL4_SchedContext_BindTCB(sched_context, tcb);
-    test_eq(error, seL4_NoError);
-
-    /* tcb already bound */
-    error = seL4_SchedContext_BindTCB(sched_context, tcb);
-    test_eq(error, seL4_IllegalOperation);
-
-    error = seL4_SchedContext_UnbindTCB(sched_context);
-    test_eq(error, seL4_NoError);   
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(SCHED_CONTEXT_0003, "Basic seL4_SchedContext_BindTCB testing", test_bindTCB_errors);
-
-/* test bindNotification errors */
-int
-test_bindNotification_errors(env_t env) 
-{
-    seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
     seL4_CPtr sched_context = vka_alloc_sched_context_leaky(&env->vka);
     seL4_CPtr notification = vka_alloc_notification_leaky(&env->vka);
+    seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
 
-    /* not a notification */
-    int error = seL4_SchedContext_BindNotification(sched_context, endpoint);
+    /* not a tcb or ntfn */
+    int error = seL4_SchedContext_Bind(sched_context, endpoint);
     test_eq(error, seL4_InvalidCapability);
 
-    error = seL4_SchedContext_BindNotification(sched_context, notification);
+    error = seL4_SchedContext_Bind(sched_context, tcb);
     test_eq(error, seL4_NoError);
 
-    /* notification already bound */
-    error = seL4_SchedContext_BindNotification(sched_context, notification);
+    /* tcb already bound to tcb */
+    error = seL4_SchedContext_Bind(sched_context, tcb);
     test_eq(error, seL4_IllegalOperation);
 
-    error = seL4_SchedContext_UnbindNotification(sched_context);
+    error = seL4_SchedContext_Bind(sched_context, notification);
+    test_eq(error, seL4_IllegalOperation);
+
+    /* tcb already bound to notification */
+    error = seL4_SchedContext_UnbindObject(sched_context, tcb);
     test_eq(error, seL4_NoError);
+
+    error = seL4_SchedContext_Bind(sched_context, notification);
+    test_eq(error, seL4_NoError);
+
+    error = seL4_SchedContext_Bind(sched_context, notification);
+    test_eq(error, seL4_IllegalOperation);
+
+    error = seL4_SchedContext_Bind(sched_context, tcb);
+    test_eq(error, seL4_IllegalOperation);
+
+    error = seL4_SchedContext_UnbindObject(sched_context, notification);
+    test_eq(error, seL4_NoError);   
+
+    /* unbind not a tcb or notification */
+    error = seL4_SchedContext_UnbindObject(sched_context, endpoint);
+    test_eq(error, seL4_InvalidCapability);
+
+    /* unbind not bound */
+    error = seL4_SchedContext_UnbindObject(sched_context, notification);
+    test_eq(error, seL4_InvalidCapability);
+
+    error = seL4_SchedContext_UnbindObject(sched_context, tcb);
+    test_eq(error, seL4_InvalidCapability);
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0004, "Basic seL4_SchedContext_BindNotification testing", test_bindNotification_errors);
+DEFINE_TEST(SCHED_CONTEXT_0003, "Basic seL4_SchedContext_Bind/UnbindObject testing", test_bind_errors);
 
 void
 sched_context_0005_helper_fn(volatile int *state)
@@ -221,9 +223,9 @@ test_delete_tcb_on_notification_context(env_t env)
     test_eq(state_one, 1);
 
     /* take away its sc and assign to notification */
-    error = seL4_SchedContext_UnbindTCB(one.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(one.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
-    error = seL4_SchedContext_BindNotification(one.thread.sched_context.cptr, notification);
+    error = seL4_SchedContext_Bind(one.thread.sched_context.cptr, notification);
     test_eq(error, seL4_NoError);
 
     /* let it run and receive the notifications scheduling context */
@@ -278,13 +280,13 @@ test_passive_thread_start(env_t env)
     create_helper_thread(env, &helper);
  
     ZF_LOGD("z");
-    error = seL4_SchedContext_UnbindTCB(helper.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(helper.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
     /* resume then bind */
     start_helper(env, &helper, (helper_fn_t) sched_context_007_helper_fn, 0, 0, 0, 0);
     
-    error = seL4_SchedContext_BindTCB(helper.thread.sched_context.cptr, helper.thread.tcb.cptr);
+    error = seL4_SchedContext_Bind(helper.thread.sched_context.cptr, helper.thread.tcb.cptr);
     test_eq(error, seL4_NoError);
    
     error = wait_for_helper(&helper);
@@ -293,10 +295,10 @@ test_passive_thread_start(env_t env)
     /* bind then resume */
     create_helper_thread(env, &helper);
     
-    error = seL4_SchedContext_UnbindTCB(helper.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(helper.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
     
-    error = seL4_SchedContext_BindTCB(helper.thread.sched_context.cptr, helper.thread.tcb.cptr);
+    error = seL4_SchedContext_Bind(helper.thread.sched_context.cptr, helper.thread.tcb.cptr);
     test_eq(error, seL4_NoError);
     
     start_helper(env, &helper, (helper_fn_t) sched_context_007_helper_fn, 0, 0, 0, 0);

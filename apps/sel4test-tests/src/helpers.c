@@ -474,7 +474,7 @@ create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_
     ZF_LOGD("Done");
     
     /* convert to passive */
-    return seL4_SchedContext_UnbindTCB(passive->thread.sched_context.cptr);
+    return seL4_SchedContext_Unbind(passive->thread.sched_context.cptr);
 }
 
 int

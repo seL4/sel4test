@@ -299,14 +299,14 @@ test_criticality_mode_switch_in_server(env_t env)
     error = sel4utils_checkpoint_restore(&cp, true, true);
     test_eq(error, 0);
     
-    error = seL4_SchedContext_BindTCB(server.thread.sched_context.cptr, server.thread.tcb.cptr);
+    error = seL4_SchedContext_Bind(server.thread.sched_context.cptr, server.thread.tcb.cptr);
     test_eq(error, seL4_NoError);
 
     /* wait for server to get back on the ep */
     seL4_Recv(ep, NULL);
 
     /* convert back to passive */
-    error = seL4_SchedContext_UnbindTCB(server.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(server.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
     ZF_LOGD("let hi clients run");

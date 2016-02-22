@@ -720,7 +720,7 @@ handle_temporal_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread
 
     /* restore server */
     ZF_LOGD("Restoring server");
-    error = seL4_SchedContext_BindTCB(server->sched_context.cptr, server->tcb.cptr);
+    error = seL4_SchedContext_Bind(server->sched_context.cptr, server->tcb.cptr);
     test_eq(error, seL4_NoError);
 
     error = sel4utils_checkpoint_restore(cp, false, true);
@@ -729,7 +729,7 @@ handle_temporal_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread
     ZF_LOGD("Waiting for server to init");
     seL4_Wait(ep, NULL);
 
-    error = seL4_SchedContext_UnbindTCB(server->sched_context.cptr);
+    error = seL4_SchedContext_Unbind(server->sched_context.cptr);
     test_eq(error, seL4_NoError);
 
     return 0;

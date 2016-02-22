@@ -582,7 +582,7 @@ single_client_server_chain_test(env_t env, int fastpath, int prio_diff)
         seL4_Recv(call_endpoint, NULL);
         test_eq(proxy_state[i], 1);
         /* now take away its scheduling context */
-        error = seL4_SchedContext_UnbindTCB(proxies[i].thread.sched_context.cptr);
+        error = seL4_SchedContext_Unbind(proxies[i].thread.sched_context.cptr);
         test_eq(error, seL4_NoError);
 
         receive_endpoint = call_endpoint;
@@ -599,7 +599,7 @@ single_client_server_chain_test(env_t env, int fastpath, int prio_diff)
     seL4_Recv(receive_endpoint, NULL);
     test_eq(server_state, 1);
     /* now take it's scheduling context away */
-    error = seL4_SchedContext_UnbindTCB(server.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(server.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
     ZF_LOGD("Start client");
@@ -707,7 +707,7 @@ test_transfer_on_reply(env_t env)
     /* wait for server to initialise */
     seL4_Recv(endpoint, NULL);
     /* now remove the schedluing context */
-    error = seL4_SchedContext_UnbindTCB(server.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(server.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
     /* start the client */
@@ -777,7 +777,7 @@ test_send_to_no_sc(env_t env)
     start_helper(env, &server, (helper_fn_t) wait_server, endpoint, num_server_messages, 0, 0);
     seL4_Recv(endpoint, NULL);
 
-    error = seL4_SchedContext_UnbindTCB(server.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(server.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
     /* this message should not result in the server being scheduled */
@@ -801,7 +801,7 @@ test_send_to_no_sc(env_t env)
     test_eq(state2, 1);
 
     /* restore the servers schedluing context */
-    error = seL4_SchedContext_BindTCB(server.thread.sched_context.cptr, server.thread.tcb.cptr);
+    error = seL4_SchedContext_Bind(server.thread.sched_context.cptr, server.thread.tcb.cptr);
     test_eq(error, seL4_NoError);
 
    /* now the clients should be unblocked */
@@ -855,7 +855,7 @@ test_receive_no_sc(env_t env)
 
     /* clear the clients scheduling context */
     ZF_LOGD("Unbind scheduling context");
-    error = seL4_SchedContext_UnbindTCB(client.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(client.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
     /* now we should be able to receive the message, but since the client
@@ -868,7 +868,7 @@ test_receive_no_sc(env_t env)
     test_eq(state, 1);
 
     /* now set the schedluing context again */
-    error = seL4_SchedContext_BindTCB(client.thread.sched_context.cptr, 
+    error = seL4_SchedContext_Bind(client.thread.sched_context.cptr, 
                                       client.thread.tcb.cptr);
     test_eq(error, seL4_NoError);
     test_eq(state, 2);
@@ -964,7 +964,7 @@ delete_sc_client_waiting_on_endpoint(env_t env)
                                         1000 * US_IN_S, 1000 * US_IN_S, 0); 
     test_eq(error, seL4_NoError);
 
-    error = seL4_SchedContext_BindTCB(sched_context, waiter.thread.tcb.cptr);
+    error = seL4_SchedContext_Bind(sched_context, waiter.thread.tcb.cptr);
     test_eq(error, seL4_NoError);
 
     /* now the thread should run and receive the message */
@@ -1027,7 +1027,7 @@ test_fault_handler_donated_sc(env_t env)
     seL4_Recv(endpoint, NULL);
 
     /* now remove its scheduling context */
-    int error = seL4_SchedContext_UnbindTCB(handler.thread.sched_context.cptr);
+    int error = seL4_SchedContext_Unbind(handler.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
     /* set fault handler */
@@ -1109,7 +1109,7 @@ ipc22_stack_spawner_fn(env_t env, seL4_CPtr endpoint, int server_prio, int runs)
         seL4_Recv(init_ep, NULL);
         
         /*  now remove the schedling context */
-        int error =  seL4_SchedContext_UnbindTCB(servers[i].thread.sched_context.cptr);
+        int error =  seL4_SchedContext_Unbind(servers[i].thread.sched_context.cptr);
         test_eq(error, seL4_NoError);
         
         /* and forward the one we have */
@@ -1140,7 +1140,7 @@ test_stack_spawning_server(env_t env)
     seL4_Recv(endpoint, NULL);
     
     /* take away scheduling context */
-    error = seL4_SchedContext_UnbindTCB(stack_spawner.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(stack_spawner.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
     error = seL4_TCB_SetPriority(env->tcb, our_prio);
@@ -1222,7 +1222,7 @@ test_delete_reply_cap_sc(env_t env)
     /* wait for server to init */
     seL4_Recv(server_ep, NULL);
     /* take its scheduling context away */
-    error = seL4_SchedContext_UnbindTCB(server.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(server.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
     /* set the client and server prio higher than ours so they can run */
@@ -1285,7 +1285,7 @@ test_delete_reply_cap_then_sc(env_t env)
     
     ZF_LOGD("Removed sc\n");
     /* remove schedluing context */
-    error = seL4_SchedContext_UnbindTCB(server.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(server.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
     ZF_LOGD("Start client");
@@ -1351,7 +1351,7 @@ test_sched_donation_low_prio_server(env_t env)
     wait_for_helper(&client);
     
     /* give server a sc to finish on */
-    error = seL4_SchedContext_BindTCB(server.thread.sched_context.cptr, 
+    error = seL4_SchedContext_Bind(server.thread.sched_context.cptr, 
                                       server.thread.tcb.cptr);
     test_eq(error, 0);
     wait_for_helper(&server);
@@ -1363,7 +1363,7 @@ test_sched_donation_low_prio_server(env_t env)
 
     ZF_LOGD("Wait for helper");
     wait_for_helper(&client);
-    error = seL4_SchedContext_BindTCB(server2.thread.sched_context.cptr, 
+    error = seL4_SchedContext_Bind(server2.thread.sched_context.cptr, 
                                       server2.thread.tcb.cptr);
     test_eq(error, 0);
     wait_for_helper(&server2);

@@ -236,7 +236,7 @@ test_notification_binding_no_sc(env_t env)
     test_eq(state, 1);
     
     /* clear its sc */
-    error = seL4_SchedContext_UnbindTCB(helper.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(helper.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
     /* signal it */
@@ -246,7 +246,7 @@ test_notification_binding_no_sc(env_t env)
     test_eq(state, 1);
 
     /* now give back the scheduling context */
-    error = seL4_SchedContext_BindTCB(helper.thread.sched_context.cptr, 
+    error = seL4_SchedContext_Bind(helper.thread.sched_context.cptr, 
                               helper.thread.tcb.cptr);
     test_eq(error, seL4_NoError);
 
@@ -284,10 +284,10 @@ test_notification_binding_with_sc(env_t env)
     test_eq(state, 1);
     
     /* clear its sc */
-    error = seL4_SchedContext_UnbindTCB(helper.thread.sched_context.cptr);
+    error = seL4_SchedContext_Unbind(helper.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
-    error = seL4_SchedContext_BindNotification(helper.thread.sched_context.cptr, notification);
+    error = seL4_SchedContext_Bind(helper.thread.sched_context.cptr, notification);
     test_eq(error, seL4_NoError);
 
     /* signal it */
