@@ -99,7 +99,7 @@ test_page_flush(env_t env)
     */
     *ptr = 0xBEEFCAFE;
 #ifdef CONFIG_ARCH_ARM_V7A
-    asm volatile ("dmb st" ::: "memory");
+    asm volatile ("dmb" ::: "memory");
 #endif
     test_assert(*ptrc == 0xBEEFCAFE);
     test_assert(*ptr == 0xBEEFCAFE);
