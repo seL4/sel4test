@@ -11,6 +11,7 @@
 #include <autoconf.h>
 #include <stdio.h>
 #include <sel4/sel4.h>
+#include <sel4utils/sched.h>
 #include <stdlib.h>
 #include <string.h>
 #include <vka/object.h>
@@ -1333,4 +1334,247 @@ test_resume_no_overflow(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0016, "Test resume cannot be used to exceed budget", test_resume_no_overflow);
+
+void
+sched0017_helper_fn(seL4_CPtr sc, volatile seL4_SchedContext_YieldTo_t *ret)
+{
+    ZF_LOGD("Yield To");
+    *ret = seL4_SchedContext_YieldTo(sc);
+    ZF_LOGD("Result %d %llu", ret->error, ret->consumed);
+}
+
+int 
+test_yieldTo_errors(env_t env)
+{
+    volatile seL4_SchedContext_YieldTo_t ret;
+
+    /* can't yieldTo self */
+    ret = seL4_SchedContext_YieldTo(env->sched_context);
+    test_eq(ret.error, seL4_IllegalOperation);
+
+    /* can't yield to unbound sched context */
+    seL4_CPtr sched_context = vka_alloc_sched_context_leaky(&env->vka);
+    ret = seL4_SchedContext_YieldTo(sched_context);
+    test_eq(ret.error, seL4_IllegalOperation);
+
+    /* yield to unrunnable thread (permitted, but should return immediately) */
+    helper_thread_t helper;
+    create_helper_thread(env, &helper);
+    ret = seL4_SchedContext_YieldTo(helper.thread.sched_context.cptr);
+    test_eq(ret.error, seL4_NoError);
+    test_eq(ret.consumed, 0llu);
+
+    /* start the thread and have it try to yield to us - but fail as 
+     * we have a higher mcp
+     */
+    set_helper_mcp(&helper, 0);
+    start_helper(env, &helper, (helper_fn_t) sched0017_helper_fn, env->sched_context, (seL4_Word) &ret, 0, 0);
+
+    wait_for_helper(&helper);
+    test_eq(ret.error, seL4_IllegalOperation);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0017, "Test seL4_SchedContext_YieldTo errors", test_yieldTo_errors);
+
+int 
+sched0018_to_fn(void)
+{
+    while(1) {
+        ZF_LOGD("Running");
+    } 
+}
+
+int
+test_yieldTo_cleanup(env_t env)
+{
+    int error;
+    helper_thread_t to, from;
+    volatile seL4_SchedContext_YieldTo_t ret;
+
+    create_helper_thread(env, &to);
+    create_helper_thread(env, &from);
+
+    start_helper(env, &to, (helper_fn_t) sched0018_to_fn, 0, 0, 0, 0);
+    start_helper(env, &from, (helper_fn_t) sched0017_helper_fn, to.thread.sched_context.cptr, (seL4_Word) &ret, 0, 0);
+
+    error = set_helper_sched_params(env, &to, 10 * US_IN_S, 10 * US_IN_S, 0);
+    test_eq(error, seL4_NoError);
+    error = set_helper_sched_params(env, &from, 10 * US_IN_S, 10 * US_IN_S, 0);
+    test_eq(error, seL4_NoError);
+
+    /* wait for them to execute */
+    printf("Sleep\n");
+    sleep(env, NS_IN_S);
+
+    printf("tick\n");
+    /* suspend yielded to thread */
+    error = seL4_TCB_Suspend(to.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    wait_for_helper(&from);
+    test_eq(ret.error, seL4_NoError);
+    test_ge(ret.consumed, 0llu);
+
+    /* restart threads */
+    cleanup_helper(env, &from);
+    cleanup_helper(env, &to);
+
+    create_helper_thread(env, &from);
+    create_helper_thread(env, &to);
+    start_helper(env, &to, (helper_fn_t) sched0018_to_fn, 0, 0, 0, 0);
+    start_helper(env, &from, (helper_fn_t) sched0017_helper_fn, to.thread.sched_context.cptr, (seL4_Word) &ret, 0, 0);
+    
+    /* let them run */
+    sleep(env, NS_IN_S);
+
+    /* delete yielded to thread */
+    cleanup_helper(env, &to);
+
+    wait_for_helper(&from);
+    test_eq(ret.error, seL4_NoError);
+    test_ge(ret.consumed, 0llu);
+
+    /* restart threads */
+    cleanup_helper(env, &from);
+
+    create_helper_thread(env, &from);
+    create_helper_thread(env, &to);
+    start_helper(env, &to, (helper_fn_t) sched0018_to_fn, 0, 0, 0, 0);
+    start_helper(env, &from, (helper_fn_t) sched0017_helper_fn, to.thread.sched_context.cptr, (seL4_Word) &ret, 0, 0);
+    
+    /* wait for them to execute */
+    sleep(env, NS_IN_S);
+
+    /* delete yielded from thread */
+    cleanup_helper(env, &from);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0018, "Test clean up cases after seL4_SchedContext_YieldTo", test_yieldTo_cleanup);
+
+static void
+linux_thread(int id, volatile int *state)
+{
+    while(1) {
+        *state = id;
+    }
+}
+
+bool 
+finished_cfs(void *cookie)
+{
+    int *runs = (int *) cookie;
+    (*runs)++;
+    /* we want the scheduler to run once each time */
+    return (*runs > 1);
+}
+
+int
+test_toy_linux_scheduler_fixed_sc(env_t env)
+{
+    const int n_threads = 20;
+    helper_thread_t threads[n_threads];
+    volatile int state = 0;
+    int error;
+
+    sched_t *cfs_sched = sched_new_cfs();
+
+    for (int i = 0; i < n_threads; i++) {
+        create_helper_thread(env, &threads[i]);
+        start_helper(env, &threads[i], (helper_fn_t) linux_thread, i, (seL4_Word) &state, 0, 0);
+        set_helper_priority(&threads[i], env->priority);
+        void *res = sched_add_tcb(cfs_sched, threads[i].thread.sched_context.cptr, NULL);
+        test_check(res != NULL);
+    }
+
+    int expected = 0;
+    for (int i = 0; i < 100; i++) {
+        /* check here to make sure it got scheduled */
+        ZF_LOGE("State %d\n", state);
+        int cookie = 0;
+        error = sched_run(cfs_sched, finished_cfs, &cookie);
+        test_eq(error, 0);
+        test_eq(state, expected);
+        expected = (expected + 1) % n_threads;
+
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0019, "Linux scheduler test - fixed sc per thread", test_toy_linux_scheduler_fixed_sc)
+
+static void
+edf(int id, seL4_CPtr endpoint, volatile int *counter, volatile int *state)
+{
+    *counter = 0;
+    while (1) {
+        *state = id;
+        (*counter)++;
+
+        ZF_LOGD("%d: %d\n", id, *counter);
+        test_assert_fatal(*counter < 10000);
+        seL4_SetMR(0, id);
+        seL4_Call(endpoint, seL4_MessageInfo_new(0, 0, 0, 1));
+    }
+}
+
+static bool
+sched01_finished(void *cookie) 
+{
+    return *((int *) cookie) > 120;
+}
+
+int
+test_toy_edf_fixed_sc(env_t env)
+{
+    const int n_threads = 3;
+    helper_thread_t threads[n_threads];
+    volatile int state;
+    volatile int counters[n_threads];
+    int periods[n_threads];
+    int error;
+    cspacepath_t paths[n_threads];
+
+    periods[0] = 0.2 * NS_IN_S; 
+    periods[1] = 0.3 * NS_IN_S;
+    periods[2] = 0.7 * NS_IN_S;
+
+    sched_t *sched = sched_new_edf(env->clock_timer, env->timer, &env->vka, env->tcb, env->timer_notification.cptr);
+
+    /* set up threads */
+    for (int i = 0; i < n_threads; i++) {
+        counters[i] = 1;
+       
+        create_helper_thread(env, &threads[i]);
+
+        error = set_helper_sched_params(env, &threads[i], 100 * US_IN_S, 100 * US_IN_S, 0);
+        test_eq(error, seL4_NoError);
+        
+        set_helper_priority(&threads[i], env->priority - 1);
+
+        vka_cspace_alloc_path(&env->vka, &paths[i]);
+        struct edf_sched_add_tcb_args args = {
+            .tcb = threads[i].thread.tcb.cptr,
+            .period = periods[i],
+            .budget = 0.1 * NS_IN_S,
+            .slot = &paths[i] 
+        };
+
+        void *res = sched_add_tcb(sched, threads[i].thread.sched_context.cptr, (void *) &args);
+        test_check(res != NULL);
+        ZF_LOGD("Resuming thread %d\n", i);
+        start_helper(env, &threads[i], (helper_fn_t) edf, i, args.slot->capPtr, (seL4_Word) &counters[i], (seL4_Word) &state);
+    }
+    
+    ZF_LOGD("Running scheduler");
+    error = sched_run(sched, sched01_finished, (void *) &counters[0]);
+    test_eq(0, error);
+    test_geq(counters[0], 120u);
+    test_geq(counters[1], 80u);
+    test_geq(counters[2], 33u);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0020, "User level EDF scheduler test", test_toy_edf_fixed_sc)
 
