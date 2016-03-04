@@ -50,31 +50,31 @@ select-test:
 # note: this relies on qemu after version 2.0
 simulate-kzm:
 	qemu-system-arm -nographic -M kzm \
-		-kernel images/sel4test-driver-image-arm-imx31
+		-kernel images/${apps}-image-arm-imx31
 
 # This relies on a helper script to build a bootable image
 simulate-beagle:
-	beagle_run_elf images/sel4test-driver-image-arm-omap3
+	beagle_run_elf images/${apps}-image-arm-omap3
 
 simulate-ia32:
 	qemu-system-i386 \
 		-m 512 -nographic -kernel images/kernel-ia32-pc99 \
-		-initrd images/sel4test-driver-image-ia32-pc99
+		-initrd images/${apps}-image-ia32-pc99
 
 # Some example image builds (NOTE: may need to adapt addresses)
-build-binary: images/sel4test-driver-image-${ARCH}-${PLAT}
+build-binary: images/${apps}-image-${ARCH}-${PLAT}
 	${CONFIG_CROSS_COMPILER_PREFIX}objcopy -O binary \
-	images/sel4test-driver-image-${ARCH}-${PLAT} images/sel4test.bin
+	images/${apps}-image-${ARCH}-${PLAT} images/sel4test.bin
 	@echo "1. put file images/sel4test.bin into SD card root directory"
 	@echo "2. At U-Boot prompt, enter:"
 	@echo "    > mmc dev 1"
 	@echo "    > ext2load mmc ${disk}:1 20000000 sel4test.bin"
 	@echo "    > go 20000000"
 
-build-uImage: images/sel4test-driver-image-${ARCH}-${PLAT}
+build-uImage: images/${apps}-image-${ARCH}-${PLAT}
 	mkimage -A arm -a 0x30000000 -e 0x30000000 -C none \
 	-A ${ARCH} -T kernel -O qnx \
-	-d images/sel4test-driver-image-${ARCH}-${PLAT} images/sel4test.uImage
+	-d images/${apps}-image-${ARCH}-${PLAT} images/sel4test.uImage
 	@echo "1. put file images/sel4test.uImage into SD card root directory"
 	@echo "2. At U-Boot prompt, enter:"
 	@echo "    > mmc dev 1"
