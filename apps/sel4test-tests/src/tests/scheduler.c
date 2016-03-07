@@ -1558,13 +1558,13 @@ test_toy_edf_fixed_sc(env_t env)
             .tcb = threads[i].thread.tcb.cptr,
             .period = periods[i],
             .budget = 0.1 * NS_IN_S,
-            .slot = &paths[i] 
+            .slot = paths[i] 
         };
 
         void *res = sched_add_tcb(sched, threads[i].thread.sched_context.cptr, (void *) &args);
         test_check(res != NULL);
         ZF_LOGD("Resuming thread %d\n", i);
-        start_helper(env, &threads[i], (helper_fn_t) edf, i, args.slot->capPtr, (seL4_Word) &counters[i], (seL4_Word) &state);
+        start_helper(env, &threads[i], (helper_fn_t) edf, i, args.slot.capPtr, (seL4_Word) &counters[i], (seL4_Word) &state);
     }
     
     ZF_LOGD("Running scheduler");

@@ -1153,7 +1153,7 @@ test_stack_spawning_server(env_t env)
     for (int i = 0; i < runs; i++) {
         create_helper_thread(env, &clients[i]);
         set_helper_priority(&clients[i], our_prio + 1);
-        start_helper(env, &clients[i], (helper_fn_t) ipc22_client_fn, endpoint, (seL4_Word) &state, 0, 0);
+        start_helper(env, &clients[i], (helper_fn_t) ipc22_client_fn, endpoint, (seL4_Word) &state, i, 0);
     }
 
     /* set our priority down so servers can run */
