@@ -324,7 +324,9 @@ test_cnode_savecaller(env_t env)
     start_helper(env, &helper, (helper_fn_t) call_fn, endpoint.cptr, 0, 0, 0);
 
     /* let helper run */
-    helper_yield(&helper);
+    ZF_LOGD("Wait"); 
+    seL4_Wait(endpoint.cptr, NULL);
+    ZF_LOGD("Back");
 
     /* first save it to a full slot */
     error = cnode_savecaller(env, endpoint.cptr);
@@ -335,7 +337,7 @@ test_cnode_savecaller(env_t env)
     test_eq(error, seL4_NoError);
 
     /* now reply to it */
-    seL4_Reply(seL4_MessageInfo_new(0, 0, 0, 0));
+    seL4_Send(slot, seL4_MessageInfo_new(0, 0, 0, 0));
     
     /* and wait for the caller to respond so we know it worked */
     seL4_Wait(endpoint.cptr, NULL);
@@ -371,14 +373,20 @@ test_cnode_saveTCBcaller(env_t env)
     start_helper(env, &helper, (helper_fn_t) call_fn, endpoint.cptr, 0, 0, 0);
 
     /* let helper run */
-    helper_yield(&helper);
+    ZF_LOGD("Wait"); 
+    seL4_Wait(endpoint.cptr, NULL);
+    ZF_LOGD("Back");
+
+    cspacepath_t path;
 
     /* first save it to a full slot */
-    error = cnode_saveTCBcaller(env, endpoint.cptr, &helper.thread.tcb);
+    vka_cspace_make_path(&env->vka, endpoint.cptr, &path);
+    error = seL4_CNode_SaveTCBCaller(path.root, path.capPtr, path.capDepth, env->tcb);
     test_eq(error, seL4_DeleteFirst);
 
     /* now save it properly (should suceed) */
-    error = cnode_saveTCBcaller(env, slot, &helper.thread.tcb);
+    vka_cspace_make_path(&env->vka, slot, &path);
+    error = seL4_CNode_SaveTCBCaller(path.root, path.capPtr, path.capDepth, env->tcb);
     test_eq(error, seL4_NoError);
 
     /* now reply to it */
