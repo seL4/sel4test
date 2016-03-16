@@ -1492,7 +1492,7 @@ test_toy_linux_scheduler_fixed_sc(env_t env)
     }
 
     int expected = 0;
-    for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < n_threads; i++) {
         /* check here to make sure it got scheduled */
         ZF_LOGE("State %d\n", state);
         int cookie = 0;
