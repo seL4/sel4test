@@ -1068,18 +1068,21 @@ test_scheduler_accuracy(env_t env)
     start_helper(env, &helper, (helper_fn_t) sched0011_helper, 0, 0, 0, 0);
     set_helper_priority(&helper, OUR_PRIO);
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 11; i++) {
         uint64_t start = timestamp(env);
         int error = seL4_SchedContext_Yield(env->sched_context);
         test_eq(error, seL4_NoError);
         uint64_t end = timestamp(env);
-        uint64_t diff = end - start;
-        test_geq(diff, (uint64_t) (NS_IN_S - 3 * US_IN_S));
-        test_leq(diff, (uint64_t) (NS_IN_S + 3 * US_IN_S));
-        if (diff > NS_IN_S) {
-            ZF_LOGD("Too late: accuracy within %llu", (diff - NS_IN_S) / NS_IN_US);
-        } else if (diff <= NS_IN_S) {
-            ZF_LOGD("Too soon: Accuracy within %llu", (NS_IN_S - diff) / NS_IN_US);
+        /* calculate diff in us */
+        uint64_t diff = (end - start) / NS_IN_US;
+        if (i > 0) {
+            test_geq(diff, (uint64_t) (US_IN_S - 10llu));
+            test_leq(diff, (uint64_t) (US_IN_S + 10llu));
+            if (diff > US_IN_S) {
+                ZF_LOGD("Too late: by %llu us", diff - US_IN_S);
+            } else {
+                ZF_LOGD("Too soon: by %llu us", US_IN_S - diff);
+            }
         }
     }
 
