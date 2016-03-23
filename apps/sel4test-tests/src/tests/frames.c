@@ -145,74 +145,53 @@ test_frame_exported(env_t env)
 }
 DEFINE_TEST(FRAMEEXPORTS0001, "Test that we can access all exported frames", test_frame_exported)
 
-#if defined(CONFIG_ARCH_ARM) && defined(CONFIG_KERNEL_BRANCH_XN)
+#if defined(CONFIG_ARCH_ARM)
 /* XN support is only implemented for ARM currently. */
 
 /* Function that generates a fault. If we're mapped XN we should instruction
  * fault at the start of the function. If not we should data fault on 0x42.
  */
-static void fault(void)
+static int fault(seL4_Word arg1, seL4_Word arg2, seL4_Word arg3, seL4_Word arg4)
 {
     *(char*)0x42 = 'c';
+    return 0;
 }
 
 /* Wait for a VM fault originating on the given EP the return the virtual
  * address it occurred at. Returns the sentinel 0xffffffff if the message
  * received was not a VM fault.
  */
-static void *handle(seL4_CPtr fault_ep)
+static int handle(seL4_CPtr fault_ep, seL4_Word arg2, seL4_Word arg3, seL4_Word arg4)
 {
     seL4_MessageInfo_t info = seL4_Recv(fault_ep, NULL);
     if (seL4_MessageInfo_get_label(info) == seL4_VMFault) {
-        return (void*)seL4_GetMR(1);
+        return (int)seL4_GetMR(1);
     } else {
-        return (void*)0xffffffff;
+        return (int)0xffffffff;
     }
 }
 
 static int test_xn(env_t env, seL4_ArchObjectType frame_type)
 {
-
+    int err;
     /* Find the size of the frame type we want to test. */
-    size_t sz = 0;
-    for (unsigned int i = 0; i < sizeof(frame_types) / sizeof(frame_types[0]); i++) {
+    int sz_bits = 0;
+    for (unsigned int i = 0; i < ARRAY_SIZE(frame_types); i++) {
         if (frame_types[i].type == frame_type) {
-            sz = frame_types[i].size;
+            sz_bits = frame_types[i].size_bits;
             break;
         }
     }
-    test_assert(sz != 0);
+    test_assert(sz_bits != 0);
 
     /* Get ourselves a frame. */
-    seL4_CPtr frame_cap = vka_alloc_frame_leaky(&env->vka, CTZ(sz));
+    seL4_CPtr frame_cap = vka_alloc_frame_leaky(&env->vka, sz_bits);
     test_assert(frame_cap != seL4_CapNull);
 
-    /* Get ourselves a place to map it. */
-    void *dest = (void*)vmem_alloc(sz, sz);
+    /* Map it in */
+    uintptr_t cookie = 0;
+    void *dest = vspace_map_pages(&env->vspace, &frame_cap, &cookie, seL4_AllRights, 1, sz_bits, 1);
     test_assert(dest != NULL);
-
-    /* First map the frame without the XN bit set to confirm we can execute in
-     * it.
-     */
-    bool pt_mapped = false;
-    int err;
-retry:
-    err = seL4_ARM_Page_Map(frame_cap, env->page_directory, (seL4_Word)dest,
-                            seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    if (err == seL4_FailedLookup && !pt_mapped) {
-        /* We're missing a covering page table. */
-        seL4_CPtr pt_cap = vka_alloc_page_table_leaky(&env->vka);
-        test_assert(pt_cap != seL4_CapNull);
-        err = seL4_ARM_PageTable_Map(pt_cap, env->page_directory, (seL4_Word)dest,
-                                     seL4_ARM_Default_VMAttributes);
-        test_assert(err == 0);
-        pt_mapped = true;
-        goto retry;
-    } else if (err != 0) {
-        test_assert(!"unexpected failure when mapping page");
-    }
-
-    assert(err == 0);
 
     /* Set up a function we're going to have another thread call. Assume that
      * the function is no more than 100 bytes long.
@@ -222,41 +201,47 @@ retry:
     /* First setup a fault endpoint.
      */
     seL4_CPtr fault_ep = vka_alloc_endpoint_leaky(&env->vka);
+    cspacepath_t path;
+    vka_cspace_make_path(&env->vka, fault_ep, &path);
     test_assert(fault_ep != seL4_CapNull);
 
     /* Then setup the thread that will, itself, fault. */
     helper_thread_t faulter;
-    create_helper_thread(&faulter, &env->vka, (helper_func_t)dest, 0, 0, 0, 0, 0);
-    set_helper_thread_name(&faulter, "faulter");
-    err = seL4_TCB_Configure(faulter.tcb, fault_ep, 100,
-                             env->cspace_root, seL4_NilData, env->page_directory,
-                             seL4_NilData, faulter.ipc_buffer_vaddr, faulter.ipc_buffer_frame);
-    test_assert(err == 0);
+    create_helper_thread(env, &faulter);
+    set_helper_priority(&faulter, 100);
+    err = seL4_TCB_Configure(faulter.thread.tcb.cptr,
+                             fault_ep,
+                             100,
+                             env->cspace_root,
+                             seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                             env->page_directory, seL4_NilData,
+                             faulter.thread.ipc_buffer_addr,
+                             faulter.thread.ipc_buffer);
+    start_helper(env, &faulter, dest, 0, 0, 0 ,0);
 
     /* Now a fault handler that will catch and diagnose its fault. */
     helper_thread_t handler;
-    create_helper_thread(&handler, &env->vka, (helper_func_t)handle, 0, fault_ep, 0, 0, 0);
-    set_helper_thread_name(&handler, "handler");
+    create_helper_thread(env, &handler);
+    set_helper_priority(&handler, 100);
+    start_helper(env, &handler, handle, fault_ep, 0, 0, 0);
 
-    /* OK, go. */
-    start_helper_thread(&handler);
-    start_helper_thread(&faulter);
-    void *res = (void*)wait_for_thread(&handler);
+    /* Wait for the fault to happen */
+    void *res = (void*)wait_for_helper(&handler);
 
     test_assert(res == (void*)0x42);
 
-    cleanup_helper_thread(&handler);
-    cleanup_helper_thread(&faulter);
+    cleanup_helper(env, &handler);
+    cleanup_helper(env, &faulter);
 
     /* Now let's remap the page with XN set and confirm that we can't execute
      * in it any more.
      */
     err = seL4_ARM_Page_Remap(frame_cap, env->page_directory, seL4_AllRights,
                               seL4_ARM_Default_VMAttributes | seL4_ARM_ExecuteNever);
-    assert(err == 0);
+    test_assert(err == 0);
 
     /* The page should still contain our code from before. */
-    assert(!memcmp(dest, (void*)fault, 100));
+    test_assert(!memcmp(dest, (void*)fault, 100));
 
     /* We need to reallocate a fault EP because the thread cleanup above
      * inadvertently destroys the EP we were using.
@@ -265,29 +250,30 @@ retry:
     test_assert(fault_ep != seL4_CapNull);
 
     /* Recreate our two threads. */
-    create_helper_thread(&faulter, &env->vka, (helper_func_t)dest, 0, 0, 0, 0, 0);
-    set_helper_thread_name(&faulter, "faulter");
-    err = seL4_TCB_Configure(faulter.tcb, fault_ep, 100,
-                             env->cspace_root, seL4_NilData, env->page_directory,
-                             seL4_NilData, faulter.ipc_buffer_vaddr, faulter.ipc_buffer_frame);
+    create_helper_thread(env, &faulter);
+    set_helper_priority(&faulter, 100);
+    err = seL4_TCB_Configure(faulter.thread.tcb.cptr,
+                             fault_ep,
+                             100,
+                             env->cspace_root,
+                             seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                             env->page_directory, seL4_NilData,
+                             faulter.thread.ipc_buffer_addr,
+                             faulter.thread.ipc_buffer);
+    start_helper(env, &faulter, dest, 0, 0, 0 ,0);
+    create_helper_thread(env, &handler);
+    set_helper_priority(&handler, 100);
+    start_helper(env, &handler, handle, fault_ep, 0, 0, 0);
 
-    create_helper_thread(&handler, &env->vka, (helper_func_t)handle, 0, fault_ep, 0, 0, 0);
-    set_helper_thread_name(&handler, "handler");
-
-    /* Try the execution again. */
-    start_helper_thread(&handler);
-    start_helper_thread(&faulter);
-    res = (void*)wait_for_thread(&handler);
+    /* Wait for the fault to happen */
+    res = (void*)wait_for_helper(&handler);
 
     /* Confirm that, this time, we faulted at the start of the XN-mapped page. */
     test_assert(res == (void*)dest);
 
     /* Resource tear down. */
-    cleanup_helper_thread(&handler);
-    cleanup_helper_thread(&faulter);
-    err = seL4_ARM_Page_Unmap(frame_cap);
-    assert(err == 0);
-    vmem_free((seL4_Word)dest);
+    cleanup_helper(env, &handler);
+    cleanup_helper(env, &faulter);
 
     return sel4test_get_result();
 }
