@@ -267,5 +267,4 @@ test_wait(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SYSCALL0013, "Basic seL4_Wait() testing", test_wait)
->>>>>>> 7d6d1a062dcba568da6279e73cb0e40ab5af4724
 
