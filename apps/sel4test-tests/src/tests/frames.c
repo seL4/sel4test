@@ -207,11 +207,13 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
 
     /* Then setup the thread that will, itself, fault. */
     helper_thread_t faulter;
-    set_helper_thread_name(&faulter, "faulter");
+    create_helper_thread(env, &faulter);
     set_helper_priority(&faulter, 100);
     err = seL4_TCB_Configure(faulter.thread.tcb.cptr,
                              fault_ep,
-                             100,
+                             fault_ep, 
+                             seL4_Prio_new(100, 0, 0, 0),
+                             faulter.thread.sched_context.cptr,
                              env->cspace_root,
                              seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
                              env->page_directory, seL4_NilData,
@@ -253,10 +255,11 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     /* Recreate our two threads. */
     create_helper_thread(env, &faulter);
     set_helper_priority(&faulter, 100);
-    set_helper_thread_name(&faulter, "faulter");
     err = seL4_TCB_Configure(faulter.thread.tcb.cptr,
                              fault_ep,
-                             100,
+                             fault_ep, 
+                             seL4_Prio_new(100, 0, 0, 0),
+                             faulter.thread.sched_context.cptr,
                              env->cspace_root,
                              seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
                              env->page_directory, seL4_NilData,
@@ -264,7 +267,6 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
                              faulter.thread.ipc_buffer);
     start_helper(env, &faulter, dest, 0, 0, 0 ,0);
     create_helper_thread(env, &handler);
-    set_helper_thread_name(&handler, "handler");
     set_helper_priority(&handler, 100);
     start_helper(env, &handler, handle, fault_ep, 0, 0, 0);
 
