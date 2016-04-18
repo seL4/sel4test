@@ -430,6 +430,7 @@ sleep(env_t env, uint64_t ns)
 {
     uint64_t start, end;
 
+    sel4_timer_handle_single_irq(env->timer);
     start = timer_get_time(env->clock_timer->timer);
     timer_start(env->timer->timer);
     do {
