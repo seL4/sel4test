@@ -45,7 +45,7 @@ plat_init(env_t env)
         ZF_LOGV("Calculated TSC freq %llu\n", env->tsc_freq);
     }
 
-    sel4platsupport_destroy_hpet(hpet, &env->vka, &env->vspace);
+    sel4_timer_destroy(hpet, &env->vka, &env->vspace);
     vka_free_object(&env->vka, &notification);
 }
 
