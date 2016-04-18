@@ -1501,6 +1501,12 @@ test_toy_linux_scheduler_fixed_sc(env_t env)
         test_eq(state, expected);
         expected = (expected + 1) % n_threads;
 
+
+    }
+
+    /* pause threads so they do not crash on cleanup */
+    for (int i = 0; i < n_threads; i++) {
+        seL4_TCB_Suspend(threads[i].thread.tcb.cptr);
     }
 
     return sel4test_get_result();
