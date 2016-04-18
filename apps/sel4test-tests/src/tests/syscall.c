@@ -222,11 +222,50 @@ test_nb_send_recv(env_t env)
         /* Notify it, so that we don't block. */
         seL4_Signal(notification);
 
-        /* ReplyRecv for the notification. */
+        /* NBSendRecv for the notification. */
         TEST_REGISTERS(seL4_NBSendRecv(env->cspace_root, seL4_MessageInfo_new(0, 0, 0, 0), notification, NULL));
     }
 
     return sel4test_get_result();
 }
 DEFINE_TEST(SYSCALL0014, "Basic seL4_NBSendRecv() testing", test_nb_send_recv)
+    
+static int
+test_nb_recv(env_t env)
+{
+    /* Allocate an notification. */
+    seL4_CPtr notification;
+    notification = vka_alloc_notification_leaky(&env->vka);
+
+    for (int i = 0; i < 10; i++) {
+        /* Notify it, so that we don't block. */
+        seL4_Signal(notification);
+
+        /* Recv for the notification. */
+        TEST_REGISTERS(seL4_NBRecv(notification, NULL));
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SYSCALL0012, "Basic seL4_NBRecv() testing", test_nb_recv)
+
+static int
+test_wait(env_t env)
+{
+    /* Allocate an notification. */
+    seL4_CPtr notification;
+    notification = vka_alloc_notification_leaky(&env->vka);
+
+    for (int i = 0; i < 10; i++) {
+        /* Notify it, so that we don't block. */
+        seL4_Signal(notification);
+
+        /* Recv for the notification. */
+        TEST_REGISTERS(seL4_Wait(notification, NULL));
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SYSCALL0013, "Basic seL4_Wait() testing", test_wait)
+>>>>>>> 7d6d1a062dcba568da6279e73cb0e40ab5af4724
 
