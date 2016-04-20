@@ -27,6 +27,6 @@ get_IOPort_cap(void *data, uint16_t start_port, uint16_t end_port)
 
 void
 arch_init_simple(simple_t *simple) {
-    simple->IOPort_cap = get_IOPort_cap;
+    simple->arch_simple.IOPort_cap = get_IOPort_cap;
 }
 

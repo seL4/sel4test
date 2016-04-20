@@ -183,8 +183,9 @@ void init_timer(env_t env, test_init_data_t *init_data)
 {
     /* minimal simple implementation to get the platform
      * default timer off the ground */
-    env->simple.irq = get_irq;
+    env->simple.arch_simple.irq = get_irq;
     env->simple.data = (void *) init_data;
+    env->simple.arch_simple.data = (void *) init_data;
 
     UNUSED int error;
 
