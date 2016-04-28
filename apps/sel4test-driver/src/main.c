@@ -30,11 +30,7 @@
 #include <sel4utils/process.h>
 
 #include <simple/simple.h>
-#ifdef CONFIG_KERNEL_STABLE
-#include <simple-stable/simple-stable.h>
-#else
 #include <simple-default/simple-default.h>
-#endif
 
 #include <utils/util.h>
 
@@ -254,10 +250,8 @@ run_test(struct testcase *test)
     env.init->page_directory = copy_cap_to_process(&test_process, test_process.pd.cptr);
     env.init->root_cnode = SEL4UTILS_CNODE_SLOT;
     env.init->tcb = copy_cap_to_process(&test_process, test_process.thread.tcb.cptr);
-#ifndef CONFIG_KERNEL_STABLE
     env.init->asid_pool = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapInitThreadASIDPool));
     env.init->asid_ctrl = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapASIDControl));
-#endif /* CONFIG_KERNEL_STABLE */
 #ifdef CONFIG_IOMMU
     env.init->io_space = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapIOSpace));
 #endif /* CONFIG_IOMMU */
@@ -425,11 +419,7 @@ int main(void)
     compile_time_assert(init_data_fits_in_ipc_buffer, sizeof(test_init_data_t) < PAGE_SIZE_4K);
     /* initialise libsel4simple, which abstracts away which kernel version
      * we are running on */
-#ifdef CONFIG_KERNEL_STABLE
-    simple_stable_init_bootinfo(&env.simple, info);
-#else
     simple_default_init_bootinfo(&env.simple, info);
-#endif
 
     /* initialise the test environment - allocator, cspace manager, vspace manager, timer */
     init_env(&env);
