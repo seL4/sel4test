@@ -41,12 +41,8 @@ plat_get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t dept
     
     test_init_data_t *init = (test_init_data_t *) data;
 
-    if (irq == MSI_MIN) {
-        return seL4_CNode_Copy(root, index, depth, init->root_cnode,
-                               init->timer_irq, seL4_WordBits, seL4_AllRights);
-    }
-
-    return -1;
+    return seL4_CNode_Copy(root, index, depth, init->root_cnode,
+                           init->timer_irq, seL4_WordBits, seL4_AllRights);
 }
 
 

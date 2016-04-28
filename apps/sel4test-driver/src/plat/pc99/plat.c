@@ -16,7 +16,16 @@
 void
 plat_init_caps(env_t env)
 {
-    init_irq_cap(env, MSI_MIN, &env->irq_path);
+    /* get the msi irq cap */
+    seL4_CPtr cap;
+    int error = vka_cspace_alloc(&env->vka, &cap);
+    if (error != 0) {
+        ZF_LOGF("Failed to allocate cslot, error %d", error);
+    }
+
+    vka_cspace_make_path(&env->vka, cap, &env->irq_path);
+    error = arch_simple_get_msi(&env->simple.arch_simple, env->irq_path, 0, 0, 0, 0, MSI_MIN);
+
     /* this relies on a hack in the kernel that exposes the HPET */
     init_frame_cap(env, (void *) DEFAULT_HPET_ADDR, &env->frame_path);
 
