@@ -75,7 +75,7 @@ __arch_putchar(int c)
 }
 
 static testcase_t *
-find_test(char *name)
+find_test(const char *name)
 {
     testcase_t *test = sel4test_get_test(name);
     if (test == NULL) {
