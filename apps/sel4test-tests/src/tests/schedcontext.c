@@ -321,7 +321,7 @@ static void
 sched_context0008_client_fn(seL4_CPtr send_ep, seL4_CPtr wait_ep)
 {
     ZF_LOGD("Client send\n");
-    seL4_NBSendRecv(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
+    seL4_SignalRecv(send_ep, wait_ep, NULL);
 }
 
 static void
@@ -329,11 +329,11 @@ sched_context0008_proxy_fn(seL4_CPtr send_ep, seL4_CPtr wait_ep)
 {
     /* signal to test runner that we are initialised and waiting for client */
     ZF_LOGD("Proxy init\n");
-    seL4_NBSendRecv(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
+    seL4_SignalRecv(send_ep, wait_ep, NULL);
 
     /* forward on the message we got */
     ZF_LOGD("Proxy fwd\n");
-    seL4_NBSendRecv(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
+    seL4_SignalRecv(send_ep, wait_ep, NULL);
 
     ZF_LOGF("Should not get here");
 }
@@ -343,7 +343,7 @@ sched_context0008_server_fn(seL4_CPtr init_ep, seL4_CPtr wait_ep)
 {
     ZF_LOGD("Server init\n");
     /* tell test runner we are done by sending to init ep, then wait for proxy message */
-    seL4_NBSendRecv(init_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
+    seL4_SignalRecv(init_ep, wait_ep, NULL);
     ZF_LOGD("Server exit\n");
     /* hold on to scheduling context */
 }
@@ -402,7 +402,7 @@ void
 sched_context_0009_server_fn(seL4_CPtr ep, volatile int *state)
 {
     ZF_LOGD("Server init\n");
-    seL4_NBSendRecv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL);
+    seL4_SignalRecv(ep, ep, NULL);
     while (1) {
         *state = *state + 1;
     }
@@ -418,7 +418,7 @@ sched_context_0009_client_fn(seL4_CPtr ep)
 void
 sched_context_0010_client_fn(seL4_CPtr ep)
 {
-    seL4_NBSendRecv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL);
+    seL4_SignalRecv(ep, ep, NULL);
 }
 
 int
@@ -519,7 +519,7 @@ void
 sched_context_0011_proxy_fn(seL4_CPtr in, seL4_CPtr out)
 {
     ZF_LOGD("Proxy init\n");
-    seL4_NBSendRecv(in, seL4_MessageInfo_new(0, 0, 0, 0), in, NULL);
+    seL4_SignalRecv(in, in, NULL);
 
     ZF_LOGD("Proxy call\n");
     seL4_Call(out, seL4_MessageInfo_new(0, 0, 0, 0));

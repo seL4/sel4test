@@ -670,7 +670,7 @@ temporal_fault_server_fn(seL4_CPtr ep, pstimer_t *timer)
 {
     /* signal to initialiser that we are done, and wait for a message from
      * the client */
-    seL4_NBSendRecv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL);
+    seL4_SignalRecv(ep, ep, NULL);
     uint64_t start = timer_get_time(timer);
     uint64_t end = start;
     /* spin, this will use up all of the clients budget */
@@ -778,7 +778,7 @@ static void
 temporal_fault_proxy_fn(seL4_CPtr in, seL4_CPtr out)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
-    info = seL4_NBSendRecv(in, info, in, NULL);
+    info = seL4_SignalRecv(in, in, NULL);
     while (1) {
         info = seL4_Call(out, info);
         seL4_ReplyRecv(in, info, NULL);

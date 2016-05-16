@@ -212,7 +212,7 @@ test_reply_recv(env_t env)
 DEFINE_TEST(SYSCALL0011, "Basic seL4_ReplyRecv() testing", test_reply_recv)
 
 static int 
-test_nb_send_recv(env_t env)
+test_signal_recv(env_t env)
 {
     /* Allocate an notification. */
     seL4_CPtr notification;
@@ -222,13 +222,13 @@ test_nb_send_recv(env_t env)
         /* Notify it, so that we don't block. */
         seL4_Signal(notification);
 
-        /* NBSendRecv for the notification. */
-        TEST_REGISTERS(seL4_NBSendRecv(env->cspace_root, seL4_MessageInfo_new(0, 0, 0, 0), notification, NULL));
+        /* SignalRecv for the notification. */
+        TEST_REGISTERS(seL4_SignalRecv(env->cspace_root, notification, NULL));
     }
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SYSCALL0014, "Basic seL4_NBSendRecv() testing", test_nb_send_recv)
+DEFINE_TEST(SYSCALL0014, "Basic seL4_SignalRecv() testing", test_signal_recv)
     
 static int
 test_nb_recv(env_t env)

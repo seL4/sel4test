@@ -209,10 +209,9 @@ DEFINE_TEST(CRITICALITY0002, "Test criticality mode switch", test_criticality_mo
 static void 
 crit0003_server_fn(seL4_CPtr endpoint, pstimer_t *timer)
 {
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
     
     /* signal we are initialised and wait on endpoint */
-    seL4_NBSendRecv(endpoint, info, endpoint, NULL);
+    seL4_SignalRecv(endpoint, endpoint, NULL);
     while (1) {
         ZF_LOGD("Server spinning");
         uint64_t start = timer_get_time(timer);
@@ -221,7 +220,7 @@ crit0003_server_fn(seL4_CPtr endpoint, pstimer_t *timer)
             end = timer_get_time(timer);
         }
         ZF_LOGD("Server reply");
-        seL4_ReplyRecv(endpoint, info, NULL);
+        seL4_ReplyRecv(endpoint, seL4_MessageInfo_new(0, 0, 0, 0), NULL);
     }
 }
 

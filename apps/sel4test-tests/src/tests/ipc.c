@@ -153,7 +153,7 @@ replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word passive)
         if (first) {
             ZF_LOGD("Recv");
             if (passive) {
-                seL4_NBSendRecv(endpoint, tag, endpoint, NULL);
+                tag = seL4_SignalRecv(endpoint, endpoint, NULL);
             } else {
                 tag = seL4_Recv(endpoint, &sender_badge);
             }
@@ -248,39 +248,10 @@ reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
 /* this function is expected to talk to another version of itself, second implies
  * that this is the second to be executed */
 static int
-nbsendrecv_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2, seL4_Word second)
+signalrecv_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2, seL4_Word second)
 {
     FOR_EACH_LENGTH(length) {
-        seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length);
- 
-        /* Construct a message. */
-        if (length > MIN_LENGTH || second) {
-            /* the first of the nbsendrecv pair will not 
-             * send a message as the second is not waiting on the endpoint
-             * yet and the nbsend will fail, to keep the seeds in sync
-             * skip this for the first thread on the first loop */
-            seL4_Word actual_len = length > seL4_MsgMaxLength ? seL4_MsgMaxLength : length;
-            for (int i = 0; i < actual_len; i++) {
-                seL4_SetMR(i, seed);
-                seed++;
-            }
-        }
-
-        tag = seL4_NBSendRecv(endpoint, tag, endpoint, NULL);
-
-        seL4_Word actual_len = seL4_MessageInfo_get_length(tag);
-        if (length < seL4_MsgMaxLength) {
-            test_geq(actual_len, length);
-        }
-        
-        /* skip the last check for the second thread */
-        if (!(second && length == MAX_LENGTH)) {
-            for (int i = 0; i < seL4_MessageInfo_get_length(tag); i++) {
-                seL4_Word mr = seL4_GetMR(i);
-                test_eq(mr, seed);
-                seed++;
-            }
-        }
+        seL4_SignalRecv(endpoint, endpoint, NULL);
     }
    
     /* signal we're done to hanging second thread */
@@ -467,7 +438,7 @@ server_fn(seL4_CPtr endpoint, int runs, volatile int *state)
     /* signal the intialiser that we are done */
     ZF_LOGD("Server call");
     *state = *state + 1;
-    seL4_NBSendRecv(endpoint, info, endpoint, NULL);
+    seL4_SignalRecv(endpoint, endpoint, NULL);
     /* from here on we are running on borrowed time */
 
     int i = 0;
@@ -494,7 +465,7 @@ proxy_fn(seL4_CPtr receive_endpoint, seL4_CPtr call_endpoint, int runs, volatile
     /* signal the initialiser that we are awake */
     ZF_LOGD("Proxy Call");
     *state = *state + 1;
-    seL4_NBSendRecv(call_endpoint, info, receive_endpoint, NULL);
+    seL4_SignalRecv(call_endpoint, receive_endpoint, NULL);
     /* when we get here we are running on a donated scheduling context, 
        as the initialiser has taken ours away */
 
@@ -673,8 +644,8 @@ ipc0016_reply_once_fn(seL4_CPtr endpoint)
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
   
     /* send initialisation context back */
-    ZF_LOGD("seL4_NBSendRecv\n");
-    seL4_NBSendRecv(endpoint, info, endpoint, NULL);
+    ZF_LOGD("seL4_SignalRecv\n");
+    seL4_SignalRecv(endpoint, endpoint, NULL);
   
     /* reply */
     ZF_LOGD("Reply\n");
@@ -989,7 +960,7 @@ ipc21_fault_handler_fn(seL4_CPtr endpoint, vspace_t *vspace, reservation_t *res)
     int error;
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
     
-    info = seL4_NBSendRecv(endpoint, info, endpoint, NULL);
+    info = seL4_SignalRecv(endpoint, endpoint, NULL);
     while (1) { 
         test_check(seL4_isPageFault_Tag(info));
         void *addr = (void *) seL4_PF_Addr();
@@ -1073,7 +1044,7 @@ ipc22_server_fn(seL4_CPtr init_ep, seL4_CPtr reply_cap)
      * we have to block here to wait for all the clients to 
      * start and queue up - otherwise they will all be served
      * by the same server and the point is to test stack spawning  */
-    seL4_NBSendRecv(init_ep, info, init_ep, NULL);
+    seL4_SignalRecv(init_ep, init_ep, NULL);
 
     ZF_LOGD("Server reply to fwded cap\n");
     seL4_Send(reply_cap, info);
@@ -1084,12 +1055,11 @@ static void
 ipc22_stack_spawner_fn(env_t env, seL4_CPtr endpoint, int server_prio, int runs)
 {
     helper_thread_t servers[runs];
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
     seL4_CPtr init_ep = vka_alloc_endpoint_leaky(&env->vka);
 
     ZF_LOGD("Stack spawner init");
     /* send init sched context back */
-    seL4_NBSendRecv(endpoint, info, endpoint, NULL);
+    seL4_SignalRecv(endpoint, endpoint, NULL);
     /* we are now running on borrowed time */
     
     for (int i = 0; i < runs; i++) {
@@ -1114,7 +1084,7 @@ ipc22_stack_spawner_fn(env_t env, seL4_CPtr endpoint, int server_prio, int runs)
         
         /* and forward the one we have */
         ZF_LOGD("Send to server, wait for another client");
-        seL4_NBSendRecv(init_ep, info, endpoint, NULL);
+        seL4_SignalRecv(init_ep, endpoint, NULL);
         ZF_LOGD("Got another client\n");
     }
 }
@@ -1191,11 +1161,9 @@ ipc23_client_fn(seL4_CPtr ep, volatile int *state)
 static void 
 ipc23_server_fn(seL4_CPtr client_ep, seL4_CPtr wait_ep)
 {
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
-
     /* send to the wait_ep to tell the test we are initialised,
      * then wait on the client_ep to receive a scheduling context */
-    seL4_NBSendRecv(wait_ep, info, client_ep, NULL);
+    seL4_SignalRecv(wait_ep, client_ep, NULL);
 
     /* now block */
     seL4_Recv(wait_ep, NULL);
@@ -1317,18 +1285,18 @@ DEFINE_TEST(IPC0024, "Test deleting the reply cap in the scheduling context",
             test_delete_reply_cap_then_sc);
 
 static int
-test_nbsendrecv(env_t env)
+test_signalrecv(env_t env)
 {
-    return test_ipc_pair(env, (test_func_t) nbsendrecv_func, (test_func_t) nbsendrecv_func, false);
+    return test_ipc_pair(env, (test_func_t) signalrecv_func, (test_func_t) signalrecv_func, false);
 }
-DEFINE_TEST(IPC0025, "Test seL4_NBSendRecv + seL4_NBSendRecv", test_nbsendrecv)
+DEFINE_TEST(IPC0025, "Test seL4_SignalRecv + seL4_SignalRecv", test_signalrecv)
 
 static int
-test_nbsendrecv_interas(env_t env)
+test_signalrecv_interas(env_t env)
 {
-    return test_ipc_pair(env, (test_func_t) nbsendrecv_func, (test_func_t) nbsendrecv_func, false);
+    return test_ipc_pair(env, (test_func_t) signalrecv_func, (test_func_t) signalrecv_func, false);
 }
-DEFINE_TEST(IPC0026, "Test interas seL4_NBSendRecv + seL4_NBSendRecv", test_nbsendrecv_interas)
+DEFINE_TEST(IPC0026, "Test interas seL4_SignalRecv + seL4_SignalRecv", test_signalrecv_interas)
 
 static int
 test_sched_donation_low_prio_server(env_t env)
