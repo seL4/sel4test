@@ -1065,8 +1065,8 @@ ipc22_stack_spawner_fn(env_t env, seL4_CPtr endpoint, int server_prio, int runs)
     for (int i = 0; i < runs; i++) {
         cspacepath_t path;
         vka_cspace_alloc_path(&env->vka, &path);
-        /* save the reply cap */
-        vka_cnode_saveCaller(&path);
+        /* swap the reply cap */
+        vka_cnode_swapCaller(&path);
 
         create_helper_thread(env, &servers[i]);
         set_helper_priority(&servers[i], server_prio);
@@ -1206,7 +1206,7 @@ test_delete_reply_cap_sc(env_t env)
     /* steal the reply cap */
     cspacepath_t path;
     vka_cspace_alloc_path(&env->vka, &path);
-    error = vka_cnode_saveTCBCaller(&path, &server.thread.tcb);
+    error = vka_cnode_swapTCBCaller(&path, &server.thread.tcb);
     test_eq(error, seL4_NoError);
 
     /* delete scheduling context */
@@ -1267,7 +1267,7 @@ test_delete_reply_cap_then_sc(env_t env)
     /* steal the reply cap */
     cspacepath_t path;
     vka_cspace_alloc_path(&env->vka, &path);
-    error = vka_cnode_saveTCBCaller(&path, &server.thread.tcb);
+    error = vka_cnode_swapTCBCaller(&path, &server.thread.tcb);
     test_eq(error, seL4_NoError);
 
     /* nuke the reply cap */

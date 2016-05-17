@@ -143,19 +143,19 @@ cnode_rotate(env_t env, seL4_CPtr src, seL4_CPtr pivot, seL4_CPtr dest)
 
 
 int
-cnode_savecaller(env_t env, seL4_CPtr cap)
+cnode_swapcaller(env_t env, seL4_CPtr cap)
 {
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, cap, &path);
-    return vka_cnode_saveCaller(&path);
+    return vka_cnode_swapCaller(&path);
 }
 
 int
-cnode_saveTCBcaller(env_t env, seL4_CPtr cap, vka_object_t *tcb)
+cnode_swapTCBcaller(env_t env, seL4_CPtr cap, vka_object_t *tcb)
 {
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, cap, &path);
-    return vka_cnode_saveTCBCaller(&path, tcb);
+    return vka_cnode_swapTCBCaller(&path, tcb);
 }
 
 int

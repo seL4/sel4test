@@ -289,7 +289,7 @@ test_criticality_mode_switch_in_server(env_t env)
     ZF_LOGD("Reply to client");
     /* reply to the client on behalf of the server */
     seL4_CPtr reply = get_free_slot(env);
-    error = cnode_saveTCBcaller(env, reply, &server.thread.tcb);
+    error = cnode_swapTCBcaller(env, reply, &server.thread.tcb);
     test_eq(error, seL4_NoError);
     seL4_Signal(reply);
 

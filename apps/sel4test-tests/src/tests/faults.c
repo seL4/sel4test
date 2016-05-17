@@ -713,7 +713,7 @@ handle_temporal_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread
 
     /* reply to client on behalf of server */
     ZF_LOGD("Got it, reply to client");
-    error = cnode_saveTCBcaller(env, reply, &server->tcb);
+    error = cnode_swapTCBcaller(env, reply, &server->tcb);
     test_eq(error, seL4_NoError);
     seL4_SetMR(0, -1);
     seL4_Send(reply, info);

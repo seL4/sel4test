@@ -793,7 +793,7 @@ check_receive_ordered(env_t env, seL4_CPtr endpoint, int pos, seL4_CPtr slots[])
             test_eq(expected_badge, badge);
             expected_badge--;
         }
-        error = cnode_savecaller(env, slots[i]);
+        error = cnode_swapcaller(env, slots[i]);
         test_eq(error, seL4_NoError);
     }
 

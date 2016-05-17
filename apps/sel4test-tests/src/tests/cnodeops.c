@@ -296,7 +296,7 @@ call_fn(seL4_CPtr endpoint)
 }
 
 static int
-test_cnode_savecaller(env_t env)
+test_cnode_swapcaller(env_t env)
 {
     int error;
     seL4_Word slot;
@@ -307,12 +307,12 @@ test_cnode_savecaller(env_t env)
 
     /* A call that should succeed. */
     slot = get_free_slot(env);
-    error = cnode_savecaller(env, slot);
+    error = cnode_swapcaller(env, slot);
     test_assert(!error);
 
-    /* Save to an occupied slot (should fail). */
+    /* Swap to an occupied slot (should fail). */
     slot = get_cap(&env->vka);
-    error = cnode_savecaller(env, slot);
+    error = cnode_swapcaller(env, slot);
     test_assert(error == seL4_DeleteFirst);
     test_assert(!is_slot_empty(env, slot));
     /* clean the slot */
@@ -328,12 +328,12 @@ test_cnode_savecaller(env_t env)
     seL4_Wait(endpoint.cptr, NULL);
     ZF_LOGD("Back");
 
-    /* first save it to a full slot */
-    error = cnode_savecaller(env, endpoint.cptr);
+    /* first swap it to a full slot */
+    error = cnode_swapcaller(env, endpoint.cptr);
     test_eq(error, seL4_DeleteFirst);
 
-    /* now save it properly (should suceed) */
-    error = cnode_savecaller(env, slot);
+    /* now swap it properly (should suceed) */
+    error = cnode_swapcaller(env, slot);
     test_eq(error, seL4_NoError);
 
     /* now reply to it */
@@ -341,17 +341,52 @@ test_cnode_savecaller(env_t env)
     
     /* and wait for the caller to respond so we know it worked */
     seL4_Wait(endpoint.cptr, NULL);
+    seL4_Reply(seL4_MessageInfo_new(0, 0, 0, 0));
+
+    ZF_LOGD("Set up second helper thread");
+    helper_thread_t second;
+    create_helper_thread(env, &second);
+    start_helper(env, &second, (helper_fn_t) call_fn, endpoint.cptr, 0, 0, 0);
+
+    ZF_LOGD("Let a helper run");
+    seL4_Recv(endpoint.cptr, NULL);
+
+    ZF_LOGD("Save the reply cap caller");
+    error = cnode_swapcaller(env, slot);
+    test_eq(error, seL4_NoError);
+
+    ZF_LOGD("Let other helper run");
+    seL4_Recv(endpoint.cptr, NULL);
+    
+    ZF_LOGD("Swap in previously saved reply cap");
+    error = cnode_swapcaller(env, slot);
+    test_eq(error, seL4_NoError);
+
+    ZF_LOGD("reply to swapped in client");
+    seL4_Reply(seL4_MessageInfo_new(0, 0, 0, 0));
+
+    ZF_LOGD("now swap the other one back in");
+    error = cnode_swapcaller(env, slot);
+    test_eq(error, seL4_NoError);
+    seL4_Reply(seL4_MessageInfo_new(0, 0, 0, 0));
+
+    /* check both clients are alive */
+    ZF_LOGD("Wait for one helper");
+    seL4_Recv(endpoint.cptr, NULL);
+    ZF_LOGD("Wait for second helper");
+    seL4_Recv(endpoint.cptr, NULL);
 
     /* finally clean up */
     cleanup_helper(env, &helper);
+    cleanup_helper(env, &second);
     vka_free_object(&env->vka, &endpoint);
 
     return SUCCESS;
 }
-DEFINE_TEST(CNODEOP0009, "seL4_CNode_SaveCaller() testing", test_cnode_savecaller)
+DEFINE_TEST(CNODEOP0009, "seL4_CNode_SwapCaller() testing", test_cnode_swapcaller)
 
 static int
-test_cnode_saveTCBcaller(env_t env)
+test_cnode_swapTCBcaller(env_t env)
 {
     vka_object_t endpoint = {0};
     int error;
@@ -364,7 +399,7 @@ test_cnode_saveTCBcaller(env_t env)
     slot = get_free_slot(env);
     test_neq(slot, 0);
 
-    error = cnode_saveTCBcaller(env, slot, &endpoint);
+    error = cnode_swapTCBcaller(env, slot, &endpoint);
     test_eq(error, seL4_InvalidArgument);
 
     /* now set up a helper thread to call us and we'll try saving its reply cap */
@@ -379,14 +414,14 @@ test_cnode_saveTCBcaller(env_t env)
 
     cspacepath_t path;
 
-    /* first save it to a full slot */
+    /* first swap it to a full slot */
     vka_cspace_make_path(&env->vka, endpoint.cptr, &path);
-    error = seL4_CNode_SaveTCBCaller(path.root, path.capPtr, path.capDepth, env->tcb);
+    error = seL4_CNode_SwapTCBCaller(path.root, path.capPtr, path.capDepth, env->tcb);
     test_eq(error, seL4_DeleteFirst);
 
-    /* now save it properly (should suceed) */
+    /* now swap it properly (should suceed) */
     vka_cspace_make_path(&env->vka, slot, &path);
-    error = seL4_CNode_SaveTCBCaller(path.root, path.capPtr, path.capDepth, env->tcb);
+    error = seL4_CNode_SwapTCBCaller(path.root, path.capPtr, path.capDepth, env->tcb);
     test_eq(error, seL4_NoError);
 
     /* now reply to it */
@@ -401,4 +436,4 @@ test_cnode_saveTCBcaller(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CNODEOP0010, "seL4_CNode_SaveTCBCaller() testing", test_cnode_saveTCBcaller)
+DEFINE_TEST(CNODEOP0010, "seL4_CNode_SwapTCBCaller() testing", test_cnode_swapTCBcaller)

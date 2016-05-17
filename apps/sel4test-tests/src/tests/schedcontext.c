@@ -450,7 +450,7 @@ test_sched_context_goes_to_to_caller_on_reply_cap_delete(env_t env)
 
     /* delete reply cap */
     seL4_CPtr reply = get_free_slot(env);
-    error = cnode_saveTCBcaller(env, reply, &server.thread.tcb);
+    error = cnode_swapTCBcaller(env, reply, &server.thread.tcb);
     test_eq(error, seL4_NoError);
     error = cnode_delete(env, reply);
     test_eq(error, seL4_NoError);
@@ -553,7 +553,7 @@ test_revoke_reply_on_call_chain_returns_sc(env_t env)
     /* kill the servers reply cap */
     seL4_CPtr slot;
     slot = get_free_slot(env);
-    error = cnode_saveTCBcaller(env, slot, &server.thread.tcb); 
+    error = cnode_swapTCBcaller(env, slot, &server.thread.tcb); 
     test_eq(error, seL4_NoError);
     error = cnode_delete(env, slot);
     test_eq(error, seL4_NoError);
@@ -564,7 +564,7 @@ test_revoke_reply_on_call_chain_returns_sc(env_t env)
     test_eq(prev_state, state);
 
     /* kill the proxies reply cap */
-    error = cnode_saveTCBcaller(env, slot, &proxy.thread.tcb);
+    error = cnode_swapTCBcaller(env, slot, &proxy.thread.tcb);
     test_eq(error, seL4_NoError);
     error = cnode_delete(env, slot);
     test_eq(error, seL4_NoError);
@@ -608,14 +608,14 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
     seL4_CPtr slot;
     ZF_LOGD("Nuke proxy reply cap");
     slot = get_free_slot(env);
-    error = cnode_saveTCBcaller(env, slot, &proxy.thread.tcb);
+    error = cnode_swapTCBcaller(env, slot, &proxy.thread.tcb);
     test_eq(error, seL4_NoError);
     error = cnode_delete(env, slot);
     test_eq(error, seL4_NoError);
 
     /* kill the servers reply cap */
     ZF_LOGD("Nuke server reply cap\n");
-    error = cnode_saveTCBcaller(env, slot, &server.thread.tcb); 
+    error = cnode_swapTCBcaller(env, slot, &server.thread.tcb); 
     test_eq(error, seL4_NoError);
     error = cnode_delete(env, slot);
     test_eq(error, seL4_NoError);
@@ -678,7 +678,7 @@ test_revoke_sched_context_on_call_chain(env_t env)
 
     /* nuke the reply cap */
     seL4_CPtr slot = get_free_slot(env);
-    error = cnode_saveTCBcaller(env, slot, &server.thread.tcb); 
+    error = cnode_swapTCBcaller(env, slot, &server.thread.tcb); 
     test_eq(error, seL4_NoError);
     error = cnode_delete(env, slot);
     test_eq(error, seL4_NoError);
