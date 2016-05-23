@@ -284,7 +284,6 @@ int test_write_registers(env_t env)
 #elif defined(CONFIG_ARCH_X86_64)
     context.rip = (seL4_Word)&test_registers;
     context.rsp = 0x00000004UL;
-    context.gs  = IPCBUF_GDT_SELECTOR;
     context.rax = 0x0000000aUL;
     context.rbx = 0x0000000bUL;
     context.rcx = 0x0000000cUL;
