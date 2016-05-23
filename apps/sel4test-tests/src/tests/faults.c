@@ -162,7 +162,7 @@ do_bad_syscall(void)
         [scno] "i" (BAD_SYSCALL_NUMBER)
         : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "memory", "cc"
     );
-#elif defined(CONFIG_ARCH_X86_64)
+#elif defined(CONFIG_ARCH_X86_64) && defined(CONFIG_SYSENTER)
     asm volatile (
         "movl   %[val], %%eax\n\t"
         "movq   %%rsp, %%rcx\n\t"
@@ -176,6 +176,20 @@ do_bad_syscall(void)
         : [addrreg] "r" (x),
         [scno] "i" (BAD_SYSCALL_NUMBER)
         : "rax", "rbx", "rcx", "rdx"
+    );
+#elif defined(CONFIG_SYSCALL)
+    asm volatile (
+        "movl   %[val], %%eax\n\t"
+        "movq   %%rsp, %%rbx\n\t"
+        "bad_syscall_address:\n\t"
+        "syscall\n\t"
+        "bad_syscall_restart_address:\n\t"
+        "movq   %%rbx, %%rsp\n"
+        "movl   %%eax, %[val]\n\t"
+        : [val] "+r" (val)
+        : [addrreg] "r" (x),
+        [scno] "i" (BAD_SYSCALL_NUMBER)
+        : "rax", "rbx", "rcx", "r11"
     );
 #elif defined(CONFIG_ARCH_IA32)
     asm volatile (
