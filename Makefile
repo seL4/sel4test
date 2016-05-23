@@ -65,6 +65,11 @@ simulate-ia32:
 		-m 512 -nographic -kernel images/kernel-ia32-pc99 \
 		-initrd images/${apps}-image-ia32-pc99
 
+simulate-x86_64:
+	qemu-system-x86_64 \
+        -m 512 -nographic -kernel images/kernel-x86_64-pc99 \
+        -initrd images/sel4test-driver-image-x86_64-pc99 -cpu Haswell
+
 simulate-sabre:
 	qemu-system-arm \
 		-machine sabrelite -nographic -m size=1024M \
