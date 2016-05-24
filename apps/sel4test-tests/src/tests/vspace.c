@@ -10,6 +10,10 @@
 
 #include <sel4/sel4.h>
 
+#ifdef CONFIG_ARCH_X86
+#include <platsupport/arch/tsc.h>
+#endif
+
 #include "../helpers.h"
 
 static int
@@ -97,3 +101,55 @@ test_asid_pool_make(env_t env)
 DEFINE_TEST(VSPACE0002, "Test create ASID pool", test_asid_pool_make)
 #endif /* CONFIG_KERNEL_STABLE */
 
+#ifdef CONFIG_ARCH_IA32
+static int
+test_dirty_accessed_bits(env_t env)
+{
+    seL4_CPtr frame;
+    int err;
+    seL4_X86_PageDirectory_GetStatusBits_t status;
+
+    void *vaddr;
+    reservation_t reservation;
+
+    reservation = vspace_reserve_range(&env->vspace,
+                                       PAGE_SIZE_4K, seL4_AllRights, 1, &vaddr);
+    test_assert(reservation.res);
+
+    /* Create a frame */
+    frame = vka_alloc_frame_leaky(&env->vka, PAGE_BITS_4K);
+    test_assert(frame != seL4_CapNull);
+
+    /* Map it in */
+    err = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
+    test_assert(!err);
+
+    /* Check the status flags */
+    status = seL4_X86_PageDirectory_GetStatusBits(vspace_get_root(&env->vspace), (seL4_Word)vaddr);
+    test_assert(!status.error);
+    test_assert(!status.accessed);
+    test_assert(!status.dirty);
+    /* try and prevent prefetcher */
+    rdtsc_cpuid();
+
+    /* perform a read and check status flags */
+    asm volatile("" :: "r"(*(uint32_t*)vaddr) : "memory");
+    status = seL4_X86_PageDirectory_GetStatusBits(vspace_get_root(&env->vspace), (seL4_Word)vaddr);
+    test_assert(!status.error);
+    test_assert(status.accessed);
+    test_assert(!status.dirty);
+    /* try and prevent prefetcher */
+    rdtsc_cpuid();
+
+    /* perform a write and check status flags */
+    *(uint32_t*)vaddr = 42;
+    asm volatile("" ::: "memory");
+    status = seL4_X86_PageDirectory_GetStatusBits(vspace_get_root(&env->vspace), (seL4_Word)vaddr);
+    test_assert(!status.error);
+    test_assert(status.accessed);
+    test_assert(status.dirty);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(VSPACE0010, "Test dirty and accessed bits on mappings", test_dirty_accessed_bits)
+#endif
