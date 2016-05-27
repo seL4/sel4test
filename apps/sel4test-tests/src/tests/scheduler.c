@@ -1496,7 +1496,7 @@ test_toy_linux_scheduler_fixed_sc(env_t env)
         /* check here to make sure it got scheduled */
         ZF_LOGE("State %d\n", state);
         int cookie = 0;
-        error = sched_run(cfs_sched, finished_cfs, &cookie);
+        error = sched_run(cfs_sched, finished_cfs, &cookie, NULL);
         test_eq(error, 0);
         test_eq(state, expected);
         expected = (expected + 1) % n_threads;
@@ -1577,7 +1577,7 @@ test_toy_edf_fixed_sc(env_t env)
     }
     
     ZF_LOGD("Running scheduler");
-    error = sched_run(sched, sched01_finished, (void *) &counters[0]);
+    error = sched_run(sched, sched01_finished, (void *) &counters[0], NULL);
     test_eq(0, error);
     test_geq(counters[0], 120u);
     test_geq(counters[1], 80u);
