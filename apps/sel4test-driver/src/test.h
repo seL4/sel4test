@@ -48,6 +48,9 @@ typedef struct {
 #ifdef CONFIG_IOMMU
     seL4_CPtr io_space;
 #endif /* CONFIG_IOMMU */
+#ifdef CONFIG_ARM_SMMU
+    seL4_SlotRegion io_space_caps;
+#endif
     /* cap to the sel4platsupport default timer irq handler */
     seL4_CPtr timer_irq;
     /* cap to the sel4platsupport default timer physical frame */

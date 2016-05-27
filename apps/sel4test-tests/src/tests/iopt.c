@@ -325,3 +325,293 @@ test_iopt_recycle_iospace(env_t env)
 DEFINE_TEST(IOPT0014, "Test IOPT recycle iospace", test_iopt_recycle_iospace)
 
 #endif /* CONFIG_IOMMU */
+
+
+#ifdef CONFIG_ARM_SMMU
+/* tests for ARM SystemMMU */
+
+#define IOPT_MAP_BASE   0x10000000
+
+static int
+map_iopt_from_iospace(env_t env, seL4_CPtr iospace, seL4_CPtr *iopt, seL4_CPtr *frame)
+{
+    int error;
+    *frame = vka_alloc_frame_leaky(&env->vka, seL4_PageBits);
+    test_assert_fatal(*frame);
+    error = seL4_ARM_Page_MapIO(*frame, iospace, seL4_AllRights, IOPT_MAP_BASE);
+
+    if (error == seL4_FailedLookup) {
+        *iopt = vka_alloc_io_page_table_leaky(&env->vka);
+        test_assert_fatal(*iopt);
+        error = seL4_ARM_IOPageTable_Map(*iopt, iospace, IOPT_MAP_BASE);
+        test_assert(error == seL4_NoError);
+        error = seL4_ARM_Page_MapIO(*frame, iospace, seL4_AllRights, IOPT_MAP_BASE);
+        test_assert(error == seL4_NoError);
+    }
+    test_assert(error == seL4_NoError);
+
+    return error;
+
+}
+
+static int
+map_iopt_set(env_t env, seL4_CPtr iospace, seL4_CPtr *iopt_cptr, seL4_CPtr *frame)
+{
+    int error = map_iopt_from_iospace(env, iospace, iopt_cptr, frame);
+    return error;
+
+}
+
+static void
+delete_iospace(env_t env, seL4_CPtr iospace)
+{
+    cspacepath_t path;
+    vka_cspace_make_path(&env->vka, iospace, &path);
+    vka_cnode_delete(&path);
+}
+
+static int
+test_iopt_basic_iopt(env_t env)
+{
+    int error;
+    seL4_CPtr pt = 0;
+    seL4_CPtr frame = 0;
+    seL4_SlotRegion caps = env->io_space_caps;
+    int cap_count = caps.end - caps.start + 1;
+    seL4_CPtr cap = caps.start;
+
+    for (int i = 0; i < cap_count; i++) {
+        error = map_iopt_set(env, cap + i, &pt, &frame);
+        test_assert(error == seL4_NoError);
+        delete_iospace(env, cap + i);
+    }
+    return sel4test_get_result();
+}
+DEFINE_TEST(IOPT0001, "Testing basic ARM IOPT mapping", test_iopt_basic_iopt);
+
+
+static int
+test_iopt_basic_map_unmap(env_t env)
+{
+    int error;
+    int i;
+    seL4_CPtr iospace, pt, frame;
+    seL4_SlotRegion caps = env->io_space_caps;
+    int cap_count = caps.end - caps.start + 1;
+
+    for (i = 0; i < cap_count; i++) {
+        iospace = caps.start + i;
+        error = map_iopt_set(env, iospace, &pt, &frame);
+        test_assert(error == seL4_NoError);
+
+        error = seL4_ARM_Page_Unmap(frame);
+        test_assert(error == seL4_NoError);
+
+        error = seL4_ARM_IOPageTable_Unmap(pt);
+        test_assert(error == seL4_NoError);
+
+        error = map_iopt_from_iospace(env, iospace, &pt, &frame);
+        test_assert(error == seL4_NoError);
+
+        error = seL4_ARM_IOPageTable_Unmap(pt);
+        test_assert(error == seL4_NoError);
+        error = seL4_ARM_Page_Unmap(frame);
+        test_assert(error == seL4_NoError);
+        delete_iospace(env, iospace);
+    }
+    return sel4test_get_result();
+}
+DEFINE_TEST(IOPT0002, "Test basic ARM IOPT mapping then unmapping", test_iopt_basic_map_unmap)
+
+static int
+test_iopt_no_overlapping_4k(env_t env)
+{
+    int error;
+    int i;
+    seL4_CPtr iospace, pt, frame;
+    seL4_SlotRegion caps = env->io_space_caps;
+    int cap_count = caps.end - caps.start + 1;
+    for (i = 0; i < cap_count; i++) {
+        iospace = caps.start + i;
+        error = map_iopt_set(env, iospace, &pt, &frame);
+        test_assert(error == seL4_NoError);
+
+        frame = vka_alloc_frame_leaky(&env->vka, seL4_PageBits);
+        test_assert_fatal(frame);
+        /* mapping in a new frame should fail */
+        error = seL4_ARM_Page_MapIO(frame, iospace, seL4_AllRights, IOPT_MAP_BASE);
+        test_assert(error != seL4_NoError);
+        delete_iospace(env, iospace);
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(IOPT0004, "Test ARM IOPT cannot map overlapping 4k pages", test_iopt_no_overlapping_4k)
+
+
+static int
+test_iopt_map_remap_pt(env_t env)
+{
+    int error;
+    int i;
+    seL4_CPtr iospace, pt, frame;
+    seL4_SlotRegion caps = env->io_space_caps;
+    int cap_count = caps.end - caps.start + 1;
+    for (i = 0; i < cap_count; i++) {
+        iospace = caps.start + i;
+        error = map_iopt_set(env, iospace, &pt, &frame);
+        test_assert(error == seL4_NoError);
+
+        /* unmap the PT */
+        error = seL4_ARM_IOPageTable_Unmap(pt);
+        test_assert(error == seL4_NoError);
+
+        /* now map it back in */
+        error = seL4_ARM_IOPageTable_Map(pt, iospace, IOPT_MAP_BASE);
+        test_assert(error == seL4_NoError);
+
+        /* it should retain its old mappings, and mapping in a new PT should fail */
+        pt = vka_alloc_io_page_table_leaky(&env->vka);
+        test_assert_fatal(pt);
+        error = seL4_ARM_IOPageTable_Map(pt, iospace, IOPT_MAP_BASE);
+        test_assert(error != seL4_NoError);
+        delete_iospace(env, iospace);
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(IOPT0008, "Test ARM IOPT map and remap PT", test_iopt_map_remap_pt)
+
+static int
+test_iopt_no_overlapping_pt(env_t env)
+{
+    int error;
+    int i;
+    seL4_CPtr iospace, pt, frame;
+    seL4_SlotRegion caps = env->io_space_caps;
+    int cap_count = caps.end - caps.start + 1;
+    for (i = 0; i < cap_count; i++) {
+        iospace = caps.start + i;
+        error = map_iopt_set(env, iospace, &pt, &frame);
+        test_assert(error == seL4_NoError);
+
+        /* Mapping in a new PT should fail */
+        pt = vka_alloc_io_page_table_leaky(&env->vka);
+        test_assert_fatal(pt);
+        error = seL4_ARM_IOPageTable_Map(pt, iospace, IOPT_MAP_BASE);
+        test_assert(error != seL4_NoError);
+        delete_iospace(env, iospace);
+    }
+    return sel4test_get_result();
+}
+DEFINE_TEST(IOPT0009, "Test ARM iopt no overlapping PT", test_iopt_no_overlapping_pt)
+
+
+static int
+test_iopt_recycle_pt(env_t env)
+{
+    int error;
+    int i;
+    seL4_CPtr iospace, pt, frame;
+    cspacepath_t path;
+    seL4_SlotRegion caps = env->io_space_caps;
+    int cap_count = caps.end - caps.start + 1;
+    for (i = 0; i < cap_count; i++) {
+        iospace = caps.start + i;
+
+        error = map_iopt_set(env, iospace, &pt, &frame);
+        test_assert(error == seL4_NoError);
+        assert(pt != 0);
+
+        /* recycle PT */
+        vka_cspace_make_path(&env->vka, pt, &path);
+        error = vka_cnode_recycle(&path);
+        test_assert(error == seL4_NoError);
+
+        pt = vka_alloc_io_page_table_leaky(&env->vka);
+        test_assert_fatal(pt);
+
+        /* mapping a new PT should be fine */
+        error = seL4_ARM_IOPageTable_Map(pt, iospace, IOPT_MAP_BASE);
+        test_assert(error == seL4_NoError);
+
+        /* mapping the old frame is not OK */
+        error = seL4_ARM_Page_MapIO(frame, iospace, seL4_AllRights, IOPT_MAP_BASE);
+        test_assert(error != seL4_NoError);
+
+        /* recycle the frame */
+        vka_cspace_make_path(&env->vka, frame, &path);
+        error = vka_cnode_recycle(&path);
+        test_assert(error == seL4_NoError);
+
+        /* now should be fine */
+        error = seL4_ARM_Page_MapIO(frame, iospace, seL4_AllRights, IOPT_MAP_BASE);
+        test_assert(error == seL4_NoError);
+
+        /* unmap and remap it, should pass */
+        error = seL4_ARM_Page_Unmap(frame);
+        test_assert(error == seL4_NoError);
+
+        error = seL4_ARM_Page_MapIO(frame, iospace, seL4_AllRights, IOPT_MAP_BASE);
+        test_assert(error == seL4_NoError);
+
+        delete_iospace(env, iospace);
+    }
+    return sel4test_get_result();
+}
+DEFINE_TEST(IOPT00012, "Test ARM IOPT recycle PT", test_iopt_recycle_pt)
+
+static int
+test_iopt_recycle_iospaces(env_t env)
+{
+    int error;
+    int i;
+    seL4_CPtr iospace, pt, frame;
+    cspacepath_t path;
+    seL4_SlotRegion caps = env->io_space_caps;
+    int cap_count = caps.end - caps.start + 1;
+
+    for (i = 0; i < cap_count; i++) {
+        iospace = caps.start + i;
+        error = map_iopt_set(env, iospace, &pt, &frame);
+        test_assert(error == seL4_NoError);
+        assert(pt != 0);
+
+        /* recycle IO space, page table are not reset */
+        vka_cspace_make_path(&env->vka, iospace, &path);
+        error = vka_cnode_recycle(&path);
+        test_assert(error == seL4_NoError);
+
+        /* mapping old pt should fail without recycling it first */
+        error = seL4_ARM_IOPageTable_Map(pt, iospace, IOPT_MAP_BASE);
+        test_assert(error != seL4_NoError);
+
+        /* recycle the old pt */
+        vka_cspace_make_path(&env->vka, pt, &path);
+        error = vka_cnode_recycle(&path);
+        test_assert(error == seL4_NoError);
+
+        /* now map in should be fine */
+        error = seL4_ARM_IOPageTable_Map(pt, iospace, IOPT_MAP_BASE);
+        test_assert(error == seL4_NoError);
+
+        /* mapping old frame should fail since it contains a valid ASID */
+        error = seL4_ARM_Page_MapIO(frame, iospace, seL4_AllRights, IOPT_MAP_BASE);
+        test_assert(error != seL4_NoError);
+
+        /* recyle the frame */
+        vka_cspace_make_path(&env->vka, frame, &path);
+        error = vka_cnode_recycle(&path);
+        test_assert(error == seL4_NoError);
+
+        /* now mapping frame should be ok */
+        error = seL4_ARM_Page_MapIO(frame, iospace, seL4_AllRights, IOPT_MAP_BASE);
+        test_assert(error == seL4_NoError);
+
+        delete_iospace(env, iospace);
+    }
+    return sel4test_get_result();
+}
+DEFINE_TEST(IOPT00013, "Test ARM IOPT recycle iospaces", test_iopt_recycle_iospaces)
+
+#endif

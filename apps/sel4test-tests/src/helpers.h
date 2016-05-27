@@ -53,6 +53,9 @@ struct env {
 #ifdef CONFIG_IOMMU
     seL4_CPtr io_space;
 #endif /* CONFIG_IOMMU */
+#ifdef CONFIG_ARM_SMMU
+    seL4_SlotRegion io_space_caps;
+#endif
     seL4_CPtr domain;
 
     int priority;
