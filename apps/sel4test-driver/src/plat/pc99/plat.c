@@ -41,21 +41,7 @@ plat_init(env_t env)
         ZF_LOGF("Failed to allocate notification object");
     }
 
-    seL4_timer_t *hpet = sel4platsupport_get_hpet(&env->vspace, &env->simple, NULL, &env->vka,
-                                                  notification.cptr, MSI_MIN);
-    if (hpet == NULL) {
-        ZF_LOGF("Failed to init hpet");
-    }
-
-    env->tsc_freq = tsc_calculate_frequency(hpet->timer) / US_IN_S;
-    if (env->tsc_freq == 0) {
-        ZF_LOGF("Failed to calculate tsc frequency");
-    } else {
-        ZF_LOGV("Calculated TSC freq %llu\n", env->tsc_freq);
-    }
-
-    sel4_timer_destroy(hpet, &env->vka, &env->vspace);
-    vka_free_object(&env->vka, &notification);
+    env->tsc_freq = seL4_GetBootInfo()->archInfo;
 }
 
 
