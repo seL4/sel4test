@@ -214,9 +214,7 @@ create_helper_process(env_t env, helper_thread_t *thread)
         .create_fault_endpoint = false,
         .fault_endpoint = { .cptr = env->endpoint },
         .priority = OUR_PRIO - 1,
-#ifndef CONFIG_KERNEL_STABLE
         .asid_pool = env->asid_pool,
-#endif
     };
 
     error = sel4utils_configure_process_custom(&thread->process, &env->simple, &env->vka, &env->vspace,

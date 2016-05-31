@@ -39,11 +39,9 @@ typedef struct {
     seL4_CPtr root_cnode;
     /* tcb of the test process */
     seL4_CPtr tcb;
-#ifndef CONFIG_KERNEL_STABLE
     /* asid pool cap for the test process to use when creating new processes */
     seL4_CPtr asid_pool;
     seL4_CPtr asid_ctrl;
-#endif
 #ifdef CONFIG_IOMMU
     seL4_CPtr io_space;
 #endif /* CONFIG_IOMMU */
@@ -116,10 +114,8 @@ struct env {
     seL4_CPtr page_directory;
     seL4_CPtr endpoint;
     seL4_CPtr tcb;
-#ifndef CONFIG_KERNEL_STABLE
     seL4_CPtr asid_pool;
     seL4_CPtr asid_ctrl;
-#endif /* CONFIG_KERNEL_STABLE */
 #ifdef CONFIG_IOMMU
     seL4_CPtr io_space;
 #endif /* CONFIG_IOMMU */

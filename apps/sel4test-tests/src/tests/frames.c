@@ -126,7 +126,6 @@ test_frame_exported(env_t env)
             *data = 'U';
             test_assert(*data == 'U');
 
-#ifndef CONFIG_KERNEL_STABLE
             err = seL4_ARCH_Page_Remap(frame,
                                        env->page_directory,
                                        seL4_AllRights,
@@ -135,7 +134,6 @@ test_frame_exported(env_t env)
             /* Touch the memory again */
             *data = 'V';
             test_assert(*data == 'V');
-#endif
 
             vspace_unmap_pages(&env->vspace, (void*)vaddr, 1, frame_types[i].size_bits, VSPACE_PRESERVE);
             test_assert(err == seL4_NoError);
