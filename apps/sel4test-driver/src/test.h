@@ -40,11 +40,9 @@ typedef struct {
     seL4_CPtr tcb;
     /* the domain cap */
     seL4_CPtr domain;
-#ifndef CONFIG_KERNEL_STABLE
     /* asid pool cap for the test process to use when creating new processes */
     seL4_CPtr asid_pool;
     seL4_CPtr asid_ctrl;
-#endif
 #ifdef CONFIG_IOMMU
     seL4_CPtr io_space;
 #endif /* CONFIG_IOMMU */

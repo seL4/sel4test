@@ -125,29 +125,6 @@ test_thread_suspend(env_t env)
 DEFINE_TEST(SCHED0000, "Test suspending and resuming a thread (flaky)", test_thread_suspend)
 #endif /* CONFIG_HAVE_TIMER */
 
-#ifdef CONFIG_KERNEL_STABLE
-
-/*
- * Test setting priorities.
- */
-static int
-test_set_priorities(struct env* env)
-{
-    /* Ensure we can set our priority equal to ourselves. */
-    int error = seL4_TCB_SetPriority(env->tcb, OUR_PRIO);
-    test_assert(!error);
-
-    /* Ensure we can set a different thread's priority equal to ourselves. */
-    seL4_CPtr tcb = vka_alloc_tcb_leaky(&env->vka);
-    error = seL4_TCB_SetPriority(tcb, OUR_PRIO);
-    test_assert(!error);
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(SCHED0001, "Test setting priorities", test_set_priorities)
-
-#endif /* CONFIG_KERNEL_STABLE */
-
 /*
  * Test TCB Resume on self.
  */
