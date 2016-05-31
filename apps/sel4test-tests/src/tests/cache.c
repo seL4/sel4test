@@ -98,7 +98,7 @@ test_page_flush(env_t env)
        Remember to drain any store buffer!
     */
     *ptr = 0xBEEFCAFE;
-#ifdef CONFIG_ARCH_ARM_V7A
+#if defined(CONFIG_ARCH_ARM_V8A) || defined(CONFIG_ARCH_ARM_V7A)
     asm volatile ("dmb" ::: "memory");
 #endif
     test_assert(*ptrc == 0xBEEFCAFE);
