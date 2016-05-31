@@ -49,9 +49,7 @@ test_unmap_after_delete(env_t env)
     test_assert(pt != 0);
     test_assert(frame != 0);
 
-#ifndef CONFIG_KERNEL_STABLE
     seL4_ARM_ASIDPool_Assign(env->asid_pool, pd);
-#endif
 
     /* map page table into page directory */
     error = seL4_ARM_PageTable_Map(pt, pd, map_addr, seL4_ARM_Default_VMAttributes);
@@ -73,7 +71,6 @@ test_unmap_after_delete(env_t env)
 DEFINE_TEST(VSPACE0001, "Test unmapping a page after deleting the PD", test_unmap_after_delete)
 #endif
 
-#ifndef CONFIG_KERNEL_STABLE
 static int
 test_asid_pool_make(env_t env)
 {
@@ -95,5 +92,4 @@ test_asid_pool_make(env_t env)
 
 }
 DEFINE_TEST(VSPACE0002, "Test create ASID pool", test_asid_pool_make)
-#endif /* CONFIG_KERNEL_STABLE */
 

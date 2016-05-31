@@ -13,7 +13,6 @@
 
 #include "../helpers.h"
 
-#ifndef CONFIG_KERNEL_STABLE
 
 static int
 test_retype(env_t env)
@@ -202,4 +201,3 @@ test_incretype2(env_t env)
 }
 DEFINE_TEST(RETYPE0002, "Incremental retype test #2", test_incretype2)
 
-#endif /* !CONFIG_KERNEL_STABLE */
