@@ -57,10 +57,10 @@ void create_helper_thread(env_t env, helper_thread_t *thread);
  * and a new cspace */
 void create_helper_process(env_t env, helper_thread_t *thread);
 
-int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep, 
+int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
                       seL4_Word arg1, seL4_Word arg2, seL4_Word arg3);
 int create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CPtr tfep,
-                                seL4_Word badge, helper_fn_t fn, seL4_CPtr ep, seL4_Word arg1, 
+                                seL4_Word badge, helper_fn_t fn, seL4_CPtr ep, seL4_Word arg1,
                                 seL4_Word arg2, seL4_Word arg3, sel4utils_checkpoint_t *cp);
 
 /* set a helper threads priority */
@@ -73,10 +73,10 @@ void set_helper_mcp(helper_thread_t *thread, uint8_t mcp);
 void set_helper_criticality(helper_thread_t *thread, uint8_t crit);
 
 /* set a helper threads maximum controlled criticality */
-void set_helper_mcc(helper_thread_t *thread, uint8_t mcc); 
+void set_helper_mcc(helper_thread_t *thread, uint8_t mcc);
 
 /* set a helper threads scheduling parameters */
-int set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget, 
+int set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget,
                             seL4_Time period, seL4_Word data);
 
 /* set a helpers temporal fault endpoint */

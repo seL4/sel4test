@@ -89,7 +89,7 @@ init_env(env_t env)
      * boot info not because it will use capabilities from it, but so
      * it knows the address and will add it as a reserved region */
     error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&env->vspace,
-                                                           &data, simple_get_pd(&env->simple), 
+                                                           &data, simple_get_pd(&env->simple),
                                                            &env->vka, seL4_GetBootInfo());
     if (error) {
         ZF_LOGF("Failed to bootstrap vspace");
@@ -216,6 +216,30 @@ send_init_data(env_t env, seL4_CPtr endpoint, sel4utils_process_t *process)
     return remote_vaddr;
 }
 
+#ifdef CONFIG_ARM_SMMU
+static seL4_SlotRegion
+copy_iospace_caps_to_process(sel4utils_process_t *process, env_t env)
+{
+    seL4_SlotRegion ret = {0, 0};
+    int num_iospace_caps = 0;
+    seL4_Error UNUSED error = simple_get_iospace_cap_count(&env->simple, &num_iospace_caps);
+    assert(error == seL4_NoError);
+    for (int i = 0; i < num_iospace_caps; i++) {
+        seL4_CPtr iospace = simple_get_nth_iospace_cap(&env->simple, i);
+        assert(iospace != seL4_CapNull);
+        seL4_CPtr slot = copy_cap_to_process(process, iospace);
+        assert(slot != seL4_CapNull);
+        if (i == 0) {
+            ret.start = slot;
+        }
+        ret.end = slot;
+    }
+    assert((ret.end - ret.start) + 1 == num_iospace_caps);
+    /* the return region is now inclusive */
+    return ret;
+}
+#endif
+
 /* Run a single test.
  * Each test is launched as its own process. */
 int
@@ -255,6 +279,9 @@ run_test(struct testcase *test)
 #ifdef CONFIG_IOMMU
     env.init->io_space = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapIOSpace));
 #endif /* CONFIG_IOMMU */
+#ifdef CONFIG_ARM_SMMU
+    env.init->io_space_caps = copy_iospace_caps_to_process(&test_process, &env);
+#endif
     /* setup data about untypeds */
     env.init->untypeds = copy_untypeds_to_process(&test_process, untypeds, num_untypeds);
     env.init->sched_ctrl = copy_cap_to_process(&test_process, simple_get_sched_ctrl(&env.simple));

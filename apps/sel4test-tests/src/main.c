@@ -75,7 +75,7 @@ __arch_putchar(int c)
 }
 
 static testcase_t *
-find_test(char *name)
+find_test(const char *name)
 {
     testcase_t *test = sel4test_get_test(name);
     if (test == NULL) {
@@ -246,6 +246,9 @@ main(int argc, char **argv)
 #endif /* CONFIG_KERNEL_STABLE */
 #ifdef CONFIG_IOMMU
     env.io_space = init_data->io_space;
+#endif
+#ifdef CONFIG_ARM_SMMU
+    env.io_space_caps = init_data->io_space_caps;
 #endif
     env.num_regions = init_data->num_elf_regions;
     ZF_LOGV("Copying data\n");
