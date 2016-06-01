@@ -41,3 +41,26 @@ arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *tes
     }
 }
 
+#ifdef CONFIG_ARM_SMMU
+seL4_SlotRegion
+arch_copy_iospace_caps_to_process(sel4utils_process_t *process, env_t env)
+{
+    seL4_SlotRegion ret = {0, 0};
+    int num_iospace_caps = 0;
+    seL4_Error UNUSED error = simple_get_iospace_cap_count(&env->simple, &num_iospace_caps);
+    assert(error == seL4_NoError);
+    for (int i = 0; i < num_iospace_caps; i++) {
+        seL4_CPtr iospace = simple_get_nth_iospace_cap(&env->simple, i);
+        assert(iospace != seL4_CapNull);
+        seL4_CPtr slot = copy_cap_to_process(process, iospace);
+        assert(slot != seL4_CapNull);
+        if (i == 0) {
+            ret.start = slot;
+        }
+        ret.end = slot;
+    }
+    assert((ret.end - ret.start) + 1 == num_iospace_caps);
+    /* the return region is now inclusive */
+    return ret;
+}
+#endif
