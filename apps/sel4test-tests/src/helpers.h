@@ -96,6 +96,9 @@ void create_helper_process(env_t env, helper_thread_t *thread);
 /* set a helper threads priority */
 void set_helper_priority(helper_thread_t *thread, seL4_Word prio);
 
+/* set a helper threads max control priority */
+void set_helper_mcp(helper_thread_t *thread, seL4_Word mcp);
+
 /* Start a helper. Note: arguments to helper processes will be copied into
  * the address space of that process. Do not pass pointers to data only in
  * the local vspace, this will fail. */

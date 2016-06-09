@@ -210,7 +210,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     set_helper_priority(&faulter, 100);
     err = seL4_TCB_Configure(faulter.thread.tcb.cptr,
                              fault_ep,
-                             100,
+                             seL4_PrioProps_new(100, 100),
                              env->cspace_root,
                              seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
                              env->page_directory, seL4_NilData,
@@ -253,7 +253,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     set_helper_priority(&faulter, 100);
     err = seL4_TCB_Configure(faulter.thread.tcb.cptr,
                              fault_ep,
-                             100,
+                             seL4_PrioProps_new(100, 100),
                              env->cspace_root,
                              seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
                              env->page_directory, seL4_NilData,

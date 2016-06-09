@@ -373,6 +373,22 @@ set_priority_helper_1(seL4_CPtr *t1, seL4_CPtr *t2)
     ZF_LOGD("2...");
     set_priority_step = 3;
 
+    /* set our priority back up - this should work as we did not down our max priority */
+    error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO);
+    test_check(error == seL4_NoError);
+
+    /* now down our max_priority */
+    error = seL4_TCB_SetMCPriority(*t1, SCHED0005_HIGHEST_PRIO - 4);
+    test_check(error == seL4_NoError);
+
+    /* try to set our prio higher than our max prio, but lower than our prio */
+    error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 3);
+    test_check(error == seL4_IllegalOperation);
+
+    /* try to set our max prio back up */
+    error = seL4_TCB_SetMCPriority(*t1, SCHED0005_HIGHEST_PRIO);
+    test_check(error == seL4_IllegalOperation);
+
     return 0;
 }
 
@@ -417,9 +433,15 @@ test_set_priority(struct env* env)
     ZF_LOGD("test_set_priority starting\n");
     create_helper_thread(env, &thread1);
     set_helper_priority(&thread1, SCHED0005_HIGHEST_PRIO);
+    set_helper_mcp(&thread1, SCHED0005_HIGHEST_PRIO);
 
     create_helper_thread(env, &thread2);
+    /* thread2 needs to start at a lower prio than thread1, so that when thread1 sets
+     * its own prio down, this thread runs, but not before. */
     set_helper_priority(&thread2, SCHED0005_HIGHEST_PRIO - 1);
+    /* thread2 needs mcp SCHED0005_HIGHEST_PRIO - 2 so that it can raise thread1's
+     * priority to that value */
+    set_helper_mcp(&thread2, SCHED0005_HIGHEST_PRIO - 2);
 
     set_priority_step = 0;
     ZF_LOGD("      ");
@@ -631,6 +653,7 @@ test_ipc_prios(struct env* env)
 
     create_helper_thread(env, &thread3);
     set_helper_priority(&thread3, 3);
+    set_helper_mcp(&thread3, 3);
 
     data.tcb0 = thread0.thread.tcb.cptr;
     data.tcb1 = thread1.thread.tcb.cptr;

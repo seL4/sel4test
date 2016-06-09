@@ -353,6 +353,14 @@ set_helper_priority(helper_thread_t *thread, seL4_Word prio)
 }
 
 void
+set_helper_mcp(helper_thread_t *thread, seL4_Word mcp)
+{
+    UNUSED int error;
+    error = seL4_TCB_SetMCPriority(thread->thread.tcb.cptr, mcp);
+    assert(error == seL4_NoError);
+}
+
+void
 wait_for_timer_interrupt(env_t env)
 {
     seL4_Word sender_badge;
