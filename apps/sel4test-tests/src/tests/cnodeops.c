@@ -35,7 +35,7 @@ test_cnode_copy(env_t env)
     test_assert(is_slot_empty(env, dest));
     error = cnode_copy(env, src, dest, seL4_AllRights);
     test_assert(!error);
-    test_assert(!are_tcbs_distinct(src, dest));
+    test_assert(are_tcbs_distinct(src, dest) == 0);
 
     /* Copy to an occupied slot (should fail). */
     src = get_cap(&env->vka);
@@ -95,7 +95,7 @@ test_cnode_mint(env_t env)
     dest = get_free_slot(env);
     error = cnode_mint(env, src, dest, seL4_AllRights, seL4_NilData);
     test_assert(!error);
-    test_assert(!are_tcbs_distinct(src, dest));
+    test_assert(are_tcbs_distinct(src, dest) == 0);
 
     /* Mint to an occupied slot (should fail). */
     src = get_cap(&env->vka);
@@ -256,7 +256,7 @@ test_cnode_rotate(env_t env)
     dest = src;
     error = cnode_rotate(env, src, pivot, dest);
     test_assert(!error);
-    test_assert(!are_tcbs_distinct(src, dest));
+    test_assert(are_tcbs_distinct(src, dest) == 0);
     test_assert(!is_slot_empty(env, pivot));
 
     /* Moving a cap onto itself (should fail). */

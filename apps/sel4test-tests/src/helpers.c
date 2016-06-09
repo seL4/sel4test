@@ -155,29 +155,28 @@ cnode_savecaller(env_t env, seL4_CPtr cap)
 int
 are_tcbs_distinct(seL4_CPtr tcb1, seL4_CPtr tcb2)
 {
-    int error, i;
     seL4_UserContext regs;
 
     /* Initialise regs to prevent compiler warning. */
-    error = seL4_TCB_ReadRegisters(tcb1, 0, 0, 1, &regs);
+    int error = seL4_TCB_ReadRegisters(tcb1, 0, 0, 1, &regs);
     if (error) {
-        return error;
+        return -1;
     }
 
-    for (i = 0; i < 2; ++i) {
+    for (int i = 0; i < 2; ++i) {
         sel4utils_set_instruction_pointer(&regs, i);
         error = seL4_TCB_WriteRegisters(tcb1, 0, 0, 1, &regs);
 
         /* Check that we had permission to do that and the cap was a TCB. */
         if (error) {
-            return error;
+            return -1;
         }
 
         error = seL4_TCB_ReadRegisters(tcb2, 0, 0, 1, &regs);
 
         /* Check that we had permission to do that and the cap was a TCB. */
         if (error) {
-            return error;
+            return -1;
         } else if (sel4utils_get_instruction_pointer(regs) != i) {
             return 1;
         }

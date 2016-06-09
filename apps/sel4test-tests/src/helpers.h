@@ -115,7 +115,7 @@ int check_zeroes(seL4_Word addr, seL4_Word size_bytes);
 /* Determine if two TCBs in the init thread's CSpace are not equal. Note that we
  * assume the thread is not currently executing.
  *
- * Serves as != comparator for caps.
+ * Serves as != comparator for caps. Returns 1 for not equal, 0 for equal and -1 for syscall error.
  */
 int are_tcbs_distinct(seL4_CPtr tcb1, seL4_CPtr tcb2);
 
