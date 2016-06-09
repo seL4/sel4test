@@ -42,7 +42,6 @@ test_cnode_copy(env_t env)
     dest = get_cap(&env->vka);
     error = cnode_copy(env, src, dest, seL4_AllRights);
     test_assert(error == seL4_DeleteFirst);
-    test_assert(are_tcbs_distinct(src, dest));
 
     /* Copy from a free slot to an occupied slot (should fail). */
     src = get_free_slot(env);
@@ -50,7 +49,6 @@ test_cnode_copy(env_t env)
     dest = get_cap(&env->vka);
     error = cnode_copy(env, src, dest, seL4_AllRights);
     test_assert(error == seL4_DeleteFirst);
-    test_assert(are_tcbs_distinct(src, dest));
 
     /* Copy from a free slot to a free slot (should fail). */
     src = get_free_slot(env);
@@ -59,7 +57,6 @@ test_cnode_copy(env_t env)
     test_assert(is_slot_empty(env, dest));
     error = cnode_copy(env, src, dest, seL4_AllRights);
     test_assert(error == seL4_FailedLookup);
-    test_assert(are_tcbs_distinct(src, dest));
 
     return sel4test_get_result();
 }
@@ -105,14 +102,12 @@ test_cnode_mint(env_t env)
     dest = get_cap(&env->vka);
     error = cnode_mint(env, src, dest, seL4_AllRights, seL4_NilData);
     test_assert(error == seL4_DeleteFirst);
-    test_assert(are_tcbs_distinct(src, dest));
 
     /* Mint from an empty slot (should fail). */
     src = get_free_slot(env);
     dest = get_free_slot(env);
     error = cnode_mint(env, src, dest, seL4_AllRights, seL4_NilData);
     test_assert(error == seL4_FailedLookup);
-    test_assert(are_tcbs_distinct(src, dest));
 
     return sel4test_get_result();
 }
