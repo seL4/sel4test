@@ -65,13 +65,11 @@ abort(void)
     while (1);
 }
 
-/* this app won't print in release mode */
+void __plat_putchar(int c);
 void
 __arch_putchar(int c)
 {
-#ifdef CONFIG_DEBUG_BUILD
-    seL4_DebugPutChar(c);
-#endif
+    __plat_putchar(c);
 }
 
 static testcase_t *

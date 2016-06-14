@@ -55,6 +55,13 @@ typedef struct {
     /* cap to the sel4platsupport default timer io port */
     seL4_CPtr io_port;
 
+    /* cap to the sel4platsupport default serial irq handler */
+    seL4_CPtr serial_irq;
+    /* cap to the sel4platsupport default serial physical frame */
+    seL4_CPtr serial_frame;
+    /* cap to serial COM1 */
+    seL4_CPtr serial_io_port1;
+
     /* size of the test processes cspace */
     seL4_Word cspace_size_bits;
     /* range of free slots in the cspace */

@@ -11,6 +11,7 @@
 #include "../../test.h"
 
 #include <sel4platsupport/plat/timer.h>
+#include <sel4platsupport/plat/serial.h>
 
 void
 arch_init_timer_caps(env_t env)
@@ -38,6 +39,35 @@ arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *tes
     init->timer_frame = copy_cap_to_process(test_process, env->frame_path.capPtr);
     if (init->timer_frame == 0) {
         ZF_LOGF("Failed to copy timer frame cap to process");
+    }
+}
+
+int
+arch_init_serial_caps(env_t env)
+{
+    /* Get the serial frame cap */
+    int error;
+
+    error = vka_cspace_alloc_path(&env->vka, &env->serial_frame_path);
+    if (error != 0) {
+        ZF_LOGE("Failed to alloc slot for serial Frame cap.");
+        return error;
+    }
+    error = simple_get_frame_cap(&env->simple, (void *) DEFAULT_SERIAL_PADDR,
+                                 PAGE_BITS_4K, &env->serial_frame_path);
+    if (error != 0) {
+        ZF_LOGE("Failed to get Frame cap for serial device.");
+        return error;
+    }
+    return 0;
+}
+
+void
+arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
+{
+    init->serial_frame = copy_cap_to_process(test_process, env->serial_frame_path.capPtr);
+    if (init->serial_frame == 0) {
+        ZF_LOGF("Failed to copy serial Frame cap to sel4test-test process.");
     }
 }
 

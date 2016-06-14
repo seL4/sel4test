@@ -13,16 +13,26 @@
 #include <sel4platsupport/plat/timer.h>
 #include <platsupport/timer.h>
 
+#include <platsupport/plat/serial.h>
 #include <platsupport/plat/pit.h>
 
 static seL4_CPtr
 get_IOPort_cap(void *data, uint16_t start_port, uint16_t end_port)
 {
     test_init_data_t *init = (test_init_data_t *) data;
-    assert(start_port >= PIT_IO_PORT_MIN);
-    assert(end_port <= PIT_IO_PORT_MAX);
 
-    return init->io_port;
+    assert((start_port >= PIT_IO_PORT_MIN && end_port <= PIT_IO_PORT_MAX)
+            || (start_port >= SERIAL_CONSOLE_COM1_PORT && start_port <= SERIAL_CONSOLE_COM1_PORT_END));
+
+    if (start_port >= PIT_IO_PORT_MIN && end_port <= PIT_IO_PORT_MAX) {
+        return init->io_port;
+    }
+
+    if (start_port >= SERIAL_CONSOLE_COM1_PORT && start_port <= SERIAL_CONSOLE_COM1_PORT_END) {
+        return init->serial_io_port1;
+    }
+    /* Return invalid cap */
+    return 0;
 }
 
 void

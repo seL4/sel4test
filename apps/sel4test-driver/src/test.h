@@ -55,6 +55,14 @@ typedef struct {
     seL4_CPtr timer_frame;
     /* cap to the sel4platsupport default timer io port */
     seL4_CPtr io_port;
+
+    /* cap to the sel4platsupport default serial irq handler */
+    seL4_CPtr serial_irq;
+    /* cap to the sel4platsupport default serial physical frame */
+    seL4_CPtr serial_frame;
+    /* cap to serial COM1 */
+    seL4_CPtr serial_io_port1;
+
     /* size of the test processes cspace */
     seL4_Word cspace_size_bits;
     /* range of free slots in the cspace */
@@ -101,6 +109,14 @@ struct env {
     cspacepath_t frame_path;
     /* io port for the default timer */
     seL4_CPtr io_port_cap;
+
+    /* path for the default serial irq handler */
+    cspacepath_t serial_irq_path;
+    /* frame for the default serial */
+    cspacepath_t serial_frame_path;
+    /* io port for COM1 */
+    seL4_CPtr serial_io_port_cap1;
+
     /* init data frame vaddr */
     test_init_data_t *init;
     /* extra cap to the init data frame for mapping into the remote vspace */
@@ -108,7 +124,9 @@ struct env {
 };
 
 void arch_init_timer_caps(env_t env);
+int arch_init_serial_caps(env_t env);
 void arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process);
+void arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process);
 seL4_CPtr copy_cap_to_process(sel4utils_process_t *process, seL4_CPtr cap);
 
 #ifdef CONFIG_ARM_SMMU

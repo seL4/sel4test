@@ -89,7 +89,7 @@ init_env(env_t env)
      * boot info not because it will use capabilities from it, but so
      * it knows the address and will add it as a reserved region */
     error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&env->vspace,
-                                                           &data, simple_get_pd(&env->simple), 
+                                                           &data, simple_get_pd(&env->simple),
                                                            &env->vka, seL4_GetBootInfo());
     if (error) {
         ZF_LOGF("Failed to bootstrap vspace");
@@ -227,6 +227,12 @@ copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_pro
     arch_copy_timer_caps(init, env, test_process);
 }
 
+static void
+copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
+{
+    arch_copy_serial_caps(init, env, test_process);
+}
+
 /* Run a single test.
  * Each test is launched as its own process. */
 int
@@ -260,6 +266,7 @@ run_test(struct testcase *test)
     /* setup data about untypeds */
     env.init->untypeds = copy_untypeds_to_process(&test_process, untypeds, num_untypeds);
     copy_timer_caps(env.init, &env, &test_process);
+    copy_serial_caps(env.init, &env, &test_process);
     /* copy the fault endpoint - we wait on the endpoint for a message
      * or a fault to see when the test finishes */
     seL4_CPtr endpoint = copy_cap_to_process(&test_process, test_process.fault_endpoint.cptr);
@@ -338,6 +345,15 @@ init_timer_caps(env_t env)
     arch_init_timer_caps(env);
 }
 
+static void
+init_serial_caps(env_t env)
+{
+    int error;
+
+    error = arch_init_serial_caps(env);
+    ZF_LOGF_IF(error != 0,
+               "Err %d: Failed to initialize platform serial caps.", error);
+}
 
 void *main_continued(void *arg UNUSED)
 {
@@ -384,6 +400,8 @@ void *main_continued(void *arg UNUSED)
 
     /* get the caps we need to send to tests to set up a timer */
     init_timer_caps(&env);
+    /* Do the same for serial */
+    init_serial_caps(&env);
 
     /* setup init data that won't change test-to-test */
     env.init->priority = seL4_MaxPrio - 1;
