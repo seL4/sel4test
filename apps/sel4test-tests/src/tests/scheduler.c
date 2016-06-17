@@ -1458,7 +1458,7 @@ test_toy_linux_scheduler_fixed_sc(env_t env)
     volatile int state = 0;
     int error;
 
-    sched_t *cfs_sched = sched_new_cfs();
+    sched_t *cfs_sched = sched_new_preemptive_cfs();
 
     for (int i = 0; i < n_threads; i++) {
         create_helper_thread(env, &threads[i]);
