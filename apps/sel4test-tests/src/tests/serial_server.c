@@ -27,7 +27,7 @@
 
 #define SERSERV_TEST_N_CLIENTS      (1)
 
-#define SERSERV_TEST_ALLOCMAN_PREALLOCATED_MEMSIZE (32 * 1024)
+#define SERSERV_TEST_ALLOCMAN_PREALLOCATED_MEMSIZE (64 * 1024)
 #define SERSERV_TEST_UT_SIZE        (512 * 1024)
 
 static const char *test_str = "Hello, world!\n";
