@@ -91,7 +91,7 @@ test_parent_printf(struct env *env)
     test_eq(error, 0);
 
     error = serial_server_printf(&conn, test_str);
-    test_eq(error, strlen(test_str));
+    test_eq(error, (int)strlen(test_str));
     return sel4test_get_result();
 }
 DEFINE_TEST(SERSERV_PARENT_003, "Printf() from a connected parent thread", test_parent_printf)
@@ -117,7 +117,7 @@ test_parent_write(struct env *env)
     test_eq(error, 0);
 
     error = serial_server_write(&conn, test_str, strlen(test_str));
-    test_eq(error, strlen(test_str));
+    test_eq(error, (int)strlen(test_str));
 
     return sel4test_get_result();
 }
@@ -144,9 +144,9 @@ test_parent_disconnect_reconnect_write_and_printf(struct env *env)
     test_eq(error, 0);
 
     error = serial_server_printf(&conn, test_str);
-    test_eq(error, strlen(test_str));
+    test_eq(error, (int)strlen(test_str));
     error = serial_server_write(&conn, test_str, strlen(test_str));
-    test_eq(error, strlen(test_str));
+    test_eq(error, (int)strlen(test_str));
 
     /* Disconnect then reconnect and attempt to print */
     serial_server_disconnect(&conn);
@@ -163,9 +163,9 @@ test_parent_disconnect_reconnect_write_and_printf(struct env *env)
     test_eq(error, 0);
 
     error = serial_server_write(&conn, test_str, strlen(test_str));
-    test_eq(error, strlen(test_str));
+    test_eq(error, (int)strlen(test_str));
     error = serial_server_printf(&conn, test_str);
-    test_eq(error, strlen(test_str));
+    test_eq(error, (int)strlen(test_str));
 
     return sel4test_get_result();
 }
@@ -282,9 +282,9 @@ test_printf_inputs(struct env *env)
     test_eq(error, 0);
 
     error = serial_server_printf(NULL, test_str);
-    test_neq(error, strlen(test_str));
+    test_neq(error, (int)strlen(test_str));
     error = serial_server_printf(&conn, NULL);
-    test_neq(error, strlen(test_str));
+    test_neq(error, (int)strlen(test_str));
 
     return sel4test_get_result();
 }
@@ -310,11 +310,11 @@ test_write_inputs(struct env *env)
     test_eq(error, 0);
 
     error = serial_server_write(NULL, test_str, strlen(test_str));
-    test_neq(error, strlen(test_str));
+    test_neq(error, (int)strlen(test_str));
     error = serial_server_write(&conn, NULL, 500);
-    test_neq(error, strlen(test_str));
+    test_neq(error, (int)strlen(test_str));
     error = serial_server_write(&conn, test_str, 0);
-    test_neq(error, strlen(test_str));
+    test_neq(error, (int)strlen(test_str));
 
     return sel4test_get_result();
 }
