@@ -651,15 +651,18 @@ test_temporal_fault(env_t env)
     endpoint = vka_alloc_endpoint_leaky(&env->vka);
 
     create_helper_thread(env, &helper);
-    set_helper_sched_params(env, &helper, 0.1 * US_IN_S, US_IN_S, 1); 
+    set_helper_sched_params(env, &helper, 0.1 * US_IN_S, US_IN_S, data);
     set_helper_tfep(env, &helper, endpoint);
     start_helper(env, &helper, (helper_fn_t) temporal_fault_0001_fn, 0, 0, 0, 0);
 
     /* wait for temporal fault */
     info = seL4_Recv(endpoint, NULL);
-    test_eq(seL4_MessageInfo_get_length(info), SEL4_TFIPC_LENGTH);
-    test_check(seL4_isTemporalFault_Tag(info));
-    test_eq(seL4_TF_DataWord(), data);
+    for (int i = 0; i < 10; i++) {
+        test_eq(seL4_MessageInfo_get_length(info), SEL4_TFIPC_LENGTH);
+        test_check(seL4_isTemporalFault_Tag(info));
+        test_eq(seL4_TF_DataWord(), data);
+        info = seL4_ReplyRecv(endpoint, seL4_MessageInfo_new(0, 0, 0, 0), NULL);
+    }
 
     return sel4test_get_result();
 }
@@ -670,6 +673,7 @@ temporal_fault_server_fn(seL4_CPtr ep, pstimer_t *timer)
 {
     /* signal to initialiser that we are done, and wait for a message from
      * the client */
+    ZF_LOGD("Server signal recv");
     seL4_SignalRecv(ep, ep, NULL);
     uint64_t start = timer_get_time(timer);
     uint64_t end = start;
@@ -711,23 +715,25 @@ handle_temporal_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread
     test_eq(seL4_TF_DataWord(), expected_data);
     test_eq(seL4_MessageInfo_get_length(info), SEL4_TFIPC_LENGTH);
 
+
     /* reply to client on behalf of server */
-    ZF_LOGD("Got it, reply to client");
     error = cnode_swapTCBcaller(env, reply, &server->tcb);
     test_eq(error, seL4_NoError);
     seL4_SetMR(0, -1);
     seL4_Send(reply, info);
+
+   size_t stack_size = (uintptr_t) cp->thread->stack_top - (uintptr_t) sel4utils_get_sp(cp->regs);
+   memcpy((void *) sel4utils_get_sp(cp->regs), cp->stack, stack_size);
 
     /* restore server */
     ZF_LOGD("Restoring server");
     error = seL4_SchedContext_Bind(server->sched_context.cptr, server->tcb.cptr);
     test_eq(error, seL4_NoError);
 
-    error = sel4utils_checkpoint_restore(cp, false, true);
-    test_eq(error, 0);
-
-    ZF_LOGD("Waiting for server to init");
-    seL4_Wait(ep, NULL);
+    ZF_LOGD("Reply to server");
+    info = seL4_TF_ReplyTag(true, cp->regs);
+    /* reply, restoring server state, and wait for server to init */
+    seL4_ReplyRecv(ep, info, NULL);
 
     error = seL4_SchedContext_Unbind(server->sched_context.cptr);
     test_eq(error, seL4_NoError);
