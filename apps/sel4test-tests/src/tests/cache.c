@@ -12,7 +12,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <sel4/sel4.h>
-#include <sel4/messages.h>
 #include <vka/object.h>
 #include <sel4utils/util.h>
 

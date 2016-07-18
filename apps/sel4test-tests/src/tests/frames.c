@@ -14,7 +14,6 @@
 #include <stdlib.h>
 
 #include <sel4/sel4.h>
-#include <sel4/messages.h>
 #include <vka/object.h>
 #include <sel4utils/util.h>
 #include <sel4utils/mapping.h>
@@ -162,7 +161,7 @@ static int fault(seL4_Word arg1, seL4_Word arg2, seL4_Word arg3, seL4_Word arg4)
 static int handle(seL4_CPtr fault_ep, seL4_Word arg2, seL4_Word arg3, seL4_Word arg4)
 {
     seL4_MessageInfo_t info = seL4_Recv(fault_ep, NULL);
-    if (seL4_MessageInfo_get_label(info) == seL4_VMFault) {
+    if (seL4_MessageInfo_get_label(info) == seL4_Fault_VMFault) {
         return (int)seL4_GetMR(1);
     } else {
         return (int)0xffffffff;

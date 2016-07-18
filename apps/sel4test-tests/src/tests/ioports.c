@@ -13,7 +13,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sel4/sel4.h>
-#include <sel4/messages.h>
 #include <sel4utils/arch/util.h>
 
 #include <vka/object.h>
