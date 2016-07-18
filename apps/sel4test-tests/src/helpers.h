@@ -120,9 +120,9 @@ int check_zeroes(seL4_Word addr, seL4_Word size_bytes);
 int are_tcbs_distinct(seL4_CPtr tcb1, seL4_CPtr tcb2);
 
 /* cnode_ops wrappers */
-int cnode_copy(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_Word rights);
+int cnode_copy(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights);
 int cnode_delete(env_t env, seL4_CPtr slot);
-int cnode_mint(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_Word rights, seL4_CapData_t badge);
+int cnode_mint(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights, seL4_CapData_t badge);
 int cnode_move(env_t env, seL4_CPtr src, seL4_CPtr dest);
 int cnode_mutate(env_t env, seL4_CPtr src, seL4_CPtr dest);
 int cnode_recycle(env_t env, seL4_CPtr cap);
