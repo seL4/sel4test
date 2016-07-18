@@ -211,7 +211,7 @@ send_init_data(env_t env, seL4_CPtr endpoint, sel4utils_process_t *process)
     assert(remote_vaddr != 0);
 
     /* now send a message telling the process what address the data is at */
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, (seL4_Word) remote_vaddr);
     seL4_Send(endpoint, info);
 
@@ -312,7 +312,7 @@ run_test(struct testcase *test)
     seL4_MessageInfo_t info = seL4_Recv(test_process.fault_endpoint.cptr, NULL);
 
     int result = seL4_GetMR(0);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault) {
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {
         sel4utils_print_fault_message(info, test->name);
         sel4debug_dump_registers(test_process.thread.tcb.cptr);
         result = FAILURE;

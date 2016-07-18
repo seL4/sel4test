@@ -61,7 +61,7 @@ int debugger_main(seL4_Word a0, seL4_Word a1, seL4_Word a2, seL4_Word a3)
      */
     tag = seL4_Recv(fault_ep_cspath.capPtr, &badge);
 
-    if (seL4_MessageInfo_get_label(tag) != seL4_DebugException) {
+    if (seL4_MessageInfo_get_label(tag) != seL4_Fault_DebugException) {
         ZF_LOGE("debugger: Got unexpected fault %zd.\n",
                seL4_MessageInfo_get_label(tag));
         return -1;
@@ -97,7 +97,7 @@ int debugger_main(seL4_Word a0, seL4_Word a1, seL4_Word a2, seL4_Word a3)
     for (;;) {
         tag = seL4_Recv(fault_ep_cspath.capPtr, &badge);
 
-        if (seL4_MessageInfo_get_label(tag) != seL4_DebugException) {
+        if (seL4_MessageInfo_get_label(tag) != seL4_Fault_DebugException) {
             ZF_LOGE("Debugger: while single stepping, got unexpected fault.\n");
             return -1;
         }

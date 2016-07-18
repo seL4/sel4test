@@ -148,7 +148,7 @@ breakpoint_triggerer_main(seL4_Word type, seL4_Word size, seL4_Word rw, seL4_Wor
 
 /** Waits for a fault on the endpoint passed to it, returns the fault address.
  *
- * We expect seL4_DebugException fault type, and any other fault type is an
+ * We expect seL4_Fault_DebugException fault type, and any other fault type is an
  * error condition for us. We just store the event data in a static local
  * struct and pass it back to the parent test function.
  */
@@ -170,7 +170,7 @@ breakpoint_handler_main(seL4_Word _fault_ep_cspath, seL4_Word a1, seL4_Word a2, 
     fault_data.bp_num = seL4_GetMR(seL4_DebugException_BreakpointNumber);
 
     switch (label) {
-    case seL4_DebugException:
+    case seL4_Fault_DebugException:
         return 0;
     default:
         ZF_LOGE("Fault of type %zd received. Vaddr %zu\n", label, fault_data.vaddr);
