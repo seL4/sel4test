@@ -65,7 +65,7 @@ get_free_slot(env_t env)
 
 
 int
-cnode_copy(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_Word rights)
+cnode_copy(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights)
 {
     cspacepath_t src_path, dest_path;
     vka_cspace_make_path(&env->vka, src, &src_path);
@@ -84,7 +84,7 @@ cnode_delete(env_t env, seL4_CPtr slot)
 }
 
 int
-cnode_mint(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_Word rights, seL4_CapData_t badge)
+cnode_mint(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights, seL4_CapData_t badge)
 {
     cspacepath_t src_path, dest_path;
 
