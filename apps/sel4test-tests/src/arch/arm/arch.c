@@ -11,23 +11,37 @@
 
 #include <sel4platsupport/timer.h>
 #include <sel4platsupport/plat/timer.h>
+#include <sel4platsupport/plat/serial.h>
 #include <platsupport/timer.h>
 
 static seL4_Error
 get_frame_cap(void *data, void *paddr, int size_bits, cspacepath_t *path)
 {
+    seL4_CPtr src_cap = 0;
+
     test_init_data_t *init = (test_init_data_t *) data;
 
-    if (paddr == (void*) DEFAULT_TIMER_PADDR && size_bits == seL4_PageBits) {
-        return seL4_CNode_Copy(path->root, path->capPtr, path->capDepth, init->root_cnode,
-                               init->timer_frame, seL4_WordBits, seL4_AllRights);
+    assert(size_bits == seL4_PageBits);
+    switch ((uintptr_t)paddr) {
+    case DEFAULT_TIMER_PADDR:
+        src_cap = init->timer_frame;
+        break;
+    case DEFAULT_SERIAL_PADDR:
+        src_cap = init->serial_frame;
+        break;
+    default:
+        return plat_get_frame_cap(data, paddr, size_bits, path);
     }
 
-    return plat_get_frame_cap(data, paddr, size_bits, path);
+    int error = seL4_CNode_Copy(path->root, path->capPtr, path->capDepth, init->root_cnode,
+                                src_cap, seL4_WordBits, seL4_AllRights);
+    assert(error == seL4_NoError);
+
+    return error;
 }
 
 void
-arch_init_simple(simple_t *simple) 
+arch_init_simple(simple_t *simple)
 {
     simple->frame_cap = get_frame_cap;
 }

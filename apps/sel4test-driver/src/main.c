@@ -209,36 +209,18 @@ send_init_data(env_t env, seL4_CPtr endpoint, sel4utils_process_t *process)
     assert(remote_vaddr != 0);
 
     /* now send a message telling the process what address the data is at */
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, (seL4_Word) remote_vaddr);
     seL4_Send(endpoint, info);
 
     return remote_vaddr;
 }
 
-#ifdef CONFIG_ARM_SMMU
-static seL4_SlotRegion
-copy_iospace_caps_to_process(sel4utils_process_t *process, env_t env)
+static void
+copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-    seL4_SlotRegion ret = {0, 0};
-    int num_iospace_caps = 0;
-    seL4_Error UNUSED error = simple_get_iospace_cap_count(&env->simple, &num_iospace_caps);
-    assert(error == seL4_NoError);
-    for (int i = 0; i < num_iospace_caps; i++) {
-        seL4_CPtr iospace = simple_get_nth_iospace_cap(&env->simple, i);
-        assert(iospace != seL4_CapNull);
-        seL4_CPtr slot = copy_cap_to_process(process, iospace);
-        assert(slot != seL4_CapNull);
-        if (i == 0) {
-            ret.start = slot;
-        }
-        ret.end = slot;
-    }
-    assert((ret.end - ret.start) + 1 == num_iospace_caps);
-    /* the return region is now inclusive */
-    return ret;
+    arch_copy_serial_caps(init, env, test_process);
 }
-#endif
 
 /* Run a single test.
  * Each test is launched as its own process. */
@@ -280,7 +262,7 @@ run_test(struct testcase *test)
     env.init->io_space = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapIOSpace));
 #endif /* CONFIG_IOMMU */
 #ifdef CONFIG_ARM_SMMU
-    env.init->io_space_caps = copy_iospace_caps_to_process(&test_process, &env);
+    env.init->io_space_caps = arch_copy_iospace_caps_to_process(&test_process, &env);
 #endif
     /* setup data about untypeds */
     env.init->untypeds = copy_untypeds_to_process(&test_process, untypeds, num_untypeds);
@@ -288,6 +270,7 @@ run_test(struct testcase *test)
     env.init->sched_context = copy_cap_to_process(&test_process, test_process.thread.sched_context.cptr);
 
     arch_copy_timer_caps(env.init, &env, &test_process);
+    copy_serial_caps(env.init, &env, &test_process);
     /* copy the fault endpoint - we wait on the endpoint for a message
      * or a fault to see when the test finishes */
     seL4_CPtr endpoint = copy_cap_to_process(&test_process, test_process.fault_endpoint.cptr);
@@ -323,7 +306,7 @@ run_test(struct testcase *test)
     seL4_MessageInfo_t info = seL4_Recv(test_process.fault_endpoint.cptr, NULL);
 
     int result = seL4_GetMR(0);
-    if (seL4_MessageInfo_get_label(info) != seL4_NoFault) {
+    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {
         sel4utils_print_fault_message(info, test->name);
         sel4debug_dump_registers(test_process.thread.tcb.cptr);
         result = FAILURE;
@@ -380,6 +363,16 @@ init_frame_cap(env_t env, void *paddr, cspacepath_t *path)
     }
 }
 
+static void
+init_serial_caps(env_t env)
+{
+    int error;
+
+    error = arch_init_serial_caps(env);
+    ZF_LOGF_IF(error != 0,
+               "Err %d: Failed to initialize platform serial caps.", error);
+}
+
 void *main_continued(void *arg UNUSED)
 {
 
@@ -425,6 +418,8 @@ void *main_continued(void *arg UNUSED)
 
     /* get the caps we need to send to tests to set up a timer */
     plat_init_caps(&env);
+    /* Do the same for serial */
+    init_serial_caps(&env);
 
     /* setup init data that won't change test-to-test */
     env.init->priority = seL4_MaxPrio - 1;

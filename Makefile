@@ -61,6 +61,18 @@ simulate-ia32:
 		-m 512 -nographic -kernel images/kernel-ia32-pc99 \
 		-initrd images/${apps}-image-ia32-pc99
 
+simulate-sabre:
+	qemu-system-arm \
+		-machine sabrelite -nographic -m size=1024M \
+		-s -serial null -serial mon:stdio \
+		-kernel images/${apps}-image-arm-imx6
+
+simulate-wandq:
+	qemu-system-arm \
+		-machine sabrelite -nographic -m size=2048M \
+		-s -serial mon:stdio \
+		-kernel images/${apps}-image-arm-imx6
+
 # Some example image builds (NOTE: may need to adapt addresses)
 build-binary: images/${apps}-image-${ARCH}-${PLAT}
 	${CONFIG_CROSS_COMPILER_PREFIX}objcopy -O binary \

@@ -12,7 +12,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <sel4/sel4.h>
-#include <sel4/messages.h>
 #include <vka/object.h>
 #include <sel4utils/util.h>
 
@@ -98,7 +97,7 @@ test_page_flush(env_t env)
        Remember to drain any store buffer!
     */
     *ptr = 0xBEEFCAFE;
-#ifdef CONFIG_ARCH_ARM_V7A
+#if defined(CONFIG_ARCH_ARM_V8A) || defined(CONFIG_ARCH_ARM_V7A)
     asm volatile ("dmb" ::: "memory");
 #endif
     test_assert(*ptrc == 0xBEEFCAFE);

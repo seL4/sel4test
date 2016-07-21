@@ -56,7 +56,7 @@ void
 abort(void)
 {
     /* send back a failure */
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, -1);
     seL4_Send(endpoint, info);
 
@@ -65,13 +65,11 @@ abort(void)
     while (1);
 }
 
-/* this app won't print in release mode */
+void __plat_putchar(int c);
 void
 __arch_putchar(int c)
 {
-#ifdef CONFIG_DEBUG_BUILD
-    seL4_DebugPutChar(c);
-#endif
+    __plat_putchar(c);
 }
 
 static testcase_t *
@@ -95,7 +93,7 @@ receive_init_data(seL4_CPtr endpoint)
     info = seL4_Recv(endpoint, &badge);
 
     /* check the label is correct */
-    assert(seL4_MessageInfo_get_label(info) == seL4_NoFault);
+    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
     assert(seL4_MessageInfo_get_length(info) == 1);
 
     test_init_data_t *init_data = (test_init_data_t *) seL4_GetMR(0);
@@ -276,7 +274,7 @@ main(int argc, char **argv)
 
     printf("Test %s %s\n", init_data->name, result == SUCCESS ? "passed" : "failed");
     /* send our result back */
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_NoFault, 0, 0, 1);
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
     seL4_SetMR(0, result);
     seL4_Send(endpoint, info);
 

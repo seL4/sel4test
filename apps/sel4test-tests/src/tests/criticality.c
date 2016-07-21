@@ -283,8 +283,8 @@ test_criticality_mode_switch_in_server(env_t env)
 
     ZF_LOGD("Wait for temporal fault");
     seL4_MessageInfo_t info = seL4_Recv(tfep, NULL);
-    test_check(seL4_isTemporalFault_Tag(info));
-    test_eq(seL4_TF_DataWord(), 0);
+    test_check(seL4_isTemporalFault_tag(info));
+    test_eq(seL4_GetMR(seL4_TemporalFault_Data), 0);
 
     ZF_LOGD("Reply to client");
     /* reply to the client on behalf of the server */

@@ -12,7 +12,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sel4/sel4.h>
-#include <sel4/messages.h>
 #include <sel4utils/arch/util.h>
 
 #include <vka/object.h>
@@ -179,14 +178,15 @@ do_bad_syscall(void)
     );
 #elif defined(CONFIG_ARCH_IA32)
     asm volatile (
-        "mov %[val], %%eax\n\t"
+        "mov %[scno], %%eax\n\t"
+        "mov %[val], %%ebx\n\t"
         "mov %%esp, %%ecx\n\t"
         "leal 1f, %%edx\n\t"
         "bad_syscall_address:\n\t"
         "1:\n\t"
         "sysenter\n\t"
         "bad_syscall_restart_address:\n\t"
-        "mov %%eax, %[val]\n\t"
+        "mov %%ebx, %[val]\n\t"
         : [val] "+r" (val)
         : [addrreg] "r" (x),
         [scno] "i" (BAD_SYSCALL_NUMBER)
@@ -327,15 +327,15 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
 
     switch (expected_fault) {
     case FAULT_DATA_READ_PAGEFAULT:
-        test_check(seL4_MessageInfo_get_label(tag) == SEL4_PFIPC_LABEL);
-        test_check(seL4_MessageInfo_get_length(tag) == SEL4_PFIPC_LENGTH);
-        test_check(seL4_GetMR(SEL4_PFIPC_FAULT_IP) == (seL4_Word)read_fault_address);
-        test_check(seL4_GetMR(SEL4_PFIPC_FAULT_ADDR) == BAD_VADDR);
-        test_check(seL4_GetMR(SEL4_PFIPC_PREFETCH_FAULT) == 0);
+        test_check(seL4_MessageInfo_get_label(tag) == seL4_Fault_VMFault);
+        test_check(seL4_MessageInfo_get_length(tag) == seL4_VMFault_Length);
+        test_check(seL4_GetMR(seL4_VMFault_IP) == (seL4_Word)read_fault_address);
+        test_check(seL4_GetMR(seL4_VMFault_Addr) == BAD_VADDR);
+        test_check(seL4_GetMR(seL4_VMFault_PrefetchFault) == 0);
         test_check(sel4utils_is_read_fault());
 
         /* Clear MRs to ensure they get repopulated. */
-        seL4_SetMR(SEL4_PFIPC_FAULT_ADDR, 0);
+        seL4_SetMR(seL4_VMFault_Addr, 0);
 
         set_good_magic_and_set_pc(tcb, (seL4_Word)read_fault_restart_address);
         if (restart) {
@@ -344,15 +344,15 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         break;
 
     case FAULT_DATA_WRITE_PAGEFAULT:
-        test_check(seL4_MessageInfo_get_label(tag) == SEL4_PFIPC_LABEL);
-        test_check(seL4_MessageInfo_get_length(tag) == SEL4_PFIPC_LENGTH);
-        test_check(seL4_GetMR(SEL4_PFIPC_FAULT_IP) == (seL4_Word)write_fault_address);
-        test_check(seL4_GetMR(SEL4_PFIPC_FAULT_ADDR) == BAD_VADDR);
-        test_check(seL4_GetMR(SEL4_PFIPC_PREFETCH_FAULT) == 0);
+        test_check(seL4_MessageInfo_get_label(tag) == seL4_Fault_VMFault);
+        test_check(seL4_MessageInfo_get_length(tag) == seL4_VMFault_Length);
+        test_check(seL4_GetMR(seL4_VMFault_IP) == (seL4_Word)write_fault_address);
+        test_check(seL4_GetMR(seL4_VMFault_Addr) == BAD_VADDR);
+        test_check(seL4_GetMR(seL4_VMFault_PrefetchFault) == 0);
         test_check(!sel4utils_is_read_fault());
 
         /* Clear MRs to ensure they get repopulated. */
-        seL4_SetMR(SEL4_PFIPC_FAULT_ADDR, 0);
+        seL4_SetMR(seL4_VMFault_Addr, 0);
 
         set_good_magic_and_set_pc(tcb, (seL4_Word)write_fault_restart_address);
         if (restart) {
@@ -361,18 +361,18 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         break;
 
     case FAULT_INSTRUCTION_PAGEFAULT:
-        test_check(seL4_MessageInfo_get_label(tag) == SEL4_PFIPC_LABEL);
-        test_check(seL4_MessageInfo_get_length(tag) == SEL4_PFIPC_LENGTH);
-        test_check(seL4_GetMR(SEL4_PFIPC_FAULT_IP) == BAD_VADDR);
-        test_check(seL4_GetMR(SEL4_PFIPC_FAULT_ADDR) == BAD_VADDR);
+        test_check(seL4_MessageInfo_get_label(tag) == seL4_Fault_VMFault);
+        test_check(seL4_MessageInfo_get_length(tag) == seL4_VMFault_Length);
+        test_check(seL4_GetMR(seL4_VMFault_IP) == BAD_VADDR);
+        test_check(seL4_GetMR(seL4_VMFault_Addr) == BAD_VADDR);
 #if defined(CONFIG_ARCH_ARM)
         /* Prefetch fault is only set on ARM. */
-        test_check(seL4_GetMR(SEL4_PFIPC_PREFETCH_FAULT) == 1);
+        test_check(seL4_GetMR(seL4_VMFault_PrefetchFault) == 1);
 #endif
         test_check(sel4utils_is_read_fault());
 
         /* Clear MRs to ensure they get repopulated. */
-        seL4_SetMR(SEL4_PFIPC_FAULT_ADDR, 0);
+        seL4_SetMR(seL4_VMFault_Addr, 0);
 
         set_good_magic_and_set_pc(tcb, (seL4_Word)instruction_fault_restart_address);
         if (restart) {
@@ -381,24 +381,21 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         break;
 
     case FAULT_BAD_SYSCALL:
-        test_check(seL4_MessageInfo_get_label(tag) == SEL4_EXCEPT_IPC_LABEL);
-        test_check(seL4_MessageInfo_get_length(tag) == SEL4_EXCEPT_IPC_LENGTH);
+        test_eq(seL4_MessageInfo_get_label(tag), seL4_Fault_UnknownSyscall);
+        test_eq(seL4_MessageInfo_get_length(tag), seL4_UnknownSyscall_Length);
+        test_eq(seL4_GetMR(seL4_UnknownSyscall_FaultIP), (seL4_Word)bad_syscall_address);
+        test_eq(seL4_GetMR(seL4_UnknownSyscall_Syscall), BAD_SYSCALL_NUMBER);
+        seL4_SetMR(seL4_UnknownSyscall_FaultIP, (seL4_Word)bad_syscall_restart_address);
 #if defined(CONFIG_ARCH_ARM)
-        test_check(seL4_GetMR(EXCEPT_IPC_SYS_MR_R0) == BAD_MAGIC);
-        test_check(seL4_GetMR(EXCEPT_IPC_SYS_MR_PC) == (seL4_Word)bad_syscall_address);
-        test_check(seL4_GetMR(EXCEPT_IPC_SYS_MR_SYSCALL) == BAD_SYSCALL_NUMBER);
-
-        seL4_SetMR(EXCEPT_IPC_SYS_MR_R0, GOOD_MAGIC);
-        seL4_SetMR(EXCEPT_IPC_SYS_MR_PC, (seL4_Word)bad_syscall_restart_address);
+        test_eq(seL4_GetMR(seL4_UnknownSyscall_R0), BAD_MAGIC);
+        seL4_SetMR(seL4_UnknownSyscall_R0, GOOD_MAGIC);
 #elif defined(CONFIG_ARCH_X86_64)
-        test_check((int)seL4_GetMR(EXCEPT_IPC_SYS_MR_RAX) == BAD_MAGIC);
-        test_check(seL4_GetMR(EXCEPT_IPC_SYS_MR_RIP) == (seL4_Word)bad_syscall_restart_address);
-        seL4_SetMR(EXCEPT_IPC_SYS_MR_RAX, GOOD_MAGIC);
+        test_eq((int)seL4_GetMR(seL4_UnknownSyscall_RBX, BAD_MAGIC));
+        test_eq(seL4_GetMR(seL4_UnknwonSyscall_RIP), (seL4_Word)bad_syscall_restart_address);
+        seL4_SetMR(seL4_UnknownSyscall_RBX, GOOD_MAGIC);
 #elif defined(CONFIG_ARCH_IA32)
-        test_check(seL4_GetMR(EXCEPT_IPC_SYS_MR_EAX) == BAD_MAGIC);
-        test_check(seL4_GetMR(EXCEPT_IPC_SYS_MR_EIP) == (seL4_Word)bad_syscall_restart_address);
-
-        seL4_SetMR(EXCEPT_IPC_SYS_MR_EAX, GOOD_MAGIC);
+        test_eq(seL4_GetMR(seL4_UnknownSyscall_EBX), BAD_MAGIC);
+        seL4_SetMR(seL4_UnknownSyscall_EBX, GOOD_MAGIC);
         /* Syscalls on ia32 seem to restart themselves with sysenter. */
 #else
 #error "Unknown architecture."
@@ -410,13 +407,12 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         } else {
             seL4_MessageInfo_ptr_set_label(&tag, 1);
         }
-
         seL4_Reply(tag);
         break;
 
     case FAULT_BAD_INSTRUCTION:
-        test_check(seL4_MessageInfo_get_label(tag) == SEL4_USER_EXCEPTION_LABEL);
-        test_check(seL4_MessageInfo_get_length(tag) == SEL4_USER_EXCEPTION_LENGTH);
+        test_check(seL4_MessageInfo_get_label(tag) == seL4_Fault_UserException);
+        test_check(seL4_MessageInfo_get_length(tag) == seL4_UserException_Length);
         test_check(seL4_GetMR(0) == (seL4_Word)bad_instruction_address);
         seL4_Word *valptr = (seL4_Word*)seL4_GetMR(1);
         test_check((int)*valptr == BAD_MAGIC);
@@ -658,9 +654,9 @@ test_temporal_fault(env_t env)
     /* wait for temporal fault */
     info = seL4_Recv(endpoint, NULL);
     for (int i = 0; i < 10; i++) {
-        test_eq(seL4_MessageInfo_get_length(info), SEL4_TFIPC_LENGTH);
-        test_check(seL4_isTemporalFault_Tag(info));
-        test_eq(seL4_TF_DataWord(), data);
+        test_eq(seL4_MessageInfo_get_length(info), seL4_TemporalFault_Length);
+        test_check(seL4_isTemporalFault_tag(info));
+        test_eq(seL4_GetMR(seL4_TemporalFault_Data), data);
         info = seL4_ReplyRecv(endpoint, seL4_MessageInfo_new(0, 0, 0, 0), NULL);
     }
 
@@ -711,9 +707,9 @@ handle_temporal_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread
     ZF_LOGD("Wait for tf");
     info = seL4_Recv(tfep, &badge);
     test_eq(badge, expected_badge);
-    test_check(seL4_isTemporalFault_Tag(info));
-    test_eq(seL4_TF_DataWord(), expected_data);
-    test_eq(seL4_MessageInfo_get_length(info), SEL4_TFIPC_LENGTH);
+    test_check(seL4_isTemporalFault_tag(info));
+    test_eq(seL4_GetMR(seL4_TemporalFault_Data), expected_data);
+    test_eq(seL4_MessageInfo_get_length(info), seL4_TemporalFault_Length);
 
 
     /* reply to client on behalf of server */
@@ -731,7 +727,7 @@ handle_temporal_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread
     test_eq(error, seL4_NoError);
 
     ZF_LOGD("Reply to server");
-    info = seL4_TF_ReplyTag(true, cp->regs);
+    info = seL4_TemporalFaultReply_new(true, cp->regs, sizeof(seL4_UserContext)/sizeof(seL4_Word));
     /* reply, restoring server state, and wait for server to init */
     seL4_ReplyRecv(ep, info, NULL);
 
