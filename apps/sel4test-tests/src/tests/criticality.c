@@ -150,7 +150,7 @@ test_criticality_mode_switch(env_t env)
                      threads[i].thread.sched_context.cptr, 0);
     }
 
-    ZF_LOGD("Waiting for temporal fault\n");
+    ZF_LOGD("Waiting for timeout fault\n");
     seL4_Word badge;
     seL4_Recv(tfep, &badge);
     test_eq(badge, special);
@@ -273,18 +273,18 @@ test_criticality_mode_switch_in_server(env_t env)
 
     /* sleep for a while */
     sleep(env, NS_IN_S);
-    
+
     /* set criticality down */
     error = seL4_SchedControl_SetCriticality(simple_get_sched_ctrl(&env->simple), seL4_MinCrit + 1);
     test_eq(error, seL4_NoError);
 
-    /* wait for temporal fault  - we should recieve a temporal fault from client 0, as it is LO 
+    /* wait for timeout fault  - we should recieve a timeout fault from client 0, as it is LO
      * criticality and made a request to the server. */
 
-    ZF_LOGD("Wait for temporal fault");
+    ZF_LOGD("Wait for timeout fault");
     seL4_MessageInfo_t info = seL4_Recv(tfep, NULL);
-    test_check(seL4_isTemporalFault_tag(info));
-    test_eq(seL4_GetMR(seL4_TemporalFault_Data), 0);
+    test_check(seL4_isTimeoutFault_tag(info));
+    test_eq(seL4_GetMR(seL4_TimeoutFault_Data), 0);
 
     ZF_LOGD("Reply to client");
     /* reply to the client on behalf of the server */

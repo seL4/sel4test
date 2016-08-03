@@ -631,13 +631,13 @@ DEFINE_TEST(PAGEFAULT1005, "Test undefined instruction (inter-AS)", test_bad_ins
 #endif
 
 static void
-temporal_fault_0001_fn(void)
+timeout_fault_0001_fn(void)
 {
     while (1);
 }
 
 int
-test_temporal_fault(env_t env)
+test_timeout_fault(env_t env)
 {
     seL4_CPtr endpoint;
     helper_thread_t helper;
@@ -649,23 +649,23 @@ test_temporal_fault(env_t env)
     create_helper_thread(env, &helper);
     set_helper_sched_params(env, &helper, 0.1 * US_IN_S, US_IN_S, data);
     set_helper_tfep(env, &helper, endpoint);
-    start_helper(env, &helper, (helper_fn_t) temporal_fault_0001_fn, 0, 0, 0, 0);
+    start_helper(env, &helper, (helper_fn_t) timeout_fault_0001_fn, 0, 0, 0, 0);
 
-    /* wait for temporal fault */
+    /* wait for timeout fault */
     info = seL4_Recv(endpoint, NULL);
     for (int i = 0; i < 10; i++) {
-        test_eq(seL4_MessageInfo_get_length(info), seL4_TemporalFault_Length);
-        test_check(seL4_isTemporalFault_tag(info));
-        test_eq(seL4_GetMR(seL4_TemporalFault_Data), data);
+        test_eq(seL4_MessageInfo_get_length(info), seL4_TimeoutFault_Length);
+        test_check(seL4_isTimeoutFault_tag(info));
+        test_eq(seL4_GetMR(seL4_TimeoutFault_Data), data);
         info = seL4_ReplyRecv(endpoint, seL4_MessageInfo_new(0, 0, 0, 0), NULL);
     }
 
     return sel4test_get_result();
 }
-DEFINE_TEST(TEMPORALFAULT0001, "Test temporal fault", test_temporal_fault)
+DEFINE_TEST(TEMPORALFAULT0001, "Test timeout fault", test_timeout_fault)
 
 void
-temporal_fault_server_fn(seL4_CPtr ep, pstimer_t *timer)
+timeout_fault_server_fn(seL4_CPtr ep, pstimer_t *timer)
 {
     /* signal to initialiser that we are done, and wait for a message from
      * the client */
@@ -677,39 +677,39 @@ temporal_fault_server_fn(seL4_CPtr ep, pstimer_t *timer)
     while (end - start < (NS_IN_S / 2)) {
         end = timer_get_time(timer);
     }
-    /* we should not get here, as a temporal fault should have been raised
+    /* we should not get here, as a timeout fault should have been raised
      * and the handler will reset us */
     ZF_LOGF("Should not get here");
 }
 
-static int 
-temporal_fault_client_fn(seL4_CPtr ep)
+static int
+timeout_fault_client_fn(seL4_CPtr ep)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
     while (1) {
         info = seL4_Call(ep, info);
-        /* call should have failed, temporal fault handler will send a -1 */
+        /* call should have failed, timeout fault handler will send a -1 */
         test_eq(seL4_GetMR(0), -1);
     }
     return 0;
 }
 
 static int
-handle_temporal_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread_t *server, 
-                      seL4_CPtr reply, sel4utils_checkpoint_t *cp, seL4_CPtr ep, 
+handle_timeout_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread_t *server,
+                      seL4_CPtr reply, sel4utils_checkpoint_t *cp, seL4_CPtr ep,
                       seL4_Word expected_data, env_t env)
 {
     seL4_Word badge;
     seL4_MessageInfo_t info;
     int error;
 
-    /* wait for temporal fault */
+    /* wait for timeout fault */
     ZF_LOGD("Wait for tf");
     info = seL4_Recv(tfep, &badge);
     test_eq(badge, expected_badge);
-    test_check(seL4_isTemporalFault_tag(info));
-    test_eq(seL4_GetMR(seL4_TemporalFault_Data), expected_data);
-    test_eq(seL4_MessageInfo_get_length(info), seL4_TemporalFault_Length);
+    test_check(seL4_isTimeoutFault_tag(info));
+    test_eq(seL4_GetMR(seL4_TimeoutFault_Data), expected_data);
+    test_eq(seL4_MessageInfo_get_length(info), seL4_TimeoutFault_Length);
 
 
     /* reply to client on behalf of server */
@@ -727,7 +727,7 @@ handle_temporal_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread
     test_eq(error, seL4_NoError);
 
     ZF_LOGD("Reply to server");
-    info = seL4_TemporalFaultReply_new(true, cp->regs, sizeof(seL4_UserContext)/sizeof(seL4_Word));
+    info = seL4_TimeoutFaultReply_new(true, cp->regs, sizeof(seL4_UserContext)/sizeof(seL4_Word));
     /* reply, restoring server state, and wait for server to init */
     seL4_ReplyRecv(ep, info, NULL);
 
@@ -737,8 +737,8 @@ handle_temporal_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread
     return 0;
 }
 
-static int 
-test_temporal_fault_in_server(env_t env)
+static int
+test_timeout_fault_in_server(env_t env)
 {
     helper_thread_t client, server;
     seL4_CPtr tfep, ep;
@@ -751,33 +751,33 @@ test_temporal_fault_in_server(env_t env)
     ep = vka_alloc_endpoint_leaky(&env->vka);
 
     /* create the server */
-    error = create_passive_thread_with_tfep(env, &server, tfep, server_badge, 
-                                            (helper_fn_t) temporal_fault_server_fn, ep, 
+    error = create_passive_thread_with_tfep(env, &server, tfep, server_badge,
+                                            (helper_fn_t) timeout_fault_server_fn, ep,
                                             (seL4_Word) env->clock_timer->timer, 0, 0, &cp);
     test_eq(error, 0);
 
     /* create the client */
     create_helper_thread(env, &client);
     set_helper_sched_params(env, &client, 0.1 * US_IN_S, US_IN_S, client_data);
-    start_helper(env, &client, (helper_fn_t) temporal_fault_client_fn, ep, 0, 0, 0);
+    start_helper(env, &client, (helper_fn_t) timeout_fault_client_fn, ep, 0, 0, 0);
 
     seL4_CPtr reply = get_free_slot(env);
     /* handle a few faults */
     for (int i = 0; i < 5; i++) {
         ZF_LOGD("Handling fault");
-        error = handle_temporal_fault(tfep, server_badge, &server.thread, reply, &cp, ep, 
+        error = handle_timeout_fault(tfep, server_badge, &server.thread, reply, &cp, ep,
                                       client_data, env);
-        test_eq(error, 0);    
+        test_eq(error, 0);
     }
 
     return sel4test_get_result();
 
 }
-DEFINE_TEST(TEMPORALFAULT0002, "Handle a temporal fault in a server",
-            test_temporal_fault_in_server) 
+DEFINE_TEST(TEMPORALFAULT0002, "Handle a timeout fault in a server",
+            test_timeout_fault_in_server)
 
 static void
-temporal_fault_proxy_fn(seL4_CPtr in, seL4_CPtr out)
+timeout_fault_proxy_fn(seL4_CPtr in, seL4_CPtr out)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
     info = seL4_SignalRecv(in, in, NULL);
@@ -787,8 +787,8 @@ temporal_fault_proxy_fn(seL4_CPtr in, seL4_CPtr out)
     }
 }
 
-static int 
-test_temporal_fault_nested_servers(env_t env)
+static int
+test_timeout_fault_nested_servers(env_t env)
 {
     helper_thread_t client, server, proxy;
     seL4_CPtr client_proxy_ep, proxy_server_ep, tfep;
@@ -805,37 +805,37 @@ test_temporal_fault_nested_servers(env_t env)
     tfep = vka_alloc_endpoint_leaky(&env->vka);
 
     /* create server */
-    error = create_passive_thread_with_tfep(env, &server, tfep, server_badge, 
-                                            (helper_fn_t) temporal_fault_server_fn, proxy_server_ep, 
+    error = create_passive_thread_with_tfep(env, &server, tfep, server_badge,
+                                            (helper_fn_t) timeout_fault_server_fn, proxy_server_ep,
                                             (seL4_Word) env->clock_timer->timer, 0, 0, &server_cp);
     test_eq(error, 0);
 
     /* create proxy */
-    error = create_passive_thread_with_tfep(env, &proxy, tfep, proxy_badge, 
-                                            (helper_fn_t) temporal_fault_proxy_fn, client_proxy_ep, 
+    error = create_passive_thread_with_tfep(env, &proxy, tfep, proxy_badge,
+                                            (helper_fn_t) timeout_fault_proxy_fn, client_proxy_ep,
                                             proxy_server_ep, 0, 0, &proxy_cp);
     test_eq(error, 0);
 
     /* create client */
     create_helper_thread(env, &client);
     set_helper_sched_params(env, &client, 0.1 * US_IN_S, US_IN_S, client_data);
-    start_helper(env, &client, (helper_fn_t) temporal_fault_client_fn, client_proxy_ep, 0, 0, 0);
+    start_helper(env, &client, (helper_fn_t) timeout_fault_client_fn, client_proxy_ep, 0, 0, 0);
 
     /* handle some faults */
     seL4_CPtr reply = get_free_slot(env);
     for (int i = 0; i < 5; i++) {
         /* server fault */
-        error = handle_temporal_fault(tfep, server_badge, &server.thread, reply, &server_cp, 
+        error = handle_timeout_fault(tfep, server_badge, &server.thread, reply, &server_cp,
                                       proxy_server_ep, client_data, env);
         test_eq(error, 0);
 
         /* proxy fault */
-        error = handle_temporal_fault(tfep, proxy_badge, &proxy.thread, reply, &proxy_cp,
+        error = handle_timeout_fault(tfep, proxy_badge, &proxy.thread, reply, &proxy_cp,
                                       client_proxy_ep, client_data, env);
         test_eq(error, 0);
     }
 
     return sel4test_get_result();
 }
-DEFINE_TEST(TEMPORALFAULT0003, "Nested temporal fault", test_temporal_fault_nested_servers)
+DEFINE_TEST(TEMPORALFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers)
 
