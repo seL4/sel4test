@@ -27,6 +27,10 @@ ifeq (${OBJFLAGS}y,y)
     OBJFLAGS="Dlx"
 endif
 
+# test that all configs compile
+compile-all:
+	${PWD}/projects/sel4test/tools/compile-all.sh
+
 # objdump the kernel image
 objdump-kernel:
 	${CONFIG_CROSS_COMPILER_PREFIX}objdump -${OBJFLAGS} stage/${ARCH}/${PLAT}/kernel.elf
