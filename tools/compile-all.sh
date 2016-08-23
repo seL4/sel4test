@@ -7,14 +7,14 @@ do
     echo $config
     make clean > /dev/null
     make $config > /dev/null
-    make silentoldconfig
+    make silentoldconfig > /dev/null
     make kernel_elf > /dev/null
     if [ $? -eq 0 ]
     then
         echo "pass"
     else
-        $exit_code = 1
-        echo "fail"
+        exit_code=1
+        echo "$config failed"
     fi
 done
 
