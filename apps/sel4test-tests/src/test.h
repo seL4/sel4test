@@ -17,83 +17,11 @@
 #include <vka/vka.h>
 #include <vka/object.h>
 #include <sel4test/test.h>
-#include <sel4utils/elf.h>
 #include <simple/simple.h>
 #include <vspace/vspace.h>
 
-/* max test name size */
-#define TEST_NAME_MAX 20
-
-/* Increase if the sel4test-tests binary
- * has new loadable sections added */
-#define MAX_REGIONS 4
-
-/* data shared between sel4test-driver and the sel4test-tests app.
- * all caps are in the sel4test-tests process' cspace */
-typedef struct {
-    /* page directory of the test process */
-    seL4_CPtr page_directory;
-    /* root cnode of the test process */
-    seL4_CPtr root_cnode;
-    /* tcb of the test process */
-    seL4_CPtr tcb;
-    /* the domain cap */
-    seL4_CPtr domain;
-    /* asid pool cap for the test process to use when creating new processes */
-    seL4_CPtr asid_pool;
-    seL4_CPtr asid_ctrl;
-#ifdef CONFIG_IOMMU
-    seL4_CPtr io_space;
-#endif /* CONFIG_IOMMU */
-#ifdef CONFIG_ARM_SMMU
-    seL4_SlotRegion io_space_caps;
-#endif
-    /* cap to the sel4platsupport default timer irq handler */
-    seL4_CPtr timer_irq;
-    /* cap to the sel4platsupport default timer physical frame */
-    seL4_CPtr timer_frame;
-    /* cap to the sel4platsupport default timer io port */
-    seL4_CPtr io_port;
-
-    /* cap to the sel4platsupport default serial irq handler */
-    seL4_CPtr serial_irq;
-    /* cap to the sel4platsupport default serial physical frame */
-    seL4_CPtr serial_frame;
-    /* cap to serial COM1 */
-    seL4_CPtr serial_io_port1;
-
-    /* size of the test processes cspace */
-    seL4_Word cspace_size_bits;
-    /* range of free slots in the cspace */
-    seL4_SlotRegion free_slots;
-
-    /* range of untyped memory in the cspace */
-    seL4_SlotRegion untypeds;
-    /* size of untyped that each untyped cap corresponds to
-     * (size of the cap at untypeds.start is untyped_size_bits_lits[0]) */
-    uint8_t untyped_size_bits_list[CONFIG_MAX_NUM_BOOTINFO_UNTYPED_CAPS];
-    /* name of the test to run */
-    char name[TEST_NAME_MAX];
-    /* priority the test process is running at */
-    int priority;
-
-    /* List of elf regions in the test process image, this
-     * is provided so the test process can launch copies of itself.
-     *
-     * Note: copies should not rely on state from the current process
-     * or the image. Only use copies to run code functions, pass all
-     * required state as arguments. */
-    sel4utils_elf_region_t elf_regions[MAX_REGIONS];
-
-    /* the number of elf regions */
-    int num_elf_regions;
-
-    /* the number of pages in the stack */
-    int stack_pages;
-
-    /* address of the stack */
-    void *stack;
-} test_init_data_t;
+/* This file is a symlink to the original in sel4test-driver. */
+#include <test_init_data.h>
 
 void arch_init_simple(simple_t *simple);
 
