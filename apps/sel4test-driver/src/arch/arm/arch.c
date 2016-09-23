@@ -54,7 +54,8 @@ arch_init_serial_caps(env_t env)
         ZF_LOGE("Failed to alloc slot for serial Frame cap.");
         return error;
     }
-    error = simple_get_frame_cap(&env->simple, (void *) DEFAULT_SERIAL_PADDR,
+    env->serial_frame_paddr = DEFAULT_SERIAL_PADDR;
+    error = simple_get_frame_cap(&env->simple, (void *) env->serial_frame_paddr,
                                  PAGE_BITS_4K, &env->serial_frame_path);
     if (error != 0) {
         ZF_LOGE("Failed to get Frame cap for serial device.");

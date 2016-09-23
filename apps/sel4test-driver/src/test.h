@@ -42,6 +42,8 @@ struct env {
     cspacepath_t serial_irq_path;
     /* frame for the default serial */
     cspacepath_t serial_frame_path;
+    /* physical address of the serial frame */
+    uintptr_t serial_frame_paddr;
     /* io port for COM1 */
     seL4_CPtr serial_io_port_cap1;
 

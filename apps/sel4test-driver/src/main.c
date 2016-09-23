@@ -400,8 +400,6 @@ void *main_continued(void *arg UNUSED)
 
     /* get the caps we need to send to tests to set up a timer */
     init_timer_caps(&env);
-    /* Do the same for serial */
-    init_serial_caps(&env);
 
     /* setup init data that won't change test-to-test */
     env.init->priority = seL4_MaxPrio - 1;
@@ -410,6 +408,14 @@ void *main_continued(void *arg UNUSED)
     sel4test_run_tests("sel4test", run_test);
 
     return NULL;
+}
+
+static seL4_Error serial_frame_cap_wrapper(void *data, void *paddr, int size_bits, cspacepath_t *path)
+{
+    if (env.serial_frame_paddr == (uintptr_t)paddr) {
+        return vka_cnode_copy(path, &env.serial_frame_path, seL4_AllRights);
+    }
+    return env.simple.frame_cap(data, paddr, size_bits, path);
 }
 
 int main(void)
@@ -428,8 +434,20 @@ int main(void)
     /* initialise the test environment - allocator, cspace manager, vspace manager, timer */
     init_env(&env);
 
+    /* Initialize the serial so that we can start using it ourselves */
+    init_serial_caps(&env);
+
+    /* Construct a simple wrapper for returning the serial frame. We need to create this
+     * wrapper as the actual simple implementation will only allocate/return any given
+     * device frame once. As we already allocated it in init_serial_caps when we the
+     * platsupport_serial_setup_simple attempts to allocate it will fail. This wrapper
+     * just returns a copy of the one we already allocated, whilst passing all other
+     * requests on to the actual simple */
+    simple_t serial_simple = env.simple;
+    serial_simple.frame_cap = serial_frame_cap_wrapper;
+
     /* enable serial driver */
-    platsupport_serial_setup_simple(NULL, &env.simple, &env.vka);
+    platsupport_serial_setup_simple(NULL, &serial_simple, &env.vka);
 
     simple_print(&env.simple);
     /* switch to a bigger, safer stack with a guard page
