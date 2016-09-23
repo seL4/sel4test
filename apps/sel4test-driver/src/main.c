@@ -424,7 +424,6 @@ int main(void)
     /* initialise libsel4simple, which abstracts away which kernel version
      * we are running on */
     simple_default_init_bootinfo(&env.simple, info);
-    simple_print(&env.simple);
 
     /* initialise the test environment - allocator, cspace manager, vspace manager, timer */
     init_env(&env);
@@ -432,6 +431,7 @@ int main(void)
     /* enable serial driver */
     platsupport_serial_setup_simple(NULL, &env.simple, &env.vka);
 
+    simple_print(&env.simple);
     /* switch to a bigger, safer stack with a guard page
      * before starting the tests */
     printf("Switching to a safer, bigger stack... ");
