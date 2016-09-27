@@ -18,7 +18,7 @@
 #include <sel4utils/elf.h>
 
 /* max test name size */
-#define TEST_NAME_MAX 20
+#define TEST_NAME_MAX 40
 
 /* Increase if the sel4test-tests binary
  * has new loadable sections added */
