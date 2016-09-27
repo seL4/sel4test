@@ -280,6 +280,8 @@ run_test(struct testcase *test)
     assert(env.init->free_slots.start < env.init->free_slots.end);
     /* copy test name */
     strncpy(env.init->name, test->name + strlen("TEST_"), TEST_NAME_MAX);
+    /* ensure string is null terminated */
+    env.init->name[TEST_NAME_MAX - 1] = '\0';
 #ifdef SEL4_DEBUG_KERNEL
     seL4_DebugNameThread(test_process.thread.tcb.cptr, env.init->name);
 #endif
