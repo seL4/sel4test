@@ -308,7 +308,7 @@ static int test_device_frame_ipcbuf(env_t env)
     /* Try and create a thread with a device frame as its IPC buffer */
     error = seL4_TCB_Configure(other.thread.tcb.cptr,
                                0,
-                               100,
+                               seL4_PrioProps_new(100, 100),
                                env->cspace_root,
                                seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
                                env->page_directory, seL4_NilData,
