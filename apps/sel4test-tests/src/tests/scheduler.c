@@ -383,11 +383,11 @@ set_priority_helper_1(seL4_CPtr *t1, seL4_CPtr *t2)
 
     /* try to set our prio higher than our max prio, but lower than our prio */
     error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 3);
-    test_check(error == seL4_IllegalOperation);
+    test_check(error == seL4_RangeError);
 
     /* try to set our max prio back up */
     error = seL4_TCB_SetMCPriority(*t1, SCHED0005_HIGHEST_PRIO);
-    test_check(error == seL4_IllegalOperation);
+    test_check(error == seL4_RangeError);
 
     return 0;
 }
@@ -400,7 +400,7 @@ set_priority_helper_2(seL4_CPtr *t1, seL4_CPtr *t2)
 
     /* Raise thread 1 to equal to ours, which should fail. */
     int error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 1 + PRIORITY_FUDGE);
-    test_check(error == seL4_IllegalOperation);
+    test_check(error == seL4_RangeError);
 
     /* Raise thread 1 to just below us. */
     error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 2);
