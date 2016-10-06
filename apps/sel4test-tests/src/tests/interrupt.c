@@ -21,13 +21,17 @@ static int
 test_interrupt(env_t env)
 {
 
-    int error = timer_periodic(env->timer->timer, 10 * NS_IN_MS);
-    timer_start(env->timer->timer);
+    int error = timer_start(env->timer->timer);
+    test_eq(error, 0);
+
+    error = timer_periodic(env->timer->timer, 1 * NS_IN_S);
+    test_eq(error, 0);
+
     sel4_timer_handle_single_irq(env->timer);
-    test_check(error == 0);
 
     for (int i = 0; i < 3; i++) {
         wait_for_timer_interrupt(env);
+        ZF_LOGV("Tick\n");
     }
 
     timer_stop(env->timer->timer);
