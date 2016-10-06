@@ -10,20 +10,27 @@
 
 #include "../../init.h"
 #include <sel4platsupport/plat/serial.h>
+#include <vka/capops.h>
+
+static cspacepath_t serial_path = {0};
+static vka_t old_vka;
+
+static int
+serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,
+        uintptr_t paddr, seL4_Word *cookie)
+{
+    if (paddr == DEFAULT_SERIAL_PADDR) {
+        return vka_cnode_copy(dest, &serial_path, seL4_AllRights);
+    }
+    return old_vka.utspace_alloc_at(data, dest, type, size_bits, paddr, cookie);
+}
 
 void
-arch_init_allocator(allocman_t *alloc, vka_t *vka, test_init_data_t *data)
+arch_init_allocator(env_t env, test_init_data_t *data)
 {
-
-    /* add serial frame */
-    size_t size_bits = seL4_PageBits;
-    uintptr_t paddr = DEFAULT_SERIAL_PADDR;
-    cspacepath_t path;
-    vka_cspace_make_path(vka, data->serial_frame, &path);
-    int error = allocman_utspace_add_uts(alloc, 1, &path,
-                                         &size_bits, &paddr,
-                                         ALLOCMAN_UT_DEV);
-    ZF_LOGF_IF(error, "Failed to add serial ut to allocator");
+    vka_cspace_make_path(&env->vka, data->serial_frame, &serial_path);
+    old_vka = env->vka;
+    env->vka.utspace_alloc_at = serial_utspace_alloc_at_fn;
 }
 
 seL4_timer_t *

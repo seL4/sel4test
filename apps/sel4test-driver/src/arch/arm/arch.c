@@ -31,9 +31,9 @@ arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *tes
 int
 arch_init_serial_caps(env_t env)
 {
-    /* Get the serial frame cap */
+    /* Get the serial untyped cap - this is what we give the allocator */
     vka_object_t serial = {0};
-    int error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, DEFAULT_SERIAL_PADDR,
+    int error = vka_alloc_frame_at(&env->vka, seL4_PageBits, DEFAULT_SERIAL_PADDR,
                                      &serial);
     ZF_LOGF_IF(error, "Failed to allocate untyped for serial at %x\n",
                DEFAULT_SERIAL_PADDR);
