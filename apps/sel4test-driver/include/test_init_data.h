@@ -54,7 +54,10 @@ typedef struct {
     /* cap to the sel4platsupport default timer irq handler */
     seL4_CPtr timer_irq;
     /* cap to the sel4platsupport default timer physical frame */
-    seL4_CPtr timer_frame;
+    seL4_CPtr timer_untyped;
+    /* physical address of the timeout timer */
+    uintptr_t timer_paddr;
+
     /* cap to the sel4platsupport default timer io port */
     seL4_CPtr io_port;
 

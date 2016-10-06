@@ -10,57 +10,36 @@
 
 #include "../../test.h"
 
+#include <sel4platsupport/device.h>
 #include <sel4platsupport/plat/timer.h>
 #include <sel4platsupport/plat/serial.h>
 
 void
 arch_init_timer_caps(env_t env)
 {
-    /* get the timer frame cap */
-    seL4_CPtr cap;
-    seL4_Word cookie;
-    int error = vka_cspace_alloc(&env->vka, &cap);
-    if (error) {
-        ZF_LOGF("Failed to allocate cslot for timer frame cap path");
-    }
-
-    vka_cspace_make_path(&env->vka, cap, &env->frame_path);
-    error = vka_utspace_alloc_at(&env->vka, &env->frame_path, kobject_get_type(KOBJECT_FRAME, PAGE_BITS_4K), PAGE_BITS_4K, DEFAULT_TIMER_PADDR, &cookie);
-    if (error) {
-        ZF_LOGF("Failed to get frame cap for %p\n", (void *) DEFAULT_TIMER_PADDR);
-    }
+    int error = sel4platsupport_copy_irq_cap(&env->vka, &env->simple, DEFAULT_TIMER_INTERRUPT,
+            &env->irq_path);
+    ZF_LOGF_IF(error, "Failed to copy irq cap");
 }
 
 void
 arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-
-    /* Timer frame cap (only for arm). Here we assume the sel4platsupport
-     * default timer only requires one frame. */
-    init->timer_frame = copy_cap_to_process(test_process, env->frame_path.capPtr);
-    if (init->timer_frame == 0) {
-        ZF_LOGF("Failed to copy timer frame cap to process");
-    }
+    /* nothing to do */
 }
 
 int
 arch_init_serial_caps(env_t env)
 {
     /* Get the serial frame cap */
-    int error;
+    vka_object_t serial = {0};
+    int error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, DEFAULT_SERIAL_PADDR,
+                                     &serial);
+    ZF_LOGF_IF(error, "Failed to allocate untyped for serial at %x\n",
+               DEFAULT_SERIAL_PADDR);
 
-    error = vka_cspace_alloc_path(&env->vka, &env->serial_frame_path);
-    if (error != 0) {
-        ZF_LOGE("Failed to alloc slot for serial Frame cap.");
-        return error;
-    }
+    vka_cspace_make_path(&env->vka, serial.cptr, &env->serial_frame_path);
     env->serial_frame_paddr = DEFAULT_SERIAL_PADDR;
-    error = simple_get_frame_cap(&env->simple, (void *) env->serial_frame_paddr,
-                                 PAGE_BITS_4K, &env->serial_frame_path);
-    if (error != 0) {
-        ZF_LOGE("Failed to get Frame cap for serial device.");
-        return error;
-    }
     return 0;
 }
 

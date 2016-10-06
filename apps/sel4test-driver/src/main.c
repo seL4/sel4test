@@ -23,6 +23,7 @@
 #include <platsupport/timer.h>
 
 #include <sel4debug/register_dump.h>
+#include <sel4platsupport/device.h>
 #include <sel4platsupport/platsupport.h>
 #include <sel4platsupport/plat/timer.h>
 #include <sel4utils/vspace.h>
@@ -224,6 +225,11 @@ copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_pro
     init->timer_irq = copy_cap_to_process(test_process, env->irq_path.capPtr);
     assert(init->timer_irq != 0);
 
+    /* untyped cap for timer device untyped */
+    init->timer_paddr = env->timer_paddr;
+    init->timer_untyped = copy_cap_to_process(test_process, env->timer_untyped.cptr);
+    assert(init->timer_untyped != 0);
+
     arch_copy_timer_caps(init, env, test_process);
 }
 
@@ -330,19 +336,15 @@ run_test(struct testcase *test)
 static void
 init_timer_caps(env_t env)
 {
-    /* get the irq control cap */
+    /* allocate a cslot for the irq control cap */
     seL4_CPtr cap;
     int error = vka_cspace_alloc(&env->vka, &cap);
-    if (error != 0) {
-        ZF_LOGF("Failed to allocate cslot, error %d", error);
-    }
-
+    ZF_LOGF_IF(error, "Failed to allocate cslot, error %d", error);
     vka_cspace_make_path(&env->vka, cap, &env->irq_path);
-    error = simple_get_IRQ_control(&env->simple, DEFAULT_TIMER_INTERRUPT, env->irq_path);
 
-    if (error != 0) {
-        ZF_LOGF("Failed to get IRQ control, error %d", error);
-    }
+    env->timer_paddr = sel4platsupport_get_default_timer_paddr(&env->vka, &env->vspace);
+    error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, env->timer_paddr, &env->timer_untyped);
+    ZF_LOGF_IF(error, "Failed to get untyped at paddr %x for timer\n", env->timer_paddr);
 
     arch_init_timer_caps(env);
 }

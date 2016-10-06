@@ -15,6 +15,7 @@
 #include <sel4utils/thread.h>
 #include <sel4utils/process.h>
 #include <sel4utils/mapping.h>
+#include <sel4test/test.h>
 
 #include <sel4platsupport/timer.h>
 #include <platsupport/timer.h>
@@ -46,7 +47,7 @@ struct env {
     seL4_CPtr page_directory;
     seL4_CPtr endpoint;
     seL4_CPtr tcb;
-    seL4_CPtr timer_frame;
+    seL4_CPtr timer_untyped;
     seL4_CPtr asid_pool;
     seL4_CPtr asid_ctrl;
 #ifdef CONFIG_IOMMU

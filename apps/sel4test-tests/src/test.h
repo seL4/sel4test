@@ -17,12 +17,11 @@
 #include <vka/vka.h>
 #include <vka/object.h>
 #include <sel4test/test.h>
+#include <sel4platsupport/timer.h>
 #include <simple/simple.h>
 #include <vspace/vspace.h>
 
 /* This file is a symlink to the original in sel4test-driver. */
 #include <test_init_data.h>
-
-void arch_init_simple(simple_t *simple);
 
 #endif /* __TEST_H */

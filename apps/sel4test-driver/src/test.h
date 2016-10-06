@@ -34,13 +34,12 @@ struct env {
     /* path for the default timer irq handler */
     cspacepath_t irq_path;
     /* frame for the default timer */
-    cspacepath_t frame_path;
-    /* io port for the default timer */
-    seL4_CPtr io_port_cap;
-
+    vka_object_t timer_untyped;
+    /* physical address of the default timer */
+    uintptr_t  timer_paddr;
     /* path for the default serial irq handler */
     cspacepath_t serial_irq_path;
-    /* frame for the default serial */
+    /* untyped for the default serial */
     cspacepath_t serial_frame_path;
     /* physical address of the serial frame */
     uintptr_t serial_frame_paddr;

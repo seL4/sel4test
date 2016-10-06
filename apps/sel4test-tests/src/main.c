@@ -34,6 +34,7 @@
 
 #include "helpers.h"
 #include "test.h"
+#include "init.h"
 
 /* dummy global for libsel4muslcsys */
 char _cpio_archive[1];
@@ -122,21 +123,32 @@ init_allocator(env_t env, test_init_data_t *init_data)
     /* fill the allocator with untypeds */
     seL4_CPtr slot;
     unsigned int size_bits_index;
+    size_t size_bits;
+    cspacepath_t path;
     for (slot = init_data->untypeds.start, size_bits_index = 0;
             slot <= init_data->untypeds.end;
             slot++, size_bits_index++) {
 
-        cspacepath_t path;
         vka_cspace_make_path(&env->vka, slot, &path);
         /* allocman doesn't require the paddr unless we need to ask for phys addresses,
          * which we don't. */
-        uintptr_t fake_paddr = 0;
-        size_t size_bits = init_data->untyped_size_bits_list[size_bits_index];
-        error = allocman_utspace_add_uts(allocator, 1, &path, &size_bits, &fake_paddr, ALLOCMAN_UT_KERNEL);
+        size_bits = init_data->untyped_size_bits_list[size_bits_index];
+        error = allocman_utspace_add_uts(allocator, 1, &path, &size_bits, NULL,
+                                         ALLOCMAN_UT_KERNEL);
         if (error) {
             ZF_LOGF("Failed to add untyped objects to allocator");
         }
     }
+
+    /* add timeout timer to the allocator */
+    size_bits = seL4_PageBits;
+    vka_cspace_make_path(&env->vka, init_data->timer_untyped, &path);
+    error = allocman_utspace_add_uts(allocator, 1, &path, &size_bits,
+                                     &init_data->timer_paddr, ALLOCMAN_UT_DEV);
+    ZF_LOGF_IF(error, "Failed to add timer ut to allocator");
+
+    /* add any arch specific objects to the allocator */
+    arch_init_allocator(allocator, &env->vka, init_data);
 
     /* create a vspace */
     void *existing_frames[init_data->stack_pages + 2];
@@ -168,10 +180,10 @@ get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
     test_init_data_t *init = (test_init_data_t *) data;
     assert(irq == DEFAULT_TIMER_INTERRUPT);
 
-    int error = seL4_CNode_Copy(root, index, depth, init->root_cnode,
-                                init->timer_irq, seL4_WordBits, seL4_AllRights);
+    int error = seL4_CNode_Move(root, index, depth, init->root_cnode,
+                                init->timer_irq, seL4_WordBits);
     if (error != 0) {
-        ZF_LOGF("Failed to copy irq cap\n");
+        ZF_LOGF("Failed to move irq cap\n");
     }
 
     return error;
@@ -185,17 +197,14 @@ void init_timer(env_t env, test_init_data_t *init_data)
     env->simple.data = (void *) init_data;
     env->simple.arch_simple.data = (void *) init_data;
 
-    UNUSED int error;
-
     arch_init_simple(&env->simple);
 
-    error = vka_alloc_notification(&env->vka, &env->timer_notification);
+    int error = vka_alloc_notification(&env->vka, &env->timer_notification);
     if (error != 0) {
         ZF_LOGF("Failed to allocate notification object");
     }
 
-    env->timer = sel4platsupport_get_default_timer(&env->vka, &env->vspace,
-                                                   &env->simple, env->timer_notification.cptr);
+    env->timer = arch_init_timer(env, init_data);
     if (env->timer == NULL) {
         ZF_LOGF("Failed to initialise default timer");
     }
@@ -233,7 +242,7 @@ main(int argc, char **argv)
     env.cspace_size_bits = init_data->cspace_size_bits;
     env.tcb = init_data->tcb;
     env.domain = init_data->domain;
-    env.timer_frame = init_data->timer_frame;
+    env.timer_untyped = init_data->timer_untyped;
     env.asid_pool = init_data->asid_pool;
     env.asid_ctrl = init_data->asid_ctrl;
 #ifdef CONFIG_IOMMU

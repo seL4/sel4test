@@ -20,7 +20,8 @@ CONFIG_ARCH_IA32=y
 CONFIG_PLAT_PC99=y
 CONFIG_PCI=y
 # CONFIG_IOMMU is not set
-
+# CONFIG_IRQ_PIC is not set
+CONFIG_IRQ_IOAPIC=y
 #
 # seL4 System Parameters
 #

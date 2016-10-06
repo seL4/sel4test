@@ -7,42 +7,33 @@
  *
  * @TAG(NICTA_BSD)
  */
-#include "../../test.h"
 
-#include <sel4platsupport/timer.h>
-#include <sel4platsupport/plat/timer.h>
+#include "../../init.h"
 #include <sel4platsupport/plat/serial.h>
-#include <platsupport/timer.h>
 
-static seL4_Error
-get_frame_cap(void *data, void *paddr, int size_bits, cspacepath_t *path)
+void
+arch_init_allocator(allocman_t *alloc, vka_t *vka, test_init_data_t *data)
 {
-    seL4_CPtr src_cap = 0;
 
-    test_init_data_t *init = (test_init_data_t *) data;
+    /* add serial frame */
+    size_t size_bits = seL4_PageBits;
+    uintptr_t paddr = DEFAULT_SERIAL_PADDR;
+    cspacepath_t path;
+    vka_cspace_make_path(vka, data->serial_frame, &path);
+    int error = allocman_utspace_add_uts(alloc, 1, &path,
+                                         &size_bits, &paddr,
+                                         ALLOCMAN_UT_DEV);
+    ZF_LOGF_IF(error, "Failed to add serial ut to allocator");
+}
 
-    assert(size_bits == seL4_PageBits);
-    switch ((uintptr_t)paddr) {
-    case DEFAULT_TIMER_PADDR:
-        src_cap = init->timer_frame;
-        break;
-    case DEFAULT_SERIAL_PADDR:
-        src_cap = init->serial_frame;
-        break;
-    default:
-        ZF_LOGF("Unsupported paddr %p requested. No Frame cap available.", paddr);
-    }
-
-    int error = seL4_CNode_Copy(path->root, path->capPtr, path->capDepth, init->root_cnode,
-                                src_cap, seL4_WordBits, seL4_AllRights);
-    assert(error == seL4_NoError);
-
-    return error;
+seL4_timer_t *
+arch_init_timer(env_t env, test_init_data_t *data)
+{
+   return sel4platsupport_get_default_timer(&env->vka, &env->vspace, &env->simple,
+                                            env->timer_notification.cptr);
 }
 
 void
-arch_init_simple(simple_t *simple)
-{
-    simple->frame_cap = get_frame_cap;
+arch_init_simple(simple_t *simple) {
+    /* nothing to do */
 }
-

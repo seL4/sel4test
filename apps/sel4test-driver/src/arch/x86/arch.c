@@ -15,10 +15,8 @@
 void
 arch_init_timer_caps(env_t env)
 {
-    env->io_port_cap = simple_get_IOPort_cap(&env->simple, PIT_IO_PORT_MIN, PIT_IO_PORT_MAX);
-    if (env->io_port_cap == 0) {
-        ZF_LOGF("Failed to get IO port cap for range %x to %x.", PIT_IO_PORT_MIN, PIT_IO_PORT_MAX);
-    }
+    int error = arch_simple_get_msi(&env->simple.arch_simple, env->irq_path, 0, 0, 0, 0, DEFAULT_TIMER_INTERRUPT);
+    ZF_LOGF_IF(error, "Failed to copy irq cap");
 }
 
 int
@@ -81,8 +79,6 @@ arch_init_serial_caps(env_t env)
 void
 arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-    /* io port cap (since the default timer on ia32 is the PIT) */
-    init->io_port = copy_cap_to_process(test_process, env->io_port_cap);
 }
 
 void
