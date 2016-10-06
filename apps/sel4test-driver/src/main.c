@@ -26,6 +26,7 @@
 #include <sel4platsupport/device.h>
 #include <sel4platsupport/platsupport.h>
 #include <sel4platsupport/plat/timer.h>
+#include <sel4platsupport/timer.h>
 #include <sel4utils/vspace.h>
 #include <sel4utils/stack.h>
 #include <sel4utils/process.h>
