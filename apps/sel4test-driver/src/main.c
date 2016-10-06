@@ -349,16 +349,6 @@ init_timer_caps(env_t env)
     arch_init_timer_caps(env);
 }
 
-static void
-init_serial_caps(env_t env)
-{
-    int error;
-
-    error = arch_init_serial_caps(env);
-    ZF_LOGF_IF(error != 0,
-               "Err %d: Failed to initialize platform serial caps.", error);
-}
-
 void *main_continued(void *arg UNUSED)
 {
 
@@ -414,13 +404,17 @@ void *main_continued(void *arg UNUSED)
     return NULL;
 }
 
-static seL4_Error serial_frame_cap_wrapper(void *data, void *paddr, int size_bits, cspacepath_t *path)
+static int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,
+        uintptr_t paddr, seL4_Word *cookie)
 {
     if (env.serial_frame_paddr == (uintptr_t)paddr) {
-        return vka_cnode_copy(path, &env.serial_frame_path, seL4_AllRights);
+        return vka_cnode_copy(dest, &env.serial_frame_path, seL4_AllRights);
     }
-    return env.simple.frame_cap(data, paddr, size_bits, path);
+
+    assert(env.vka.utspace_alloc_at);
+    return env.vka.utspace_alloc_at(data, dest, type, size_bits, paddr, cookie);
 }
+
 
 int main(void)
 {
@@ -438,20 +432,24 @@ int main(void)
     /* initialise the test environment - allocator, cspace manager, vspace manager, timer */
     init_env(&env);
 
-    /* Initialize the serial so that we can start using it ourselves */
-    init_serial_caps(&env);
+    /* initialise the serial cap - sel4test-driver and sel4test-tests use this cap, so we need
+     * to allocate it and make copies of it to hand out */
+    int error = arch_init_serial_caps(&env);
+    ZF_LOGF_IF(error != 0,
+               "Err %d: Failed to initialize platform serial caps.", error);
 
-    /* Construct a simple wrapper for returning the serial frame. We need to create this
-     * wrapper as the actual simple implementation will only allocate/return any given
+    /* Construct a vka wrapper for returning the serial frame. We need to create this
+     * wrapper as the actual vka implementation will only allocate/return any given
      * device frame once. As we already allocated it in init_serial_caps when we the
      * platsupport_serial_setup_simple attempts to allocate it will fail. This wrapper
      * just returns a copy of the one we already allocated, whilst passing all other
-     * requests on to the actual simple */
-    simple_t serial_simple = env.simple;
-    serial_simple.frame_cap = serial_frame_cap_wrapper;
+     * requests on to the actual vka */
+    vka_t serial_vka = env.vka;
+    serial_vka.utspace_alloc_at = serial_utspace_alloc_at_fn;
+
 
     /* enable serial driver */
-    platsupport_serial_setup_simple(NULL, &serial_simple, &env.vka);
+    platsupport_serial_setup_simple(&env.vspace, &env.simple, &serial_vka);
 
     simple_print(&env.simple);
     /* switch to a bigger, safer stack with a guard page
@@ -459,7 +457,7 @@ int main(void)
     printf("Switching to a safer, bigger stack... ");
     fflush(stdout);
     void *res;
-    int error = sel4utils_run_on_stack(&env.vspace, main_continued, NULL, &res);
+    error = sel4utils_run_on_stack(&env.vspace, main_continued, NULL, &res);
     test_assert_fatal(error == 0);
     test_assert_fatal(res == 0);
 

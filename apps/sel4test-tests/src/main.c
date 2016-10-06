@@ -148,7 +148,7 @@ init_allocator(env_t env, test_init_data_t *init_data)
     ZF_LOGF_IF(error, "Failed to add timer ut to allocator");
 
     /* add any arch specific objects to the allocator */
-    arch_init_allocator(allocator, &env->vka, init_data);
+    arch_init_allocator(env, init_data);
 
     /* create a vspace */
     void *existing_frames[init_data->stack_pages + 2];
