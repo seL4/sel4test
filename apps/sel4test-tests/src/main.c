@@ -204,9 +204,11 @@ void init_timer(env_t env, test_init_data_t *init_data)
         ZF_LOGF("Failed to allocate notification object");
     }
 
-    env->timer = arch_init_timer(env, init_data);
-    if (env->timer == NULL) {
-        ZF_LOGF("Failed to initialise default timer");
+    if (config_set(CONFIG_HAVE_TIMER)) {
+        env->timer = arch_init_timer(env, init_data);
+        if (env->timer == NULL) {
+            ZF_LOGF("Failed to initialise default timer");
+        }
     }
 }
 

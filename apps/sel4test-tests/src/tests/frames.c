@@ -290,7 +290,7 @@ static int test_xn_large_frame(env_t env)
 DEFINE_TEST(FRAMEXN0002, "Test that we can map a large frame XN", test_xn_large_frame)
 
 #endif
-
+#ifdef CONFIG_HAVE_TIMER
 static int test_device_frame_ipcbuf(env_t env)
 {
     cspacepath_t path;
@@ -356,4 +356,4 @@ static int test_switch_device_frame_ipcbuf(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(FRAMEDIPC0002, "Test that we cannot switch a threads IPC buffer to a device frame", test_switch_device_frame_ipcbuf)
-
+#endif /* CONFIG_HAVE_TIMER */
