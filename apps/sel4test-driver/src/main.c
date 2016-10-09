@@ -345,7 +345,7 @@ init_timer_caps(env_t env)
 
     env->timer_paddr = sel4platsupport_get_default_timer_paddr(&env->vka, &env->vspace);
     error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, env->timer_paddr, &env->timer_untyped);
-    ZF_LOGF_IF(error, "Failed to get untyped at paddr %x for timer\n", env->timer_paddr);
+    ZF_LOGF_IF(error, "Failed to get untyped at paddr %p for timer\n", (void*)env->timer_paddr);
 
     arch_init_timer_caps(env);
 }
