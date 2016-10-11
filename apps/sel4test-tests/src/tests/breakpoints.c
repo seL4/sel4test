@@ -140,7 +140,7 @@ breakpoint_triggerer_main(seL4_Word type, seL4_Word size, seL4_Word rw, seL4_Wor
     } else if (type == seL4_SoftwareBreakRequest) {
         TEST_SOFTWARE_BREAK_ASM();
     } else {
-        ZF_LOGE("Unknown breakpoint type %d requested.\n", type);
+        ZF_LOGE("Unknown breakpoint type %zd requested.\n", type);
     }
 
     return 0;
@@ -173,7 +173,7 @@ breakpoint_handler_main(seL4_Word _fault_ep_cspath, seL4_Word a1, seL4_Word a2, 
     case seL4_DebugException:
         return 0;
     default:
-        ZF_LOGE("Fault of type %d received. Vaddr %u\n", label, fault_data.vaddr);
+        ZF_LOGE("Fault of type %zd received. Vaddr %zu\n", label, fault_data.vaddr);
         fault_data.bp_num = 0;
         return -1;
     }
@@ -208,7 +208,7 @@ test_debug_set_instruction_breakpoint(struct env *env)
     int error, result;
     helper_thread_t faulter_thread, handler_thread;
 
-    for (int i = TEST_FIRST_INSTR_BP; i < TEST_FIRST_INSTR_BP + TEST_NUM_INSTR_BPS;
+    for (seL4_Word i = TEST_FIRST_INSTR_BP; i < TEST_FIRST_INSTR_BP + TEST_NUM_INSTR_BPS;
          i++)
     {
         test_eq(setup_caps_for_test(env),  0);
@@ -236,7 +236,7 @@ test_debug_set_instruction_breakpoint(struct env *env)
                fault_data.vaddr, fault_data.reason, fault_data.vaddr2, fault_data.bp_num);
         test_eq(result, 0);
         test_eq(fault_data.bp_num, i);
-        test_eq(fault_data.reason, seL4_InstructionBreakpoint);
+        test_eq(fault_data.reason, (seL4_Word)seL4_InstructionBreakpoint);
         test_eq(fault_data.vaddr, (seL4_Word)&breakpoint_code);
     }
 
@@ -251,7 +251,7 @@ test_debug_set_data_breakpoint(struct env *env)
     int error, result;
     helper_thread_t faulter_thread, handler_thread;
 
-    for (int i = TEST_FIRST_DATA_WP; i < TEST_FIRST_DATA_WP + TEST_NUM_DATA_WPS;
+    for (seL4_Word i = TEST_FIRST_DATA_WP; i < TEST_FIRST_DATA_WP + TEST_NUM_DATA_WPS;
          i++)
     {
         test_eq(setup_caps_for_test(env), 0);
@@ -276,7 +276,7 @@ test_debug_set_data_breakpoint(struct env *env)
                fault_data.vaddr, fault_data.reason, fault_data.vaddr2, fault_data.bp_num);
         test_eq(result, 0);
         test_eq(fault_data.bp_num, i);
-        test_eq(fault_data.reason, seL4_DataBreakpoint);
+        test_eq(fault_data.reason, (seL4_Word)seL4_DataBreakpoint);
         test_eq(fault_data.vaddr2, (seL4_Word)&bpd);
     }
     return sel4test_get_result();
@@ -490,7 +490,7 @@ test_debug_api_software_break_request(struct env *env)
     cleanup_helper(env, &handler_thread);
     /* Ensure the fault address is the address of the function */
     test_eq(result, 0);
-    test_eq(fault_data.reason, seL4_SoftwareBreakRequest);
+    test_eq(fault_data.reason, (seL4_Word)seL4_SoftwareBreakRequest);
     return sel4test_get_result();
 }
 DEFINE_TEST(BREAK_REQUEST_001, "Use an INT3/BKPT instruction to trigger a "

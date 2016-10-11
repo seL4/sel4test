@@ -62,7 +62,7 @@ int debugger_main(seL4_Word a0, seL4_Word a1, seL4_Word a2, seL4_Word a3)
     tag = seL4_Recv(fault_ep_cspath.capPtr, &badge);
 
     if (seL4_MessageInfo_get_label(tag) != seL4_DebugException) {
-        ZF_LOGE("debugger: Got unexpected fault %d.\n",
+        ZF_LOGE("debugger: Got unexpected fault %zd.\n",
                seL4_MessageInfo_get_label(tag));
         return -1;
     }
@@ -107,7 +107,7 @@ int debugger_main(seL4_Word a0, seL4_Word a1, seL4_Word a2, seL4_Word a3)
         fault_data.bp_num = seL4_GetMR(seL4_DebugException_TriggerAddress);
         if (fault_data.reason != seL4_SingleStep) {
             ZF_LOGE("Debugger: while single stepping, got debug exception, but "
-                   "for the wrong reason (reason %d).\n",
+                   "for the wrong reason (reason %zd).\n",
                    fault_data.reason);
             return -1;
         }
