@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Project Configuration
-# Wed Oct 12 14:47:01 2016
+# Wed Oct 12 14:53:30 2016
 #
 
 #
@@ -34,15 +34,15 @@ CONFIG_PLAT_PC99=y
 # CONFIG_IRQ_PIC is not set
 CONFIG_IRQ_IOAPIC=y
 CONFIG_MAX_NUM_IOAPIC=1
-CONFIG_HUGE_PAGE=y
-CONFIG_SUPPORT_PCID=y
+# CONFIG_HUGE_PAGE is not set
+# CONFIG_SUPPORT_PCID is not set
 # CONFIG_SYSENTER is not set
 CONFIG_SYSCALL=y
 CONFIG_FXSAVE=y
 # CONFIG_XSAVE is not set
 CONFIG_XSAVE_SIZE=512
-# CONFIG_FSGSBASE_MSR is not set
-CONFIG_FSGSBASE_INST=y
+CONFIG_FSGSBASE_MSR=y
+# CONFIG_FSGSBASE_INST is not set
 
 #
 # seL4 System Parameters
@@ -84,8 +84,8 @@ CONFIG_OPTIMISATION_O2=y
 # seL4 Applications
 #
 CONFIG_APP_SEL4TEST=y
-CONFIG_HAVE_TIMER=y
-CONFIG_HAVE_CACHE=y
+# CONFIG_HAVE_TIMER is not set
+# CONFIG_HAVE_CACHE is not set
 CONFIG_APP_TESTS=y
 
 #
