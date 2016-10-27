@@ -31,7 +31,7 @@
 #ifdef CONFIG_VTX
 
 static int
-map_ept_from_pdpt(env_t env, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr *pt, seL4_CPtr *frame)
+map_ept_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr *pt, seL4_CPtr *frame)
 {
     int error;
 
@@ -42,31 +42,39 @@ map_ept_from_pdpt(env_t env, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr *pt, seL4_
     *frame = vka_alloc_frame_leaky(&env->vka, seL4_PageBits);
     test_assert_fatal(*frame);
 
-    error = seL4_IA32_EPTPageDirectory_Map(*pd, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_EPTPD_Map(*pd, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error == seL4_NoError);
-    error = seL4_IA32_EPTPageTable_Map(*pt, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_EPTPT_Map(*pt, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error == seL4_NoError);
-    error = seL4_IA32_Page_Map(*frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_Page_MapEPT(*frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error == seL4_NoError);
 
     return error;
 }
 
 static int
-map_ept_set(env_t env, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPtr *pt, seL4_CPtr *frame)
+map_ept_set(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPtr *pt, seL4_CPtr *frame)
 {
     int error;
 
+    *pml4 = vka_alloc_ept_pml4_leaky(&env->vka);
+    test_assert_fatal(*pml4);
     *pdpt = vka_alloc_ept_page_directory_pointer_table_leaky(&env->vka);
     test_assert_fatal(*pdpt);
 
-    error = map_ept_from_pdpt(env, *pdpt, pd, pt, frame);
+    error = seL4_X86_ASIDPool_Assign(env->asid_pool, *pml4);
+    test_assert(error == seL4_NoError);
+
+    error = seL4_X86_EPTPDPT_Map(*pdpt, *pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
+    test_assert(error == seL4_NoError);
+
+    error = map_ept_from_pdpt(env, *pml4, *pdpt, pd, pt, frame);
 
     return error;
 }
 
 static int
-map_ept_set_large_from_pdpt(env_t env, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr *frame)
+map_ept_set_large_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr *frame)
 {
     int error;
 
@@ -75,11 +83,11 @@ map_ept_set_large_from_pdpt(env_t env, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr 
     *frame = vka_alloc_frame_leaky(&env->vka, seL4_LargePageBits);
     test_assert_fatal(*frame);
 
-    error = seL4_IA32_EPTPageDirectory_Map(*pd, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_EPTPD_Map(*pd, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     if (error != seL4_NoError) {
         return error;
     }
-    error = seL4_IA32_Page_Map(*frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_Page_MapEPT(*frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
     if (error != seL4_NoError) {
         return error;
     }
@@ -88,14 +96,24 @@ map_ept_set_large_from_pdpt(env_t env, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr 
 }
 
 static int
-map_ept_set_large(env_t env, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPtr *frame)
+map_ept_set_large(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPtr *frame)
 {
     int error;
 
+    *pml4 = vka_alloc_ept_pml4_leaky(&env->vka);
+    test_assert_fatal(*pml4);
     *pdpt = vka_alloc_ept_page_directory_pointer_table_leaky(&env->vka);
     test_assert_fatal(*pdpt);
 
-    error = map_ept_set_large_from_pdpt(env, *pdpt, pd, frame);
+    error = seL4_X86_ASIDPool_Assign(env->asid_pool, *pml4);
+    test_assert(error == seL4_NoError);
+
+    error = seL4_X86_EPTPDPT_Map(*pdpt, *pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
+    if (error != seL4_NoError) {
+        return error;
+    }
+
+    error = map_ept_set_large_from_pdpt(env, *pml4, *pdpt, pd, frame);
 
     return error;
 }
@@ -104,8 +122,8 @@ static int
 test_ept_basic_ept(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, pt, frame;
-    error = map_ept_set(env, &pdpt, &pd, &pt, &frame);
+    seL4_CPtr pml4, pdpt, pd, pt, frame;
+    error = map_ept_set(env, &pml4, &pdpt, &pd, &pt, &frame);
     test_assert(error == seL4_NoError);
     return sel4test_get_result();
 }
@@ -115,25 +133,25 @@ static int
 test_ept_basic_map_unmap(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, pt, frame;
-    error = map_ept_set(env, &pdpt, &pd, &pt, &frame);
+    seL4_CPtr pml4, pdpt, pd, pt, frame;
+    error = map_ept_set(env, &pml4, &pdpt, &pd, &pt, &frame);
     test_assert(error == seL4_NoError);
 
-    error = seL4_IA32_Page_Unmap(frame);
+    error = seL4_X86_Page_Unmap(frame);
     test_assert(error == seL4_NoError);
-    error = seL4_IA32_EPTPageTable_Unmap(pt);
+    error = seL4_X86_EPTPT_Unmap(pt);
     test_assert(error == seL4_NoError);
-    error = seL4_IA32_EPTPageDirectory_Unmap(pd);
-    test_assert(error == seL4_NoError);
-
-    error = map_ept_from_pdpt(env, pdpt, &pd, &pt, &frame);
+    error = seL4_X86_EPTPD_Unmap(pd);
     test_assert(error == seL4_NoError);
 
-    error = seL4_IA32_EPTPageDirectory_Unmap(pd);
+    error = map_ept_from_pdpt(env, pml4, pdpt, &pd, &pt, &frame);
     test_assert(error == seL4_NoError);
-    error = seL4_IA32_EPTPageTable_Unmap(pt);
+
+    error = seL4_X86_EPTPD_Unmap(pd);
     test_assert(error == seL4_NoError);
-    error = seL4_IA32_Page_Unmap(frame);
+    error = seL4_X86_EPTPT_Unmap(pt);
+    test_assert(error == seL4_NoError);
+    error = seL4_X86_Page_Unmap(frame);
     test_assert(error == seL4_NoError);
 
     return sel4test_get_result();
@@ -144,21 +162,21 @@ static int
 test_ept_basic_map_unmap_large(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, frame;
-    error = map_ept_set_large(env, &pdpt, &pd, &frame);
+    seL4_CPtr pml4, pdpt, pd, frame;
+    error = map_ept_set_large(env, &pml4, &pdpt, &pd, &frame);
     test_assert(error == seL4_NoError);
 
-    error = seL4_IA32_Page_Unmap(frame);
+    error = seL4_X86_Page_Unmap(frame);
     test_assert(error == seL4_NoError);
-    error = seL4_IA32_EPTPageDirectory_Unmap(pd);
-    test_assert(error == seL4_NoError);
-
-    error = map_ept_set_large_from_pdpt(env, pdpt, &pd, &frame);
+    error = seL4_X86_EPTPD_Unmap(pd);
     test_assert(error == seL4_NoError);
 
-    error = seL4_IA32_EPTPageDirectory_Unmap(pd);
+    error = map_ept_set_large_from_pdpt(env, pml4, pdpt, &pd, &frame);
     test_assert(error == seL4_NoError);
-    error = seL4_IA32_Page_Unmap(frame);
+
+    error = seL4_X86_EPTPD_Unmap(pd);
+    test_assert(error == seL4_NoError);
+    error = seL4_X86_Page_Unmap(frame);
     test_assert(error == seL4_NoError);
 
     return sel4test_get_result();
@@ -169,16 +187,16 @@ static int
 test_ept_regression_1(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, frame;
-    error = map_ept_set_large(env, &pdpt, &pd, &frame);
+    seL4_CPtr pml4, pdpt, pd, frame;
+    error = map_ept_set_large(env, &pml4, &pdpt, &pd, &frame);
     test_assert(error == seL4_NoError);
 
-    error = seL4_IA32_Page_Unmap(frame);
+    error = seL4_X86_Page_Unmap(frame);
     test_assert(error == seL4_NoError);
-    error = seL4_IA32_EPTPageDirectory_Unmap(frame);
+    error = seL4_X86_EPTPD_Unmap(frame);
     test_assert(error != seL4_NoError);
 
-    error = map_ept_set_large_from_pdpt(env, pdpt, &pd, &frame);
+    error = map_ept_set_large_from_pdpt(env, pml4, pdpt, &pd, &frame);
     test_assert(error != seL4_NoError);
 
     return sel4test_get_result();
@@ -189,21 +207,21 @@ static int
 test_ept_regression_2(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, frame;
-    error = map_ept_set_large(env, &pdpt, &pd, &frame);
+    seL4_CPtr pml4, pdpt, pd, frame;
+    error = map_ept_set_large(env, &pml4, &pdpt, &pd, &frame);
     test_assert(error == seL4_NoError);
 
-    error = seL4_IA32_Page_Unmap(frame);
+    error = seL4_X86_Page_Unmap(frame);
     test_assert(error == seL4_NoError);
-    error = seL4_IA32_EPTPageDirectory_Unmap(pd);
-    test_assert(error == seL4_NoError);
-
-    error = map_ept_set_large_from_pdpt(env, pdpt, &pd, &frame);
+    error = seL4_X86_EPTPD_Unmap(pd);
     test_assert(error == seL4_NoError);
 
-    error = seL4_IA32_EPTPageDirectory_Unmap(frame);
+    error = map_ept_set_large_from_pdpt(env, pml4, pdpt, &pd, &frame);
+    test_assert(error == seL4_NoError);
+
+    error = seL4_X86_EPTPD_Unmap(frame);
     test_assert(error != seL4_NoError);
-    error = seL4_IA32_Page_Unmap(frame);
+    error = seL4_X86_Page_Unmap(frame);
     test_assert(error == seL4_NoError);
 
     return sel4test_get_result();
@@ -214,13 +232,13 @@ static int
 test_ept_no_overlapping_4k(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, pt, frame;
-    error = map_ept_set(env, &pdpt, &pd, &pt, &frame);
+    seL4_CPtr pml4, pdpt, pd, pt, frame;
+    error = map_ept_set(env, &pml4, &pdpt, &pd, &pt, &frame);
     test_assert(error == seL4_NoError);
 
     frame = vka_alloc_frame_leaky(&env->vka, seL4_PageBits);
     test_assert_fatal(frame);
-    error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
 }
@@ -230,13 +248,13 @@ static int
 test_ept_no_overlapping_large(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, frame;
-    error = map_ept_set_large(env, &pdpt, &pd, &frame);
+    seL4_CPtr pml4, pdpt, pd, frame;
+    error = map_ept_set_large(env, &pml4, &pdpt, &pd, &frame);
     test_assert(error == seL4_NoError);
 
     frame = vka_alloc_frame_leaky(&env->vka, seL4_LargePageBits);
     test_assert_fatal(frame);
-    error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
 }
@@ -247,27 +265,27 @@ static int
 test_ept_aligned_4m(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, frame, frame2;
-    error = map_ept_set_large(env, &pdpt, &pd, &frame);
+    seL4_CPtr pml4, pdpt, pd, frame, frame2;
+    error = map_ept_set_large(env, &pml4, &pdpt, &pd, &frame);
     test_assert(error == seL4_NoError);
 
     frame2 = vka_alloc_frame_leaky(&env->vka, seL4_4MBits);
     test_assert_fatal(frame2);
     /* Try and map a page at +2m */
-    error = seL4_IA32_Page_Map(frame2, pdpt, EPT_MAP_BASE + OFFSET_2MB, seL4_AllRights, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_Page_MapEPT(frame2, pml4, EPT_MAP_BASE + OFFSET_2MB, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
     /* But we should be able to map it at +4m */
-    error = seL4_IA32_Page_Map(frame2, pdpt, EPT_MAP_BASE + OFFSET_4MB, seL4_AllRights, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_Page_MapEPT(frame2, pml4, EPT_MAP_BASE + OFFSET_4MB, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error == seL4_NoError);
 
     /* Unmap them both */
-    error = seL4_IA32_Page_Unmap(frame);
+    error = seL4_X86_Page_Unmap(frame);
     test_assert(error == seL4_NoError);
-    error = seL4_IA32_Page_Unmap(frame2);
+    error = seL4_X86_Page_Unmap(frame2);
     test_assert(error == seL4_NoError);
 
     /* Now map the first one at +2m, which should just flat out fail */
-    error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE + OFFSET_2MB, seL4_AllRights, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE + OFFSET_2MB, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
 
     return sel4test_get_result();
@@ -280,39 +298,39 @@ static int
 test_ept_no_overlapping_pt_4m(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, pt, frame;
-    error = map_ept_set_large(env, &pdpt, &pd, &frame);
+    seL4_CPtr pml4, pdpt, pd, pt, frame;
+    error = map_ept_set_large(env, &pml4, &pdpt, &pd, &frame);
     test_assert(error == seL4_NoError);
 
     pt = vka_alloc_ept_page_table_leaky(&env->vka);
     test_assert_fatal(pt);
     /* now try and map a PT at both 2m entries */
-    error = seL4_IA32_EPTPageTable_Map(pt, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
-    error = seL4_IA32_EPTPageTable_Map(pt, pdpt, EPT_MAP_BASE + OFFSET_2MB, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE + OFFSET_2MB, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
 
     /* unmap PT and frame */
-    error = seL4_IA32_EPTPageTable_Unmap(pt);
+    error = seL4_X86_EPTPT_Unmap(pt);
     test_assert(error == seL4_NoError);
-    error = seL4_IA32_Page_Unmap(frame);
+    error = seL4_X86_Page_Unmap(frame);
     test_assert(error == seL4_NoError);
 
     /* put the page table in this time */
-    error = seL4_IA32_EPTPageTable_Map(pt, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error == seL4_NoError);
     /* now try the frame */
-    error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
 
     /* unmap the PT */
-    error = seL4_IA32_EPTPageTable_Unmap(pt);
+    error = seL4_X86_EPTPT_Unmap(pt);
     test_assert(error == seL4_NoError);
 
     /* put the PT and the +2m location, then try the frame */
-    error = seL4_IA32_EPTPageTable_Map(pt, pdpt, EPT_MAP_BASE + OFFSET_2MB, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE + OFFSET_2MB, seL4_X86_Default_VMAttributes);
     test_assert(error == seL4_NoError);
-    error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
 
     return sel4test_get_result();
@@ -324,23 +342,23 @@ static int
 test_ept_map_remap_pd(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, pt, frame;
-    error = map_ept_set(env, &pdpt, &pd, &pt, &frame);
+    seL4_CPtr pml4, pdpt, pd, pt, frame;
+    error = map_ept_set(env, &pml4, &pdpt, &pd, &pt, &frame);
     test_assert(error == seL4_NoError);
 
     /* unmap the pd */
-    error = seL4_IA32_EPTPageDirectory_Unmap(pd);
+    error = seL4_X86_EPTPD_Unmap(pd);
     test_assert(error == seL4_NoError);
 
     /* now map it back in */
-    error = seL4_IA32_EPTPageDirectory_Map(pd, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_EPTPD_Map(pd, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error == seL4_NoError);
 
-    /* it should retain its old mappings, and mapping in a new PT should fail */
+    /* should be able to map in a new PT */
     pt = vka_alloc_ept_page_table_leaky(&env->vka);
     test_assert_fatal(pt);
-    error = seL4_IA32_EPTPageTable_Map(pt, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
-    test_assert(error != seL4_NoError);
+    error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
+    test_assert(error == seL4_NoError);
     return sel4test_get_result();
 }
 DEFINE_TEST(EPT0008, "Test EPT map and remap PD", test_ept_map_remap_pd)
@@ -349,14 +367,14 @@ static int
 test_ept_no_overlapping_pt(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, pt, frame;
-    error = map_ept_set(env, &pdpt, &pd, &pt, &frame);
+    seL4_CPtr pml4, pdpt, pd, pt, frame;
+    error = map_ept_set(env, &pml4, &pdpt, &pd, &pt, &frame);
     test_assert(error == seL4_NoError);
 
     /* Mapping in a new PT should fail */
     pt = vka_alloc_ept_page_table_leaky(&env->vka);
     test_assert_fatal(pt);
-    error = seL4_IA32_EPTPageTable_Map(pt, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
 
@@ -367,14 +385,14 @@ static int
 test_ept_no_overlapping_pd(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, pt, frame;
-    error = map_ept_set(env, &pdpt, &pd, &pt, &frame);
+    seL4_CPtr pml4, pdpt, pd, pt, frame;
+    error = map_ept_set(env, &pml4, &pdpt, &pd, &pt, &frame);
     test_assert(error == seL4_NoError);
 
     /* Mapping in a new PT should fail */
     pd = vka_alloc_ept_page_directory_leaky(&env->vka);
     test_assert_fatal(pd);
-    error = seL4_IA32_EPTPageDirectory_Map(pd, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_EPTPD_Map(pd, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
 
@@ -385,23 +403,23 @@ static int
 test_ept_map_remap_pt(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, pt, frame;
-    error = map_ept_set(env, &pdpt, &pd, &pt, &frame);
+    seL4_CPtr pml4, pdpt, pd, pt, frame;
+    error = map_ept_set(env, &pml4, &pdpt, &pd, &pt, &frame);
     test_assert(error == seL4_NoError);
 
     /* unmap the pt */
-    error = seL4_IA32_EPTPageTable_Unmap(pt);
+    error = seL4_X86_EPTPT_Unmap(pt);
     test_assert(error == seL4_NoError);
 
     /* now map it back in */
-    error = seL4_IA32_EPTPageTable_Map(pt, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error == seL4_NoError);
 
-    /* it should retain its old mappings, and mapping in a new frame should fail */
+    /* should be able to map in a frame now */
     frame = vka_alloc_frame_leaky(&env->vka, seL4_PageBits);
     test_assert_fatal(frame);
-    error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
-    test_assert(error != seL4_NoError);
+    error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
+    test_assert(error == seL4_NoError);
     return sel4test_get_result();
 }
 DEFINE_TEST(EPT0011, "Test EPT map and remap PT", test_ept_map_remap_pt)
@@ -410,9 +428,9 @@ static int
 test_ept_recycle_pt(env_t env)
 {
     int error;
-    seL4_CPtr pdpt, pd, pt, frame;
+    seL4_CPtr pml4, pdpt, pd, pt, frame;
     cspacepath_t path;
-    error = map_ept_set(env, &pdpt, &pd, &pt, &frame);
+    error = map_ept_set(env, &pml4, &pdpt, &pd, &pt, &frame);
     test_assert(error == seL4_NoError);
 
     /* recycle the pt */
@@ -420,78 +438,14 @@ test_ept_recycle_pt(env_t env)
     error = vka_cnode_recycle(&path);
     test_assert(error == seL4_NoError);
 
-    /* now map a new PT and the same frame */
+    /* now map a new PT */
     pt = vka_alloc_ept_page_table_leaky(&env->vka);
     test_assert_fatal(pt);
-    error = seL4_IA32_EPTPageTable_Map(pt, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
-    test_assert(error == seL4_NoError);
-    error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
+    error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error == seL4_NoError);
 
     return sel4test_get_result();
 }
 DEFINE_TEST(EPT0012, "Test EPT Recycle PT", test_ept_recycle_pt)
-
-static int
-test_ept_recycle_pd(env_t env)
-{
-    int error;
-    seL4_CPtr pdpt, pd, pt, frame;
-    cspacepath_t path;
-    error = map_ept_set(env, &pdpt, &pd, &pt, &frame);
-    test_assert(error == seL4_NoError);
-
-    /* recycle the pd */
-    vka_cspace_make_path(&env->vka, pd, &path);
-    error = vka_cnode_recycle(&path);
-    test_assert(error == seL4_NoError);
-
-    /* now map a new PD */
-    pd = vka_alloc_ept_page_directory_leaky(&env->vka);
-    test_assert_fatal(pd);
-    error = seL4_IA32_EPTPageDirectory_Map(pd, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
-    test_assert(error == seL4_NoError);
-
-    /* map the old pt back in */
-    error = seL4_IA32_EPTPageTable_Map(pt, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
-    test_assert(error == seL4_NoError);
-
-    /* the old frame should still be mapped into the pt, so mapping a new one should fail */
-    frame = vka_alloc_frame_leaky(&env->vka, seL4_PageBits);
-    test_assert_fatal(frame);
-    error = seL4_IA32_Page_Map(frame, pdpt, EPT_MAP_BASE, seL4_AllRights, seL4_IA32_Default_VMAttributes);
-    test_assert(error != seL4_NoError);
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(EPT0013, "Test EPT recycle PD", test_ept_recycle_pd)
-
-static int
-test_ept_recycle_pdpt(env_t env)
-{
-    int error;
-    seL4_CPtr pdpt, pd, pt, frame;
-    cspacepath_t path;
-    error = map_ept_set(env, &pdpt, &pd, &pt, &frame);
-    test_assert(error == seL4_NoError);
-
-    /* recycle the pdpt */
-    vka_cspace_make_path(&env->vka, pdpt, &path);
-    error = vka_cnode_recycle(&path);
-    test_assert(error == seL4_NoError);
-
-    /* now map the old pd back in */
-    error = seL4_IA32_EPTPageDirectory_Map(pd, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
-    test_assert(error == seL4_NoError);
-
-    /* the old pt should still be mapped in */
-    pt = vka_alloc_page_table_leaky(&env->vka);
-    test_assert_fatal(pt);
-    error = seL4_IA32_EPTPageTable_Map(pt, pdpt, EPT_MAP_BASE, seL4_IA32_Default_VMAttributes);
-    test_assert(error != seL4_NoError);
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(EPT0014, "Test EPT recycle PDPT", test_ept_recycle_pdpt)
 
 #endif /* CONFIG_VTX */
