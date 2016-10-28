@@ -201,6 +201,13 @@ get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
     return plat_get_irq(data, irq, root, index, depth);
 }
 
+static seL4_Error
+sched_ctrl(void *data, seL4_Word core)
+{
+    assert(core == 0);
+    return ((test_init_data_t *) data)->sched_ctrl;
+}
+
 void init_timer(env_t env, test_init_data_t *init_data)
 {
     /* minimal simple implementation to get the platform
@@ -208,6 +215,7 @@ void init_timer(env_t env, test_init_data_t *init_data)
     env->simple.arch_simple.irq = get_irq;
     env->simple.data = (void *) init_data;
     env->simple.arch_simple.data = (void *) init_data;
+    env->simple.sched_ctrl = sched_ctrl;
 
     arch_init_simple(&env->simple);
 
@@ -255,6 +263,7 @@ main(int argc, char **argv)
     env.timer_untyped = init_data->timer_dev_ut_cap;
     env.asid_pool = init_data->asid_pool;
     env.asid_ctrl = init_data->asid_ctrl;
+    env.sched_ctrl = init_data->sched_ctrl;
 #ifdef CONFIG_IOMMU
     env.io_space = init_data->io_space;
 #endif

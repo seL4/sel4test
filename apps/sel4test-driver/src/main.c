@@ -243,8 +243,21 @@ run_test(struct testcase *test)
     /* Test intro banner. */
     printf("  %s\n", test->name);
 
-    error = sel4utils_configure_process(&test_process, &env.vka, &env.vspace,
-                                        env.init->priority, TESTS_APP);
+    sel4utils_process_config_t config = {
+        .is_elf = true,
+        .image_name = TESTS_APP,
+        .do_elf_load = true,
+        .create_cspace = true,
+        .one_level_cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS,
+        .create_vspace = true,
+        .create_fault_endpoint = true,
+        .priority = env.init->priority,
+        .asid_pool = simple_get_init_cap(&env.simple, seL4_CapInitThreadASIDPool),
+        .create_sc = true,
+        .sched_ctrl = simple_get_sched_ctrl(&env.simple, 0)
+    };
+
+    error = sel4utils_configure_process_custom(&test_process, &env.vka, &env.vspace, config);
     assert(error == 0);
 
     /* set up caps about the process */
@@ -263,6 +276,7 @@ run_test(struct testcase *test)
     env.init->io_space_caps = arch_copy_iospace_caps_to_process(&test_process, &env);
 #endif
     env.init->cores = simple_get_core_count(&env.simple);
+    env.init->sched_ctrl = copy_cap_to_process(&test_process, simple_get_sched_ctrl(&env.simple, 0));
     /* setup data about untypeds */
     env.init->untypeds = copy_untypeds_to_process(&test_process, untypeds, num_untypeds);
     copy_timer_caps(env.init, &env, &test_process);

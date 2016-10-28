@@ -208,6 +208,8 @@ create_helper_process(env_t env, helper_thread_t *thread)
         .fault_endpoint = { .cptr = env->endpoint },
         .priority = OUR_PRIO - 1,
         .asid_pool = env->asid_pool,
+        .create_sc = true,
+        .sched_ctrl = env->sched_ctrl
     };
 
     error = sel4utils_configure_process_custom(&thread->process, &env->vka, &env->vspace,
@@ -338,11 +340,20 @@ create_helper_thread(env_t env, helper_thread_t *thread)
     error = vka_alloc_endpoint(&env->vka, &thread->local_endpoint);
     assert(error == 0);
 
+    sel4utils_thread_config_t config = {
+        .fault_endpoint = env->endpoint,
+        .priority = OUR_PRIO - 1,
+        .mcp = OUR_PRIO - 1,
+        .cspace = env->cspace_root,
+        .cspace_root_data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+        .create_sc = true,
+        .sched_ctrl = env->sched_ctrl
+    };
+
     thread->is_process = false;
     thread->fault_endpoint = env->endpoint;
-    seL4_CapData_t data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits);
-    error = sel4utils_configure_thread(&env->vka, &env->vspace, &env->vspace, env->endpoint,
-                                       OUR_PRIO - 1, env->cspace_root, data, &thread->thread);
+
+    error = sel4utils_configure_thread_config(&env->vka, &env->vspace, &env->vspace, config, &thread->thread);
     assert(error == 0);
 }
 
