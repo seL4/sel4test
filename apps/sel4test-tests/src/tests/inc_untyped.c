@@ -28,6 +28,17 @@ test_retype(env_t env)
     error = vka_alloc_untyped(&env->vka, seL4_TCBBits + 3, &untyped);
     test_assert(error == 0);
 
+    /* Try to insert 0. */
+    error = seL4_Untyped_Retype(untyped.cptr,
+                                seL4_TCBObject, 0,
+                                env->cspace_root, cnode.cptr, seL4_WordBits,
+                                1, 0);
+    test_assert(error == seL4_RangeError);
+
+    /* Check we got useful min/max error codes. */
+    test_eq(seL4_GetMR(0), 1ul);
+    test_eq(seL4_GetMR(1), 256ul);
+
     /* Try to drop two caps in, at the end of the cnode, overrunning it. */
     error = seL4_Untyped_Retype(untyped.cptr,
                                 seL4_TCBObject, 0,
