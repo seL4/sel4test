@@ -24,6 +24,7 @@
  * ensure that cloberring does not occur.
  */
 #if defined(CONFIG_ARCH_ARM)
+#define TEST_MRS 0, 0, 0, 0
 #define TEST_REGISTERS(code) \
     do { \
         register int a00 = 0xdead0000; \
@@ -61,6 +62,7 @@
         test_assert(a11 == 0xdead000b); \
     } while (0)
 #elif defined(CONFIG_ARCH_X86_64)
+#define TEST_MRS 0, 0
 #define TEST_REGISTERS(code) \
     do { \
         register long a00 = 0xdeadbeefdead0000; \
@@ -103,7 +105,7 @@
         test_assert(a15 == 0xdeadbeefdead000f); \
     } while (0)
 #elif defined(CONFIG_ARCH_IA32)
-
+#define TEST_MRS 0, 0
 #define TEST_REGISTERS(code) \
     do { \
         register int a00 = 0xdead0000; \
@@ -252,3 +254,18 @@ test_wait(env_t env)
 }
 DEFINE_TEST(SYSCALL0013, "Basic seL4_Wait() testing", test_wait)
 
+/*
+ * Let's not forget our friends in the *WithMRs community.
+ */
+
+GENERATE_SYSCALL_TEST(SYSCALL0014, seL4_SendWithMRs,
+                      seL4_SendWithMRs(env->cspace_root, seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
+
+GENERATE_SYSCALL_TEST(SYSCALL0015, seL4_NBSendWithMRs,
+                      seL4_NBSendWithMRs(env->cspace_root, seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
+
+GENERATE_SYSCALL_TEST(SYSCALL0016, seL4_ReplyWithMRs,
+                      seL4_ReplyWithMRs(seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
+
+GENERATE_SYSCALL_TEST(SYSCALL0017, seL4_CallWithMRs,
+                      seL4_CallWithMRs(env->cspace_root, seL4_MessageInfo_new(0, 0, 0 , 0), TEST_MRS))
