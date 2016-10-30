@@ -37,7 +37,7 @@ test_retype(env_t env)
 
     /* Check we got useful min/max error codes. */
     test_eq(seL4_GetMR(0), 1ul);
-    test_eq(seL4_GetMR(1), 256ul);
+    test_eq(seL4_GetMR(1), (unsigned long)CONFIG_RETYPE_FAN_OUT_LIMIT);
 
     /* Try to drop two caps in, at the end of the cnode, overrunning it. */
     error = seL4_Untyped_Retype(untyped.cptr,
