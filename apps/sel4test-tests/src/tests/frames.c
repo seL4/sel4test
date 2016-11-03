@@ -197,6 +197,9 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
      */
     memcpy(dest, (void*)fault, 100);
 
+    /* Unify the instruction and data caches so our code is seen */
+    seL4_ARM_Page_Unify_Instruction(frame_cap, 0, BIT(sz_bits));
+
     /* First setup a fault endpoint.
      */
     seL4_CPtr fault_ep = vka_alloc_endpoint_leaky(&env->vka);
