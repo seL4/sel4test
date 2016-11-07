@@ -673,3 +673,351 @@ test_ipc_prios(struct env* env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0006, "Test IPC priorities for Send", test_ipc_prios)
+
+
+static int
+sched0010_fn(volatile int *state)
+{
+    state++;
+    return 0;
+}
+
+int
+test_resume_empty_or_no_sched_context(env_t env)
+{
+    /* resuming a thread with empty or no scheduling context should work (it puts the thread in a runnable state)
+     * but the thread cannot run until it receives a scheduling context */
+
+    sel4utils_thread_t thread;
+
+    sel4utils_thread_config_t config = {
+        .priority = OUR_PRIO - 1,
+        .cspace = env->cspace_root,
+        .cspace_root_data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+        .create_sc = false
+    };
+
+    int error = sel4utils_configure_thread_config(&env->vka, &env->vspace, &env->vspace,
+                                              config, &thread);
+    assert(error == 0);
+
+    seL4_CPtr sc = vka_alloc_sched_context_leaky(&env->vka);
+    test_neq(sc, seL4_CapNull);
+
+    volatile int state = 0;
+    error = sel4utils_start_thread(&thread, (void *) sched0010_fn, (void *) &state, NULL, 1);
+    test_eq(error, seL4_NoError);
+
+    error = seL4_TCB_Resume(thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* let the thread 'run' */
+    sleep(env, 10 * MS_IN_S);
+    test_eq(state, 0);
+
+    /* nuke the sc */
+    error = cnode_delete(env, thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* resume it */
+    error = seL4_TCB_Resume(thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* let the thread 'run' */
+    sleep(env, 10 * MS_IN_S);
+    test_eq(state, 0);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0010, "Test resuming a thread with empty or missing scheduling context",
+            test_resume_empty_or_no_sched_context)
+
+#if CONFIG_HAVE_TIMER
+
+void
+sched0011_helper(void)
+{
+    while (1);
+}
+
+int
+test_scheduler_accuracy(env_t env)
+{
+    /*
+     * Start a thread with a 1s timeslice at our priority, and make sure it
+     * runs for that long
+     */
+    helper_thread_t helper;
+
+    create_helper_thread(env, &helper);
+    set_helper_sched_params(env, &helper, US_IN_S, US_IN_S);
+    start_helper(env, &helper, (helper_fn_t) sched0011_helper, 0, 0, 0, 0);
+    set_helper_priority(&helper, OUR_PRIO);
+
+    for (int i = 0; i < 11; i++) {
+        uint64_t start = timestamp(env);
+        seL4_Yield();
+        uint64_t end = timestamp(env);
+        /* calculate diff in us */
+        uint64_t diff = (end - start) / NS_IN_US;
+        if (i > 0) {
+            test_geq(diff, (uint64_t) (US_IN_S - 10llu));
+            test_leq(diff, (uint64_t) (US_IN_S + 10llu));
+            if (diff > US_IN_S) {
+                ZF_LOGD("Too late: by %llu us", diff - US_IN_S);
+            } else {
+                ZF_LOGD("Too soon: by %llu us", US_IN_S - diff);
+            }
+        }
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0011, "Test scheduler accuracy",
+            test_scheduler_accuracy)
+
+/* used by sched0012, 0013, 0014 */
+static void
+periodic_thread(int id, volatile unsigned long *counters)
+{
+    counters[id] = 0;
+
+    while (1) {
+        counters[id]++;
+        test_assert_fatal(counters[id] < 1000);
+        printf("Tick\n");
+        seL4_Yield();
+    }
+}
+
+int
+test_one_periodic_thread(env_t env)
+{
+    helper_thread_t helper;
+    volatile unsigned long counter;
+    int error;
+
+    /* set priority down so we can run the helper(s) at a higher prio */
+    error = seL4_TCB_SetPriority(env->tcb, env->priority - 1);
+    test_eq(error, seL4_NoError);
+
+    create_helper_thread(env, &helper);
+    set_helper_priority(&helper, env->priority);
+    error = set_helper_sched_params(env, &helper, 0.2 * US_IN_S, US_IN_S);
+    test_eq(error, seL4_NoError);
+
+    start_helper(env, &helper, (helper_fn_t) periodic_thread, 0, (seL4_Word) &counter, 0, 0);
+
+    while (counter < 10) {
+        printf("Tock %ld\n", counter);
+        sleep(env, NS_IN_S);
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0012, "Test one periodic thread", test_one_periodic_thread)
+
+int
+test_two_periodic_threads(env_t env)
+{
+    const int num_threads = 2;
+    helper_thread_t helpers[num_threads];
+    volatile unsigned long counters[num_threads];
+
+    /* set priority down so we can run the helper(s) at a higher prio */
+    int error = seL4_TCB_SetPriority(env->tcb, env->priority - 1);
+    test_eq(error, seL4_NoError);
+
+    for (int i = 0; i < num_threads; i++) {
+        create_helper_thread(env, &helpers[i]);
+        set_helper_priority(&helpers[i], env->priority);
+    }
+
+    set_helper_sched_params(env, &helpers[0], 0.1 * US_IN_S, 2 * US_IN_S);
+    set_helper_sched_params(env, &helpers[1], 0.1 * US_IN_S, 3 * US_IN_S);
+
+    for (int i = 0; i < num_threads; i++) {
+        start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 0, 0);
+    }
+
+    while (counters[0] < 3 && counters[1] < 3) {
+        sleep(env, NS_IN_S);
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0013, "Test two periodic threads", test_two_periodic_threads);
+
+int
+test_ordering_periodic_threads(env_t env)
+{
+    /*
+     * Set up 3 periodic threads with different budgets.
+     * All 3 threads increment global counters,
+     * check their increments are inline with their budgets.
+     */
+
+    const int num_threads = 3;
+    helper_thread_t helpers[num_threads];
+    volatile unsigned long counters[num_threads];
+
+    /* set priority down so we can run the helper(s) at a higher prio */
+    int error = seL4_TCB_SetPriority(env->tcb, env->priority - 1);
+    test_eq(error, seL4_NoError);
+
+    for (int i = 0; i < num_threads; i++) {
+        create_helper_thread(env, &helpers[i]);
+        set_helper_priority(&helpers[i], env->priority);
+    }
+
+    set_helper_sched_params(env, &helpers[0], 10 * US_IN_MS, 100 * US_IN_MS);
+    set_helper_sched_params(env, &helpers[1], 10 * US_IN_MS, 200 * US_IN_MS);
+    set_helper_sched_params(env, &helpers[2], 10 * US_IN_MS, 800 * US_IN_MS);
+
+    for (int i = 0; i < num_threads; i++) {
+        start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 0, 0);
+    }
+
+    /* stop once 2 reaches 11 increments */
+    const unsigned long limit = 11u;
+    while (counters[2] < limit) {
+        sleep(env, NS_IN_S);
+    }
+
+    ZF_LOGD("O: %lu\n1: %lu\n2: %lu\n", counters[0], counters[1], counters[2]);
+
+    /* zero should have run 8 times as much as 2 */
+    test_geq(counters[0], (limit - 1) * 8);
+    /* one should have run 4 times as much as 2 */
+    test_geq(counters[1], (limit - 1) * 4);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0014, "Test periodic thread ordering", test_ordering_periodic_threads)
+
+static void
+sched0015_helper(int id, pstimer_t *clock_timer, volatile unsigned long long *counters)
+{
+    counters[id] = 0;
+
+    uint64_t prev = timer_get_time(clock_timer);
+    while (1) {
+        uint64_t now = timer_get_time(clock_timer);
+        uint64_t diff = now - prev;
+        if (diff < 10 * NS_IN_US) {
+            counters[id]++;
+        }
+        prev = now;
+    }
+}
+
+int
+test_budget_overrun(env_t env)
+{
+    /* Run two periodic threads that do not yeild but count the approximate
+     * amount of time that they run for in 10's of nanoseconds.
+     *
+     * Each thread has a different share of the processor.
+     * Both threads are higher prio than the test runner thread.
+     * Make sure the test runner thread gets to run, and that
+     * the two threads run roughly according to their budgets
+     */
+    volatile unsigned long long counters[2];
+    helper_thread_t thirty, fifty;
+    int error;
+
+    /* set priority down so we can run the helper(s) at a higher prio */
+    error = seL4_TCB_SetPriority(env->tcb, env->priority - 1);
+    test_eq(error, seL4_NoError);
+
+    create_helper_thread(env, &thirty);
+    create_helper_thread(env, &fifty);
+
+    set_helper_priority(&thirty, env->priority);
+    set_helper_priority(&fifty, env->priority);
+
+    set_helper_sched_params(env, &fifty, 0.1 * US_IN_S, 0.2 * US_IN_S);
+    set_helper_sched_params(env, &thirty, 0.1 * US_IN_S, 0.3 * US_IN_S);
+
+    start_helper(env, &fifty,  (helper_fn_t) sched0015_helper, 1, (seL4_Word) env->clock_timer->timer,
+                 (seL4_Word) counters, 0);
+    start_helper(env, &thirty, (helper_fn_t) sched0015_helper, 0, (seL4_Word) env->clock_timer->timer,
+                  (seL4_Word) counters, 0);
+
+    uint64_t ticks = 0;
+    while (counters[1] < 10000000) {
+         sleep(env, US_IN_S);
+         ticks++;
+         ZF_LOGD("Tick %llu", counters[1]);
+    }
+    error = seL4_TCB_Suspend(thirty.thread.tcb.cptr);
+    test_eq(error, 0);
+    test_geq(counters[0], 0llu);
+
+    error = seL4_TCB_Suspend(fifty.thread.tcb.cptr);
+    test_eq(error, 0);
+    test_geq(counters[1], 0llu);
+
+    /* we should have run in the 20% of time left by thirty and fifty threads */
+    test_geq(ticks, 0llu);
+    /* fifty should have run more than thirty */
+    test_geq(counters[1], counters[0]);
+
+    ZF_LOGD("Result: 30%% incremented %llu, 50%% incremened %llu\n",
+            counters[0], counters[1]);
+
+    return sel4test_get_result();
+}
+
+#endif /* CONFIG_HAVE_TIMER */
+
+static void
+sched0016_helper(volatile int *state)
+{
+    while (1) {
+        printf("Hello\n");
+        *state = *state + 1;
+        seL4_Yield();
+    }
+
+    ZF_LOGF("Should not get here!");
+}
+
+int
+test_resume_no_overflow(env_t env)
+{
+    /* test thread cannot exceed its budget by being suspended and resumed */
+    helper_thread_t helper;
+    volatile int state = 0;
+    int error = 0;
+
+    /* set priority down so we can run the helper(s) at a higher prio */
+    error = seL4_TCB_SetPriority(env->tcb, env->priority);
+    test_eq(error, seL4_NoError);
+
+    create_helper_thread(env, &helper);
+    set_helper_priority(&helper, env->priority);
+
+    /* this thread only runs for 1 second every 10 minutes */
+    set_helper_sched_params(env, &helper, 1 * US_IN_S, 10 * SEC_IN_MINUTE * US_IN_S);
+
+    start_helper(env, &helper,  (helper_fn_t) sched0016_helper, (seL4_Word) &state,
+                 0, 0, 0);
+    seL4_Yield();
+    test_eq(state, 1);
+
+    for (int i = 0; i < 10; i++) {
+        error = seL4_TCB_Suspend(helper.thread.tcb.cptr);
+        test_eq(error, 0);
+
+        error = seL4_TCB_Resume(helper.thread.tcb.cptr);
+        test_eq(error, 0);
+
+        seL4_Yield();
+
+        test_eq(state, 1);
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0016, "Test resume cannot be used to exceed budget", test_resume_no_overflow);
