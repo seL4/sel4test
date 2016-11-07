@@ -367,3 +367,36 @@ wait_for_timer_interrupt(env_t env)
     seL4_Wait(env->timer_notification.cptr, &sender_badge);
     sel4_timer_handle_single_irq(env->timer);
 }
+
+void
+sleep(env_t env, uint64_t ns)
+{
+    uint64_t start, end;
+
+    ZF_LOGF_IF(env->clock_timer == NULL, "Clock timer not implemented on this platform!");
+    sel4_timer_handle_single_irq(env->timer);
+    start = timer_get_time(env->clock_timer->timer);
+    timer_start(env->timer->timer);
+    do {
+        int error = timer_oneshot_relative(env->timer->timer, ns);
+        if (error) {
+            ZF_LOGF("Sleep failed with error %d\n", error);
+            /* terminates */
+        }
+        ZF_LOGV("Waiting for timer irq");
+        wait_for_timer_interrupt(env);
+        end = timer_get_time(env->clock_timer->timer);
+        ZF_LOGV("Got it");
+        if (end - start < ns) {
+            ZF_LOGD("Wanted to wait: %llu, actually %llu\n", ns, end - start);
+        }
+    } while (end - start < ns);
+    timer_stop(env->timer->timer);
+}
+
+uint64_t
+timestamp(env_t env)
+{
+    ZF_LOGF_IF(env->clock_timer == NULL, "Clock timer not implemented on this platform!");
+    return timer_get_time(env->clock_timer->timer);
+}
