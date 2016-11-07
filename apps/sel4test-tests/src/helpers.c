@@ -432,3 +432,11 @@ timestamp(env_t env)
     ZF_LOGF_IF(env->clock_timer == NULL, "Clock timer not implemented on this platform!");
     return timer_get_time(env->clock_timer->timer);
 }
+
+int
+set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget, seL4_Time period)
+{
+    return seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0),
+                                       thread->thread.sched_context.cptr,
+                                       budget, period);
+}

@@ -103,8 +103,9 @@ void set_helper_priority(helper_thread_t *thread, seL4_Word prio);
 /* set a helper threads max control priority */
 void set_helper_mcp(helper_thread_t *thread, seL4_Word mcp);
 
-/* set a helper threads core affinity */
-void set_helper_affinity(helper_thread_t *thread, seL4_Word affinity);
+/* set a helper threads scheduling parameters */
+int set_helper_sched_params(env_t env, helper_thread_t *thread,
+                            seL4_Time budget, seL4_Time period);
 
 /* Start a helper. Note: arguments to helper processes will be copied into
  * the address space of that process. Do not pass pointers to data only in
