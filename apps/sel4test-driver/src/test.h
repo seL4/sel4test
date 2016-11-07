@@ -37,6 +37,11 @@ struct env {
     vka_object_t timer_untyped;
     /* physical address of the default timer */
     uintptr_t  timer_paddr;
+    /* clock timer */
+    cspacepath_t clock_irq_path;
+    vka_object_t clock_timer_untyped;
+    uintptr_t clock_timer_paddr;
+
     /* path for the default serial irq handler */
     cspacepath_t serial_irq_path;
     /* untyped for the default serial */
@@ -52,12 +57,17 @@ struct env {
     seL4_CPtr init_frame_cap_copy;
 };
 
+void plat_init(env_t env);
+void plat_init_caps(env_t env);
 void arch_init_timer_caps(env_t env);
 int arch_init_serial_caps(env_t env);
 void arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process);
+void plat_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process);
 void arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process);
 seL4_CPtr copy_cap_to_process(sel4utils_process_t *process, seL4_CPtr cap);
 
+void init_irq_cap(env_t env, int irq, cspacepath_t *path);
+void init_frame_cap(env_t env, void *paddr, cspacepath_t *path);
 #ifdef CONFIG_ARM_SMMU
 seL4_SlotRegion arch_copy_iospace_caps_to_process(sel4utils_process_t *process, env_t env);
 #endif

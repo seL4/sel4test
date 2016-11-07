@@ -37,6 +37,7 @@ struct env {
     vspace_t vspace;
     /* initialised timer */
     seL4_timer_t *timer;
+    seL4_timer_t *clock_timer;
     /* abstract interface over application init */
     simple_t simple;
     /* notification for timer */

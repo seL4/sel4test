@@ -20,12 +20,14 @@ arch_init_timer_caps(env_t env)
     int error = sel4platsupport_copy_irq_cap(&env->vka, &env->simple, DEFAULT_TIMER_INTERRUPT,
             &env->irq_path);
     ZF_LOGF_IF(error, "Failed to copy irq cap");
+
+    plat_init_caps(env);
 }
 
 void
 arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-    /* nothing to do */
+    plat_copy_timer_caps(init, env, test_process);
 }
 
 int

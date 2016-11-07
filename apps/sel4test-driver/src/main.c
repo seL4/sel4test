@@ -398,6 +398,7 @@ void *main_continued(void *arg UNUSED)
 
     /* setup init data that won't change test-to-test */
     env.init->priority = seL4_MaxPrio - 1;
+    plat_init(&env);
 
     /* now run the tests */
     sel4test_run_tests("sel4test", run_test);

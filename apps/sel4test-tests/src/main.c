@@ -149,6 +149,7 @@ init_allocator(env_t env, test_init_data_t *init_data)
 
     /* add any arch specific objects to the allocator */
     arch_init_allocator(env, init_data);
+    plat_add_uts(env, allocator, init_data);
 
     /* create a vspace */
     void *existing_frames[init_data->stack_pages + 2];
@@ -178,15 +179,13 @@ static seL4_Error
 get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
 {
     test_init_data_t *init = (test_init_data_t *) data;
-    assert(irq == DEFAULT_TIMER_INTERRUPT);
 
-    int error = seL4_CNode_Move(root, index, depth, init->root_cnode,
+    if (irq == DEFAULT_TIMER_INTERRUPT) {
+        return seL4_CNode_Move(root, index, depth, init->root_cnode,
                                 init->timer_irq, seL4_WordBits);
-    if (error != 0) {
-        ZF_LOGF("Failed to move irq cap\n");
     }
 
-    return error;
+    return plat_get_irq(data, irq, root, index, depth);
 }
 
 void init_timer(env_t env, test_init_data_t *init_data)
@@ -203,6 +202,8 @@ void init_timer(env_t env, test_init_data_t *init_data)
     if (error != 0) {
         ZF_LOGF("Failed to allocate notification object");
     }
+
+    plat_init_env(env, init_data);
 
     if (config_set(CONFIG_HAVE_TIMER)) {
         env->timer = arch_init_timer(env, init_data);

@@ -58,6 +58,11 @@ typedef struct {
     /* physical address of the timeout timer */
     uintptr_t timer_paddr;
 
+    /* caps for clock timer */
+    seL4_CPtr clock_timer_irq;
+    seL4_CPtr clock_timer_untyped;
+    seL4_CPtr clock_timer_paddr;
+
     /* cap to the sel4platsupport default timer io port */
     seL4_CPtr io_port;
 
@@ -99,6 +104,9 @@ typedef struct {
 
     /* address of the stack */
     void *stack;
+
+    /* freq of the tsc (for x86) */
+    uint32_t tsc_freq;
 } test_init_data_t;
 
 #endif
