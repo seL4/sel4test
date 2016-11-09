@@ -9,6 +9,7 @@
  *
  * @TAG(D61_BSD)
  */
+#include <autoconf.h>
 #include "../../test.h"
 
 #include "../../init.h"
@@ -18,12 +19,14 @@
 void
 plat_init_env(env_t env, test_init_data_t *data)
 {
+#ifdef CONFIG_HAVE_TIMER
     env->clock_timer = sel4platsupport_get_tsc_timer_freq(data->tsc_freq);
     if (env->clock_timer == NULL) {
         ZF_LOGF("Failed to intiialise tsc\n");
     }
 
     timer_start(env->clock_timer->timer);
+#endif /* CONFIG_HAVE_TIMER */
 }
 
 seL4_Error
