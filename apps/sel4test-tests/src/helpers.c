@@ -361,6 +361,15 @@ set_helper_mcp(helper_thread_t *thread, seL4_Word mcp)
 }
 
 void
+set_helper_affinity(helper_thread_t *thread, seL4_Word affinity)
+{
+#if CONFIG_MAX_NUM_NODES > 1
+    int error = seL4_TCB_SetAffinity(thread->thread.tcb.cptr, affinity);
+    ZF_LOGF_IF(error != seL4_NoError, "Failed to set tcb affinity");
+#endif /* CONFIG_MAX_NUM_NODES */
+}
+
+void
 wait_for_timer_interrupt(env_t env)
 {
     seL4_Word sender_badge;
