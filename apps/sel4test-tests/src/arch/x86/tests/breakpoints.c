@@ -48,7 +48,7 @@ single_step_guinea_pig(void)
     stop_point();
 }
 
-int debugger_main(seL4_Word a0, seL4_Word a1, seL4_Word a2, seL4_Word a3)
+int debugger_main(seL4_Word a0, seL4_Word reply, seL4_Word a2, seL4_Word a3)
 {
     seL4_CPtr debuggee_tcb_cap = a0;
     seL4_Word badge;
@@ -59,7 +59,7 @@ int debugger_main(seL4_Word a0, seL4_Word a1, seL4_Word a2, seL4_Word a3)
      * will get a fault on the fault EP. At that point we can enable
      * single-stepping on the debuggee thread.
      */
-    tag = seL4_Recv(fault_ep_cspath.capPtr, &badge);
+    tag = seL4_Wait(fault_ep_cspath.capPtr, &badge);
 
     if (seL4_MessageInfo_get_label(tag) != seL4_Fault_DebugException) {
         ZF_LOGE("debugger: Got unexpected fault %zd.\n",
@@ -95,7 +95,7 @@ int debugger_main(seL4_Word a0, seL4_Word a1, seL4_Word a2, seL4_Word a3)
     seL4_TCB_Resume(debuggee_tcb_cap);
 
     for (;;) {
-        tag = seL4_Recv(fault_ep_cspath.capPtr, &badge);
+        tag = seL4_Recv(fault_ep_cspath.capPtr, &badge, reply);
 
         if (seL4_MessageInfo_get_label(tag) != seL4_Fault_DebugException) {
             ZF_LOGE("Debugger: while single stepping, got unexpected fault.\n");
@@ -117,13 +117,13 @@ int debugger_main(seL4_Word a0, seL4_Word a1, seL4_Word a2, seL4_Word a3)
             ZF_LOGV("About to disable stepping and resume debuggee.\n");
             tag = seL4_MessageInfo_set_label(tag, 0);
             seL4_SetMR(0, 0);
-            seL4_Reply(tag);
+            seL4_Send(reply, tag);
             break;
         }
 
         tag = seL4_MessageInfo_set_label(tag, 0);
         seL4_SetMR(0, 1);
-        seL4_Reply(tag);
+        seL4_Send(reply, tag);
     }
 
     if (fault_data.vaddr != (seL4_Word)&stop_point) {
@@ -166,7 +166,7 @@ test_debug_api_single_step(struct env *env)
     test_eq(error, seL4_NoError);
 
     start_helper(env, &debugger, &debugger_main,
-                 debuggee.thread.tcb.cptr, 0, 0, 0);
+                 debuggee.thread.tcb.cptr, debuggee.thread.reply.cptr, 0, 0);
     start_helper(env, &debuggee, &debuggee_main, 0, 0, 0, 0);
 
     wait_for_helper(&debugger);

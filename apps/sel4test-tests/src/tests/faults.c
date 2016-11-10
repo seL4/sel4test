@@ -19,12 +19,20 @@
 #include "../test.h"
 #include "../helpers.h"
 
+static seL4_CPtr global_reply;
+
 enum {
     FAULT_DATA_READ_PAGEFAULT = 1,
     FAULT_DATA_WRITE_PAGEFAULT = 2,
     FAULT_INSTRUCTION_PAGEFAULT = 3,
     FAULT_BAD_SYSCALL = 4,
     FAULT_BAD_INSTRUCTION = 5,
+};
+
+enum {
+ BADGED,
+ RESTART,
+ PROCESS
 };
 
 #define BAD_VADDR 0xf123456C
@@ -395,14 +403,16 @@ set_good_magic_and_set_pc(seL4_CPtr tcb, seL4_Word new_pc)
 
 static int
 handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
-             int badged_or_restart)
+             int flags)
 {
     seL4_MessageInfo_t tag;
     seL4_Word sender_badge = 0;
-    seL4_Word badged = !!(badged_or_restart & 2);
-    seL4_Word restart = !!(badged_or_restart & 1);
+    bool badged = flags & BIT(BADGED);
+    bool restart = flags & BIT(RESTART);
+    bool is_process = flags & BIT(PROCESS);
+    seL4_CPtr reply = is_process ? SEL4UTILS_REPLY_SLOT : global_reply;
 
-    tag = seL4_Recv(fault_ep, &sender_badge);
+    tag = seL4_Recv(fault_ep, &sender_badge, reply);
 
     if (badged) {
         test_check(sender_badge == EXPECTED_BADGE);
@@ -441,7 +451,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
 
         set_good_magic_and_set_pc(tcb, (seL4_Word)write_fault_restart_address);
         if (restart) {
-            seL4_Reply(tag);
+            seL4_Send(reply, tag);
         }
         break;
 
@@ -461,7 +471,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
 
         set_good_magic_and_set_pc(tcb, (seL4_Word)instruction_fault_restart_address);
         if (restart) {
-            seL4_Reply(tag);
+            seL4_Send(reply, tag);
         }
         break;
 
@@ -495,7 +505,8 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         } else {
             seL4_MessageInfo_ptr_set_label(&tag, 1);
         }
-        seL4_Reply(tag);
+
+        seL4_Send(reply, tag);
         break;
 
     case FAULT_BAD_INSTRUCTION:
@@ -538,7 +549,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
             seL4_MessageInfo_ptr_set_label(&tag, 1);
         }
 
-        seL4_Reply(tag);
+        seL4_Send(reply, tag);
         break;
 
 
@@ -627,6 +638,7 @@ test_fault(env_t env, int fault_type, bool inter_as)
                     faulter_vspace = env->page_directory;
                     handler_arg0 = fault_ep;
                     handler_arg1 = faulter_thread.thread.tcb.cptr;
+                    global_reply = handler_thread.thread.reply.cptr;
                 }
 
                 set_helper_priority(&handler_thread, 101);
@@ -642,8 +654,12 @@ test_fault(env_t env, int fault_type, bool inter_as)
                                            faulter_thread.thread.ipc_buffer);
                 test_assert(!error);
 
+                seL4_Word flags = (inter_as ? BIT(PROCESS) : 0) |
+                                  (badged ? BIT(BADGED) : 0)    |
+                                  (restart ? BIT(RESTART) : 0);
+
                 start_helper(env, &handler_thread, (helper_fn_t) handle_fault,
-                             handler_arg0, handler_arg1, fault_type, (badged << 1) | restart);
+                             handler_arg0, handler_arg1, fault_type, flags);
                 start_helper(env, &faulter_thread, (helper_fn_t) cause_fault,
                              fault_type, 0, 0, 0);
                 wait_for_helper(&handler_thread);

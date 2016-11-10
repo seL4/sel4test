@@ -97,6 +97,9 @@ void create_helper_thread(env_t env, helper_thread_t *thread);
  * and a new cspace */
 void create_helper_process(env_t env, helper_thread_t *thread);
 
+int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
+                          seL4_Word arg1, seL4_Word arg2, seL4_Word arg3);
+
 /* set a helper threads priority */
 void set_helper_priority(helper_thread_t *thread, seL4_Word prio);
 
@@ -140,7 +143,6 @@ int cnode_mutate(env_t env, seL4_CPtr src, seL4_CPtr dest);
 int cnode_cancelBadgedSends(env_t env, seL4_CPtr cap);
 int cnode_revoke(env_t env, seL4_CPtr cap);
 int cnode_rotate(env_t env, seL4_CPtr src, seL4_CPtr pivot, seL4_CPtr dest);
-int cnode_savecaller(env_t env, seL4_CPtr cap);
 
 /* Determine whether a given slot in the init thread's CSpace is empty by
  * examining the error when moving a slot onto itself.

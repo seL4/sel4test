@@ -142,17 +142,6 @@ cnode_rotate(env_t env, seL4_CPtr src, seL4_CPtr pivot, seL4_CPtr dest)
     return vka_cnode_rotate(&dest_path, seL4_NilData, &pivot_path, seL4_NilData, &src_path);
 }
 
-
-int
-cnode_savecaller(env_t env, seL4_CPtr cap)
-{
-    cspacepath_t path;
-    vka_cspace_make_path(&env->vka, cap, &path);
-    return vka_cnode_saveCaller(&path);
-}
-
-
-
 int
 are_tcbs_distinct(seL4_CPtr tcb1, seL4_CPtr tcb2)
 {
@@ -209,7 +198,7 @@ create_helper_process(env_t env, helper_thread_t *thread)
         .priority = OUR_PRIO - 1,
         .asid_pool = env->asid_pool,
         .create_sc = true,
-        .sched_ctrl = env->sched_ctrl
+        .sched_ctrl = env->sched_ctrl,
     };
 
     error = sel4utils_configure_process_custom(&thread->process, &env->vka, &env->vspace,
@@ -347,6 +336,7 @@ create_helper_thread(env_t env, helper_thread_t *thread)
         .cspace = env->cspace_root,
         .cspace_root_data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
         .create_sc = true,
+        .create_reply = true,
         .sched_ctrl = env->sched_ctrl
     };
 
@@ -362,7 +352,7 @@ wait_for_helper(helper_thread_t *thread)
 {
     seL4_Word badge;
 
-    seL4_Recv(thread->local_endpoint.cptr, &badge);
+    seL4_Wait(thread->local_endpoint.cptr, &badge);
     return seL4_GetMR(0);
 }
 
@@ -439,4 +429,19 @@ set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget, se
     return seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0),
                                        thread->thread.sched_context.cptr,
                                        budget, period);
+}
+
+int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
+                          seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
+{
+    create_helper_thread(env, passive);
+    start_helper(env, passive, fn, ep, arg1, arg2, arg3);
+
+    /* Wait for helper to signal it has initialised */
+    ZF_LOGD("Wait for passive thread to init");
+    seL4_Wait(ep, NULL);
+    ZF_LOGD("Done");
+
+    /* convert to passive */
+    return seL4_SchedContext_Unbind(passive->thread.sched_context.cptr);
 }

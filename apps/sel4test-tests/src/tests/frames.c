@@ -14,6 +14,7 @@
 #include <stdlib.h>
 
 #include <sel4/sel4.h>
+#include <sel4/messages.h>
 #include <vka/object.h>
 #include <vka/capops.h>
 #include <sel4utils/util.h>
@@ -106,7 +107,7 @@ static int fault(seL4_Word arg1, seL4_Word arg2, seL4_Word arg3, seL4_Word arg4)
  */
 static int handle(seL4_CPtr fault_ep, seL4_Word arg2, seL4_Word arg3, seL4_Word arg4)
 {
-    seL4_MessageInfo_t info = seL4_Recv(fault_ep, NULL);
+    seL4_MessageInfo_t info = seL4_Wait(fault_ep, NULL);
     if (seL4_MessageInfo_get_label(info) == seL4_Fault_VMFault) {
         return (int)seL4_GetMR(1);
     } else {
@@ -294,12 +295,12 @@ static int test_switch_device_frame_ipcbuf(env_t env)
     create_helper_thread(env, &other);
     /* start the thread and make sure it works */
     start_helper(env, &other, (helper_fn_t)wait_func, (seL4_Word)ep, 0, 0, 0);
-    seL4_Recv(ep, NULL);
+    seL4_Wait(ep, NULL);
     /* now switch its IPC buffer, which should fail */
     error = seL4_TCB_SetIPCBuffer(other.thread.tcb.cptr, other.thread.ipc_buffer_addr, path.capPtr);
     test_neq(error, 0);
     /* thread should still be working */
-    seL4_Recv(ep, NULL);
+    seL4_Wait(ep, NULL);
     /* all done */
     wait_for_helper(&other);
     cleanup_helper(env, &other);

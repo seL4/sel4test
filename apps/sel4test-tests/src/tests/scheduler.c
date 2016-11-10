@@ -328,7 +328,7 @@ test_all_priorities(struct env* env)
 
     /* Now block. */
     seL4_Word sender_badge = 0;
-    seL4_Recv(ep, &sender_badge);
+    seL4_Wait(ep, &sender_badge);
 
     /* When we get woken up, last_prio should be MIN_PRIO. */
     test_check(last_prio == MIN_PRIO);
@@ -466,7 +466,7 @@ DEFINE_TEST(SCHED0005, "Test set priority", test_set_priority)
  */
 static volatile int ipc_test_step;
 typedef struct ipc_test_data {
-    volatile seL4_CPtr ep0, ep1, ep2, ep3;
+    volatile seL4_CPtr ep0, ep1, ep2, ep3, reply;
     volatile seL4_Word bounces;
     volatile seL4_Word spins;
     seL4_CPtr tcb0, tcb1, tcb2, tcb3;
@@ -484,9 +484,9 @@ ipc_test_helper_0(ipc_test_data_t *data)
     while (1) {
         seL4_MessageInfo_t tag;
         seL4_Word sender_badge = 0;
-        tag = seL4_Recv(data->ep0, &sender_badge);
+        tag = seL4_Recv(data->ep0, &sender_badge, data->reply);
         data->bounces++;
-        seL4_Reply(tag);
+        seL4_Send(data->reply, tag);
     }
 
     return sel4test_get_result();
@@ -501,7 +501,7 @@ ipc_test_helper_1(ipc_test_data_t *data)
     /* TEST PART 1 */
     /* Receive a pending send. */
     CHECK_STEP(ipc_test_step, 1);
-    tag = seL4_Recv(data->ep1, &sender_badge);
+    tag = seL4_Wait(data->ep1, &sender_badge);
 
     /* As soon as the wait is performed, we should be preempted. */
 
@@ -519,7 +519,7 @@ ipc_test_helper_1(ipc_test_data_t *data)
     /* TEST PART 2 */
     /* Receive a send that is not yet pending. */
     CHECK_STEP(ipc_test_step, 5);
-    tag = seL4_Recv(data->ep1, &sender_badge);
+    tag = seL4_Wait(data->ep1, &sender_badge);
 
     CHECK_STEP(ipc_test_step, 8);
     test_check(seL4_MessageInfo_get_length(tag) == 19);
@@ -658,6 +658,8 @@ test_ipc_prios(struct env* env)
     data.tcb3 = thread3.thread.tcb.cptr;
     data.env = env;
 
+    data.reply = thread0.thread.reply.cptr;
+
     ZF_LOGD("      ");
     ipc_test_step = 0;
 
@@ -695,16 +697,16 @@ sched0007_client(seL4_CPtr endpoint, int order)
 }
 
 static int
-sched0007_server(seL4_CPtr endpoint)
+sched0007_server(seL4_CPtr endpoint, seL4_CPtr reply)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
 
-    seL4_Recv(endpoint, NULL);
+    seL4_Recv(endpoint, NULL, reply);
 
     for (int i = SCHED0007_NUM_CLIENTS - 1; i >= 0; i--) {
         test_eq(SCHED0007_PRIO(i), seL4_GetMR(0));
         if (i > 0) {
-            seL4_ReplyRecv(endpoint, info, NULL);
+            seL4_ReplyRecv(endpoint, info, NULL, reply);
         }
     }
 
@@ -749,7 +751,7 @@ test_ipc_ordered(env_t env)
     sched0007_start_client(env, clients, endpoint, 3);
 
     /* start the server */
-    start_helper(env, &server, (helper_fn_t) sched0007_server, endpoint, 0, 0, 0);
+    start_helper(env, &server, (helper_fn_t) sched0007_server, endpoint, server.thread.reply.cptr, 0, 0);
 
     /* server returns success if all requests are processed in order */
     return wait_for_helper(&server);
@@ -768,16 +770,15 @@ sched0008_client(int id, seL4_CPtr endpoint)
 }
 
 static inline int
-check_receive_ordered(env_t env, seL4_CPtr endpoint, int pos, seL4_CPtr slots[])
+check_receive_ordered(env_t env, seL4_CPtr endpoint, int pos, seL4_CPtr replies[])
 {
     seL4_Word badge;
-    int error;
     seL4_Word expected_badge = SCHED0008_NUM_CLIENTS - 1;
 
     /* check we receive messages in expected order */
     for (int i = 0; i < SCHED0008_NUM_CLIENTS; i++) {
         ZF_LOGD("Server wait\n");
-        seL4_Recv(endpoint, &badge);
+        seL4_Recv(endpoint, &badge, replies[i]);
 
         if (pos == i) {
             ZF_LOGD("Server expecting %d\n", 0);
@@ -788,14 +789,12 @@ check_receive_ordered(env_t env, seL4_CPtr endpoint, int pos, seL4_CPtr slots[])
             test_eq(expected_badge, badge);
             expected_badge--;
         }
-        error = cnode_savecaller(env, slots[i]);
-        test_eq(error, seL4_NoError);
     }
 
     /* now reply to all callers */
     for (int i = 0; i < SCHED0008_NUM_CLIENTS; i++) {
         seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
-        seL4_Send(slots[i], info);
+        seL4_Send(replies[i], info);
     }
 
     /* let everyone queue up again */
@@ -808,7 +807,7 @@ int test_change_prio_on_endpoint(env_t env)
 
     int error;
     helper_thread_t clients[SCHED0008_NUM_CLIENTS];
-    seL4_CPtr slots[SCHED0008_NUM_CLIENTS];
+    seL4_CPtr replies[SCHED0008_NUM_CLIENTS];
     seL4_CPtr endpoint;
     seL4_CPtr badged_endpoints[SCHED0008_NUM_CLIENTS];
 
@@ -828,7 +827,7 @@ int test_change_prio_on_endpoint(env_t env)
         badged_endpoints[i] = get_free_slot(env);
         error = cnode_mint(env, endpoint, badged_endpoints[i], seL4_AllRights, seL4_CapData_Badge_new(i));
         test_eq(error, seL4_NoError);
-        slots[i] = get_free_slot(env);
+        replies[i] = clients[i].thread.reply.cptr;
         ZF_LOGD("Client %d, prio %d\n", i, prio);
         prio++;
     }
@@ -837,23 +836,25 @@ int test_change_prio_on_endpoint(env_t env)
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
 
     /* first test that changing prio while on an endpoint works */
+    seL4_CPtr reply = vka_alloc_reply_leaky(&env->vka);
+    test_neq(reply, seL4_CapNull);
 
     /* start one clients so it queue on the endpoint */
     start_helper(env, &clients[0], (helper_fn_t) sched0008_client, 0, badged_endpoints[0], 0, 0);
     /* change its prio down */
     set_helper_priority(&clients[0], lowest);
     /* wait for a message */
-    seL4_Recv(endpoint, &badge);
+    seL4_Recv(endpoint, &badge, reply);
     test_eq(badge, 0);
 
     /* now send another message */
-    seL4_Reply(info);
+    seL4_Send(reply, info);
     /* change its prio up */
     set_helper_priority(&clients[0], lowest + 1);
     /* get another message */
-    seL4_Recv(endpoint, &badge);
+    seL4_Recv(endpoint, &badge, reply);
     test_eq(badge, 0);
-    seL4_Reply(info);
+    seL4_Send(reply, info);
 
     /* Now test moving client 0 into all possible places in the endpoint queue */
    /* first start the rest */
@@ -868,43 +869,43 @@ int test_change_prio_on_endpoint(env_t env)
     ZF_LOGD("Client 0, prio %d\n", lowest);
     /* move client 0's prio from lower -> lowest*/
     set_helper_priority(&clients[0], lowest);
-    check_receive_ordered(env, endpoint, 4, slots);
+    check_receive_ordered(env, endpoint, 4, replies);
 
     ZF_LOGD("higher -> middle");
     ZF_LOGD("Client 0, prio %d\n", middle);
     /* higher -> to middle */
     set_helper_priority(&clients[0], middle);
-    check_receive_ordered(env, endpoint, 2, slots);
+    check_receive_ordered(env, endpoint, 2, replies);
 
     ZF_LOGD("higher -> highest");
     ZF_LOGD("Client 0, prio %d\n", highest - 1);
     /* higher -> to highest */
     set_helper_priority(&clients[0], highest - 1);
-    check_receive_ordered(env, endpoint, 0, slots);
+    check_receive_ordered(env, endpoint, 0, replies);
 
     ZF_LOGD("higher -> highest");
     ZF_LOGD("Client 0, prio %d\n", highest);
     /* highest -> even higher */
     set_helper_priority(&clients[0], highest);
-    check_receive_ordered(env, endpoint, 0, slots);
+    check_receive_ordered(env, endpoint, 0, replies);
 
     ZF_LOGD("lower -> highest");
     ZF_LOGD("Client 0, prio %d\n", highest - 1);
     /* lower -> highest */
     set_helper_priority(&clients[0], highest - 1);
-    check_receive_ordered(env, endpoint, 0, slots);
+    check_receive_ordered(env, endpoint, 0, replies);
 
     ZF_LOGD("lower -> middle");
     ZF_LOGD("Client 0, prio %d\n", middle);
     /* lower -> middle */
     set_helper_priority(&clients[0], middle);
-    check_receive_ordered(env, endpoint, 2, slots);
+    check_receive_ordered(env, endpoint, 2, replies);
 
     ZF_LOGD("lower -> lowest");
     ZF_LOGD("Client 0, prio %d\n", lowest);
     /* lower -> lowest */
     set_helper_priority(&clients[0], lowest);
-    check_receive_ordered(env, endpoint, 4, slots);
+    check_receive_ordered(env, endpoint, 4, replies);
 
     return sel4test_get_result();
 }
@@ -914,18 +915,18 @@ DEFINE_TEST(SCHED0008, "Test changing prio while in endpoint queues results in c
 #define SCHED0009_SERVERS 5
 
 static NORETURN void
-sched0009_server(seL4_CPtr endpoint, int id)
+sched0009_server(seL4_CPtr endpoint, int id, seL4_CPtr reply)
 {
     /* wait to start */
     ZF_LOGD("Server %d: awake", id);
     seL4_Word badge;
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
-    seL4_Wait(endpoint, &badge);
+    seL4_Recv(endpoint, &badge, reply);
 
     while (1) {
         ZF_LOGD("Server %d: ReplyRecv", id);
         seL4_SetMR(0, id);
-        seL4_ReplyRecv(endpoint, info, &badge);
+        seL4_ReplyRecv(endpoint, info, &badge, reply);
     }
 }
 
@@ -944,7 +945,8 @@ test_ordered_ipc_fastpath(env_t env)
     }
 
     /* start the first server */
-    start_helper(env, &threads[0], (helper_fn_t) sched0009_server, endpoint, 0, 0, 0);
+    start_helper(env, &threads[0], (helper_fn_t) sched0009_server, endpoint, 0,
+                 threads[0].thread.reply.cptr, 0);
 
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
     ZF_LOGD("Client Call\n");
@@ -953,7 +955,8 @@ test_ordered_ipc_fastpath(env_t env)
 
     /* resume all other servers */
     for (int i = 1; i < SCHED0009_SERVERS; i++) {
-        start_helper(env, &threads[i], (helper_fn_t) sched0009_server, endpoint, i, 0, 0);
+        start_helper(env, &threads[i], (helper_fn_t) sched0009_server, endpoint, i,
+                     threads[i].thread.reply.cptr, 0);
         /* sleep and allow it to run */
         sleep(env, 1 * NS_IN_S);
         /* since we resume a higher prio server each time this should work */

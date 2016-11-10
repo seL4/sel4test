@@ -281,26 +281,3 @@ test_cnode_rotate(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(CNODEOP0008, "Basic seL4_CNode_Rotate() testing", test_cnode_rotate)
-
-static int
-test_cnode_savecaller(env_t env)
-{
-    int error;
-    seL4_Word slot;
-
-    /* A call that should succeed. */
-    slot = get_free_slot(env);
-    error = cnode_savecaller(env, slot);
-    test_assert(!error);
-
-    /* Save to an occupied slot (should fail). */
-    slot = get_cap(&env->vka);
-    error = cnode_savecaller(env, slot);
-    test_assert(error == seL4_DeleteFirst);
-    test_assert(!is_slot_empty(env, slot));
-
-    /* TODO: Test saving an actual reply capability. */
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(CNODEOP0009, "Basic seL4_CNode_SaveCaller() testing", test_cnode_savecaller)

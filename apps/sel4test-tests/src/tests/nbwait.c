@@ -69,7 +69,7 @@ test_nbwait(env_t env)
     test_eq(error, 0);
 
     /* NBRecv on endpoint with no messages should return 0 immediately */
-    info = seL4_NBRecv(endpoint.cptr, &badge);
+    info = seL4_NBWait(endpoint.cptr, &badge);
     test_eq(badge, (seL4_Word)0);
 
     /* Poll on a notification with no messages should return 0 immediately */
@@ -91,11 +91,11 @@ test_nbwait(env_t env)
     seL4_Signal(badged_notification.capPtr);
 
     /* This time NBRecv the endpoint - since we are bound, we should get the badge from the signal again */
-    info = seL4_NBRecv(endpoint.cptr, &badge);
+    info = seL4_NBWait(endpoint.cptr, &badge);
     test_eq(badge, (seL4_Word)2);
 
     /* NBRecving again should return nothign */
-    info = seL4_NBRecv(endpoint.cptr, &badge);
+    info = seL4_NBWait(endpoint.cptr, &badge);
     test_eq(badge, (seL4_Word)0);
 
     /* now start a helper to send a message on the badged endpoint */
@@ -107,13 +107,13 @@ test_nbwait(env_t env)
     seL4_TCB_SetPriority(env->tcb, env->priority - 1);
 
     /* NBRecving should return helpers message */
-    info = seL4_NBRecv(endpoint.cptr, &badge);
+    info = seL4_NBWait(endpoint.cptr, &badge);
     test_eq(badge, (seL4_Word)1);
     test_eq(seL4_MessageInfo_get_length(info), (seL4_Word)1);
     test_eq(seL4_GetMR(0), (seL4_Word)0xdeadbeef);
 
     /* NBRecving again should return nothign */
-    info = seL4_NBRecv(endpoint.cptr, &badge);
+    info = seL4_NBWait(endpoint.cptr, &badge);
     test_eq(badge, (seL4_Word)0);
 
     /* clean up */
@@ -129,6 +129,6 @@ test_nbwait(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(NBWAIT0001, "Test seL4_NBRecv", test_nbwait)
+DEFINE_TEST(NBWAIT0001, "Test seL4_NBWait", test_nbwait)
 
 
