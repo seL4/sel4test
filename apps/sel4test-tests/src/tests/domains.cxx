@@ -23,7 +23,7 @@ extern "C" {
 
 }
 
-#define POLL_DELAY_NS 4000000
+#define POLL_DELAY_NS (10 * NS_IN_MS)
 
 typedef int (*test_func_t)(seL4_Word /* id */, env_t env /* env */);
 
@@ -58,22 +58,13 @@ own_domain_badcap(struct env *env)
 }
 
 #ifdef CONFIG_HAVE_TIMER
-void
-wait(int nsecs, env_t env)
-{
-
-    UNUSED int error = timer_oneshot_relative(env->timer->timer, nsecs);
-    assert(error == 0);
-
-    wait_for_timer_interrupt(env);
-}
 
 int fdom1(seL4_Word id, env_t env)
 {
     int countdown = 50;
 
     while (countdown > 0) {
-        wait(POLL_DELAY_NS, env);
+        sleep(env, POLL_DELAY_NS);
         --countdown;
         ZF_LOGD("%2d, ", (int)id);
     }
@@ -91,9 +82,6 @@ test_domains(struct env *env, F func)
     UNUSED int error;
     helper_thread_t thread[CONFIG_NUM_DOMAINS];
 
-    timer_start(env->timer->timer);
-    sel4_timer_handle_single_irq(env->timer);
-
     for (int i = 0; i < CONFIG_NUM_DOMAINS; ++i) {
         create_helper_thread(env, &thread[i]);
         set_helper_priority(&thread[i], 64);
@@ -107,7 +95,7 @@ test_domains(struct env *env, F func)
 
     if (CONFIG_NUM_DOMAINS > 1 && shift) {
         assert(0);
-        wait(POLL_DELAY_NS * 2, env);
+        sleep(env, POLL_DELAY_NS * 2);
         error = seL4_DomainSet_Set(env->domain, CONFIG_NUM_DOMAINS - 1, thread[0].thread.tcb.cptr);
         assert(error == seL4_NoError);
     }
@@ -117,8 +105,6 @@ test_domains(struct env *env, F func)
         cleanup_helper(env, &thread[i]);
     }
 
-    timer_stop(env->timer->timer);
-    sel4_timer_handle_single_irq(env->timer);
     return sel4test_get_result();
 }
 
