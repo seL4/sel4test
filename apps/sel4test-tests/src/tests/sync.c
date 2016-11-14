@@ -58,7 +58,7 @@ test_bin_sem(struct env *env)
     helper_thread_t thread1, thread2;
 
     /* Create a binary semaphore */
-    error = sync_bin_sem_new(&(env->vka), &bin_sem);
+    error = sync_bin_sem_new(&(env->vka), &bin_sem, 1);
     test_eq(error, 0);
 
     /* Reset the shared variable */
@@ -209,7 +209,7 @@ test_monitor(struct env *env)
     helper_thread_t producer_thread1, producer_thread2;
 
     /* Create a lock for the monitor */
-    error = sync_bin_sem_new(&(env->vka), &monitor_lock);
+    error = sync_bin_sem_new(&(env->vka), &monitor_lock, 1);
     test_eq(error, 0);
 
     /* Create a condition variable for consumers */
@@ -290,7 +290,7 @@ test_monitor_broadcast(struct env *env)
     helper_thread_t consumer_thread1, consumer_thread2, consumer_thread3;
 
     /* Create a lock for the monitor */
-    error = sync_bin_sem_new(&(env->vka), &monitor_lock);
+    error = sync_bin_sem_new(&(env->vka), &monitor_lock, 1);
     test_eq(error, 0);
 
     /* Create a condition variable for consumers */
