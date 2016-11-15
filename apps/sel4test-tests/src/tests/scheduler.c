@@ -39,13 +39,6 @@
         var = (x) + 1; \
     } while (0)
 
-#define CHECK_TESTCASE(result, condition) \
-    do { \
-        int _condition = !!(condition); \
-        test_check(_condition); \
-        (result) |= _condition; \
-    } while (0)
-
 /* We need a timer to run this test. However this test gets run on simulators,
  * of which the beagle does not have a properly emulated timer and results
  * in this test failing. So we don't include this test if running the beagle */
@@ -389,7 +382,7 @@ set_priority_helper_1(seL4_CPtr *t1, seL4_CPtr *t2)
     error = seL4_TCB_SetMCPriority(*t1, SCHED0005_HIGHEST_PRIO);
     test_check(error == seL4_RangeError);
 
-    return 0;
+    return sel4test_get_result();
 }
 
 static int
@@ -416,7 +409,7 @@ set_priority_helper_2(seL4_CPtr *t1, seL4_CPtr *t2)
     ZF_LOGD("3...");
     set_priority_step = 4;
 
-    return 0;
+    return sel4test_get_result();
 }
 
 #if CONFIG_NUM_PRIORITIES >= 7
@@ -495,7 +488,7 @@ ipc_test_helper_0(ipc_test_data_t *data)
         seL4_Reply(tag);
     }
 
-    return 0;
+    return sel4test_get_result();
 }
 
 static int
@@ -503,7 +496,6 @@ ipc_test_helper_1(ipc_test_data_t *data)
 {
     seL4_Word sender_badge = 0;
     seL4_MessageInfo_t tag;
-    int result = 0;
 
     /* TEST PART 1 */
     /* Receive a pending send. */
@@ -514,9 +506,9 @@ ipc_test_helper_1(ipc_test_data_t *data)
 
     /* Thread 3 will give us a chance to check our message. */
     CHECK_STEP(ipc_test_step, 3);
-    CHECK_TESTCASE(result, seL4_MessageInfo_get_length(tag) == 20);
+    test_check(seL4_MessageInfo_get_length(tag) == 20);
     for (int i = 0; i < seL4_MessageInfo_get_length(tag); i++) {
-        CHECK_TESTCASE(result, seL4_GetMR(i) == i);
+        test_check(seL4_GetMR(i) == i);
     }
 
     /* Now we bounce to allow thread 3 control again. */
@@ -529,12 +521,12 @@ ipc_test_helper_1(ipc_test_data_t *data)
     tag = seL4_Recv(data->ep1, &sender_badge);
 
     CHECK_STEP(ipc_test_step, 8);
-    CHECK_TESTCASE(result, seL4_MessageInfo_get_length(tag) == 19);
+    test_check(seL4_MessageInfo_get_length(tag) == 19);
     for (int i = 0; i < seL4_MessageInfo_get_length(tag); i++) {
-        CHECK_TESTCASE(result, seL4_GetMR(i) == i);
+        test_check(seL4_GetMR(i) == i);
     }
 
-    return result;
+    return sel4test_get_result();
 }
 
 static int
@@ -556,14 +548,14 @@ ipc_test_helper_2(ipc_test_data_t *data)
         seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
         seL4_Call(data->ep0, tag);
     }
-    return 0;
+    return sel4test_get_result();
 }
 
 static int
 ipc_test_helper_3(ipc_test_data_t *data)
 {
     seL4_MessageInfo_t tag;
-    int last_spins, last_bounces, result = 0;
+    int last_spins, last_bounces;
 
     /* This test starts here. */
 
@@ -580,16 +572,16 @@ ipc_test_helper_3(ipc_test_data_t *data)
     /* We block, causing thread 2 to spin for a while, before it calls the
      * bouncer thread 0, which finally lets thread 1 run and reply to us. */
     CHECK_STEP(ipc_test_step, 2);
-    CHECK_TESTCASE(result, data->spins - last_spins == 1);
-    CHECK_TESTCASE(result, data->bounces - last_bounces == 0);
+    test_check(data->spins - last_spins == 1);
+    test_check(data->bounces - last_bounces == 0);
 
     /* Now bounce ourselves, to ensure that thread 1 can check its stuff. */
     seL4_MessageInfo_ptr_set_length(&tag, 0);
     seL4_Call(data->ep0, tag);
 
     /* Two bounces - us and thread 1. */
-    CHECK_TESTCASE(result, data->spins - last_spins == 2);
-    CHECK_TESTCASE(result, data->bounces - last_bounces == 2);
+    test_check(data->spins - last_spins == 2);
+    test_check(data->bounces - last_bounces == 2);
     CHECK_STEP(ipc_test_step, 4);
 
     /* TEST PART 2 */
@@ -618,10 +610,10 @@ ipc_test_helper_3(ipc_test_data_t *data)
     CHECK_STEP(ipc_test_step, 9);
 
     /* Five bounces in total. */
-    CHECK_TESTCASE(result, data->spins - last_spins == 2);
-    CHECK_TESTCASE(result, data->bounces - last_bounces == 5);
+    test_check(data->spins - last_spins == 2);
+    test_check(data->bounces - last_bounces == 5);
 
-    return result;
+    return sel4test_get_result();
 }
 
 static int
@@ -632,7 +624,6 @@ test_ipc_prios(struct env* env)
     helper_thread_t thread1;
     helper_thread_t thread2;
     helper_thread_t thread3;
-    int result = 0;
 
     ipc_test_data_t data;
     memset(&data, 0, sizeof(data));
@@ -668,8 +659,8 @@ test_ipc_prios(struct env* env)
     start_helper(env, &thread2, (helper_fn_t) ipc_test_helper_2, (seL4_Word) &data, 0, 0, 0);
     start_helper(env, &thread3, (helper_fn_t) ipc_test_helper_3, (seL4_Word) &data, 0, 0, 0);
 
-    result |= (int)wait_for_helper(&thread1);
-    result |= (int)wait_for_helper(&thread3);
+    wait_for_helper(&thread1);
+    wait_for_helper(&thread3);
 
     CHECK_STEP(ipc_test_step, 10);
     ZF_LOGD("\n");
@@ -679,6 +670,6 @@ test_ipc_prios(struct env* env)
     cleanup_helper(env, &thread2);
     cleanup_helper(env, &thread3);
 
-    return result;
+    return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0006, "Test IPC priorities for Send", test_ipc_prios)
