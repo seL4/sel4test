@@ -17,7 +17,7 @@
 #include "../helpers.h"
 
 #define MIN_LENGTH 0
-#define MAX_LENGTH (seL4_MsgMaxLength + 1)
+#define MAX_LENGTH (seL4_MsgMaxLength)
 
 #define FOR_EACH_LENGTH(len_var) \
     for(int len_var = MIN_LENGTH; len_var <= MAX_LENGTH; len_var++)
