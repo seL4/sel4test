@@ -254,6 +254,7 @@ main(int argc, char **argv)
 #ifdef CONFIG_ARM_SMMU
     env.io_space_caps = init_data->io_space_caps;
 #endif
+    env.cores = init_data->cores;
     env.num_regions = init_data->num_elf_regions;
     memcpy(env.regions, init_data->elf_regions, sizeof(sel4utils_elf_region_t) * env.num_regions);
 

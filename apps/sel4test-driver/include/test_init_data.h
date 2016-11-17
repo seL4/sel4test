@@ -107,6 +107,9 @@ typedef struct {
 
     /* freq of the tsc (for x86) */
     uint32_t tsc_freq;
+
+    /* number of available cores */
+    seL4_Word cores;
 } test_init_data_t;
 
 #endif

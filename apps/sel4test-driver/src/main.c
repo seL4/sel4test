@@ -270,6 +270,7 @@ run_test(struct testcase *test)
 #ifdef CONFIG_ARM_SMMU
     env.init->io_space_caps = arch_copy_iospace_caps_to_process(&test_process, &env);
 #endif
+    env.init->cores = simple_get_core_count(&env.simple);
     /* setup data about untypeds */
     env.init->untypeds = copy_untypeds_to_process(&test_process, untypeds, num_untypeds);
     copy_timer_caps(env.init, &env, &test_process);

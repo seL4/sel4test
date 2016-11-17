@@ -57,6 +57,7 @@ struct env {
 #ifdef CONFIG_ARM_SMMU
     seL4_SlotRegion io_space_caps;
 #endif
+    seL4_Word cores;
     seL4_CPtr domain;
 
     int priority;

@@ -238,7 +238,7 @@ reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
 }
 
 static int
-test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as)
+test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Word nr_cores)
 {
     helper_thread_t thread_a, thread_b;
     vka_t *vka = &env->vka;
@@ -249,64 +249,70 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as)
 
     /* Test sending messages of varying lengths. */
     /* Please excuse the awful indending here. */
-    for (int sender_prio = 98; sender_prio <= 102; sender_prio++) {
-        for (int waiter_prio = 100; waiter_prio <= 100; waiter_prio++) {
-            for (int sender_first = 0; sender_first <= 1; sender_first++) {
-                ZF_LOGD("%d %s %d\n",
-                        sender_prio, sender_first ? "->" : "<-", waiter_prio);
-                seL4_Word thread_a_arg0, thread_b_arg0;
+    for(int core_a = 0; core_a < nr_cores; core_a++) {
+        for(int core_b = 0; core_b < nr_cores; core_b++)
+            for (int sender_prio = 98; sender_prio <= 102; sender_prio++) {
+                for (int waiter_prio = 100; waiter_prio <= 100; waiter_prio++) {
+                    for (int sender_first = 0; sender_first <= 1; sender_first++) {
+                        ZF_LOGD("%d %s %d\n",
+                                sender_prio, sender_first ? "->" : "<-", waiter_prio);
+                        seL4_Word thread_a_arg0, thread_b_arg0;
 
-                if (inter_as) {
-                    create_helper_process(env, &thread_a);
+                        if (inter_as) {
+                            create_helper_process(env, &thread_a);
 
-                    cspacepath_t path;
-                    vka_cspace_make_path(&env->vka, ep, &path);
-                    thread_a_arg0 = sel4utils_copy_cap_to_process(&thread_a.process, path);
-                    assert(thread_a_arg0 != -1);
+                            cspacepath_t path;
+                            vka_cspace_make_path(&env->vka, ep, &path);
+                            thread_a_arg0 = sel4utils_copy_cap_to_process(&thread_a.process, path);
+                            assert(thread_a_arg0 != -1);
 
-                    create_helper_process(env, &thread_b);
-                    thread_b_arg0 = sel4utils_copy_cap_to_process(&thread_b.process, path);
-                    assert(thread_b_arg0 != -1);
+                            create_helper_process(env, &thread_b);
+                            thread_b_arg0 = sel4utils_copy_cap_to_process(&thread_b.process, path);
+                            assert(thread_b_arg0 != -1);
 
-                } else {
-                    create_helper_thread(env, &thread_a);
-                    create_helper_thread(env, &thread_b);
-                    thread_a_arg0 = ep;
-                    thread_b_arg0 = ep;
+                        } else {
+                            create_helper_thread(env, &thread_a);
+                            create_helper_thread(env, &thread_b);
+                            thread_a_arg0 = ep;
+                            thread_b_arg0 = ep;
+                        }
+
+                        set_helper_priority(&thread_a, sender_prio);
+                        set_helper_priority(&thread_b, waiter_prio);
+
+                        set_helper_affinity(&thread_a, core_a);
+                        set_helper_affinity(&thread_b, core_b);
+
+                        /* Set the flag for nbwait_func that tells it whether or not it really
+                         * should wait. */
+                        int nbwait_should_wait;
+                        nbwait_should_wait =
+                            (sender_prio < waiter_prio);
+
+                        /* Threads are enqueued at the head of the scheduling queue, so the
+                         * thread enqueued last will be run first, for a given priority. */
+                        if (sender_first) {
+                            start_helper(env, &thread_b, (helper_fn_t) fb, thread_b_arg0, start_number,
+                                         nbwait_should_wait, 0);
+                            start_helper(env, &thread_a, (helper_fn_t) fa, thread_a_arg0, start_number,
+                                         nbwait_should_wait, 0);
+                        } else {
+                            start_helper(env, &thread_a, (helper_fn_t) fa, thread_a_arg0, start_number,
+                                         nbwait_should_wait, 0);
+                            start_helper(env, &thread_b, (helper_fn_t) fb, thread_b_arg0, start_number,
+                                         nbwait_should_wait, 0);
+                        }
+
+                        wait_for_helper(&thread_a);
+                        wait_for_helper(&thread_b);
+
+                        cleanup_helper(env, &thread_a);
+                        cleanup_helper(env, &thread_b);
+
+                        start_number += 0x71717171;
+                    }
                 }
-
-                set_helper_priority(&thread_a, sender_prio);
-                set_helper_priority(&thread_b, waiter_prio);
-
-                /* Set the flag for nbwait_func that tells it whether or not it really
-                 * should wait. */
-                int nbwait_should_wait;
-                nbwait_should_wait =
-                    (sender_prio < waiter_prio);
-
-                /* Threads are enqueued at the head of the scheduling queue, so the
-                 * thread enqueued last will be run first, for a given priority. */
-                if (sender_first) {
-                    start_helper(env, &thread_b, (helper_fn_t) fb, thread_b_arg0, start_number,
-                                 nbwait_should_wait, 0);
-                    start_helper(env, &thread_a, (helper_fn_t) fa, thread_a_arg0, start_number,
-                                 nbwait_should_wait, 0);
-                } else {
-                    start_helper(env, &thread_a, (helper_fn_t) fa, thread_a_arg0, start_number,
-                                 nbwait_should_wait, 0);
-                    start_helper(env, &thread_b, (helper_fn_t) fb, thread_b_arg0, start_number,
-                                 nbwait_should_wait, 0);
-                }
-
-                wait_for_helper(&thread_a);
-                wait_for_helper(&thread_b);
-
-                cleanup_helper(env, &thread_a);
-                cleanup_helper(env, &thread_b);
-
-                start_number += 0x71717171;
             }
-        }
     }
 
     error = cnode_delete(env, ep);
@@ -317,56 +323,56 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as)
 static int
 test_send_wait(env_t env)
 {
-    return test_ipc_pair(env, send_func, wait_func, false);
+    return test_ipc_pair(env, send_func, wait_func, false, env->cores);
 }
 DEFINE_TEST(IPC0001, "Test seL4_Send + seL4_Recv", test_send_wait)
 
 static int
 test_call_replywait(env_t env)
 {
-    return test_ipc_pair(env, call_func, replywait_func, false);
+    return test_ipc_pair(env, call_func, replywait_func, false, env->cores);
 }
 DEFINE_TEST(IPC0002, "Test seL4_Call + seL4_ReplyRecv", test_call_replywait)
 
 static int
 test_call_reply_and_wait(env_t env)
 {
-    return test_ipc_pair(env, call_func, reply_and_wait_func, false);
+    return test_ipc_pair(env, call_func, reply_and_wait_func, false, env->cores);
 }
 DEFINE_TEST(IPC0003, "Test seL4_Send + seL4_Reply + seL4_Recv", test_call_reply_and_wait)
 
 static int
 test_nbsend_wait(env_t env)
 {
-    return test_ipc_pair(env, nbsend_func, nbwait_func, false);
+    return test_ipc_pair(env, nbsend_func, nbwait_func, false, 1);
 }
 DEFINE_TEST(IPC0004, "Test seL4_NBSend + seL4_Recv", test_nbsend_wait)
 
 static int
 test_send_wait_interas(env_t env)
 {
-    return test_ipc_pair(env, send_func, wait_func, true);
+    return test_ipc_pair(env, send_func, wait_func, true, env->cores);
 }
 DEFINE_TEST(IPC1001, "Test inter-AS seL4_Send + seL4_Recv", test_send_wait_interas)
 
 static int
 test_call_replywait_interas(env_t env)
 {
-    return test_ipc_pair(env, call_func, replywait_func, true);
+    return test_ipc_pair(env, call_func, replywait_func, true, env->cores);
 }
 DEFINE_TEST(IPC1002, "Test inter-AS seL4_Call + seL4_ReplyRecv", test_call_replywait_interas)
 
 static int
 test_call_reply_and_wait_interas(env_t env)
 {
-    return test_ipc_pair(env, call_func, reply_and_wait_func, true);
+    return test_ipc_pair(env, call_func, reply_and_wait_func, true, env->cores);
 }
 DEFINE_TEST(IPC1003, "Test inter-AS seL4_Send + seL4_Reply + seL4_Recv", test_call_reply_and_wait_interas)
 
 static int
 test_nbsend_wait_interas(env_t env)
 {
-    return test_ipc_pair(env, nbsend_func, nbwait_func, true);
+    return test_ipc_pair(env, nbsend_func, nbwait_func, true, 1);
 }
 DEFINE_TEST(IPC1004, "Test inter-AS seL4_NBSend + seL4_Recv", test_nbsend_wait_interas)
 
