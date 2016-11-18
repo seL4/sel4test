@@ -54,7 +54,7 @@ call_func(seL4_CPtr ep, seL4_Word msg, volatile seL4_Word *done, seL4_Word arg3)
 }
 
 static int
-test_ep_recycle(env_t env)
+test_ep_cancelBadgedSends(env_t env)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     struct {
@@ -121,9 +121,12 @@ test_ep_recycle(env_t env)
     for (int i = 0; i < NUM_BADGED_CLIENTS; i++) {
         assert(senders[i].done == 0);
     }
-    /* Recycle each endpoint. */
+    /* cancelBadgedSends each endpoint. */
     for (int i = 0; i < NUM_BADGED_CLIENTS; i++) {
-        error = cnode_recycle(env, senders[i].badged_ep);
+        error = cnode_revoke(env, senders[i].badged_ep);
+        test_eq(error, seL4_NoError);
+
+        error = cnode_cancelBadgedSends(env, senders[i].badged_ep);
         assert(!error);
 
         /* Let thread run. */
@@ -145,7 +148,7 @@ test_ep_recycle(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(RECYCLE0001, "Basic endpoint recycle testing.", test_ep_recycle)
+DEFINE_TEST(CANCEL_BADGED_SENDS_0001, "Basic endpoint cancelBadgedSends testing.", test_ep_cancelBadgedSends)
 
 static int ep_test_func(seL4_CPtr sync_ep, seL4_CPtr test_ep, volatile seL4_Word *status, seL4_Word arg4)
 {
@@ -163,14 +166,14 @@ static int ep_test_func(seL4_CPtr sync_ep, seL4_CPtr test_ep, volatile seL4_Word
     return sel4test_get_result();
 }
 
-/* RECYCLE0001 only tests if a thread gets its IPC canceled. The IPC
+/* CANCEL_BADGED_SENDS_0001 only tests if a thread gets its IPC canceled. The IPC
  * can succeed even if the cap it used got deleted provided the final
- * capability was not recycled (thus causing an IPC cancel to happen)
- * This means that RECYCLE0001 will pass even if all the derived badges
+ * capability was not cancelBadgedSendsd (thus causing an IPC cancel to happen)
+ * This means that CANCEL_BADGED_SENDS_0001 will pass even if all the derived badges
  * are deleted, since deleting them did NOT delete the final capability
- * or cause a recycle so outstanding IPCs were not canceled */
+ * or cause a cancelBadgedSends so outstanding IPCs were not canceled */
 static int
-test_ep_recycle2(env_t env)
+test_ep_cancelBadgedSends2(env_t env)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     struct {
@@ -222,8 +225,10 @@ test_ep_recycle2(env_t env)
     }
     /* Now start recycling endpoints and make sure the correct endpoints disappear */
     for (int i = 0 ; i < NUM_BADGED_CLIENTS; i++) {
-        /* Recycle an ep */
-        error = cnode_recycle(env, helpers[i].badged_ep);
+        error = cnode_revoke(env, helpers[i].badged_ep);
+        test_eq(error, seL4_NoError);
+        /* cancelBadgedSends an ep */
+        error = cnode_cancelBadgedSends(env, helpers[i].badged_ep);
         assert(!error);
         /* Now run every thread */
         for (int j = 0; j < NUM_BADGED_CLIENTS; j++) {
@@ -239,4 +244,4 @@ test_ep_recycle2(env_t env)
     }
     return sel4test_get_result();
 }
-DEFINE_TEST(RECYCLE0002, "Recycle deletes caps", test_ep_recycle2)
+DEFINE_TEST(CANCEL_BADGED_SENDS_0002, "cancelBadgedSends deletes caps", test_ep_cancelBadgedSends2)

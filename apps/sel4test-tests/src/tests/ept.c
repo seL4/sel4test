@@ -424,28 +424,4 @@ test_ept_map_remap_pt(env_t env)
 }
 DEFINE_TEST(EPT0011, "Test EPT map and remap PT", test_ept_map_remap_pt)
 
-static int
-test_ept_recycle_pt(env_t env)
-{
-    int error;
-    seL4_CPtr pml4, pdpt, pd, pt, frame;
-    cspacepath_t path;
-    error = map_ept_set(env, &pml4, &pdpt, &pd, &pt, &frame);
-    test_assert(error == seL4_NoError);
-
-    /* recycle the pt */
-    vka_cspace_make_path(&env->vka, pt, &path);
-    error = vka_cnode_recycle(&path);
-    test_assert(error == seL4_NoError);
-
-    /* now map a new PT */
-    pt = vka_alloc_ept_page_table_leaky(&env->vka);
-    test_assert_fatal(pt);
-    error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
-    test_assert(error == seL4_NoError);
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(EPT0012, "Test EPT Recycle PT", test_ept_recycle_pt)
-
 #endif /* CONFIG_VTX */

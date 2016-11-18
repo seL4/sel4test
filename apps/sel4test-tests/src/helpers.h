@@ -135,7 +135,7 @@ int cnode_delete(env_t env, seL4_CPtr slot);
 int cnode_mint(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_Word rights, seL4_CapData_t badge);
 int cnode_move(env_t env, seL4_CPtr src, seL4_CPtr dest);
 int cnode_mutate(env_t env, seL4_CPtr src, seL4_CPtr dest);
-int cnode_recycle(env_t env, seL4_CPtr cap);
+int cnode_cancelBadgedSends(env_t env, seL4_CPtr cap);
 int cnode_revoke(env_t env, seL4_CPtr cap);
 int cnode_rotate(env_t env, seL4_CPtr src, seL4_CPtr pivot, seL4_CPtr dest);
 int cnode_savecaller(env_t env, seL4_CPtr cap);

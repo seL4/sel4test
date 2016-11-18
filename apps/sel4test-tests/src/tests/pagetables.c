@@ -231,8 +231,8 @@ test_pagetable_arm(env_t env)
     test_assert(check_memory(vstart + PAGE_SIZE_4K, PAGE_SIZE_4K));
     test_assert(check_memory(vstart + LPAGE_SIZE, LPAGE_SIZE));
 
-    /* Recycle the small page. */
-    error = seL4_CNode_Recycle(env->cspace_root, small_page,
+    /* Revoke the small page. */
+    error = seL4_CNode_Revoke(env->cspace_root, small_page,
                                seL4_WordBits);
     test_assert(error == 0);
 
@@ -246,7 +246,7 @@ test_pagetable_arm(env_t env)
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
     test_assert(error == 0);
 
-    /* Now unmap the small page. This should have no effect as we've recycled
+    /* Now unmap the small page. This should have no effect as we've revoked
      * it already. */
     error = seL4_ARM_Page_Unmap(small_page);
     test_assert(error == 0);
@@ -263,8 +263,8 @@ test_pagetable_arm(env_t env)
     /* And the small page should be filled with zeroes. */
     test_assert(check_zeroes(vstart + LPAGE_SIZE, PAGE_SIZE_4K));
 
-    /* Recycle it. */
-    error = seL4_CNode_Recycle(env->cspace_root, small_page,
+    /* Revoke it. */
+    error = seL4_CNode_Revoke(env->cspace_root, small_page,
                                seL4_WordBits);
     test_assert(error == 0);
 

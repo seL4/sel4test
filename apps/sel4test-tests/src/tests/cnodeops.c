@@ -181,26 +181,26 @@ test_cnode_mutate(env_t env)
 DEFINE_TEST(CNODEOP0005, "Basic seL4_CNode_Mutate() testing", test_cnode_mutate)
 
 static int
-test_cnode_recycle(env_t env)
+test_cnode_cancelBadgedSends(env_t env)
 {
     int error;
     seL4_Word slot;
 
     /* A call that should succeed. */
-    slot = get_cap(&env->vka);
-    error = cnode_recycle(env, slot);
+    seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
+    error = cnode_cancelBadgedSends(env, ep);
     test_assert(!error);
-    test_assert(!is_slot_empty(env, slot));
+    test_assert(!is_slot_empty(env, ep));
 
     /* Recycling an empty slot (should fail). */
     slot = get_free_slot(env);
-    error = cnode_recycle(env, slot);
+    error = cnode_cancelBadgedSends(env, slot);
     test_assert(error == seL4_IllegalOperation);
     test_assert(is_slot_empty(env, slot));
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CNODEOP0006, "Basic seL4_CNode_Recycle() testing", test_cnode_recycle)
+DEFINE_TEST(CNODEOP0006, "Basic seL4_CNode_CancelBadgedSends() testing", test_cnode_cancelBadgedSends)
 
 static int
 test_cnode_revoke(env_t env)

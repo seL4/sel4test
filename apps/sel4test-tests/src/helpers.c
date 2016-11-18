@@ -115,11 +115,11 @@ cnode_mutate(env_t env, seL4_CPtr src, seL4_CPtr dest)
 }
 
 int
-cnode_recycle(env_t env, seL4_CPtr cap)
+cnode_cancelBadgedSends(env_t env, seL4_CPtr cap)
 {
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, cap, &path);
-    return vka_cnode_recycle(&path);
+    return vka_cnode_cancelBadgedSends(&path);
 }
 
 int
