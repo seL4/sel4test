@@ -231,9 +231,8 @@ test_pagetable_arm(env_t env)
     test_assert(check_memory(vstart + PAGE_SIZE_4K, PAGE_SIZE_4K));
     test_assert(check_memory(vstart + LPAGE_SIZE, LPAGE_SIZE));
 
-    /* Revoke the small page. */
-    error = seL4_CNode_Revoke(env->cspace_root, small_page,
-                               seL4_WordBits);
+    /* Now unmap the small page */
+    error = seL4_ARM_Page_Unmap(small_page);
     test_assert(error == 0);
 
     /* Unmap the large page. */
@@ -246,11 +245,6 @@ test_pagetable_arm(env_t env)
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
     test_assert(error == 0);
 
-    /* Now unmap the small page. This should have no effect as we've revoked
-     * it already. */
-    error = seL4_ARM_Page_Unmap(small_page);
-    test_assert(error == 0);
-
     /* Now check the contents of the large page. */
     test_assert(check_memory(vstart, LPAGE_SIZE));
 
@@ -260,12 +254,8 @@ test_pagetable_arm(env_t env)
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
     test_assert(error == 0);
 
-    /* And the small page should be filled with zeroes. */
-    test_assert(check_zeroes(vstart + LPAGE_SIZE, PAGE_SIZE_4K));
-
-    /* Revoke it. */
-    error = seL4_CNode_Revoke(env->cspace_root, small_page,
-                               seL4_WordBits);
+    /* Now unmap the small page */
+    error = seL4_ARM_Page_Unmap(small_page);
     test_assert(error == 0);
 
     /* Map a different small page in its place. */
@@ -276,12 +266,6 @@ test_pagetable_arm(env_t env)
 
     /* Fill it in with stuff. */
     fill_memory(vstart + LPAGE_SIZE, PAGE_SIZE_4K);
-
-    /* Now unmap the original page. */
-    error = seL4_ARM_Page_Unmap(small_page);
-
-    /* Should still be able to access the new page. */
-    test_assert(check_memory(vstart + LPAGE_SIZE, PAGE_SIZE_4K));
 
     vspace_free_reservation(&env->vspace, reserve);
 
