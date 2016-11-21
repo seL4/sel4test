@@ -243,14 +243,14 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
     helper_thread_t thread_a, thread_b;
     vka_t *vka = &env->vka;
 
-    int error;
+    UNUSED int error;
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);
     seL4_Word start_number = 0xabbacafe;
 
     /* Test sending messages of varying lengths. */
     /* Please excuse the awful indending here. */
-    for(int core_a = 0; core_a < nr_cores; core_a++) {
-        for(int core_b = 0; core_b < nr_cores; core_b++)
+    for (int core_a = 0; core_a < nr_cores; core_a++) {
+        for (int core_b = 0; core_b < nr_cores; core_b++) {
             for (int sender_prio = 98; sender_prio <= 102; sender_prio++) {
                 for (int waiter_prio = 100; waiter_prio <= 100; waiter_prio++) {
                     for (int sender_first = 0; sender_first <= 1; sender_first++) {
@@ -313,6 +313,7 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
                     }
                 }
             }
+        }
     }
 
     error = cnode_delete(env, ep);
