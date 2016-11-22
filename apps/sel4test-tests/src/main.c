@@ -204,8 +204,7 @@ get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
 static seL4_Error
 sched_ctrl(void *data, seL4_Word core)
 {
-    assert(core == 0);
-    return ((test_init_data_t *) data)->sched_ctrl;
+    return ((test_init_data_t *) data)->sched_ctrl + core;
 }
 
 void init_timer(env_t env, test_init_data_t *init_data)

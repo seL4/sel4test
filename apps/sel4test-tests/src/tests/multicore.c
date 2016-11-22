@@ -55,7 +55,8 @@ int smp_test_tcb_resume(env_t env)
 
     /* Suspend the thread, and move it to new core. */
     seL4_TCB_Suspend(t1.thread.tcb.cptr);
-    set_helper_affinity(&t1, 1);
+    error = set_helper_affinity(env, &t1, 1);
+    test_eq(error, seL4_NoError);
 
     old_counter = counter;
 
@@ -117,7 +118,7 @@ int smp_test_tcb_move(env_t env)
     test_check(counter == old_counter);
 
     for(int i = 1; i < env->cores; i++) {
-        set_helper_affinity(&t1, i);
+        set_helper_affinity(env, &t1, i);
 
         old_counter = counter;
 
@@ -206,7 +207,7 @@ handler_func(seL4_CPtr fault_ep, volatile seL4_Word *pf)
     seL4_Word sender_badge = 0;
 
     /* Waiting for fault from faulter */
-    tag = seL4_Recv(fault_ep, &sender_badge);
+    tag = seL4_Wait(fault_ep, &sender_badge);
     *pf = seL4_MessageInfo_get_label(tag);
     return 0;
 }
@@ -220,27 +221,20 @@ int smp_test_tlb(env_t env)
 
     helper_thread_t handler_thread;
     helper_thread_t faulter_thread;
-    create_helper_thread(env, &handler_thread);
-    create_helper_thread(env, &faulter_thread);
+    create_helper_thread_on_core(env, &handler_thread, 1);
+    create_helper_thread_on_core(env, &faulter_thread, 2);
 
     /* The endpoint on which faults are received. */
     seL4_CPtr fault_ep = vka_alloc_endpoint_leaky(&env->vka);
 
     set_helper_priority(&handler_thread, 100);
 
-    error = seL4_TCB_Configure(faulter_thread.thread.tcb.cptr,
-                               fault_ep,
-                               seL4_PrioProps_new(100, 100),
+    error = seL4_TCB_SetSpace(faulter_thread.thread.tcb.cptr,
+                              fault_ep,
                                env->cspace_root,
                                seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
-                               env->page_directory, seL4_NilData,
-                               faulter_thread.thread.ipc_buffer_addr,
-                               faulter_thread.thread.ipc_buffer);
+                               env->page_directory, seL4_NilData);
     test_assert(!error);
-
-    /* Move handler to core 1 and faulter to the last available core */
-    set_helper_affinity(&handler_thread, 1);
-    set_helper_affinity(&faulter_thread, env->cores - 1);
 
     start_helper(env, &handler_thread, (helper_fn_t) handler_func, fault_ep, (seL4_Word) &tag, 0, 0);
     start_helper(env, &faulter_thread, (helper_fn_t) faulter_func, (seL4_Word) &shared_mem, 0, 0, 0);
@@ -286,7 +280,7 @@ int smp_test_tcb_clh(env_t env)
     ZF_LOGD("smp_test_tcb_move\n");
 
     for(int i = 1; i < env->cores; i++) {
-        create_helper_thread(env, &t[i]);
+        create_helper_thread_on_core(env, &t[i], i);
 
         set_helper_affinity(&t[i], i);
         start_helper(env, &t[i], (helper_fn_t) kernel_entry_func, (seL4_Word) NULL, 0, 0, 0);
@@ -306,7 +300,7 @@ int smp_test_tcb_clh(env_t env)
 
     /* Do this again... */
     for(int i = 1; i < env->cores; i++) {
-        create_helper_thread(env, &t[i]);
+        create_helper_thread_on_core(env, &t[i], i);
 
         set_helper_affinity(&t[i], i);
         start_helper(env, &t[i], (helper_fn_t) kernel_entry_func, (seL4_Word) NULL, 0, 0, 0);

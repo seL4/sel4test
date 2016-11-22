@@ -277,6 +277,9 @@ run_test(struct testcase *test)
 #endif
     env.init->cores = simple_get_core_count(&env.simple);
     env.init->sched_ctrl = copy_cap_to_process(&test_process, simple_get_sched_ctrl(&env.simple, 0));
+    for (int i = 1; i < env.init->cores; i++) {
+        copy_cap_to_process(&test_process, simple_get_sched_ctrl(&env.simple, i));
+    }
     /* setup data about untypeds */
     env.init->untypeds = copy_untypeds_to_process(&test_process, untypeds, num_untypeds);
     copy_timer_caps(env.init, &env, &test_process);

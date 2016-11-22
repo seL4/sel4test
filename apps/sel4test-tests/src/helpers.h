@@ -92,10 +92,12 @@ typedef struct helper_thread {
 
 /* create a helper in the current vspace and current cspace */
 void create_helper_thread(env_t env, helper_thread_t *thread);
+void create_helper_thread_on_core(env_t env, helper_thread_t *thread, seL4_Word core);
 
 /* create a helper with a clone of the current vspace loadable elf segments,
  * and a new cspace */
 void create_helper_process(env_t env, helper_thread_t *thread);
+void create_helper_process_on_core(env_t env, helper_thread_t *thread, seL4_Word core);
 
 int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
                           seL4_Word arg1, seL4_Word arg2, seL4_Word arg3);
@@ -107,8 +109,11 @@ void set_helper_priority(helper_thread_t *thread, seL4_Word prio);
 void set_helper_mcp(helper_thread_t *thread, seL4_Word mcp);
 
 /* set a helper threads scheduling parameters */
-int set_helper_sched_params(env_t env, helper_thread_t *thread,
+seL4_Error set_helper_sched_params(env_t env, helper_thread_t *thread,
                             seL4_Time budget, seL4_Time period);
+
+/* set a helper threads affinity. This will have no effect on passive threads. */
+seL4_Error set_helper_affinity(env_t env, helper_thread_t *thread, seL4_Word core);
 
 /* Start a helper. Note: arguments to helper processes will be copied into
  * the address space of that process. Do not pass pointers to data only in

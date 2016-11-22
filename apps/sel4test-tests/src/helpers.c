@@ -177,7 +177,7 @@ are_tcbs_distinct(seL4_CPtr tcb1, seL4_CPtr tcb2)
 }
 
 void
-create_helper_process(env_t env, helper_thread_t *thread)
+create_helper_process_on_core(env_t env, helper_thread_t *thread, seL4_Word core)
 {
     UNUSED int error;
 
@@ -198,7 +198,7 @@ create_helper_process(env_t env, helper_thread_t *thread)
         .priority = OUR_PRIO - 1,
         .asid_pool = env->asid_pool,
         .create_sc = true,
-        .sched_ctrl = env->sched_ctrl,
+        .sched_ctrl = simple_get_sched_ctrl(&env->simple, core)
     };
 
     error = sel4utils_configure_process_custom(&thread->process, &env->vka, &env->vspace,
@@ -217,6 +217,11 @@ create_helper_process(env_t env, helper_thread_t *thread)
 
     thread->thread = thread->process.thread;
     assert(error == 0);
+}
+
+void
+create_helper_process(env_t env, helper_thread_t *thread) {
+    return create_helper_process_on_core(env, thread, 0);
 }
 
 NORETURN static void
@@ -322,7 +327,7 @@ cleanup_helper(env_t env, helper_thread_t *thread)
 
 
 void
-create_helper_thread(env_t env, helper_thread_t *thread)
+create_helper_thread_on_core(env_t env, helper_thread_t *thread, seL4_Word core)
 {
     UNUSED int error;
 
@@ -337,7 +342,7 @@ create_helper_thread(env_t env, helper_thread_t *thread)
         .cspace_root_data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
         .create_sc = true,
         .create_reply = true,
-        .sched_ctrl = env->sched_ctrl
+        .sched_ctrl = simple_get_sched_ctrl(&env->simple, core)
     };
 
     thread->is_process = false;
@@ -345,6 +350,11 @@ create_helper_thread(env_t env, helper_thread_t *thread)
 
     error = sel4utils_configure_thread_config(&env->vka, &env->vspace, &env->vspace, config, &thread->thread);
     assert(error == 0);
+}
+
+void
+create_helper_thread(env_t env, helper_thread_t *thread) {
+    return create_helper_thread_on_core(env, thread, 0);
 }
 
 int
@@ -370,15 +380,6 @@ set_helper_mcp(helper_thread_t *thread, seL4_Word mcp)
     UNUSED int error;
     error = seL4_TCB_SetMCPriority(thread->thread.tcb.cptr, mcp);
     assert(error == seL4_NoError);
-}
-
-void
-set_helper_affinity(helper_thread_t *thread, seL4_Word affinity)
-{
-#if CONFIG_MAX_NUM_NODES > 1
-    int error = seL4_TCB_SetAffinity(thread->thread.tcb.cptr, affinity);
-    ZF_LOGF_IF(error != seL4_NoError, "Failed to set tcb affinity");
-#endif /* CONFIG_MAX_NUM_NODES */
 }
 
 void
@@ -423,12 +424,21 @@ timestamp(env_t env)
     return timer_get_time(env->clock_timer->timer);
 }
 
-int
+seL4_Error
 set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget, seL4_Time period)
 {
     return seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0),
                                        thread->thread.sched_context.cptr,
                                        budget, period);
+}
+
+seL4_Error
+set_helper_affinity(env_t env, helper_thread_t *thread, seL4_Word core)
+{
+    seL4_Time timeslice = CONFIG_BOOT_THREAD_TIME_SLICE * US_IN_S;
+    return seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, core),
+                                       thread->thread.sched_context.cptr,
+                                       timeslice, timeslice);
 }
 
 int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,

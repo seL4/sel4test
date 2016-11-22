@@ -276,14 +276,14 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
                         seL4_CPtr thread_a_reply, thread_b_reply;
 
                         if (inter_as) {
-                            create_helper_process(env, &thread_a);
+                            create_helper_process_on_core(env, &thread_a, core_a);
 
                             cspacepath_t path;
                             vka_cspace_make_path(&env->vka, ep, &path);
                             thread_a_arg0 = sel4utils_copy_path_to_process(&thread_a.process, path);
                             assert(thread_a_arg0 != -1);
 
-                            create_helper_process(env, &thread_b);
+                            create_helper_process_on_core(env, &thread_b, core_b);
                             thread_b_arg0 = sel4utils_copy_path_to_process(&thread_b.process, path);
                             assert(thread_b_arg0 != -1);
 
@@ -291,16 +291,13 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
                             thread_b_reply = SEL4UTILS_REPLY_SLOT;
 
                         } else {
-                            create_helper_thread(env, &thread_a);
-                            create_helper_thread(env, &thread_b);
+                            create_helper_thread_on_core(env, &thread_a, core_a);
+                            create_helper_thread_on_core(env, &thread_b, core_b);
                             thread_a_arg0 = ep;
                             thread_b_arg0 = ep;
                             thread_a_reply = thread_a.thread.reply.cptr;
                             thread_b_reply = thread_b.thread.reply.cptr;
                         }
-
-                        set_helper_affinity(&thread_a, core_a);
-                        set_helper_affinity(&thread_b, core_b);
 
                         set_helper_priority(&thread_a, sender_prio);
                         set_helper_priority(&thread_b, waiter_prio);
@@ -1218,13 +1215,13 @@ DEFINE_TEST(IPC0024, "Test deleting the reply cap in the scheduling context",
 
 static int test_nbsendrecv(env_t env)
 {
-    return test_ipc_pair(env, (test_func_t) nbsendrecv_func, (test_func_t) nbsendrecv_func, false);
+    return test_ipc_pair(env, (test_func_t) nbsendrecv_func, (test_func_t) nbsendrecv_func, false, env->cores);
 }
 DEFINE_TEST(IPC0025, "Test seL4_nbsendrecv + seL4_nbsendrecv", test_nbsendrecv)
 
 static int test_nbsendrecv_interas(env_t env)
 {
-    return test_ipc_pair(env, (test_func_t) nbsendrecv_func, (test_func_t) nbsendrecv_func, false);
+    return test_ipc_pair(env, (test_func_t) nbsendrecv_func, (test_func_t) nbsendrecv_func, false, env->cores);
 }
 DEFINE_TEST(IPC0026, "Test interas seL4_nbsendrecv + seL4_nbsendrecv", test_nbsendrecv_interas)
 
@@ -1271,3 +1268,74 @@ test_sched_donation_low_prio_server(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(IPC0027, "Test sched donation to low prio server", test_sched_donation_low_prio_server)
+
+#if CONFIG_MAX_NUM_NODES > 1
+
+static void
+ipc28_server_fn(seL4_CPtr ep, seL4_CPtr reply, volatile int *state)
+{
+    seL4_NBSendRecv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL, reply);
+    while (1) {
+        *state = *state + 1;
+        seL4_ReplyRecv(ep, seL4_MessageInfo_new(0, 0, 0, 0), NULL, reply);
+    }
+}
+
+static int
+ipc28_client_fn(seL4_CPtr ep, volatile int *state) {
+
+    while (*state < RUNS) {
+        seL4_Call(ep, seL4_MessageInfo_new(0, 0, 0, 0));
+        *state = *state + 1;
+    }
+
+    return 0;
+}
+
+static int
+test_sched_donation_cross_core(env_t env)
+{
+    seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
+    helper_thread_t clients[env->cores - 1];
+    helper_thread_t server;
+    volatile int states[env->cores - 1];
+    volatile int server_state = 0;
+
+    /* start server on core 0 */
+    create_helper_thread_on_core(env, &server, 0);
+
+    /* start a client on each other core */
+    for (int i = 0; i < env->cores - 1; i++) {
+        states[i] = 0;
+        create_helper_thread_on_core(env, &clients[i], i + 1);
+    }
+
+    /* start server */
+    start_helper(env, &server, (helper_fn_t) ipc28_server_fn, ep, server.thread.reply.cptr,
+                 (seL4_Word) &server_state, 0);
+
+    /* wait for server to init */
+    seL4_Wait(ep, NULL);
+
+    /* convert to passive */
+    int error = seL4_SchedContext_Unbind(server.thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* start clients */
+    for (int i = 0; i < env->cores - 1; i++) {
+        start_helper(env, &clients[i], (helper_fn_t) ipc28_client_fn, ep, (seL4_Word) &states[i], 0, 0);
+    }
+
+    /* wait for the clients */
+    for (int i = 0; i < env->cores - 1; i++) {
+        error = wait_for_helper(&clients[i]);
+        test_eq(error, 0);
+        test_eq(states[i], RUNS);
+    }
+
+    test_eq(server_state, RUNS * (env->cores - 1));
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(IPC0028, "Cross core sched donation", test_sched_donation_cross_core);
+#endif /* CONFIG_MAX_NUM_NODES */
