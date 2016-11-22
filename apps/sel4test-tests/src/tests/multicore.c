@@ -191,9 +191,9 @@ int smp_test_tlb(env_t env)
                                faulter_thread.thread.ipc_buffer);
     test_assert(!error);
 
-    /* Move handler to core 1 and faulter to core 2*/
+    /* Move handler to core 1 and faulter to the last available core */
     set_helper_affinity(&handler_thread, 1);
-    set_helper_affinity(&faulter_thread, 2);
+    set_helper_affinity(&faulter_thread, env->cores - 1);
 
     start_helper(env, &handler_thread, (helper_fn_t) handler_func, fault_ep, (seL4_Word) &tag, 0, 0);
     start_helper(env, &faulter_thread, (helper_fn_t) faulter_func, (seL4_Word) &shared_mem, 0, 0, 0);
