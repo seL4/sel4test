@@ -7,15 +7,10 @@
  *
  * @TAG(NICTA_BSD)
  */
-
-#include <autoconf.h>
 #include "../../test.h"
 #include <simple/simple.h>
 #include <sel4platsupport/plat/timer.h>
 #include <sel4platsupport/plat/serial.h>
-#include <sel4platsupport/device.h>
-#include <platsupport/plat/hpet.h>
-#include <vka/capops.h>
 
 /* copy the caps required to set up the sel4platsupport default timer */
 void
