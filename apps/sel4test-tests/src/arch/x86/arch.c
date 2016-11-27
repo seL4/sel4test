@@ -20,7 +20,7 @@ get_IOPort_cap(void *data, uint16_t start_port, uint16_t end_port)
     assert(start_port >= SERIAL_CONSOLE_COM1_PORT &&
            start_port <= SERIAL_CONSOLE_COM1_PORT_END);
 
-    return init->serial_io_port1;
+    return init->serial_io_port_cap;
 }
 
 static seL4_Error
@@ -31,7 +31,7 @@ get_msi(void *data, seL4_CNode root, seL4_Word index, uint8_t depth,
     assert(vector == IRQ_OFFSET);
     test_init_data_t *init = (test_init_data_t *) data;
     int error = seL4_CNode_Move(root, index, depth, init->root_cnode,
-            init->timer_irq, seL4_WordBits);
+            init->timer_irq_cap, seL4_WordBits);
     assert(error == seL4_NoError);
     return seL4_NoError;
 }
@@ -45,7 +45,7 @@ arch_init_simple(simple_t *simple) {
 seL4_timer_t *
 arch_init_timer(env_t env, test_init_data_t *data)
 {
-   return sel4platsupport_get_hpet_paddr(&env->vspace, &env->simple, &env->vka,
+    return sel4platsupport_get_hpet_paddr(&env->vspace, &env->simple, &env->vka,
                                          data->timer_paddr, env->timer_notification.cptr,
                                          DEFAULT_TIMER_INTERRUPT);
 }

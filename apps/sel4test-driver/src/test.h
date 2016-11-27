@@ -31,25 +31,27 @@ struct env {
     vspace_t vspace;
     /* abtracts over kernel version and boot environment */
     simple_t simple;
-    /* path for the default timer irq handler */
-    cspacepath_t irq_path;
-    /* frame for the default timer */
-    vka_object_t timer_untyped;
-    /* physical address of the default timer */
+
+    /* Paddr of platsupport default timer. */
     uintptr_t  timer_paddr;
+    /* Path to platsupport default timer's IRQ cap. */
+    cspacepath_t timer_irq_path;
+    /* VKA object for platsupport default timer's device-untyped. */
+    vka_object_t timer_dev_ut_obj;
+
     /* clock timer */
     cspacepath_t clock_irq_path;
-    vka_object_t clock_timer_untyped;
+    vka_object_t clock_timer_dev_ut_obj;
     uintptr_t clock_timer_paddr;
 
-    /* path for the default serial irq handler */
-    cspacepath_t serial_irq_path;
-    /* untyped for the default serial */
-    cspacepath_t serial_frame_path;
-    /* physical address of the serial frame */
+    /* Paddr of the platsupport default serial's frame */
     uintptr_t serial_frame_paddr;
-    /* io port for COM1 */
-    seL4_CPtr serial_io_port_cap1;
+    /* VKA object for the platsupport default serial's frame */
+    vka_object_t serial_frame_obj;
+    /* Path for the default serial irq handler */
+    cspacepath_t serial_irq_path;
+    /* I/O port for platsupport default serial; arch-specific. */
+    seL4_CPtr serial_io_port_cap;
 
     /* init data frame vaddr */
     test_init_data_t *init;
@@ -58,12 +60,15 @@ struct env {
 };
 
 void plat_init(env_t env);
-void plat_init_caps(env_t env);
 void arch_init_timer_caps(env_t env);
+void plat_init_timer_caps(env_t env);
 int arch_init_serial_caps(env_t env);
+int plat_init_serial_caps(env_t env);
 void arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process);
 void plat_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process);
 void arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process);
+void plat_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process);
+
 seL4_CPtr copy_cap_to_process(sel4utils_process_t *process, seL4_CPtr cap);
 
 void init_irq_cap(env_t env, int irq, cspacepath_t *path);

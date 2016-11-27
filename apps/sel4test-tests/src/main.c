@@ -21,6 +21,7 @@
 #include <sel4/types.h>
 
 #include <sel4platsupport/timer.h>
+#include <sel4platsupport/plat/serial.h>
 #include <sel4platsupport/plat/timer.h>
 #include <platsupport/timer.h>
 
@@ -140,9 +141,12 @@ init_allocator(env_t env, test_init_data_t *init_data)
         }
     }
 
-    /* add timeout timer to the allocator */
+    /* Add the event timer device-untyped to the allocator.
+     * We don't add the serial frame because it's not an untyped.
+     * It is passed to the child as an already-retyped frame object.
+     */
     size_bits = seL4_PageBits;
-    vka_cspace_make_path(&env->vka, init_data->timer_untyped, &path);
+    vka_cspace_make_path(&env->vka, init_data->timer_dev_ut_cap, &path);
     error = allocman_utspace_add_uts(allocator, 1, &path, &size_bits,
                                      &init_data->timer_paddr, ALLOCMAN_UT_DEV);
     ZF_LOGF_IF(error, "Failed to add timer ut to allocator");
@@ -181,8 +185,17 @@ get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
     test_init_data_t *init = (test_init_data_t *) data;
 
     if (irq == DEFAULT_TIMER_INTERRUPT) {
-        return seL4_CNode_Move(root, index, depth, init->root_cnode,
-                                init->timer_irq, seL4_WordBits);
+        return seL4_CNode_Copy(root, index, depth, init->root_cnode,
+                                init->timer_irq_cap, seL4_WordBits, seL4_AllRights);
+    }
+    /* Though none of our serial drivers currently use their IRQ, it makes sense
+     * to also intercept the serial IRQ, because we'll have drivers using them
+     * soon.
+     */
+    if (irq == DEFAULT_SERIAL_INTERRUPT) {
+        return seL4_CNode_Copy(root, index, depth,
+                               init->root_cnode, init->serial_irq_cap, seL4_WordBits,
+                               seL4_AllRights);
     }
 
     return plat_get_irq(data, irq, root, index, depth);
@@ -203,14 +216,18 @@ void init_timer(env_t env, test_init_data_t *init_data)
         ZF_LOGF("Failed to allocate notification object");
     }
 
-    plat_init_env(env, init_data);
-
     if (config_set(CONFIG_HAVE_TIMER)) {
         env->timer = arch_init_timer(env, init_data);
         if (env->timer == NULL) {
             ZF_LOGF("Failed to initialise default timer");
         }
     }
+
+    /* Call plat_init_env after arch_init_timer, in case the platform wants to
+     * use the same device for both the wall-clock and the event-timer (such as
+     * the TK1).
+     */
+    plat_init_env(env, init_data);
 }
 
 int
@@ -245,7 +262,7 @@ main(int argc, char **argv)
     env.cspace_size_bits = init_data->cspace_size_bits;
     env.tcb = init_data->tcb;
     env.domain = init_data->domain;
-    env.timer_untyped = init_data->timer_untyped;
+    env.timer_untyped = init_data->timer_dev_ut_cap;
     env.asid_pool = init_data->asid_pool;
     env.asid_ctrl = init_data->asid_ctrl;
 #ifdef CONFIG_IOMMU

@@ -36,7 +36,7 @@ plat_get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t dept
     test_init_data_t *init = (test_init_data_t *) data;
 
     return seL4_CNode_Copy(root, index, depth, init->root_cnode,
-                           init->timer_irq, seL4_WordBits, seL4_AllRights);
+                           init->timer_irq_cap, seL4_WordBits, seL4_AllRights);
 }
 
 void

@@ -20,7 +20,8 @@
 #include <allocman/bootstrap.h>
 #include <allocman/vka.h>
 
-#include <platsupport/timer.h>
+#include <sel4platsupport/plat/timer.h>
+#include <sel4platsupport/plat/serial.h>
 
 #include <sel4debug/register_dump.h>
 #include <sel4platsupport/device.h>
@@ -222,14 +223,17 @@ send_init_data(env_t env, seL4_CPtr endpoint, sel4utils_process_t *process)
 static void
 copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-    /* irq cap for the timer irq */
-    init->timer_irq = copy_cap_to_process(test_process, env->irq_path.capPtr);
-    assert(init->timer_irq != 0);
+    /* Copy PS default timer's IRQ cap to child process. */
+    init->timer_irq_cap = copy_cap_to_process(test_process, env->timer_irq_path.capPtr);
+    ZF_LOGF_IF(init->timer_irq_cap == 0,
+               "Failed to copy PS default timer IRQ cap to test child "
+               "process.");
 
     /* untyped cap for timer device untyped */
     init->timer_paddr = env->timer_paddr;
-    init->timer_untyped = copy_cap_to_process(test_process, env->timer_untyped.cptr);
-    assert(init->timer_untyped != 0);
+    init->timer_dev_ut_cap = copy_cap_to_process(test_process, env->timer_dev_ut_obj.cptr);
+    ZF_LOGF_IF(init->timer_dev_ut_cap == 0,
+               "Failed to copy PS default timer device-ut to test child.");
 
     arch_copy_timer_caps(init, env, test_process);
 }
@@ -237,6 +241,12 @@ copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_pro
 static void
 copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
+    init->serial_irq_cap = copy_cap_to_process(test_process,
+                                               env->serial_irq_path.capPtr);
+    ZF_LOGF_IF(init->serial_irq_cap == 0,
+               "Failed to copy PS default serial IRQ cap to test child "
+               "process.");
+
     arch_copy_serial_caps(init, env, test_process);
 }
 
@@ -338,17 +348,51 @@ run_test(struct testcase *test)
 static void
 init_timer_caps(env_t env)
 {
-    /* allocate a cslot for the irq control cap */
-    seL4_CPtr cap;
-    int error = vka_cspace_alloc(&env->vka, &cap);
-    ZF_LOGF_IF(error, "Failed to allocate cslot, error %d", error);
-    vka_cspace_make_path(&env->vka, cap, &env->irq_path);
+    int error;
 
-    env->timer_paddr = sel4platsupport_get_default_timer_paddr(&env->vka, &env->vspace);
-    error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, env->timer_paddr, &env->timer_untyped);
-    ZF_LOGF_IF(error, "Failed to get untyped at paddr %p for timer\n", (void*)env->timer_paddr);
+    /* Allocate slot for the timer IRQ. */
+    error = vka_cspace_alloc_path(&env->vka, &env->timer_irq_path);
+    ZF_LOGF_IF(error, "Failed to allocate timer IRQ slot.");
 
+    /* Obtain frame cap for PS default timer.
+     * Note: We keep the timer's MMIO physical address as an untyped, for the
+     * timer, but for the serial we retype it immediately as a frame.
+     *
+     * The reason for this is that we would prefer to pass untypeds, but since
+     * the test driver and test child both use the serial-frame, we can't share
+     * it between them as an untyped, so we must retype it as a frame first, so
+     * that the cap can be cloned.
+     */
+    env->timer_paddr = sel4platsupport_get_default_timer_paddr(&env->vka,
+                                                               &env->vspace);
+    error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, env->timer_paddr,
+                                 &env->timer_dev_ut_obj);
+    ZF_LOGF_IF(error, "Failed to obtain device-ut cap for default timer.");
+
+    /* Then call into the arch- and plat-specific code to init all arch-
+     * and plat-specific code. Some platforms need another timer because they
+     * use different timers/drivers for the event-timer and the
+     * wall-clock-timer.
+     */
     arch_init_timer_caps(env);
+}
+
+static void
+init_serial_caps(env_t env)
+{
+    int error;
+
+    /* Allocate slot for the PS default serial's IRQ cap. */
+    error = vka_cspace_alloc_path(&env->vka, &env->serial_irq_path);
+    ZF_LOGF_IF(error, "Failed to allocate serial IRQ slot.");
+
+    /* Call into the arch-specific code for the next step.
+     * x86 needs an I/O cap because the serial is accessed through port-I/O,
+     * while ARM needs a frame cap because it doesn't have port-I/O.
+     * Both architectures need different initialization code.
+     */
+    error = arch_init_serial_caps(env);
+    ZF_LOGF_IF(error, "Arch-specific serial cap init failed.");
 }
 
 void *main_continued(void *arg UNUSED)
@@ -394,9 +438,6 @@ void *main_continued(void *arg UNUSED)
     memcpy(env.init->elf_regions, elf_regions, sizeof(sel4utils_elf_region_t) * num_elf_regions);
     env.init->num_elf_regions = num_elf_regions;
 
-    /* get the caps we need to send to tests to set up a timer */
-    init_timer_caps(&env);
-
     /* setup init data that won't change test-to-test */
     env.init->priority = seL4_MaxPrio - 1;
     plat_init(&env);
@@ -410,17 +451,23 @@ void *main_continued(void *arg UNUSED)
 static int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,
         uintptr_t paddr, seL4_Word *cookie)
 {
-    if (env.serial_frame_paddr == (uintptr_t)paddr) {
-        return vka_cnode_copy(dest, &env.serial_frame_path, seL4_AllRights);
+
+    if (paddr == env.serial_frame_paddr) {
+        cspacepath_t tmp_frame_path;
+
+        vka_cspace_make_path(&env.vka,
+                             env.serial_frame_obj.cptr,
+                             &tmp_frame_path);
+        return vka_cnode_copy(dest, &tmp_frame_path, seL4_AllRights);
     }
 
     assert(env.vka.utspace_alloc_at);
     return env.vka.utspace_alloc_at(data, dest, type, size_bits, paddr, cookie);
 }
 
-
 int main(void)
 {
+    int error;
     seL4_BootInfo *info = seL4_GetBootInfo();
 
 #ifdef SEL4_DEBUG_KERNEL
@@ -432,29 +479,36 @@ int main(void)
      * we are running on */
     simple_default_init_bootinfo(&env.simple, info);
 
-    /* initialise the test environment - allocator, cspace manager, vspace manager, timer */
+    /* initialise the test environment - allocator, cspace manager, vspace
+     * manager, timer
+     */
     init_env(&env);
 
-    /* initialise the serial cap - sel4test-driver and sel4test-tests use this cap, so we need
-     * to allocate it and make copies of it to hand out */
-    int error = arch_init_serial_caps(&env);
-    ZF_LOGF_IF(error != 0,
-               "Err %d: Failed to initialize platform serial caps.", error);
+    /* Allocate slots for, and obtain the caps for, the hardware we will be
+     * using, in the same function.
+     */
+    init_serial_caps(&env);
 
-    /* Construct a vka wrapper for returning the serial frame. We need to create this
-     * wrapper as the actual vka implementation will only allocate/return any given
-     * device frame once. As we already allocated it in init_serial_caps when we the
-     * platsupport_serial_setup_simple attempts to allocate it will fail. This wrapper
-     * just returns a copy of the one we already allocated, whilst passing all other
-     * requests on to the actual vka */
+    /* Construct a vka wrapper for returning the serial frame. We need to
+     * create this wrapper as the actual vka implementation will only
+     * allocate/return any given device frame once. As we already allocated it
+     * in init_serial_caps when we the platsupport_serial_setup_simple attempts
+     * to allocate it will fail. This wrapper just returns a copy of the one
+     * we already allocated, whilst passing all other requests on to the
+     * actual vka
+     */
     vka_t serial_vka = env.vka;
     serial_vka.utspace_alloc_at = serial_utspace_alloc_at_fn;
-
 
     /* enable serial driver */
     platsupport_serial_setup_simple(&env.vspace, &env.simple, &serial_vka);
 
+    /* init_timer_caps calls acpi_init(), which does unconditional printfs,
+     * so it can't go before platsupport_serial_setup_simple().
+     */
+    init_timer_caps(&env);
     simple_print(&env.simple);
+
     /* switch to a bigger, safer stack with a guard page
      * before starting the tests */
     printf("Switching to a safer, bigger stack... ");

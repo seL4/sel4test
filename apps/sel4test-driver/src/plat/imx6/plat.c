@@ -18,31 +18,46 @@
 #include <sel4platsupport/plat/timer.h>
 
 void
-plat_init_caps(env_t env)
+plat_init_timer_caps(env_t env)
 {
+    /* Platforms that use a different device/driver to satisfy their wall-clock
+     * timer requirement may be initialized here.
+     */
     int error = sel4platsupport_copy_irq_cap(&env->vka, &env->simple, GPT1_INTERRUPT, &env->clock_irq_path);
     ZF_LOGF_IF(error != 0, "Failed to get GPT1_INTERRUPT");
 
-    error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, GPT1_DEVICE_PADDR, &env->clock_timer_untyped);
-    ZF_LOGF_IF(error != 0, "Failed to allocate clock timer untyped");
+    error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, GPT1_DEVICE_PADDR, &env->clock_timer_dev_ut_obj);
+    ZF_LOGF_IF(error != 0, "Failed to allocate GPT1 device-untyped");
 }
 
 void
 plat_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
 
-    ZF_LOGV("Copying clock timer frame cap %x\n", env->clock_timer_untyped.cptr);
-    init->clock_timer_untyped = copy_cap_to_process(test_process, env->clock_timer_untyped.cptr);
-    if (init->clock_timer_untyped == 0) {
-        ZF_LOGF("Failed to copy clock timer frame cap to process");
+    ZF_LOGV("Copying clock timer frame cap %x\n", env->clock_timer_dev_ut_obj.cptr);
+    init->clock_timer_dev_ut_cap = copy_cap_to_process(test_process, env->clock_timer_dev_ut_obj.cptr);
+    if (init->clock_timer_dev_ut_cap == 0) {
+        ZF_LOGF("Failed to copy clock timer device-ut cap to process");
     }
     init->clock_timer_paddr = GPT1_DEVICE_PADDR;
 
     ZF_LOGV("Copying clock timer irq\n");
-    init->clock_timer_irq = copy_cap_to_process(test_process, env->clock_irq_path.capPtr);
-    if (init->clock_timer_irq == 0) {
+    init->clock_timer_irq_cap = copy_cap_to_process(test_process, env->clock_irq_path.capPtr);
+    if (init->clock_timer_irq_cap == 0) {
         ZF_LOGF("Failed to copy clock timer irq cap to process");
     }
+}
+
+int
+plat_init_serial_caps(env_t env)
+{
+    return 0;
+}
+
+void
+plat_copy_serial_caps(test_init_data_t *init, env_t env,
+                      sel4utils_process_t *test_process)
+{
 }
 
 void

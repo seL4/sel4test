@@ -19,7 +19,7 @@ plat_add_uts(env_t env, allocman_t *alloc, test_init_data_t *data)
 {
     seL4_Word size_bits = seL4_PageBits;
     cspacepath_t path;
-    vka_cspace_make_path(&env->vka, data->clock_timer_untyped, &path);
+    vka_cspace_make_path(&env->vka, data->clock_timer_dev_ut_cap, &path);
     int error = allocman_utspace_add_uts(alloc, 1, &path, &size_bits,
                                      &data->clock_timer_paddr,
                                      ALLOCMAN_UT_DEV);
@@ -47,7 +47,7 @@ plat_get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t dept
 
     if (irq == GPT2_INTERRUPT) {
     	return seL4_CNode_Copy(root, index, depth, init->root_cnode,
-                               init->clock_timer_irq, seL4_WordBits, seL4_AllRights);
+                               init->clock_timer_irq_cap, seL4_WordBits, seL4_AllRights);
 	}
     return -1;
 }

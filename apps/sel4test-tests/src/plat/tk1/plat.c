@@ -13,7 +13,8 @@
 #include "../../test.h"
 #include "../../helpers.h"
 
-#include <sel4platsupport/plat/timer.h>
+#include <utils/zf_log.h>
+#include <sel4platsupport/timer.h>
 
 void
 plat_add_uts(env_t env, allocman_t *alloc, test_init_data_t *data)
@@ -24,13 +25,18 @@ plat_add_uts(env_t env, allocman_t *alloc, test_init_data_t *data)
 void
 plat_init_env(env_t env, test_init_data_t *data)
 {
-    /* clock timer not implemented for this platform */
-    env->clock_timer = NULL;
+    /* On TK1, the NV_TMR can handle both wall-clock and event-timers.
+     */
+    ZF_LOGF_IF(env->timer == NULL, "Failed to init TK1 NV timer.");
+
+    env->clock_timer = env->timer;
 }
 
 seL4_Error
 plat_get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
 {
-    /* clock timer not implemented for this platform */
+    /* The whole purpose of the wall-clock timer is to be a free-running
+     * upcounter: doesn't need an IRQ.
+     */
     return -1;
 }

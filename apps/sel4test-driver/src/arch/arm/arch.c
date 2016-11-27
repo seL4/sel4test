@@ -11,17 +11,26 @@
 #include "../../test.h"
 
 #include <sel4platsupport/device.h>
+#include <sel4platsupport/timer.h>
 #include <sel4platsupport/plat/timer.h>
 #include <sel4platsupport/plat/serial.h>
 
 void
 arch_init_timer_caps(env_t env)
 {
-    int error = sel4platsupport_copy_irq_cap(&env->vka, &env->simple, DEFAULT_TIMER_INTERRUPT,
-            &env->irq_path);
-    ZF_LOGF_IF(error, "Failed to copy irq cap");
+    int error;
 
-    plat_init_caps(env);
+    /* Obtain the IRQ cap for the PS default timer IRQ
+     * The slot was allocated earlier, outside in init_timer_caps.
+     *
+     * The IRQ cap setup is arch specific because x86 uses MSI, and that's
+     * a different function.
+     */
+    error = sel4platsupport_copy_irq_cap(&env->vka, &env->simple, DEFAULT_TIMER_INTERRUPT,
+                                             &env->timer_irq_path);
+    ZF_LOGF_IF(error, "Failed to obtain PS default timer IRQ cap.");
+
+    plat_init_timer_caps(env);
 }
 
 void
@@ -33,25 +42,36 @@ arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *tes
 int
 arch_init_serial_caps(env_t env)
 {
-    /* Get the serial untyped cap - this is what we give the allocator */
-    vka_object_t serial = {0};
-    int error = vka_alloc_frame_at(&env->vka, seL4_PageBits, DEFAULT_SERIAL_PADDR,
-                                     &serial);
-    ZF_LOGF_IF(error, "Failed to allocate untyped for serial at %x\n",
-               DEFAULT_SERIAL_PADDR);
+    int error;
 
-    vka_cspace_make_path(&env->vka, serial.cptr, &env->serial_frame_path);
+    /* Obtain IRQ cap for PS default serial. */
+    error = sel4platsupport_copy_irq_cap(&env->vka, &env->simple, DEFAULT_SERIAL_INTERRUPT,
+                                           &env->serial_irq_path);
+    ZF_LOGF_IF(error, "Failed to obtain PS default serial IRQ cap.");
+
+    /* Obtain frame cap for PS default serial.
+     * We pass the serial's MMIO frame as a frame object, and not an untyped,
+     * like the way we pass the timer MMIO paddr. The reason for this is that
+     * the child tests use the serial device themselves, and we can't retype
+     * an untyped twice. But we can make copies of a Frame cap.
+     */
     env->serial_frame_paddr = DEFAULT_SERIAL_PADDR;
-    return 0;
+    error = vka_alloc_frame_at(&env->vka, seL4_PageBits, DEFAULT_SERIAL_PADDR,
+                               &env->serial_frame_obj);
+    ZF_LOGF_IF(error, "Failed to obtain frame cap for default serial.");
+
+    return plat_init_serial_caps(env);
 }
 
 void
 arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-    init->serial_frame = copy_cap_to_process(test_process, env->serial_frame_path.capPtr);
-    if (init->serial_frame == 0) {
-        ZF_LOGF("Failed to copy serial Frame cap to sel4test-test process.");
-    }
+    init->serial_paddr = env->serial_frame_paddr;
+    init->serial_frame_cap = copy_cap_to_process(test_process, env->serial_frame_obj.cptr);
+    ZF_LOGF_IF(init->serial_frame_cap == 0,
+               "Failed to copy PS default serial Frame cap to sel4test-test process");
+
+    plat_copy_serial_caps(init, env, test_process);
 }
 
 #ifdef CONFIG_ARM_SMMU

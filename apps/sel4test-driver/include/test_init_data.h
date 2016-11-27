@@ -52,26 +52,28 @@ typedef struct {
     seL4_SlotRegion io_space_caps;
 #endif
     /* cap to the sel4platsupport default timer irq handler */
-    seL4_CPtr timer_irq;
-    /* cap to the sel4platsupport default timer physical frame */
-    seL4_CPtr timer_untyped;
+    seL4_CPtr timer_irq_cap;
+    /* cap to the sel4platsupport default timer device untyped */
+    seL4_CPtr timer_dev_ut_cap;
     /* physical address of the timeout timer */
     uintptr_t timer_paddr;
 
     /* caps for clock timer */
-    seL4_CPtr clock_timer_irq;
-    seL4_CPtr clock_timer_untyped;
+    seL4_CPtr clock_timer_irq_cap;
+    seL4_CPtr clock_timer_dev_ut_cap;
     seL4_CPtr clock_timer_paddr;
 
     /* cap to the sel4platsupport default timer io port */
-    seL4_CPtr io_port;
+    seL4_CPtr timer_io_port_cap;
 
+    /* Paddr of the sel4platsupport default serial mmio region. */
+    uintptr_t serial_paddr;
     /* cap to the sel4platsupport default serial irq handler */
-    seL4_CPtr serial_irq;
+    seL4_CPtr serial_irq_cap;
     /* cap to the sel4platsupport default serial physical frame */
-    seL4_CPtr serial_frame;
-    /* cap to serial COM1 */
-    seL4_CPtr serial_io_port1;
+    seL4_CPtr serial_frame_cap;
+    /* cap to the sel4platsupport default serial I/O port; arch-specific. */
+    seL4_CPtr serial_io_port_cap;
 
     /* size of the test processes cspace */
     seL4_Word cspace_size_bits;
