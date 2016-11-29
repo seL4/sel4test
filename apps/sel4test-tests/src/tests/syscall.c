@@ -62,7 +62,7 @@
         test_assert(a11 == 0xdead000b); \
     } while (0)
 #elif defined(CONFIG_ARCH_X86_64)
-#define TEST_MRS 0, 0
+#define TEST_MRS 0, 0, 0, 0
 #define TEST_REGISTERS(code) \
     do { \
         register long a00 = 0xdeadbeefdead0000; \
