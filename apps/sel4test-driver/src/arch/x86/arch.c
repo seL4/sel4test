@@ -50,7 +50,7 @@ arch_init_serial_caps(env_t env)
             ZF_LOGE("Failed to alloc slot for default COM IRQ.");
             return error;
         }
-        error = simple_get_IRQ_control(&env->simple,
+        error = simple_get_IRQ_handler(&env->simple,
                                        DEFAULT_SERIAL_INTERRUPT,
                                        env->serial_irq_path);
         if (error != 0) {
