@@ -32,6 +32,7 @@ counter_func(volatile seL4_Word *counter)
 
 int smp_test_tcb_resume(env_t env)
 {
+    int error;
     helper_thread_t t1;
     volatile seL4_Word counter;
     ZF_LOGD("smp_test_tcb_resume\n");
