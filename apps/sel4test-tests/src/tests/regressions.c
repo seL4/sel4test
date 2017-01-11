@@ -467,6 +467,7 @@ int test_no_ret_with_cpl0(env_t env)
     test_eq(error, 0);
     error = timer_periodic(env->timer->timer, NS_IN_S / 10);
     test_eq(error, 0);
+    sel4_timer_handle_single_irq(env->timer);
 
     for (int i = 0; i < 20; i++) {
         wait_for_timer_interrupt(env);
