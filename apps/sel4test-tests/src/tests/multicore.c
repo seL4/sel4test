@@ -214,7 +214,7 @@ int smp_test_tlb(env_t env)
     sleep(env, 10 * NS_IN_MS);
 
     /* We should see page fault */
-    test_check(tag == SEL4_PFIPC_LABEL);
+    test_check(tag == seL4_Fault_VMFault);
 
     /* Done. */
     cleanup_helper(env, &faulter_thread);
