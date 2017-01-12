@@ -7,18 +7,46 @@
  *
  * @TAG(NICTA_BSD)
  */
+
+#include <autoconf.h>
 #include "../../test.h"
 #include <simple/simple.h>
 #include <sel4platsupport/plat/timer.h>
 #include <sel4platsupport/plat/serial.h>
+#include <sel4platsupport/device.h>
+#include <platsupport/plat/hpet.h>
+#include <vka/capops.h>
 
 void
 arch_init_timer_caps(env_t env)
 {
     int error;
 
-    error = arch_simple_get_msi(&env->simple.arch_simple, env->timer_irq_path, 0, 0, 0, 0, DEFAULT_TIMER_INTERRUPT);
+    /* map in the timer paddr so that we can query the HPET properties. Although
+     * we only support the possiblity of non FSB delivery if we are using the IOAPIC */
+    cspacepath_t frame;
+    error = vka_cspace_alloc_path(&env->vka, &frame);
+    ZF_LOGF_IF(error, "Failed to allocate cslot");
+    error = vka_untyped_retype(&env->timer_dev_ut_obj, seL4_X86_4K, seL4_PageBits, 1, &frame);
+    ZF_LOGF_IF(error, "Failed to retype timer frame");
+    void *vaddr;
+    vaddr = vspace_map_pages(&env->vspace, &frame.capPtr, NULL, seL4_AllRights, 1, seL4_PageBits, 0);
+    ZF_LOGF_IF(vaddr == NULL, "Failed to map HPET paddr");
+    if (!hpet_supports_fsb_delivery(vaddr)) {
+        if (!config_set(CONFIG_IRQ_IOAPIC)) {
+            ZF_LOGF("HPET does not support FSB delivery and we are not using the IOAPIC");
+        }
+        uint32_t irq_mask = hpet_ioapic_irq_delivery_mask(vaddr);
+        /* grab the first irq */
+        int irq = FFS(irq_mask) - 1;
+        error = arch_simple_get_ioapic(&env->simple.arch_simple, env->timer_irq_path, 0, irq, 0, 1, DEFAULT_TIMER_INTERRUPT);
+    } else {
+        error = arch_simple_get_msi(&env->simple.arch_simple, env->timer_irq_path, 0, 0, 0, 0, DEFAULT_TIMER_INTERRUPT);
+    }
     ZF_LOGF_IF(error, "Failed to obtain IRQ cap for PS default timer.");
+    vspace_unmap_pages(&env->vspace, vaddr, 1, seL4_PageBits, VSPACE_PRESERVE);
+    vka_cnode_delete(&frame);
+    vka_cspace_free(&env->vka, frame.capPtr);
 }
 
 int

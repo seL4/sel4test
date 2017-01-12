@@ -386,6 +386,7 @@ sleep(env_t env, uint64_t ns)
     sel4_timer_handle_single_irq(env->timer);
     start = timer_get_time(env->clock_timer->timer);
     timer_start(env->timer->timer);
+    sel4_timer_handle_single_irq(env->timer);
     do {
         int error = timer_oneshot_relative(env->timer->timer, ns);
         if (error) {
