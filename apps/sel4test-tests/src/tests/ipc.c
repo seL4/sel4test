@@ -928,8 +928,8 @@ static void ipc21_fault_handler_fn(seL4_CPtr endpoint, vspace_t *vspace, reserva
     info = seL4_NBSendRecv(endpoint, info, endpoint, NULL, reply);
 
     while (1) {
-        test_check(seL4_isPageFault_Tag(info));
-        void *addr = (void *) seL4_PF_Addr();
+        test_check(seL4_isVMFault_tag(info));
+        void *addr = (void *) seL4_GetMR(seL4_VMFault_Addr);
         ZF_LOGD("Handling fault at %p\n", addr);
         int error = vspace_new_pages_at_vaddr(vspace, addr, 1, seL4_PageBits, *res);
         test_eq(error, seL4_NoError);

@@ -11,6 +11,8 @@
 #include <simple/simple.h>
 #include <sel4platsupport/plat/timer.h>
 #include <sel4platsupport/plat/serial.h>
+#include <platsupport/plat/hpet.h>
+#include <vka/capops.h>
 
 /* copy the caps required to set up the sel4platsupport default timer */
 void

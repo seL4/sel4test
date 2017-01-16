@@ -434,7 +434,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
 
         set_good_magic_and_set_pc(tcb, (seL4_Word)read_fault_restart_address);
         if (restart) {
-            seL4_Reply(tag);
+            seL4_Send(reply, tag);
         }
         break;
 
