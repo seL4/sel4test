@@ -201,7 +201,7 @@ get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
     return plat_get_irq(data, irq, root, index, depth);
 }
 
-static seL4_Error
+static seL4_CPtr
 sched_ctrl(void *data, seL4_Word core)
 {
     return ((test_init_data_t *) data)->sched_ctrl + core;
