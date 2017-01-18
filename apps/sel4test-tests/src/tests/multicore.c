@@ -283,7 +283,7 @@ int smp_test_tcb_clh(env_t env)
     for(int i = 1; i < env->cores; i++) {
         create_helper_thread_on_core(env, &t[i], i);
 
-        set_helper_affinity(&t[i], i);
+        set_helper_affinity(env, &t[i], i);
         start_helper(env, &t[i], (helper_fn_t) kernel_entry_func, (seL4_Word) NULL, 0, 0, 0);
     }
 
@@ -303,7 +303,7 @@ int smp_test_tcb_clh(env_t env)
     for(int i = 1; i < env->cores; i++) {
         create_helper_thread_on_core(env, &t[i], i);
 
-        set_helper_affinity(&t[i], i);
+        set_helper_affinity(env, &t[i], i);
         start_helper(env, &t[i], (helper_fn_t) kernel_entry_func, (seL4_Word) NULL, 0, 0, 0);
     }
 
