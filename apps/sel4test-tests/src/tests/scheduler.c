@@ -554,7 +554,7 @@ static int
 ipc_test_helper_3(ipc_test_data_t *data)
 {
     seL4_MessageInfo_t tag;
-    int last_spins, last_bounces;
+    seL4_Word last_spins, last_bounces;
 
     /* This test starts here. */
 
@@ -684,7 +684,7 @@ test_ipc_prios(struct env* env)
 DEFINE_TEST(SCHED0006, "Test IPC priorities for Send", test_ipc_prios)
 
 #define SCHED0007_NUM_CLIENTS 5
-#define SCHED0007_PRIO(x) (seL4_MaxPrio - 1 - SCHED0007_NUM_CLIENTS + (x))
+#define SCHED0007_PRIO(x) ((seL4_Word)(seL4_MaxPrio - 1 - SCHED0007_NUM_CLIENTS + (x)))
 
 static void
 sched0007_client(seL4_CPtr endpoint, int order)
@@ -783,7 +783,7 @@ check_receive_ordered(env_t env, seL4_CPtr endpoint, int pos, seL4_CPtr replies[
         if (pos == i) {
             ZF_LOGD("Server expecting %d\n", 0);
             /* client 0 should be in here */
-            test_eq(badge, 0);
+            test_eq(badge, (seL4_Word)0);
         } else {
             ZF_LOGD("Server expecting %d\n", expected_badge);
             test_eq(expected_badge, badge);
@@ -837,7 +837,7 @@ int test_change_prio_on_endpoint(env_t env)
 
     /* first test that changing prio while on an endpoint works */
     seL4_CPtr reply = vka_alloc_reply_leaky(&env->vka);
-    test_neq(reply, seL4_CapNull);
+    test_neq(reply, (seL4_Word)seL4_CapNull);
 
     /* start one clients so it queue on the endpoint */
     start_helper(env, &clients[0], (helper_fn_t) sched0008_client, 0, badged_endpoints[0], 0, 0);
@@ -845,7 +845,7 @@ int test_change_prio_on_endpoint(env_t env)
     set_helper_priority(&clients[0], lowest);
     /* wait for a message */
     seL4_Recv(endpoint, &badge, reply);
-    test_eq(badge, 0);
+    test_eq(badge, (seL4_Word)0);
 
     /* now send another message */
     seL4_Send(reply, info);
@@ -853,7 +853,7 @@ int test_change_prio_on_endpoint(env_t env)
     set_helper_priority(&clients[0], lowest + 1);
     /* get another message */
     seL4_Recv(endpoint, &badge, reply);
-    test_eq(badge, 0);
+    test_eq(badge, (seL4_Word)0);
     seL4_Send(reply, info);
 
     /* Now test moving client 0 into all possible places in the endpoint queue */
@@ -951,7 +951,7 @@ test_ordered_ipc_fastpath(env_t env)
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
     ZF_LOGD("Client Call\n");
     seL4_Call(endpoint, info);
-    test_eq(seL4_GetMR(0), 0);
+    test_eq(seL4_GetMR(0), (seL4_Word)0);
 
     /* resume all other servers */
     for (int i = 1; i < SCHED0009_SERVERS; i++) {
@@ -961,14 +961,14 @@ test_ordered_ipc_fastpath(env_t env)
         sleep(env, 1 * NS_IN_S);
         /* since we resume a higher prio server each time this should work */
         seL4_Call(endpoint, info);
-        test_eq(seL4_GetMR(0), i);
+        test_eq(seL4_GetMR(0), (seL4_Word)i);
     }
 
     /* At this point all servers are queued on the endpoint */
     /* now we will call and the highest prio server should reply each time */
     for (int i = 0; i < SCHED0009_SERVERS; i++) {
         seL4_Call(endpoint, info);
-        test_eq(seL4_GetMR(0), SCHED0009_SERVERS - 1);
+        test_eq(seL4_GetMR(0), (seL4_Word)(SCHED0009_SERVERS - 1));
     }
 
     /* suspend each server in reverse prio order, should get next message from lower prio server */
@@ -977,7 +977,7 @@ test_ordered_ipc_fastpath(env_t env)
         /* don't call on the endpoint once all servers are suspended */
         if (i > 0) {
             seL4_Call(endpoint, info);
-            test_eq(seL4_GetMR(0), i - 1);
+            test_eq(seL4_GetMR(0), (seL4_Word)(i - 1));
         }
     }
 
@@ -1012,7 +1012,7 @@ test_resume_empty_or_no_sched_context(env_t env)
     assert(error == 0);
 
     seL4_CPtr sc = vka_alloc_sched_context_leaky(&env->vka);
-    test_neq(sc, seL4_CapNull);
+    test_neq(sc, (seL4_Word)seL4_CapNull);
 
     volatile int state = 0;
     error = sel4utils_start_thread(&thread, (void *) sched0010_fn, (void *) &state, NULL, 1);

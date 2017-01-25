@@ -26,7 +26,7 @@ test_sched_control_configure(env_t env)
     test_eq(error, 0);
 
     seL4_CPtr sc = sched_context.cptr;
-    test_neq(sc, seL4_CapNull);
+    test_neq(sc, (seL4_Word)seL4_CapNull);
 
     /* test it works */
     error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 5000llu, 5000llu);
@@ -34,7 +34,7 @@ test_sched_control_configure(env_t env)
 
     /* test calling it on something that isn't a sched context */
     seL4_CPtr tcb = vka_alloc_tcb_leaky(&env->vka);
-    test_neq(tcb, seL4_CapNull);
+    test_neq(tcb, (seL4_Word)seL4_CapNull);
 
     error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), tcb, 5000llu, 5000llu);
     test_eq(error, seL4_InvalidCapability);

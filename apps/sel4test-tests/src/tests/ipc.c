@@ -460,7 +460,7 @@ proxy_fn(seL4_CPtr receive_endpoint, seL4_CPtr call_endpoint, seL4_Word reply, v
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
 
     /* signal the initialiser that we are awake */
-    ZF_LOGD("Proxy Call");
+    ZF_LOGD("Proxy nbsendrecv, sending on ep %lu, receiving on ep %lu, reply is %lu\n", call_endpoint, receive_endpoint, reply);
     *state = *state + 1;
     info = seL4_NBSendRecv(call_endpoint, info, receive_endpoint, NULL, reply);
     /* when we get here we are running on a donated scheduling context,
@@ -489,14 +489,14 @@ client_fn(seL4_CPtr endpoint, bool fastpath, int unused, volatile int *state)
 {
 
     /* make the message greater than 4 in size if we do not want to hit the fastpath */
-    uint32_t length = fastpath ? 1 : 5;
+    uint32_t length = fastpath ? 1 : 8;
 
     int i = 0;
     while (i < RUNS) {
         seL4_SetMR(0, 12345678);
         seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, length);
 
-        ZF_LOGD("Client call\n");
+        ZF_LOGD("Client calling on ep %lu\n", endpoint);
         info = seL4_Call(endpoint, info);
 
         test_assert_fatal(seL4_GetMR(0) == 0xdeadbeef);
@@ -517,7 +517,6 @@ single_client_server_chain_test(env_t env, int fastpath, int prio_diff)
     volatile int server_state = 0;
     volatile int proxy_state[num_proxies];
 
-    /* create client */
     create_helper_thread(env, &client);
     set_helper_priority(&client, client_prio);
 
@@ -565,7 +564,7 @@ single_client_server_chain_test(env_t env, int fastpath, int prio_diff)
                  fastpath, RUNS, (seL4_Word) &client_state);
 
     /* sleep and let the testrun */
-    ZF_LOGD("Recv for client");
+    ZF_LOGD("wait_for_helper() for client");
     wait_for_helper(&client);
 
     test_eq(server_state, RUNS + 1);
@@ -731,7 +730,7 @@ test_send_to_no_sc(env_t env)
     seL4_SetMR(0, 12345678);
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
     seL4_NBSend(endpoint, info);
-    test_eq(seL4_GetMR(0), 12345678);
+    test_eq(seL4_GetMR(0), (seL4_Word)12345678);
 
     /* start clients */
     volatile int state1 = 0;
@@ -1299,7 +1298,7 @@ test_sched_donation_cross_core(env_t env)
     helper_thread_t clients[env->cores - 1];
     helper_thread_t server;
     volatile int states[env->cores - 1];
-    volatile int server_state = 0;
+    volatile seL4_Word server_state = 0;
 
     /* start server on core 0 */
     create_helper_thread_on_core(env, &server, 0);
