@@ -307,8 +307,7 @@ run_test(struct testcase *test)
     /* set up args for the test process */
     char endpoint_string[WORD_STRING_SIZE];
     char sel4test_name[] = { TESTS_APP };
-    char zero_string[] = {"0"};
-    char *argv[] = {sel4test_name, zero_string, endpoint_string};
+    char *argv[] = {sel4test_name, endpoint_string};
     snprintf(endpoint_string, WORD_STRING_SIZE, "%lu", (unsigned long)endpoint);
     /* spawn the process */
     error = sel4utils_spawn_process_v(&test_process, &env.vka, &env.vspace,

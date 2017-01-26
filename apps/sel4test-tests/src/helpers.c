@@ -11,6 +11,7 @@
 
 #include <sel4/sel4.h>
 #include <sel4utils/arch/util.h>
+#include <sel4utils/helpers.h>
 
 #include <sel4test/test.h>
 #include <stdarg.h>
@@ -241,13 +242,13 @@ NORETURN static void
 helper_thread(int argc, char **argv)
 {
 
-    helper_fn_t entry_point = (void *) atol(argv[2]);
-    seL4_CPtr local_endpoint = (seL4_CPtr) atol(argv[3]);
+    helper_fn_t entry_point = (void *) atol(argv[0]);
+    seL4_CPtr local_endpoint = (seL4_CPtr) atol(argv[1]);
 
     seL4_Word args[HELPER_THREAD_MAX_ARGS] = {0};
-    for (int i = 4; i < argc && i - 4 < HELPER_THREAD_MAX_ARGS; i++) {
+    for (int i = 2; i < argc && i - 2 < HELPER_THREAD_MAX_ARGS; i++) {
         assert(argv[i] != NULL);
-        args[i - 4] = atol(argv[i]);
+        args[i - 2] = atol(argv[i]);
     }
 
     /* run the thread */
@@ -256,7 +257,6 @@ helper_thread(int argc, char **argv)
     /* does not return */
 }
 
-extern uintptr_t _start[];
 extern uintptr_t sel4_vsyscall[];
 
 void
@@ -277,18 +277,28 @@ start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
         local_endpoint = thread->local_endpoint.cptr;
     }
 
-    /* If we are starting a process then the first two args are to get us
-     * through the standard 'main' function and end up in helper_thread
-     * if we are starting a regular thread then these will be ignored */
     sel4utils_create_word_args(thread->args_strings, thread->args, HELPER_THREAD_TOTAL_ARGS,
-        0, helper_thread, (seL4_Word) entry_point, local_endpoint,
+        (seL4_Word) entry_point, local_endpoint,
         arg0, arg1, arg2, arg3);
 
     if (thread->is_process) {
-        thread->process.entry_point = (void*)_start;
-        thread->process.sysinfo = (uintptr_t)sel4_vsyscall;
+        thread->process.entry_point = (void*)helper_thread;
         error = sel4utils_spawn_process_v(&thread->process, &env->vka, &env->vspace,
                                         HELPER_THREAD_TOTAL_ARGS, thread->args, 1);
+        assert(error == 0);
+        /* sel4utils_spawn_process_v has created a stack frame that contains, amongst other
+           things, our arguments. Since we are going to be running a clone of this vspace
+           we would like to not call _start as this will result in initializing the C library
+           a second time. As we know the argument count and where argv will start we can
+           construct a register (or stack) layout that will allow us to pretend to be doing
+           a function call to helper_thread. */
+        seL4_UserContext context;
+        uintptr_t argv_base = (uintptr_t)thread->process.thread.initial_stack_pointer + sizeof(long);
+        error = sel4utils_arch_init_context_with_args(helper_thread, (void*)HELPER_THREAD_TOTAL_ARGS,
+                                              (void*)argv_base, NULL, false, thread->process.thread.initial_stack_pointer,
+                                              &context, &env->vka, &env->vspace, &thread->process.vspace);
+        assert(error == 0);
+        error = seL4_TCB_WriteRegisters(thread->process.thread.tcb.cptr, 0, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
         assert(error == 0);
     } else {
         error = sel4utils_start_thread(&thread->thread, helper_thread,

@@ -237,19 +237,9 @@ main(int argc, char **argv)
     test_init_data_t *init_data;
     struct env env;
 
-    assert(argc >= 2);
-    /* in order to have some shitty almost-fork-like semantics
-     * main can get run multiple times. Look in src/helpers.c
-     * for where this is used. Just means we check the first
-     * arg, and if not NULL jmp to it */
-    void (*helper_thread)(int argc,char **argv) = (void(*)(int, char**))atol(argv[1]);
-    if (helper_thread) {
-        helper_thread(argc, argv);
-    }
-
     /* parse args */
-    assert(argc == 3);
-    endpoint = (seL4_CPtr) atoi(argv[2]);
+    assert(argc == 2);
+    endpoint = (seL4_CPtr) atoi(argv[1]);
 
     /* read in init data */
     init_data = receive_init_data(endpoint);
