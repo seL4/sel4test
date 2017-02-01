@@ -284,7 +284,7 @@ start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
     if (thread->is_process) {
         thread->process.entry_point = (void*)helper_thread;
         error = sel4utils_spawn_process_v(&thread->process, &env->vka, &env->vspace,
-                                        HELPER_THREAD_TOTAL_ARGS, thread->args, 1);
+                                        HELPER_THREAD_TOTAL_ARGS, thread->args, 0);
         assert(error == 0);
         /* sel4utils_spawn_process_v has created a stack frame that contains, amongst other
            things, our arguments. Since we are going to be running a clone of this vspace
@@ -298,7 +298,7 @@ start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
                                               (void*)argv_base, NULL, false, thread->process.thread.initial_stack_pointer,
                                               &context, &env->vka, &env->vspace, &thread->process.vspace);
         assert(error == 0);
-        error = seL4_TCB_WriteRegisters(thread->process.thread.tcb.cptr, 0, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
+        error = seL4_TCB_WriteRegisters(thread->process.thread.tcb.cptr, 1, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
         assert(error == 0);
     } else {
         error = sel4utils_start_thread(&thread->thread, helper_thread,
