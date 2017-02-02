@@ -44,6 +44,11 @@ struct env {
     vka_object_t clock_timer_dev_ut_obj;
     uintptr_t clock_timer_paddr;
 
+    /* Extra timer */
+    cspacepath_t extra_timer_irq_path;
+    vka_object_t extra_timer_dev_ut_obj;
+    uintptr_t extra_timer_paddr;
+
     /* Paddr of the platsupport default serial's frame */
     uintptr_t serial_frame_paddr;
     /* VKA object for the platsupport default serial's frame */
