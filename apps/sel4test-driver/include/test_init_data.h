@@ -61,7 +61,7 @@ typedef struct {
     /* caps for clock timer */
     seL4_CPtr clock_timer_irq_cap;
     seL4_CPtr clock_timer_dev_ut_cap;
-    seL4_CPtr clock_timer_paddr;
+    uintptr_t clock_timer_paddr;
 
     /* cap to the sel4platsupport default timer io port */
     seL4_CPtr timer_io_port_cap;
