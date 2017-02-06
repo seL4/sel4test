@@ -156,7 +156,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     start_helper(env, &handler, handle, fault_ep, 0, 0, 0);
 
     /* Wait for the fault to happen */
-    void *res = (void*)wait_for_helper(&handler);
+    void *res = (void*)(seL4_Word)wait_for_helper(&handler);
 
     test_assert(res == (void*)0x42);
 
@@ -196,7 +196,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     start_helper(env, &handler, handle, fault_ep, 0, 0, 0);
 
     /* Wait for the fault to happen */
-    res = (void*)wait_for_helper(&handler);
+    res = (void*)(seL4_Word)wait_for_helper(&handler);
 
     /* Confirm that, this time, we faulted at the start of the XN-mapped page. */
     test_assert(res == (void*)dest);

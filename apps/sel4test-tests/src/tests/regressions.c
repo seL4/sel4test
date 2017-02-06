@@ -51,7 +51,7 @@ void reply_to_parent(seL4_Word result)
  * declaration when the definition is in asm.
  */
 void test_registers(void)
-#if defined(ARCH_ARM)
+#if defined(CONFIG_ARCH_AARCH32)
 /* Probably not necessary to mark this function naked as we define the
  * whole thing in asm anyway, but just in case GCC tries to do anything
  * sneaky.
@@ -70,7 +70,7 @@ asm ("\n"
      ".space 4096                 \n"
      "_safe_stack:                \n"
      ".text                       \n");
-#if defined(CONFIG_ARCH_ARM)
+#if defined(CONFIG_ARCH_AARCH32)
 asm ("\n"
 
      /* Trampoline for providing the thread a valid stack before entering
@@ -127,6 +127,94 @@ asm ("\n"
      "test_registers_fail:        \n"
      "\tmov r0, #1                \n"
      "\tb reply_trampoline        \n"
+    );
+#elif defined(CONFIG_ARCH_AARCH64)
+asm (
+     /* Trampoline for providing the thread a valid stack before entering
+      * reply_to_parent. No blx required because reply_to_parent does not
+      * return.
+      */
+     "reply_trampoline:           \n"
+     "ldr x1, =_safe_stack        \n"
+     "mov sp, x1                  \n"
+     "b reply_to_parent           \n"
+
+     "test_registers:             \n"
+     "cmp sp, #1                  \n"
+     "bne test_registers_fail     \n"
+     "cmp x0, #2                  \n"
+     "bne test_registers_fail     \n"
+     "cmp x1, #3                  \n"
+     "bne test_registers_fail     \n"
+     "cmp x2, #4                  \n"
+     "bne test_registers_fail     \n"
+     "cmp x3, #5                  \n"
+     "bne test_registers_fail     \n"
+     "cmp x4, #6                  \n"
+     "bne test_registers_fail     \n"
+     "cmp x5, #7                  \n"
+     "bne test_registers_fail     \n"
+     "cmp x6, #8                  \n"
+     "bne test_registers_fail     \n"
+     "cmp x7, #9                  \n"
+     "bne test_registers_fail     \n"
+     "cmp x8, #10                 \n"
+     "bne test_registers_fail     \n"
+     "cmp x9, #11                 \n"
+     "bne test_registers_fail     \n"
+     "cmp x10, #12                \n"
+     "bne test_registers_fail     \n"
+     "cmp x11, #13                \n"
+     "bne test_registers_fail     \n"
+     "cmp x12, #14                \n"
+     "bne test_registers_fail     \n"
+     "cmp x13, #15                \n"
+     "bne test_registers_fail     \n"
+     "cmp x14, #16                \n"
+     "bne test_registers_fail     \n"
+     "cmp x15, #17                \n"
+     "bne test_registers_fail     \n"
+     "cmp x16, #18                \n"
+     "bne test_registers_fail     \n"
+     "cmp x17, #19                \n"
+     "bne test_registers_fail     \n"
+     "cmp x18, #20                \n"
+     "bne test_registers_fail     \n"
+     "cmp x19, #21                \n"
+     "bne test_registers_fail     \n"
+     "cmp x20, #22                \n"
+     "bne test_registers_fail     \n"
+     "cmp x21, #23                \n"
+     "bne test_registers_fail     \n"
+     "cmp x22, #24                \n"
+     "bne test_registers_fail     \n"
+     "cmp x23, #25                \n"
+     "bne test_registers_fail     \n"
+     "cmp x24, #26                \n"
+     "bne test_registers_fail     \n"
+     "cmp x25, #27                \n"
+     "bne test_registers_fail     \n"
+     "cmp x26, #28                \n"
+     "bne test_registers_fail     \n"
+     "cmp x27, #29                \n"
+     "bne test_registers_fail     \n"
+     "cmp x28, #30                \n"
+     "bne test_registers_fail     \n"
+     "cmp x29, #31                \n"
+     "bne test_registers_fail     \n"
+     "cmp x30, #32                \n"
+     "bne test_registers_fail     \n"
+
+     /* Return success. Note that we don't bother saving registers or bl because
+      * we're not planning to return here and we don't have a valid stack.
+      */
+     "mov x0, #0                \n"
+     "b reply_trampoline        \n"
+
+     /* Return failure. */
+     "test_registers_fail:        \n"
+     "mov x0, #1                \n"
+     "b reply_trampoline        \n"
     );
 #elif defined(CONFIG_ARCH_X86_64)
 asm ("\n\t"
@@ -262,7 +350,7 @@ int test_write_registers(env_t env)
     create_helper_thread(env, &thread);
     shared_endpoint = thread.local_endpoint.cptr;
 
-#if defined(CONFIG_ARCH_ARM)
+#if defined(CONFIG_ARCH_AARCH32)
     context.pc = (seL4_Word)&test_registers;
     context.sp = 13;
     context.r0 = 15;
@@ -281,6 +369,40 @@ int test_write_registers(env_t env)
     /* R13 == SP */
     context.r14 = 14; /* LR */
     /* R15 == PC */
+#elif defined(CONFIG_ARCH_AARCH64)
+    context.pc = (seL4_Word)&test_registers;
+    context.sp = 1;
+    context.x0 = 2;
+    context.x1 = 3;
+    context.x2 = 4;
+    context.x3 = 5;
+    context.x4 = 6;
+    context.x5 = 7;
+    context.x6 = 8;
+    context.x7 = 9;
+    context.x8 = 10;
+    context.x9 = 11;
+    context.x10 = 12;
+    context.x11 = 13;
+    context.x12 = 14;
+    context.x13 = 15;
+    context.x14 = 16;
+    context.x15 = 17;
+    context.x16 = 18;
+    context.x17 = 19;
+    context.x18 = 20;
+    context.x19 = 21;
+    context.x20 = 22;
+    context.x21 = 23;
+    context.x22 = 24;
+    context.x23 = 25;
+    context.x24 = 26;
+    context.x25 = 27;
+    context.x26 = 28;
+    context.x27 = 29;
+    context.x28 = 30;
+    context.x29 = 31;
+    context.x30 = 32;
 #elif defined(CONFIG_ARCH_X86_64)
     context.rip = (seL4_Word)&test_registers;
     context.rsp = 0x00000004UL;
@@ -336,7 +458,8 @@ int test_write_registers(env_t env)
 }
 DEFINE_TEST(REGRESSIONS0001, "Ensure WriteRegisters functions correctly", test_write_registers)
 
-#ifdef CONFIG_ARCH_ARM
+#if defined(CONFIG_ARCH_ARM)
+#if defined(CONFIG_ARCH_AARCH32)
 /* Performs an ldrex and strex sequence with a context switch in between. See
  * the comment in the function following for an explanation of purpose.
  */
@@ -366,6 +489,37 @@ static int do_ldrex(void)
      */
     return result == 0 ? FAILURE : SUCCESS;
 }
+#elif defined(CONFIG_ARCH_AARCH64)
+static int do_ldrex(void)
+{
+    seL4_Word dummy1, dummy2, result;
+
+    /* We don't really care where we are loading from here. This is just to set
+     * the exclusive access tag.
+     */
+    asm volatile ("ldxr %[rt], [%[rn]]"
+                  : [rt]"=&r"(dummy1)
+                  : [rn]"r"(&dummy2));
+
+    /* Force a context switch to our parent. */
+    seL4_Signal(shared_endpoint);
+
+    /* Again, we don't care where we are storing to. This is to see whether the
+     * exclusive access tag is still set.
+     */
+    asm volatile ("mov %x0, #0\t\n"
+                  "stxr %w0, %[rt], [%[rn]]"
+                  : [rd]"=&r"(result)
+                  : [rt]"r"(dummy2), [rn]"r"(&dummy1));
+
+    /* The stxr should have failed (and returned 1) because the context switch
+     * should have cleared the exclusive access tag.
+     */
+    return result == 0 ? FAILURE : SUCCESS;
+}
+#else
+#error "Unsupported architecture"
+#endif
 
 /* Prior to kernel changeset a4656bf3066e the load-exclusive monitor was not
  * cleared on a context switch. This causes unexpected and incorrect behaviour

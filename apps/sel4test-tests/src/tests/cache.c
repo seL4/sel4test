@@ -14,6 +14,7 @@
 #include <sel4/sel4.h>
 #include <vka/object.h>
 #include <sel4utils/util.h>
+#include <sel4utils/arch/cache.h>
 
 #include "../helpers.h"
 #include "frame_type.h"
@@ -97,9 +98,13 @@ test_page_flush(env_t env)
        Remember to drain any store buffer!
     */
     *ptr = 0xBEEFCAFE;
-#if defined(CONFIG_ARCH_ARM_V8A) || defined(CONFIG_ARCH_ARM_V7A)
+#if defined(CONFIG_ARCH_AARCH32)
+#ifndef CONFIG_ARCH_ARM_V6
     asm volatile ("dmb" ::: "memory");
-#endif
+#endif /* CONFIG_ARCH_ARM_V6 */
+#elif defined(CONFIG_ARCH_AARCH64)
+    asm volatile ("dmb sy" ::: "memory");
+#endif /* CONFIG_ARCH_AARCHxx */
     test_assert(*ptrc == 0xBEEFCAFE);
     test_assert(*ptr == 0xBEEFCAFE);
 
@@ -143,13 +148,13 @@ test_large_page_flush_operation(env_t env)
         test_assert(error == 0);
         error = seL4_ARM_Page_Unify_Instruction(frames[i], 0, BIT(frame_types[i].size_bits));
         test_assert(error == 0);
-        error = seL4_ARM_PageDirectory_Invalidate_Data(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
+        error = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
         test_assert(error == 0);
-        error = seL4_ARM_PageDirectory_Clean_Data(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
+        error = seL4_ARCH_PageDirectory_Clean_Data(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
         test_assert(error == 0);
-        error = seL4_ARM_PageDirectory_CleanInvalidate_Data(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
+        error = seL4_ARCH_PageDirectory_CleanInvalidate_Data(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
         test_assert(error == 0);
-        error = seL4_ARM_PageDirectory_Unify_Instruction(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
+        error = seL4_ARCH_PageDirectory_Unify_Instruction(env->page_directory, vstart + frame_types[i].vaddr_offset, vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
         test_assert(error == 0);
     }
 
@@ -209,7 +214,7 @@ test_page_directory_flush(env_t env)
     *ptrc = 0xDEADBEEF;
     test_assert(*ptr == 0xC0FFEE);
     test_assert(*ptrc == 0xDEADBEEF);
-    err = seL4_ARM_PageDirectory_Clean_Data(env->page_directory, vstartc, vstartc + PAGE_SIZE_4K);
+    err = seL4_ARCH_PageDirectory_Clean_Data(env->page_directory, vstartc, vstartc + PAGE_SIZE_4K);
     assert(!err);
     test_assert(*ptr == 0xDEADBEEF);
     test_assert(*ptrc == 0xDEADBEEF);
@@ -218,7 +223,7 @@ test_page_directory_flush(env_t env)
     *ptrc = 0xDEADBEEF;
     test_assert(*ptr == 0xC0FFEE);
     test_assert(*ptrc == 0xDEADBEEF);
-    err = seL4_ARM_PageDirectory_CleanInvalidate_Data(env->page_directory, vstartc, vstartc + PAGE_SIZE_4K);
+    err = seL4_ARCH_PageDirectory_CleanInvalidate_Data(env->page_directory, vstartc, vstartc + PAGE_SIZE_4K);
     assert(!err);
     test_assert(*ptr == 0xDEADBEEF);
     test_assert(*ptrc == 0xDEADBEEF);
@@ -227,14 +232,14 @@ test_page_directory_flush(env_t env)
     *ptrc = 0xDEADBEEF;
     test_assert(*ptr == 0xC0FFEE);
     test_assert(*ptrc == 0xDEADBEEF);
-    err = seL4_ARM_PageDirectory_Invalidate_Data(env->page_directory, vstartc, vstartc + PAGE_SIZE_4K);
+    err = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstartc, vstartc + PAGE_SIZE_4K);
     assert(!err);
     /* In case the invalidation performs an implicit clean, write a new
        value to RAM and make sure the cached read retrieves it.
        Need to do an invalidate before retrieving though to guard
        against speculative loads */
     *ptr = 0xBEEFCAFE;
-    err = seL4_ARM_PageDirectory_Invalidate_Data(env->page_directory, vstartc, vstartc + PAGE_SIZE_4K);
+    err = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstartc, vstartc + PAGE_SIZE_4K);
     assert(!err);
     test_assert(*ptrc == 0xBEEFCAFE);
     test_assert(*ptr == 0xBEEFCAFE);
