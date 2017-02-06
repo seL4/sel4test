@@ -99,13 +99,12 @@ test_sched_control_reconfigure(env_t env)
 }
 DEFINE_TEST(SCHED_CONTEXT_0002, "Test reconfiguring a thread", test_sched_control_reconfigure)
 
-
-/* test bindTCB errors */
 int
 test_bind_errors(env_t env)
 {
     seL4_CPtr tcb = vka_alloc_tcb_leaky(&env->vka);
     seL4_CPtr sched_context = vka_alloc_sched_context_leaky(&env->vka);
+    seL4_CPtr notification = vka_alloc_notification_leaky(&env->vka);
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
 
     /* binding an object that is not a tcb or ntfn should fail */
@@ -119,17 +118,37 @@ test_bind_errors(env_t env)
     error = seL4_SchedContext_Bind(sched_context, tcb);
     test_eq(error, seL4_IllegalOperation);
 
-    /* check unbinding an object that is not a tcb fails */
-    error = seL4_SchedContext_UnbindObject(sched_context, endpoint);
-    test_eq(error, seL4_InvalidCapability);
+    /* similarly we cannot bind a notification if a tcb is bound */
+    error = seL4_SchedContext_Bind(sched_context, notification);
+    test_eq(error, seL4_IllegalOperation);
 
-    /* check trying to unbinding the tcb */
     error = seL4_SchedContext_UnbindObject(sched_context, tcb);
     test_eq(error, seL4_NoError);
 
-    /* check trying to unbind a valid object that is not bounnd fails */
-    error = seL4_SchedContext_UnbindObject(sched_context, tcb);
+    error = seL4_SchedContext_Bind(sched_context, notification);
+    test_eq(error, seL4_NoError);
+
+    /* and you can't bind a notification if a notification is already bound*/
+    error = seL4_SchedContext_Bind(sched_context, notification);
+    test_eq(error, seL4_IllegalOperation);
+
+    /* and you can't bind a tcb if a notification is already bound */
+    error = seL4_SchedContext_Bind(sched_context, tcb);
+    test_eq(error, seL4_IllegalOperation);
+
+    error = seL4_SchedContext_UnbindObject(sched_context, notification);
+    test_eq(error, seL4_NoError);
+
+    /* check unbinding an object that is not a tcb or notification fails */
+    error = seL4_SchedContext_UnbindObject(sched_context, endpoint);
     test_eq(error, seL4_InvalidCapability);
+
+    /* check trying to unbind a valid object that is not bounnd fails */
+    error = seL4_SchedContext_UnbindObject(sched_context, notification);
+    test_eq(error, seL4_IllegalOperation);
+
+    error = seL4_SchedContext_UnbindObject(sched_context, tcb);
+    test_eq(error, seL4_IllegalOperation);
 
     return sel4test_get_result();
 }
