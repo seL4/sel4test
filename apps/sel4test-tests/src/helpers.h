@@ -121,6 +121,9 @@ seL4_Error set_helper_affinity(env_t env, helper_thread_t *thread, seL4_Word cor
 void start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
                   seL4_Word arg0, seL4_Word arg1, seL4_Word arg2, seL4_Word arg3);
 
+/* save a threads seL4_UserContext, increment instruction pointer, and resume */
+int restart_after_syscall(env_t env, helper_thread_t *thread);
+
 /* wait for a helper thread to finish */
 int wait_for_helper(helper_thread_t *thread);
 
