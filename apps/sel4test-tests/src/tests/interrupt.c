@@ -61,7 +61,7 @@ test_interrupt_notification_sc(env_t env)
 {
     helper_thread_t helper;
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
-    volatile int state = 0;
+    volatile seL4_Word state = 0;
     seL4_Word runs = 10;
     int error;
 
@@ -74,7 +74,7 @@ test_interrupt_notification_sc(env_t env)
     test_eq(error, seL4_NoError);
 
     /* helper should run and wait for irq */
-    test_eq(state, 1);
+    test_eq(state, (seL4_Word) 1);
 
     /* take away scheduling context and give it to notification object */
     error = seL4_SchedContext_Unbind(helper.thread.sched_context.cptr);
@@ -107,8 +107,8 @@ test_interrupt_notification_and_tcb_sc(env_t env)
 {
     helper_thread_t helper_with_sc, helper_without_sc;
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
-    volatile int state_with_sc = 0;
-    volatile int state_without_sc = 0;
+    volatile seL4_Word state_with_sc = 0;
+    volatile seL4_Word state_without_sc = 0;
     seL4_Word runs = 10;
     int error;
 
@@ -129,8 +129,8 @@ test_interrupt_notification_and_tcb_sc(env_t env)
     test_eq(error, seL4_NoError);
 
     /* both helpers should run and wait for irq */
-    test_eq(state_with_sc, 1);
-    test_eq(state_without_sc, 1);
+    test_eq(state_with_sc, (seL4_Word) 1);
+    test_eq(state_without_sc, (seL4_Word) 1);
 
     /* take away scheduling context from helper_without_sc and give it to notification object */
     error = seL4_SchedContext_Unbind(helper_without_sc.thread.sched_context.cptr);
@@ -166,7 +166,7 @@ test_interrupt_no_sc(env_t env)
 {
     helper_thread_t helper;
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
-    volatile int state = 0;
+    volatile seL4_Word state = 0;
     seL4_Word runs = 10;
     int error;
 
@@ -179,7 +179,7 @@ test_interrupt_no_sc(env_t env)
     test_eq(error, seL4_NoError);
 
     /* helper should run and wait for irq */
-    test_eq(state, 1);
+    test_eq(state, (seL4_Word) 1);
 
     /* take away scheduling context and give it to notification object */
     error = seL4_SchedContext_Unbind(helper.thread.sched_context.cptr);
@@ -190,7 +190,7 @@ test_interrupt_no_sc(env_t env)
     sel4_timer_handle_single_irq(env->timer);
     test_check(error == 0);
 
-    test_eq(state, 1);
+    test_eq(state, (seL4_Word) 1);
 
     /* turn off the timer */
     timer_stop(env->timer->timer);
@@ -206,8 +206,8 @@ test_interrupt_notification_sc_two_clients(env_t env)
 {
     helper_thread_t helper_first, helper_second;
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
-    volatile int state_first = 0;
-    volatile int state_second = 0;
+    volatile seL4_Word state_first = 0;
+    volatile seL4_Word state_second = 0;
     seL4_Word runs = 10;
     int error;
 
@@ -227,8 +227,8 @@ test_interrupt_notification_sc_two_clients(env_t env)
     test_eq(error, seL4_NoError);
 
     /* both helpers should run and wait for irq */
-    test_eq(state_first, 1);
-    test_eq(state_second, 1);
+    test_eq(state_first, (seL4_Word) 1);
+    test_eq(state_second, (seL4_Word) 1);
 
     /* take away scheduling context from both, give one to a notification object */
     error = seL4_SchedContext_Unbind(helper_first.thread.sched_context.cptr);
@@ -268,7 +268,7 @@ test_interrupt_delete_sc(env_t env)
 {
     helper_thread_t helper;
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
-    volatile int state = 0;
+    volatile seL4_Word state = 0;
     seL4_Word runs = 10;
     int error;
 
@@ -281,7 +281,7 @@ test_interrupt_delete_sc(env_t env)
     test_eq(error, seL4_NoError);
 
     /* helper should run and wait for irq */
-    test_eq(state, 1);
+    test_eq(state, (seL4_Word) 1);
 
     /* take away scheduling context and give it to notification object */
     error = seL4_SchedContext_Unbind(helper.thread.sched_context.cptr);
@@ -299,7 +299,7 @@ test_interrupt_delete_sc(env_t env)
     sel4_timer_handle_single_irq(env->timer);
     test_check(error == 0);
 
-    test_eq(state, 1);
+    test_eq(state, (seL4_Word) 1);
 
     /* turn off the timer */
     timer_stop(env->timer->timer);

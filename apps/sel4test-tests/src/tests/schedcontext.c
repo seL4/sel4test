@@ -435,10 +435,10 @@ test_sched_context_goes_to_to_caller_on_reply_cap_delete(env_t env)
     int error;
 
     ep = vka_alloc_endpoint_leaky(&env->vka);
-    test_neq(ep, 0);
+    test_neq(ep, (seL4_CPtr) seL4_CapNull);
 
     reply = vka_alloc_reply_leaky(&env->vka);
-    test_neq(reply, seL4_CapNull);
+    test_neq(reply, (seL4_CPtr) seL4_CapNull);
 
     /* create server */
     create_passive_thread(env, &server, (helper_fn_t) sched_context_0009_server_fn, ep,
@@ -481,10 +481,10 @@ test_sched_context_unbind_server(env_t env)
     int prev_state = state;
 
     seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
-    test_neq(ep, seL4_CapNull);
+    test_neq(ep, (seL4_CPtr) seL4_CapNull);
 
     seL4_CPtr reply = vka_alloc_reply_leaky(&env->vka);
-    test_neq(reply, seL4_CapNull);
+    test_neq(reply, (seL4_CPtr) seL4_CapNull);
 
     /* create server */
     create_passive_thread(env, &server, (helper_fn_t) sched_context_0009_server_fn, ep,
@@ -671,7 +671,7 @@ test_revoke_sched_context_on_call_chain(env_t env)
 
     /* give the proxy a scheduling context */
     seL4_CPtr sched_context = vka_alloc_sched_context_leaky(&env->vka);
-    test_neq(sched_context, 0);
+    test_neq(sched_context, (seL4_CPtr) seL4_CapNull);
 
     error = seL4_SchedContext_Bind(sched_context, proxy.thread.tcb.cptr);
     test_eq(error, seL4_NoError);
