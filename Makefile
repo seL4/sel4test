@@ -76,6 +76,12 @@ simulate-sabre:
 		-s -serial null -serial mon:stdio \
 		-kernel images/${apps}-image-arm-imx6
 
+simulate-zynq:
+	qemu-system-arm \
+		-machine xilinx-zynq-a9 -nographic -m size=1024M \
+		-s -serial null -serial mon:stdio \
+		-kernel images/${apps}-image-arm-zynq7000
+
 simulate-wandq:
 	qemu-system-arm \
 		-machine sabrelite -nographic -m size=2048M \
