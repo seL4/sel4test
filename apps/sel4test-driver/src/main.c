@@ -93,7 +93,7 @@ init_env(env_t env)
      * it knows the address and will add it as a reserved region */
     error = sel4utils_bootstrap_vspace_with_bootinfo_leaky(&env->vspace,
                                                            &data, simple_get_pd(&env->simple),
-                                                           &env->vka, seL4_GetBootInfo());
+                                                           &env->vka, platsupport_get_bootinfo());
     if (error) {
         ZF_LOGF("Failed to bootstrap vspace");
     }
@@ -467,7 +467,7 @@ static int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4
 int main(void)
 {
     int error;
-    seL4_BootInfo *info = seL4_GetBootInfo();
+    seL4_BootInfo *info = platsupport_get_bootinfo();
 
 #ifdef SEL4_DEBUG_KERNEL
     seL4_DebugNameThread(seL4_CapInitThreadTCB, "sel4test-driver");

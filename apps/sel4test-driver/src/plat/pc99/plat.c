@@ -14,6 +14,7 @@
 
 #include <platsupport/io.h>
 #include <sel4platsupport/plat/timer.h>
+#include <sel4platsupport/bootinfo.h>
 
 void
 plat_init_timer_caps(env_t env)
@@ -41,7 +42,7 @@ plat_copy_serial_caps(test_init_data_t *init, env_t env,
 void
 plat_init(env_t env)
 {
-    env->init->tsc_freq = seL4_GetBootInfo()->archInfo;
+    env->init->tsc_freq = platsupport_get_bootinfo()->archInfo;
 }
 
 
