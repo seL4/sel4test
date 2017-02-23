@@ -29,27 +29,29 @@ test_sched_control_configure(env_t env)
     test_neq(sc, (seL4_Word)seL4_CapNull);
 
     /* test it works */
-    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 5000llu, 5000llu);
+    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 5000llu, 5000llu, 0);
     test_eq(error, seL4_NoError);
 
     /* test calling it on something that isn't a sched context */
     seL4_CPtr tcb = vka_alloc_tcb_leaky(&env->vka);
     test_neq(tcb, (seL4_Word)seL4_CapNull);
 
-    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), tcb, 5000llu, 5000llu);
+    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), tcb, 5000llu, 5000llu, 0);
     test_eq(error, seL4_InvalidCapability);
 
     /* test a 0 budget doesn't work */
-    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 0llu, 5000llu);
+    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 0llu, 5000llu, 0);
     test_eq(error, seL4_RangeError);
 
     /* test a period of 0 doesn't work */
-    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 0llu, 0llu);
+    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 0llu, 0llu, 0);
     test_eq(error, seL4_RangeError);
 
     /* test budget > period doesn't work */
-    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 5000llu, 1000llu);
+    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 5000llu, 1000llu, 0);
     test_eq(error, seL4_RangeError);
+
+    //TODO test refills cases
 
     return sel4test_get_result();
 
@@ -74,7 +76,7 @@ test_sched_control_reconfigure(env_t env)
     seL4_CPtr sc = thread.thread.sched_context.cptr;
 
     /* reconfigure a paused thread */
-    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 5000llu, 5000llu);
+    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 5000llu, 5000llu, 0);
     test_eq(error, seL4_NoError);
 
     /* now start the thread */
@@ -84,14 +86,14 @@ test_sched_control_reconfigure(env_t env)
     sleep(env, 10 * NS_IN_MS);
 
     /* reconfigure a resumed thread */
-    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 10000llu, 10000llu);
+    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 10000llu, 10000llu, 0);
     test_eq(error, seL4_NoError);
 
     /* let it run a little */
     sleep(env, 10 * NS_IN_MS);
 
     /* less */
-    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 3000llu, 3000llu);
+    error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sc, 3000llu, 3000llu, 0);
     test_eq(error, seL4_NoError);
 
     /* done! */
@@ -677,7 +679,7 @@ test_revoke_sched_context_on_call_chain(env_t env)
     test_eq(error, seL4_NoError);
 
     error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sched_context,
-                                        5 * NS_IN_S, 5 * NS_IN_S);
+                                        5 * NS_IN_S, 5 * NS_IN_S, 0);
     test_eq(error, seL4_NoError);
 
     restart_after_syscall(env, &proxy);

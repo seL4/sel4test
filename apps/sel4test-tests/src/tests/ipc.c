@@ -900,7 +900,7 @@ delete_sc_client_waiting_on_endpoint(env_t env)
     /* now create a new scheduling context and give it to the thread */
     seL4_CPtr sched_context = vka_alloc_sched_context_leaky(&env->vka);
     error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0), sched_context,
-                                        1000 * US_IN_S, 1000 * US_IN_S);
+                                        1000 * US_IN_S, 1000 * US_IN_S, 0);
     test_eq(error, seL4_NoError);
 
     error = seL4_SchedContext_Bind(sched_context, waiter.thread.tcb.cptr);

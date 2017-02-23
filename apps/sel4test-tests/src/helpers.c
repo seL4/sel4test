@@ -429,7 +429,7 @@ set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget, se
 {
     return seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0),
                                        thread->thread.sched_context.cptr,
-                                       budget, period);
+                                       budget, period, 0);
 }
 
 seL4_Error
@@ -438,7 +438,7 @@ set_helper_affinity(env_t env, helper_thread_t *thread, seL4_Word core)
     seL4_Time timeslice = CONFIG_BOOT_THREAD_TIME_SLICE * US_IN_S;
     return seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, core),
                                        thread->thread.sched_context.cptr,
-                                       timeslice, timeslice);
+                                       timeslice, timeslice, 0);
 }
 
 int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
