@@ -135,6 +135,53 @@ int smp_test_tcb_move(env_t env)
 }
 DEFINE_TEST(MULTICORE0002, "Test thread is runnable on all available cores (0 + other)", smp_test_tcb_move)
 
+int smp_test_tcb_delete(env_t env)
+{
+    helper_thread_t t1;
+    volatile seL4_Word counter;
+    ZF_LOGD("smp_test_tcb_delete\n");
+    create_helper_thread(env, &t1);
+
+    set_helper_priority(&t1, 100);
+    start_helper(env, &t1, (helper_fn_t) counter_func, (seL4_Word) &counter, 0, 0, 0);
+
+    seL4_Word old_counter;
+
+    old_counter = counter;
+
+    /* Let it run on the current core. */
+    spin(env, 10 * NS_IN_MS);
+
+    /* Now, counter should not have moved. */
+    test_check(counter == old_counter);
+
+    set_helper_affinity(&t1, 1);
+
+    old_counter = counter;
+
+    /* Check if the thread is running. */
+    spin(env, 10 * NS_IN_MS);
+
+    /* Counter should have moved. */
+    test_check(counter != old_counter);
+
+    /* Now delete the helper thread running on another core */
+    cleanup_helper(env, &t1);
+
+    old_counter = counter;
+
+    /* Check if the thread is running. */
+    spin(env, 10 * NS_IN_MS);
+
+    /* Now, counter should not have moved. */
+    test_check(counter == old_counter);
+
+    /* Done. */
+    return sel4test_get_result();
+}
+
+DEFINE_TEST(MULTICORE0005, "Test remote delete thread running on other cores", smp_test_tcb_delete)
+
 static int
 faulter_func(volatile seL4_Word *shared_mem)
 {
