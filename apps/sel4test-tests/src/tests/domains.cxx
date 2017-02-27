@@ -23,7 +23,7 @@ extern "C" {
 
 }
 
-#define POLL_DELAY_NS 2000000
+#define POLL_DELAY_NS 4000000
 
 typedef int (*test_func_t)(seL4_Word /* id */, env_t env /* env */);
 
