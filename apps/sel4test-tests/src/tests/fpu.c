@@ -12,7 +12,6 @@
 
 #include "../helpers.h"
 
-#ifndef CONFIG_ARCH_AARCH64
 static double
 fpu_calculation(void)
 {
@@ -197,4 +196,3 @@ int smp_test_fpu(env_t env)
 }
 DEFINE_TEST(FPU0002, "Test FPU remain valid across core migration", smp_test_fpu)
 #endif /* CONFIG_MAX_NUM_NODES && CONFIG_HAVE_TIMER */
-#endif /* CONFIG_ARCH_AARCH64 */
