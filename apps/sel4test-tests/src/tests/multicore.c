@@ -157,7 +157,7 @@ int smp_test_tcb_delete(env_t env)
     /* Now, counter should not have moved. */
     test_check(counter == old_counter);
 
-    set_helper_affinity(&t1, 1);
+    set_helper_affinity(env, &t1, 1);
 
     old_counter = counter;
 
