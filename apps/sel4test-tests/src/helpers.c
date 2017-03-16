@@ -294,8 +294,9 @@ start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
            a function call to helper_thread. */
         seL4_UserContext context;
         uintptr_t argv_base = (uintptr_t)thread->process.thread.initial_stack_pointer + sizeof(long);
+        uintptr_t aligned_stack_pointer = ALIGN_DOWN((uintptr_t)thread->process.thread.initial_stack_pointer, STACK_CALL_ALIGNMENT);
         error = sel4utils_arch_init_context_with_args((sel4utils_thread_entry_fn)helper_thread, (void*)HELPER_THREAD_TOTAL_ARGS,
-                                              (void*)argv_base, NULL, false, thread->process.thread.initial_stack_pointer,
+                                              (void*)argv_base, NULL, false, (void*)aligned_stack_pointer,
                                               &context, &env->vka, &env->vspace, &thread->process.vspace);
         assert(error == 0);
         error = seL4_TCB_WriteRegisters(thread->process.thread.tcb.cptr, 1, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
