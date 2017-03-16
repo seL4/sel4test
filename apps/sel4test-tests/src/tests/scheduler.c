@@ -1462,3 +1462,39 @@ DEFINE_TEST(SCHED0019, "Test seL4_SchedContext_YieldTo", test_yieldTo, config_se
 
 #endif /* CONFIG_KERNEL_RT */
 
+void
+set_higher_prio_helper(volatile int *state)
+{
+    /* Yield incase the scheduler picked us before the
+     * test set our priority higher */
+    seL4_Yield();
+    *state = 2;
+}
+
+static int
+test_set_higher_prio(struct env* env)
+{
+    helper_thread_t thread;
+
+    /* set our priority down */
+    int error = seL4_TCB_SetPriority(env->tcb, OUR_PRIO - 1);
+    test_eq(error, seL4_NoError);
+
+    /* start helper at highest prio */
+    volatile int state = 0;
+
+    /* start helper - it will run at the same prio as us */
+    create_helper_thread(env, &thread);
+    start_helper(env, &thread, (helper_fn_t) set_higher_prio_helper, (seL4_Word) &state, 0, 0, 0);
+    /* check it didn't update state yet - even if the scheduler picks the helper
+     * it will yield back to us first */
+    test_eq(state, 0);
+
+    set_helper_priority(env, &thread, OUR_PRIO);
+
+    /* helper should run and set state to 2 */
+    test_eq(state, 2);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0020, "test set prio to a higher prio runs higher prio thread", test_set_higher_prio, true);
