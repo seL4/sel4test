@@ -1022,7 +1022,7 @@ test_resume_empty_or_no_sched_context(env_t env)
     test_eq(error, seL4_NoError);
 
     /* let the thread 'run' */
-    sleep(env, 10 * MS_IN_S);
+    sleep(env, 10 * NS_IN_MS);
     test_eq(state, 0);
 
     /* nuke the sc */
@@ -1034,7 +1034,7 @@ test_resume_empty_or_no_sched_context(env_t env)
     test_eq(error, seL4_NoError);
 
     /* let the thread 'run' */
-    sleep(env, 10 * MS_IN_S);
+    sleep(env, 10 * NS_IN_MS);
     test_eq(state, 0);
 
     return sel4test_get_result();
