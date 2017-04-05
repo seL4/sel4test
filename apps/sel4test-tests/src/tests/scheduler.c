@@ -27,7 +27,7 @@
  * Performing printf on non-debug x86 will perform kernel invocations. So, eliminate printf
  * there, but keep it everywhere else where it's useful.
  */
-#if defined(ARCH_IA32) && !defined(SEL4_DEBUG_KERNEL)
+#if defined(CONFIG_ARCH_IA32) && !defined(CONFIG_DEBUG_BUILD)
 #define SAFE_PRINTF(x...) do { } while(0)
 #else
 #define SAFE_PRINTF(x...) ZF_LOGD(x)
