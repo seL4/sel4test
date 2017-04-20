@@ -37,12 +37,14 @@ test_frame_exported(env_t env)
     size_t mem_total = 0;
     int err;
     for (int i = 0; i < ARRAY_SIZE(frame_types); i++) {
+        bool once = false;
         while (1) {
             /* Allocate the frame */
             seL4_CPtr frame = vka_alloc_frame_leaky(&env->vka, frame_types[i].size_bits);
             if (!frame) {
                 break;
             }
+            once = true;
             mem_total += BIT(frame_types[i].size_bits);
 
             uintptr_t cookie = 0;
@@ -67,6 +69,7 @@ test_frame_exported(env_t env)
             vspace_unmap_pages(&env->vspace, (void*)vaddr, 1, frame_types[i].size_bits, VSPACE_PRESERVE);
             test_assert(err == seL4_NoError);
         }
+        test_assert(once);
     }
     return sel4test_get_result();
 }
