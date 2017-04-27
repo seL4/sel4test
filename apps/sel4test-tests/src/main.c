@@ -22,8 +22,8 @@
 #include <sel4/sel4.h>
 #include <sel4/types.h>
 
-#include <sel4platsupport/timer.h>
-#include <sel4platsupport/plat/serial.h>
+//#include <sel4platsupport/timer.h>
+//#include <sel4platsupport/plat/serial.h>
 
 #include <sel4utils/util.h>
 #include <sel4utils/mapping.h>

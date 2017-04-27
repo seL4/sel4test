@@ -89,6 +89,11 @@ simulate-wandq:
 		-machine sabrelite -nographic -m size=2048M \
 		-s -serial mon:stdio \
 		-kernel images/${apps}-image-arm-imx6
+simulate-spike:
+	qemu-system-riscv64 \
+		-nographic -m size=4096M \
+		-s -serial mon:stdio \
+		-kernel images/${apps}-image-riscv-spike
 
 # Some example image builds (NOTE: may need to adapt addresses)
 build-binary: images/${apps}-image-${ARCH}-${PLAT}

@@ -32,6 +32,7 @@
 #define SERSERV_TEST_ALLOCMAN_PREALLOCATED_MEMSIZE (64 * 1024)
 #define SERSERV_TEST_UT_SIZE        (512 * 1024)
 
+#ifndef CONFIG_ARCH_RISCV
 static const char *test_str = "Hello, world!\n";
 
 
@@ -811,3 +812,4 @@ DEFINE_TEST(SERSERV_CLI_PROC_005, "Connect to server then disconnect on all "
             "clients (in different VSpace/CSpace containers), and finally kill "
             "the server from the parent",
             test_client_process_kill, true)
+#endif

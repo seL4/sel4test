@@ -335,6 +335,41 @@ asm ("\n"
      "\tmovl $1, %eax             \n"
      "\tjmp reply_trampoline      \n"
     );
+#elif defined(CONFIG_ARCH_RISCV)
+    #warning "TODO test_registers\n"
+asm (
+     /* Trampoline for providing the thread a valid stack before entering
+      * reply_to_parent. No jal required because reply_to_parent does not
+      * return.
+      */
+     "reply_trampoline:           \n"
+     "la a1, _safe_stack          \n"
+     "mv sp, a1                   \n"
+     "j reply_to_parent           \n"
+
+     "test_registers:             \n"
+     "li a0, 2                  \n"
+     "bne a2, a0, test_registers_fail     \n"
+     "li a0, 3                  \n"
+     "bne a0, a3, test_registers_fail     \n"
+     "li a0, 4                  \n"
+     "bne a0, a4, test_registers_fail     \n"
+     "li a0, 5                  \n"
+     "bne a0, a5, test_registers_fail     \n"
+     "li a0, 6                  \n"
+     "bne a0, a6, test_registers_fail     \n"
+
+     /* Return success. Note that we don't bother saving registers or bl because
+      * we're not planning to return here and we don't have a valid stack.
+      */
+     "mv a0, x0                \n"
+     "j reply_trampoline        \n"
+
+     /* Return failure. */
+     "test_registers_fail:        \n"
+     "li a0, 1                \n"
+     "j reply_trampoline        \n"
+    );
 #else
 #error "Unsupported architecture"
 #endif
@@ -436,6 +471,17 @@ int test_write_registers(env_t env)
     context.edi = 0x00000002;
     context.ebp = 0x00000003;
     context.eflags = 0x00000001; /* Set the CF bit */
+#elif defined(CONFIG_ARCH_RISCV)
+    context.sepc = (seL4_Word)&test_registers;
+    context.a2 = 2;
+    context.a3 = 3;
+    context.a4 = 4;
+    context.a5 = 5;
+    context.a6 = 6;
+
+   /* This is an ABI requirment */
+   extern char __global_pointer$[];
+   context.x3 = (seL4_Word) __global_pointer$;
 #else
 #error "Unsupported architecture"
 #endif
