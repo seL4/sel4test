@@ -447,22 +447,6 @@ void *main_continued(void *arg UNUSED)
     return NULL;
 }
 
-static int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,
-        uintptr_t paddr, seL4_Word *cookie)
-{
-
-    if (paddr == env.serial_frame_paddr) {
-        cspacepath_t tmp_frame_path;
-
-        vka_cspace_make_path(&env.vka,
-                             env.serial_frame_obj.cptr,
-                             &tmp_frame_path);
-        return vka_cnode_copy(dest, &tmp_frame_path, seL4_AllRights);
-    }
-
-    assert(env.vka.utspace_alloc_at);
-    return env.vka.utspace_alloc_at(data, dest, type, size_bits, paddr, cookie);
-}
 
 int main(void)
 {
@@ -497,7 +481,7 @@ int main(void)
      * actual vka
      */
     vka_t serial_vka = env.vka;
-    serial_vka.utspace_alloc_at = serial_utspace_alloc_at_fn;
+    serial_vka.utspace_alloc_at = arch_get_serial_utspace_alloc_at(&env);
 
     /* enable serial driver */
     platsupport_serial_setup_simple(&env.vspace, &env.simple, &serial_vka);

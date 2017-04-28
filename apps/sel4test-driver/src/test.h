@@ -64,6 +64,8 @@ struct env {
     seL4_CPtr init_frame_cap_copy;
 };
 
+vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(env_t env);
+
 void plat_init(env_t env);
 void arch_init_timer_caps(env_t env);
 void plat_init_timer_caps(env_t env);
