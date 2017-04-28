@@ -272,7 +272,7 @@ start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
         /* copy the local endpoint */
         cspacepath_t path;
         vka_cspace_make_path(&env->vka, thread->local_endpoint.cptr, &path);
-        local_endpoint = sel4utils_copy_cap_to_process(&thread->process, path);
+        local_endpoint = sel4utils_copy_path_to_process(&thread->process, path);
     } else {
         local_endpoint = thread->local_endpoint.cptr;
     }

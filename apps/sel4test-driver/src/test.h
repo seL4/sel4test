@@ -52,8 +52,6 @@ void plat_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t
 void arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process);
 void plat_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process);
 
-seL4_CPtr copy_cap_to_process(sel4utils_process_t *process, seL4_CPtr cap);
-
 #ifdef CONFIG_ARM_SMMU
 seL4_SlotRegion arch_copy_iospace_caps_to_process(sel4utils_process_t *process, env_t env);
 #endif

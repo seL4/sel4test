@@ -27,7 +27,7 @@ void
 arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
     init->serial_paddr = env->serial_objects.arch_serial_objects.serial_frame_paddr;
-    init->serial_frame_cap = sel4utils_copy_cap_to_process_with_vka(test_process, &env->vka, env->serial_objects.arch_serial_objects.serial_frame_obj.cptr);
+    init->serial_frame_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, env->serial_objects.arch_serial_objects.serial_frame_obj.cptr);
     ZF_LOGF_IF(init->serial_frame_cap == 0,
                "Failed to copy PS default serial Frame cap to sel4test-test process");
 
@@ -72,7 +72,7 @@ arch_copy_iospace_caps_to_process(sel4utils_process_t *process, env_t env)
     for (int i = 0; i < num_iospace_caps; i++) {
         seL4_CPtr iospace = simple_get_nth_iospace_cap(&env->simple, i);
         assert(iospace != seL4_CapNull);
-        seL4_CPtr slot = copy_cap_to_process(process, iospace);
+        seL4_CPtr slot = sel4utils_copy_cap_to_process(process, &env->vka, iospace);
         assert(slot != seL4_CapNull);
         if (i == 0) {
             ret.start = slot;

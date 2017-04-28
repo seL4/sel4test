@@ -39,7 +39,6 @@
 #include <vka/capops.h>
 
 #include <vspace/vspace.h>
-
 #include "test.h"
 
 #define TESTS_APP "sel4test-tests"
@@ -109,21 +108,6 @@ init_env(env_t env)
 }
 
 
-/* copy a cap to a process, returning the cptr in the process' cspace */
-seL4_CPtr
-copy_cap_to_process(sel4utils_process_t *process, seL4_CPtr cap)
-{
-    seL4_CPtr copied_cap;
-    cspacepath_t path;
-
-    vka_cspace_make_path(&env.vka, cap, &path);
-    copied_cap = sel4utils_copy_cap_to_process(process, path);
-    if (copied_cap == 0) {
-        ZF_LOGF("Failed to copy cap to process");
-    }
-
-    return copied_cap;
-}
 
 /* Free a list of objects */
 static void
@@ -189,7 +173,7 @@ copy_untypeds_to_process(sel4utils_process_t *process, vka_object_t *untypeds, i
     seL4_SlotRegion range = {0};
 
     for (int i = 0; i < num_untypeds; i++) {
-        seL4_CPtr slot = copy_cap_to_process(process, untypeds[i].cptr);
+        seL4_CPtr slot = sel4utils_copy_cap_to_process(process, &env.vka, untypeds[i].cptr);
 
         /* set up the cap range */
         if (i == 0) {
@@ -222,14 +206,14 @@ static void
 copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
     /* Copy PS default timer's IRQ cap to child process. */
-    init->timer_irq_cap = copy_cap_to_process(test_process, env->timer_irq_path.capPtr);
+    init->timer_irq_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, env->timer_objects.timer_irq_path.capPtr);
     ZF_LOGF_IF(init->timer_irq_cap == 0,
                "Failed to copy PS default timer IRQ cap to test child "
                "process.");
 
     /* untyped cap for timer device untyped */
-    init->timer_paddr = env->timer_paddr;
-    init->timer_dev_ut_cap = copy_cap_to_process(test_process, env->timer_dev_ut_obj.cptr);
+    init->timer_paddr = env->timer_objects.timer_paddr;
+    init->timer_dev_ut_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, env->timer_objects.timer_dev_ut_obj.cptr);
     ZF_LOGF_IF(init->timer_dev_ut_cap == 0,
                "Failed to copy PS default timer device-ut to test child.");
 
@@ -239,8 +223,8 @@ copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_pro
 static void
 copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-    init->serial_irq_cap = copy_cap_to_process(test_process,
-                                               env->serial_irq_path.capPtr);
+    init->serial_irq_cap = sel4utils_copy_cap_to_process(test_process, &env->vka,
+                                               env->serial_objects.serial_irq_path.capPtr);
     ZF_LOGF_IF(init->serial_irq_cap == 0,
                "Failed to copy PS default serial IRQ cap to test child "
                "process.");
@@ -266,14 +250,14 @@ run_test(struct testcase *test)
     /* set up caps about the process */
     env.init->stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / PAGE_SIZE_4K;
     env.init->stack = test_process.thread.stack_top - CONFIG_SEL4UTILS_STACK_SIZE;
-    env.init->page_directory = copy_cap_to_process(&test_process, test_process.pd.cptr);
+    env.init->page_directory = sel4utils_copy_cap_to_process(&test_process, &env.vka, test_process.pd.cptr);
     env.init->root_cnode = SEL4UTILS_CNODE_SLOT;
-    env.init->tcb = copy_cap_to_process(&test_process, test_process.thread.tcb.cptr);
-    env.init->domain = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapDomain));
-    env.init->asid_pool = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapInitThreadASIDPool));
-    env.init->asid_ctrl = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapASIDControl));
+    env.init->tcb = sel4utils_copy_cap_to_process(&test_process, &env.vka, test_process.thread.tcb.cptr);
+    env.init->domain = sel4utils_copy_cap_to_process(&test_process, &env.vka, simple_get_init_cap(&env.simple, seL4_CapDomain));
+    env.init->asid_pool = sel4utils_copy_cap_to_process(&test_process, &env.vka, simple_get_init_cap(&env.simple, seL4_CapInitThreadASIDPool));
+    env.init->asid_ctrl = sel4utils_copy_cap_to_process(&test_process, &env.vka, simple_get_init_cap(&env.simple, seL4_CapASIDControl));
 #ifdef CONFIG_IOMMU
-    env.init->io_space = copy_cap_to_process(&test_process, simple_get_init_cap(&env.simple, seL4_CapIOSpace));
+    env.init->io_space = sel4utils_copy_cap_to_process(&test_process, &env.vka, simple_get_init_cap(&env.simple, seL4_CapIOSpace));
 #endif /* CONFIG_IOMMU */
 #ifdef CONFIG_ARM_SMMU
     env.init->io_space_caps = arch_copy_iospace_caps_to_process(&test_process, &env);
@@ -285,7 +269,7 @@ run_test(struct testcase *test)
     copy_serial_caps(env.init, &env, &test_process);
     /* copy the fault endpoint - we wait on the endpoint for a message
      * or a fault to see when the test finishes */
-    seL4_CPtr endpoint = copy_cap_to_process(&test_process, test_process.fault_endpoint.cptr);
+    seL4_CPtr endpoint = sel4utils_copy_cap_to_process(&test_process, &env.vka, test_process.fault_endpoint.cptr);
 
     /* WARNING: DO NOT COPY MORE CAPS TO THE PROCESS BEYOND THIS POINT,
      * AS THE SLOTS WILL BE CONSIDERED FREE AND OVERRIDDEN BY THE TEST PROCESS. */
@@ -454,4 +438,3 @@ int main(void)
 
     return 0;
 }
-

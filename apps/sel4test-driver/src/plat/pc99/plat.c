@@ -35,5 +35,3 @@ plat_init(env_t env)
 {
     env->init->tsc_freq = platsupport_get_bootinfo()->archInfo;
 }
-
-

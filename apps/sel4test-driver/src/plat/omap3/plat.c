@@ -21,19 +21,20 @@
 void
 plat_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
+    plat_timer_objects_t *plat_timer_objects = &env->timer_objects.arch_timer_objects.plat_timer_objects;
 
-    init->clock_timer_dev_ut_cap = copy_cap_to_process(test_process, env->clock_timer_dev_ut_obj.cptr);
+    ZF_LOGV("Copying clock timer frame cap %x\n", plat_timer_objects->clock_timer_dev_ut_obj.cptr);
+    init->clock_timer_dev_ut_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, plat_timer_objects->clock_timer_dev_ut_obj.cptr);
     if (init->clock_timer_dev_ut_cap == 0) {
-        ZF_LOGF("Failed to copy clock timer frame cap to process");
+        ZF_LOGF("Failed to copy clock timer device-ut cap to process");
     }
     init->clock_timer_paddr = GPT2_DEVICE_PADDR;
-    init->clock_timer_irq_cap = copy_cap_to_process(test_process, env->clock_irq_path.capPtr);
-}
 
-int
-plat_init_serial_caps(env_t env)
-{
-    return 0;
+    ZF_LOGV("Copying clock timer irq\n");
+    init->clock_timer_irq_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, plat_timer_objects->clock_irq_path.capPtr);
+    if (init->clock_timer_irq_cap == 0) {
+        ZF_LOGF("Failed to copy clock timer irq cap to process");
+    }
 }
 
 void
@@ -47,4 +48,3 @@ plat_init(env_t env)
 {
    /* No plat specific init */
 }
-

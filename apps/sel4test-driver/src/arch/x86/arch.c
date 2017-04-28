@@ -26,8 +26,8 @@ arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *tes
 void
 arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-    init->serial_irq_cap = copy_cap_to_process(test_process, env->serial_irq_path.capPtr);
-    init->serial_io_port_cap = copy_cap_to_process(test_process, env->serial_io_port_cap);
+    init->serial_irq_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, env->serial_objects.serial_irq_path.capPtr);
+    init->serial_io_port_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, env->serial_objects.arch_serial_objects.serial_io_port_cap);
 }
 
 int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,

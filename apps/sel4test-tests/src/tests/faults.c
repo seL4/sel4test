@@ -606,16 +606,16 @@ test_fault(env_t env, int fault_type, bool inter_as)
                     /* copy the fault endpoint to the faulter */
                     cspacepath_t path;
                     vka_cspace_make_path(&env->vka,  fault_ep, &path);
-                    fault_ep = sel4utils_copy_cap_to_process(&faulter_thread.process, path);
+                    fault_ep = sel4utils_copy_path_to_process(&faulter_thread.process, path);
                     assert(fault_ep != -1);
 
                     /* copy the fault endpoint to the handler */
-                    handler_arg0 = sel4utils_copy_cap_to_process(&handler_thread.process, path);
+                    handler_arg0 = sel4utils_copy_path_to_process(&handler_thread.process, path);
                     assert(handler_arg0 != -1);
 
                     /* copy the fault tcb to the handler */
                     vka_cspace_make_path(&env->vka, faulter_thread.thread.tcb.cptr, &path);
-                    handler_arg1 = sel4utils_copy_cap_to_process(&handler_thread.process, path);
+                    handler_arg1 = sel4utils_copy_path_to_process(&handler_thread.process, path);
                     assert(handler_arg1 != -1);
 
                     faulter_cspace = faulter_thread.process.cspace.cptr;

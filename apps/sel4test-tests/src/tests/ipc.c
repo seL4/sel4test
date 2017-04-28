@@ -263,11 +263,11 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
 
                             cspacepath_t path;
                             vka_cspace_make_path(&env->vka, ep, &path);
-                            thread_a_arg0 = sel4utils_copy_cap_to_process(&thread_a.process, path);
+                            thread_a_arg0 = sel4utils_copy_path_to_process(&thread_a.process, path);
                             assert(thread_a_arg0 != -1);
 
                             create_helper_process(env, &thread_b);
-                            thread_b_arg0 = sel4utils_copy_cap_to_process(&thread_b.process, path);
+                            thread_b_arg0 = sel4utils_copy_path_to_process(&thread_b.process, path);
                             assert(thread_b_arg0 != -1);
 
                         } else {
