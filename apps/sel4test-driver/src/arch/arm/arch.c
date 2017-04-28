@@ -14,24 +14,8 @@
 #include <sel4platsupport/timer.h>
 #include <sel4platsupport/plat/timer.h>
 #include <sel4platsupport/plat/serial.h>
-
-void
-arch_init_timer_caps(env_t env)
-{
-    int error;
-
-    /* Obtain the IRQ cap for the PS default timer IRQ
-     * The slot was allocated earlier, outside in init_timer_caps.
-     *
-     * The IRQ cap setup is arch specific because x86 uses MSI, and that's
-     * a different function.
-     */
-    error = sel4platsupport_copy_irq_cap(&env->vka, &env->simple, DEFAULT_TIMER_INTERRUPT,
-                                             &env->timer_irq_path);
-    ZF_LOGF_IF(error, "Failed to obtain PS default timer IRQ cap.");
-
-    plat_init_timer_caps(env);
-}
+#include <vka/capops.h>
+#include <sel4utils/process.h>
 
 void
 arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
@@ -39,35 +23,11 @@ arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *tes
     plat_copy_timer_caps(init, env, test_process);
 }
 
-int
-arch_init_serial_caps(env_t env)
-{
-    int error;
-
-    /* Obtain IRQ cap for PS default serial. */
-    error = sel4platsupport_copy_irq_cap(&env->vka, &env->simple, DEFAULT_SERIAL_INTERRUPT,
-                                           &env->serial_irq_path);
-    ZF_LOGF_IF(error, "Failed to obtain PS default serial IRQ cap.");
-
-    /* Obtain frame cap for PS default serial.
-     * We pass the serial's MMIO frame as a frame object, and not an untyped,
-     * like the way we pass the timer MMIO paddr. The reason for this is that
-     * the child tests use the serial device themselves, and we can't retype
-     * an untyped twice. But we can make copies of a Frame cap.
-     */
-    env->serial_frame_paddr = DEFAULT_SERIAL_PADDR;
-    error = vka_alloc_frame_at(&env->vka, seL4_PageBits, DEFAULT_SERIAL_PADDR,
-                               &env->serial_frame_obj);
-    ZF_LOGF_IF(error, "Failed to obtain frame cap for default serial.");
-
-    return plat_init_serial_caps(env);
-}
-
 void
 arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-    init->serial_paddr = env->serial_frame_paddr;
-    init->serial_frame_cap = copy_cap_to_process(test_process, env->serial_frame_obj.cptr);
+    init->serial_paddr = env->serial_objects.arch_serial_objects.serial_frame_paddr;
+    init->serial_frame_cap = sel4utils_copy_cap_to_process_with_vka(test_process, &env->vka, env->serial_objects.arch_serial_objects.serial_frame_obj.cptr);
     ZF_LOGF_IF(init->serial_frame_cap == 0,
                "Failed to copy PS default serial Frame cap to sel4test-test process");
 

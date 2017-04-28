@@ -15,20 +15,9 @@
 #include <platsupport/plat/clock.h>
 #include <sel4platsupport/io.h>
 #include <sel4platsupport/device.h>
-#include <sel4platsupport/plat/timer.h>
-
-void
-plat_init_timer_caps(env_t env)
-{
-    /* Platforms that use a different device/driver to satisfy their wall-clock
-     * timer requirement may be initialized here.
-     */
-    int error = sel4platsupport_copy_irq_cap(&env->vka, &env->simple, GPT1_INTERRUPT, &env->clock_irq_path);
-    ZF_LOGF_IF(error != 0, "Failed to get GPT1_INTERRUPT");
-
-    error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, GPT1_DEVICE_PADDR, &env->clock_timer_dev_ut_obj);
-    ZF_LOGF_IF(error != 0, "Failed to allocate GPT1 device-untyped");
-}
+#include <sel4platsupport/timer.h>
+#include <utils/zf_log.h>
+#include <sel4utils/process.h>
 
 void
 plat_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
@@ -48,11 +37,6 @@ plat_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *tes
     }
 }
 
-int
-plat_init_serial_caps(env_t env)
-{
-    return 0;
-}
 
 void
 plat_copy_serial_caps(test_init_data_t *init, env_t env,

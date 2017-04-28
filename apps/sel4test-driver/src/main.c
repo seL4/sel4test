@@ -20,14 +20,12 @@
 #include <allocman/bootstrap.h>
 #include <allocman/vka.h>
 
-#include <sel4platsupport/plat/timer.h>
+#include <sel4platsupport/timer.h>
 #include <sel4platsupport/plat/serial.h>
 
 #include <sel4debug/register_dump.h>
 #include <sel4platsupport/device.h>
 #include <sel4platsupport/platsupport.h>
-#include <sel4platsupport/plat/timer.h>
-#include <sel4platsupport/timer.h>
 #include <sel4utils/vspace.h>
 #include <sel4utils/stack.h>
 #include <sel4utils/process.h>
@@ -344,55 +342,8 @@ run_test(struct testcase *test)
     return result;
 }
 
-static void
-init_timer_caps(env_t env)
-{
-    int error;
 
-    /* Allocate slot for the timer IRQ. */
-    error = vka_cspace_alloc_path(&env->vka, &env->timer_irq_path);
-    ZF_LOGF_IF(error, "Failed to allocate timer IRQ slot.");
 
-    /* Obtain frame cap for PS default timer.
-     * Note: We keep the timer's MMIO physical address as an untyped, for the
-     * timer, but for the serial we retype it immediately as a frame.
-     *
-     * The reason for this is that we would prefer to pass untypeds, but since
-     * the test driver and test child both use the serial-frame, we can't share
-     * it between them as an untyped, so we must retype it as a frame first, so
-     * that the cap can be cloned.
-     */
-    env->timer_paddr = sel4platsupport_get_default_timer_paddr(&env->vka,
-                                                               &env->vspace);
-    error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, env->timer_paddr,
-                                 &env->timer_dev_ut_obj);
-    ZF_LOGF_IF(error, "Failed to obtain device-ut cap for default timer.");
-
-    /* Then call into the arch- and plat-specific code to init all arch-
-     * and plat-specific code. Some platforms need another timer because they
-     * use different timers/drivers for the event-timer and the
-     * wall-clock-timer.
-     */
-    arch_init_timer_caps(env);
-}
-
-static void
-init_serial_caps(env_t env)
-{
-    int error;
-
-    /* Allocate slot for the PS default serial's IRQ cap. */
-    error = vka_cspace_alloc_path(&env->vka, &env->serial_irq_path);
-    ZF_LOGF_IF(error, "Failed to allocate serial IRQ slot.");
-
-    /* Call into the arch-specific code for the next step.
-     * x86 needs an I/O cap because the serial is accessed through port-I/O,
-     * while ARM needs a frame cap because it doesn't have port-I/O.
-     * Both architectures need different initialization code.
-     */
-    error = arch_init_serial_caps(env);
-    ZF_LOGF_IF(error, "Arch-specific serial cap init failed.");
-}
 
 void *main_continued(void *arg UNUSED)
 {
@@ -470,7 +421,7 @@ int main(void)
     /* Allocate slots for, and obtain the caps for, the hardware we will be
      * using, in the same function.
      */
-    init_serial_caps(&env);
+    sel4platsupport_init_default_serial_caps(&env.vka, &env.vspace, &env.simple, &env.serial_objects);
 
     /* Construct a vka wrapper for returning the serial frame. We need to
      * create this wrapper as the actual vka implementation will only
@@ -489,7 +440,7 @@ int main(void)
     /* init_timer_caps calls acpi_init(), which does unconditional printfs,
      * so it can't go before platsupport_serial_setup_simple().
      */
-    init_timer_caps(&env);
+    sel4platsupport_init_default_timer_caps(&env.vka, &env.vspace, &env.simple, &env.timer_objects);
     simple_print(&env.simple);
 
     /* switch to a bigger, safer stack with a guard page

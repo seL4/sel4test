@@ -16,10 +16,6 @@
 #include <sel4platsupport/plat/timer.h>
 #include <sel4platsupport/bootinfo.h>
 
-void
-plat_init_timer_caps(env_t env)
-{
-}
 
 void
 plat_copy_timer_caps(test_init_data_t *init, env_t env,
@@ -27,11 +23,6 @@ plat_copy_timer_caps(test_init_data_t *init, env_t env,
 {
 }
 
-int
-plat_init_serial_caps(env_t env)
-{
-    return 0;
-}
 
 void
 plat_copy_serial_caps(test_init_data_t *init, env_t env,

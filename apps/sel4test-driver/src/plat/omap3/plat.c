@@ -17,15 +17,6 @@
 #include <sel4platsupport/device.h>
 #include <sel4platsupport/plat/timer.h>
 
-void
-plat_init_timer_caps(env_t env)
-{
-    int error = sel4platsupport_copy_irq_cap(&env->vka, &env->simple, GPT2_INTERRUPT, &env->clock_irq_path);
-    ZF_LOGF_IF(error != 0, "Failed to get GPT2_INTERRUPT");
-
-    error = vka_alloc_untyped_at(&env->vka, seL4_PageBits, GPT2_DEVICE_PADDR, &env->clock_timer_dev_ut_obj);
-    ZF_LOGF_IF(error != 0, "Failed to allocate clock timer untyped");
-}
 
 void
 plat_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)

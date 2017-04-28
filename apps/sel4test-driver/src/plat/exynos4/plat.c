@@ -18,21 +18,9 @@
 #include <sel4platsupport/plat/timer.h>
 
 void
-plat_init_timer_caps(env_t env)
-{
-    /* clock timer not implemented for this platform */
-}
-
-void
 plat_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
     /* clock timer not implemented for this platform */
-}
-
-int
-plat_init_serial_caps(env_t env)
-{
-    return 0;
 }
 
 void
