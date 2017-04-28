@@ -76,8 +76,6 @@ void plat_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_
 
 seL4_CPtr copy_cap_to_process(sel4utils_process_t *process, seL4_CPtr cap);
 
-void init_irq_cap(env_t env, int irq, cspacepath_t *path);
-void init_frame_cap(env_t env, void *paddr, cspacepath_t *path);
 #ifdef CONFIG_ARM_SMMU
 seL4_SlotRegion arch_copy_iospace_caps_to_process(sel4utils_process_t *process, env_t env);
 #endif
