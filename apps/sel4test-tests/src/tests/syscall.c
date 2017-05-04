@@ -211,7 +211,7 @@ static int
 test_debug_put_char(env_t env)
 {
     for (int i = 0; i < 10; i++) {
-#ifdef CONFIG_DEBUG_BUILD
+#ifdef CONFIG_PRINTING
         TEST_REGISTERS(seL4_DebugPutChar(' '));
 #endif
     }
