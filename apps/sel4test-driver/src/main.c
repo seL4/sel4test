@@ -276,9 +276,9 @@ run_test(struct testcase *test)
     env.init->io_space_caps = arch_copy_iospace_caps_to_process(&test_process, &env);
 #endif
     env.init->cores = simple_get_core_count(&env.simple);
-    env.init->sched_ctrl = copy_cap_to_process(&test_process, simple_get_sched_ctrl(&env.simple, 0));
+    env.init->sched_ctrl = sel4utils_copy_cap_to_process(&test_process, &env.vka, simple_get_sched_ctrl(&env.simple, 0));
     for (int i = 1; i < env.init->cores; i++) {
-        copy_cap_to_process(&test_process, simple_get_sched_ctrl(&env.simple, i));
+        sel4utils_copy_cap_to_process(&test_process, &env.vka, simple_get_sched_ctrl(&env.simple, i));
     }
     /* setup data about untypeds */
     env.init->untypeds = copy_untypeds_to_process(&test_process, untypeds, num_untypeds);
