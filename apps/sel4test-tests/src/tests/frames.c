@@ -75,8 +75,9 @@ static int test_frame_exported(env_t env)
             char *data = (char *)vaddr;
             touch_data(data, 0, 'U', frame_types[i].size_bits);
 
-            err = seL4_ARCH_Page_Remap(frame,
+            err = seL4_ARCH_Page_Map(frame,
                                        env->page_directory,
+                                       (seL4_Word) vaddr,
                                        seL4_AllRights,
                                        seL4_ARCH_Default_VMAttributes);
             test_assert(!err);
@@ -183,7 +184,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     /* Now let's remap the page with XN set and confirm that we can't execute
      * in it any more.
      */
-    err = seL4_ARM_Page_Remap(frame_cap, env->page_directory, seL4_AllRights,
+    err = seL4_ARM_Page_Map(frame_cap, env->page_directory, (seL4_Word) dest, seL4_AllRights,
                               seL4_ARM_Default_VMAttributes | seL4_ARM_ExecuteNever);
     test_assert(err == 0);
 

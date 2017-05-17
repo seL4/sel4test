@@ -190,7 +190,7 @@ static int test_pagetable_arm(env_t env)
     test_assert(error == 0);
     error = seL4_ARM_Page_Map(supersection, env->page_directory,
                               vstart + SUPSECT_SIZE, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_InvalidCapability);
+    test_assert(error == seL4_InvalidArgument);
 
     /* Now check what we'd written earlier is still there. */
     test_assert(check_memory(vstart, SUPSECT_SIZE));
@@ -201,7 +201,7 @@ static int test_pagetable_arm(env_t env)
     test_assert(error == 0);
     error = seL4_ARM_Page_Map(section, env->page_directory,
                               vstart + SUPSECT_SIZE, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_InvalidCapability);
+    test_assert(error == seL4_InvalidArgument);
 
     /* Unmap everything again. */
     error = seL4_ARM_Page_Unmap(section);
@@ -233,11 +233,11 @@ static int test_pagetable_arm(env_t env)
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
     test_assert(error == 0);
 
-    /* Map it again, and it should fail. */
+    /* Map it again, to a different vaddr, and it should fail. */
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart + SECT_SIZE + 2 * LPAGE_SIZE,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_InvalidCapability);
+    test_assert(error == seL4_InvalidArgument);
 
     /* Fill it with more stuff to check. */
     fill_memory(vstart + SECT_SIZE + LPAGE_SIZE, LPAGE_SIZE);
@@ -436,9 +436,11 @@ test_pagetable_arm(env_t env)
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart, seL4_AllRights, seL4_ARM_Default_VMAttributes);
     test_assert(error == 0);
+
+    /* Trying to remap to a different vaddr */
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart + LPAGE_SIZE, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_InvalidCapability);
+    test_assert(error == seL4_InvalidArgument);
 
     /* Now check what we'd written earlier is still there. */
     test_assert(check_memory(vstart, LPAGE_SIZE));
