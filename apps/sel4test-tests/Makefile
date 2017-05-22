@@ -24,6 +24,8 @@ CFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/plat/${PLAT
 CXXFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.cxx))
 CXXFILES +=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/tests/*.cxx))
 
+ASMFILES :=  $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/arch/${ARCH}/tests/*.S))
+
 HDRFILES := $(wildcard $(SOURCE_DIR)/include/*) \
     $(wildcard ${SOURCE_DIR}/arch/${ARCH}/*) \
     $(wildcard ${SOURCE_DIR}/sel4_arch/${SEL4_ARCH}/*)
