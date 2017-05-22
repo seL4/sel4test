@@ -269,7 +269,7 @@ test_ept_aligned_4m(env_t env)
     error = map_ept_set_large(env, &pml4, &pdpt, &pd, &frame);
     test_assert(error == seL4_NoError);
 
-    frame2 = vka_alloc_frame_leaky(&env->vka, seL4_4MBits);
+    frame2 = vka_alloc_frame_leaky(&env->vka, PAGE_BITS_4M);
     test_assert_fatal(frame2);
     /* Try and map a page at +2m */
     error = seL4_X86_Page_MapEPT(frame2, pml4, EPT_MAP_BASE + OFFSET_2MB, seL4_AllRights, seL4_X86_Default_VMAttributes);
