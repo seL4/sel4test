@@ -427,9 +427,13 @@ timestamp(env_t env)
 seL4_Error
 set_helper_sched_params(env_t env, helper_thread_t *thread, seL4_Time budget, seL4_Time period)
 {
+    seL4_Word refills = 0;
+    if (budget < period) {
+        refills = seL4_MaxExtraRefills(seL4_MinSchedContextBits);
+    }
     return seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, 0),
                                        thread->thread.sched_context.cptr,
-                                       budget, period, 0);
+                                       budget, period, refills);
 }
 
 seL4_Error
