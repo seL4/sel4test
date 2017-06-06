@@ -8,7 +8,7 @@ do
     make clean > /dev/null
     make $config > /dev/null
     make silentoldconfig > /dev/null
-    make kernel_elf > /dev/null
+    env -i PATH="$PATH" make kernel_elf > /dev/null
     if [ $? -eq 0 ]
     then
         echo "pass"
