@@ -17,6 +17,11 @@ do
     echo $config
     make clean > /dev/null
     make $config > /dev/null
+    if [ "$CLANG" = "1" ]
+    then
+        sed -i 's/.*CONFIG_KERNEL_COMPILER.*//g' .config
+        sed -i '$ a\CONFIG_KERNEL_COMPILER="clang"' .config
+    fi
     make silentoldconfig > /dev/null
     env -i PATH="$PATH" make kernel_elf > /dev/null
     if [ $? -eq 0 ]

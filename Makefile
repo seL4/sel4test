@@ -33,6 +33,10 @@ endif
 compile-all:
 	${PWD}/projects/sel4test/tools/compile-all.sh
 
+# test that all configs compile with clang
+compile-all-clang:
+	CLANG=1 ${PWD}/projects/sel4test/tools/compile-all.sh
+
 # objdump the kernel image
 objdump-kernel:
 	${CONFIG_CROSS_COMPILER_PREFIX}objdump -${OBJFLAGS} stage/${ARCH}/${PLAT}/kernel.elf
