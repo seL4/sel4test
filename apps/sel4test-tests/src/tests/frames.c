@@ -71,7 +71,7 @@ test_frame_exported(env_t env)
 
             /* Touch the memory */
             char *data = (char*)vaddr;
-            test_assert(touch_data(vaddr, 0, 'U', frame_types[i].size_bits));
+            test_assert(touch_data(data, 0, 'U', frame_types[i].size_bits));
 
             err = seL4_ARCH_Page_Remap(frame,
                                        env->page_directory,
