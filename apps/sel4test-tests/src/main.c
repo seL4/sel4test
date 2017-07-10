@@ -203,6 +203,13 @@ get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
     return plat_get_irq(data, irq, root, index, depth);
 }
 
+static uint8_t
+cnode_size_bits(void *data)
+{
+    test_init_data_t *init = (test_init_data_t *) data;
+    return init->cspace_size_bits;
+}
+
 void init_timer(env_t env, test_init_data_t *init_data)
 {
     /* minimal simple implementation to get the platform
@@ -210,6 +217,8 @@ void init_timer(env_t env, test_init_data_t *init_data)
     env->simple.arch_simple.irq = get_irq;
     env->simple.data = (void *) init_data;
     env->simple.arch_simple.data = (void *) init_data;
+    env->simple.init_cap = sel4utils_process_init_cap;
+    env->simple.cnode_size = cnode_size_bits;
 
     arch_init_simple(&env->simple);
 
