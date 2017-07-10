@@ -156,21 +156,18 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     /* Then setup the thread that will, itself, fault. */
     helper_thread_t faulter;
     create_helper_thread(env, &faulter);
-    set_helper_priority(&faulter, 100);
-    err = seL4_TCB_Configure(faulter.thread.tcb.cptr,
+    set_helper_priority(env, &faulter, 100);
+    err = seL4_TCB_SetSpace(faulter.thread.tcb.cptr,
                              fault_ep,
-                             seL4_PrioProps_new(100, 100),
                              env->cspace_root,
                              seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
-                             env->page_directory, seL4_NilData,
-                             faulter.thread.ipc_buffer_addr,
-                             faulter.thread.ipc_buffer);
+                             env->page_directory, seL4_NilData);
     start_helper(env, &faulter, dest, 0, 0, 0 ,0);
 
     /* Now a fault handler that will catch and diagnose its fault. */
     helper_thread_t handler;
     create_helper_thread(env, &handler);
-    set_helper_priority(&handler, 100);
+    set_helper_priority(env, &handler, 100);
     start_helper(env, &handler, handle, fault_ep, 0, 0, 0);
 
     /* Wait for the fault to happen */
@@ -199,7 +196,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
 
     /* Recreate our two threads. */
     create_helper_thread(env, &faulter);
-    set_helper_priority(&faulter, 100);
+    set_helper_priority(env, &faulter, 100);
     err = seL4_TCB_Configure(faulter.thread.tcb.cptr,
                              fault_ep,
                              seL4_PrioProps_new(100, 100),
@@ -210,7 +207,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
                              faulter.thread.ipc_buffer);
     start_helper(env, &faulter, dest, 0, 0, 0 ,0);
     create_helper_thread(env, &handler);
-    set_helper_priority(&handler, 100);
+    set_helper_priority(env, &handler, 100);
     start_helper(env, &handler, handle, fault_ep, 0, 0, 0);
 
     /* Wait for the fault to happen */

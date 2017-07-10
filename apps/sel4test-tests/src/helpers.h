@@ -99,10 +99,10 @@ void create_helper_thread(env_t env, helper_thread_t *thread);
 void create_helper_process(env_t env, helper_thread_t *thread);
 
 /* set a helper threads priority */
-void set_helper_priority(helper_thread_t *thread, seL4_Word prio);
+void set_helper_priority(env_t env, helper_thread_t *thread, seL4_Word prio);
 
 /* set a helper threads max control priority */
-void set_helper_mcp(helper_thread_t *thread, seL4_Word mcp);
+void set_helper_mcp(env_t env, helper_thread_t *thread, seL4_Word mcp);
 
 /* set a helper threads core affinity */
 void set_helper_affinity(helper_thread_t *thread, seL4_Word affinity);

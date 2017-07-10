@@ -37,7 +37,7 @@ int smp_test_tcb_resume(env_t env)
     ZF_LOGD("smp_test_tcb_resume\n");
     create_helper_thread(env, &t1);
 
-    set_helper_priority(&t1, 100);
+    set_helper_priority(env, &t1, 100);
     start_helper(env, &t1, (helper_fn_t) counter_func, (seL4_Word) &counter, 0, 0, 0);
 
     seL4_Word old_counter;
@@ -103,7 +103,7 @@ int smp_test_tcb_move(env_t env)
     ZF_LOGD("smp_test_tcb_move\n");
     create_helper_thread(env, &t1);
 
-    set_helper_priority(&t1, 100);
+    set_helper_priority(env, &t1, 100);
     start_helper(env, &t1, (helper_fn_t) counter_func, (seL4_Word) &counter, 0, 0, 0);
 
     seL4_Word old_counter;
@@ -142,7 +142,7 @@ int smp_test_tcb_delete(env_t env)
     ZF_LOGD("smp_test_tcb_delete\n");
     create_helper_thread(env, &t1);
 
-    set_helper_priority(&t1, 100);
+    set_helper_priority(env, &t1, 100);
     start_helper(env, &t1, (helper_fn_t) counter_func, (seL4_Word) &counter, 0, 0, 0);
 
     seL4_Word old_counter;
@@ -226,7 +226,7 @@ int smp_test_tlb(env_t env)
     /* The endpoint on which faults are received. */
     seL4_CPtr fault_ep = vka_alloc_endpoint_leaky(&env->vka);
 
-    set_helper_priority(&handler_thread, 100);
+    set_helper_priority(env, &handler_thread, 100);
 
     error = seL4_TCB_Configure(faulter_thread.thread.tcb.cptr,
                                fault_ep,

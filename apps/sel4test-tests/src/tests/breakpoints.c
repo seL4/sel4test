@@ -82,7 +82,7 @@ setup_faulter_thread_for_test(struct env *env, helper_thread_t *faulter_thread)
         return -1;
     }
 
-    set_helper_priority(faulter_thread, BREAKPOINT_TEST_FAULTER_PRIO);
+    set_helper_priority(env, faulter_thread, BREAKPOINT_TEST_FAULTER_PRIO);
     return 0;
 }
 
@@ -184,7 +184,7 @@ setup_handler_thread_for_test(struct env *env, helper_thread_t *handler_thread)
 {
     create_helper_thread(env, handler_thread);
     NAME_THREAD(handler_thread->thread.tcb.cptr, "Handler");
-    set_helper_priority(handler_thread, BREAKPOINT_TEST_HANDLER_PRIO);
+    set_helper_priority(env, handler_thread, BREAKPOINT_TEST_HANDLER_PRIO);
     start_helper(env, handler_thread, &breakpoint_handler_main,
                  (seL4_Word)&fault_ep_cspath,
                  0, 0, 0);

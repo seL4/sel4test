@@ -90,14 +90,14 @@ test_ep_cancelBadgedSends(env_t env)
         assert(!error);
 
         create_helper_thread(env, &senders[i].thread);
-        set_helper_priority(&senders[i].thread, 100);
+        set_helper_priority(env, &senders[i].thread, 100);
 
         senders[i].done = -1;
     }
     /* Create a bounce thread so we can get lower prio threads to run. */
     bounce_ep = vka_alloc_endpoint_leaky(&env->vka);
     create_helper_thread(env, &bouncer);
-    set_helper_priority(&bouncer, 0);
+    set_helper_priority(env, &bouncer, 0);
     start_helper(env, &bouncer, bouncer_func, bounce_ep, 0, 0, 0);
 
     for (int i = 0; i < NUM_BADGED_CLIENTS; i++) {

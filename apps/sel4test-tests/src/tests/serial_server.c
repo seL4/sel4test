@@ -703,7 +703,7 @@ start_clients(struct env *env, client_test_fn *test_fn)
                         ? (volatile void **)curr_client->client_used_pages_list
                         : NULL);
 
-        set_helper_priority(&curr_client->thread, SERSERV_TEST_PRIO_CLIENT);
+        set_helper_priority(env, &curr_client->thread, SERSERV_TEST_PRIO_CLIENT);
         start_helper(env, &curr_client->thread, &client_common_entry_point,
                      (seL4_Word)test_fn,
                      (seL4_Word)used_pages_list,

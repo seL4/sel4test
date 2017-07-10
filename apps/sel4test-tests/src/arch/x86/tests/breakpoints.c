@@ -156,7 +156,7 @@ test_debug_api_single_step(struct env *env)
     test_eq(setup_caps_for_test(env), 0);
 
     create_helper_thread(env, &debugger);
-    set_helper_priority(&debugger, BREAKPOINT_TEST_HANDLER_PRIO);
+    set_helper_priority(env, &debugger, BREAKPOINT_TEST_HANDLER_PRIO);
 
     error = setup_faulter_thread_for_test(env, &debuggee);
     test_eq(error, seL4_NoError);

@@ -110,7 +110,7 @@ test_fpu_multithreaded(struct env* env)
         /* Start the threads running. */
         for (int i = 0; i < NUM_THREADS; i++) {
             create_helper_thread(env, &thread[i]);
-            set_helper_priority(&thread[i], 100);
+            set_helper_priority(env, &thread[i], 100);
             start_helper(env, &thread[i], fpu_worker,
                          (seL4_Word) &thread_state[i], iterations, 0, 0);
         }

@@ -631,17 +631,15 @@ test_fault(env_t env, int fault_type, bool inter_as)
                     handler_arg1 = faulter_thread.thread.tcb.cptr;
                 }
 
-                set_helper_priority(&handler_thread, 101);
-
-                error = seL4_TCB_Configure(faulter_thread.thread.tcb.cptr,
+                set_helper_priority(env, &handler_thread, 101);
+                error = seL4_TCB_SetSpace(faulter_thread.thread.tcb.cptr,
                                            fault_ep,
-                                           seL4_PrioProps_new(prio, prio),
                                            faulter_cspace,
                                            seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
-                                           faulter_vspace, seL4_NilData,
-                                           faulter_thread.thread.ipc_buffer_addr,
-                                           faulter_thread.thread.ipc_buffer);
+                                           faulter_vspace, seL4_NilData);
                 test_assert(!error);
+                set_helper_priority(env, &faulter_thread, prio);
+
 
                 start_helper(env, &handler_thread, (helper_fn_t) handle_fault,
                              handler_arg0, handler_arg1, fault_type, (badged << 1) | restart);

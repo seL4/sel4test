@@ -279,8 +279,8 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
                             thread_b_arg0 = ep;
                         }
 
-                        set_helper_priority(&thread_a, sender_prio);
-                        set_helper_priority(&thread_b, waiter_prio);
+                        set_helper_priority(env, &thread_a, sender_prio);
+                        set_helper_priority(env, &thread_b, waiter_prio);
 
                         set_helper_affinity(&thread_a, core_a);
                         set_helper_affinity(&thread_b, core_b);
@@ -390,7 +390,7 @@ test_ipc_abort_in_call(env_t env)
     seL4_Word start_number = 0xabbacafe;
 
     create_helper_thread(env, &thread_a);
-    set_helper_priority(&thread_a, 100);
+    set_helper_priority(env, &thread_a, 100);
 
     start_helper(env, &thread_a, (helper_fn_t) call_func, ep, start_number, 0, 0);
 

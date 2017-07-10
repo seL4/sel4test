@@ -104,7 +104,7 @@ test_nbwait(env_t env)
     helper_thread_t thread;
     create_helper_thread(env, &thread);
     start_helper(env, &thread, send_func, badged_endpoint.capPtr, 0xdeadbeef, 0, 0);
-    set_helper_priority(&thread, env->priority);
+    set_helper_priority(env, &thread, env->priority);
     /* let helper run */
     seL4_TCB_SetPriority(env->tcb, env->priority - 1);
 

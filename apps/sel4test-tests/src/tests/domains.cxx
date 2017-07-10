@@ -98,7 +98,7 @@ test_domains(struct env *env, F func)
 
     for (int i = 0; i < CONFIG_NUM_DOMAINS; ++i) {
         create_helper_thread(env, &thread[i]);
-        set_helper_priority(&thread[i], 64);
+        set_helper_priority(env, &thread[i], 64);
         error = seL4_DomainSet_Set(env->domain, (seL4_Word)i, thread[i].thread.tcb.cptr);
         assert(error == seL4_NoError);
     }

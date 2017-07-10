@@ -67,7 +67,7 @@ test_thread_suspend(env_t env)
     ZF_LOGD("test_thread_suspend\n");
     create_helper_thread(env, &t1);
 
-    set_helper_priority(&t1, 100);
+    set_helper_priority(env, &t1, 100);
     start_helper(env, &t1, (helper_fn_t) counter_func, (seL4_Word) &counter, 0, 0, 0);
 
     timer_periodic(env->timer->timer, 10 * NS_IN_MS);
@@ -236,9 +236,9 @@ test_suspend(struct env* env)
      * the 'start_helper' function does an IPC to the helper
      * thread, it doesn't allow one of the already started helper
      * threads to run at all */
-    set_helper_priority(&thread1, 0);
-    set_helper_priority(&thread2a, 1);
-    set_helper_priority(&thread2b, 2);
+    set_helper_priority(env, &thread1, 0);
+    set_helper_priority(env, &thread2a, 1);
+    set_helper_priority(env, &thread2b, 2);
 
     start_helper(env, &thread1, (helper_fn_t) suspend_test_helper_1,
                  (seL4_Word) &thread1.thread.tcb.cptr,
@@ -256,9 +256,9 @@ test_suspend(struct env* env)
                  (seL4_Word) &thread2b.thread.tcb.cptr, 0);
 
     /* Now set their priorities to what we want */
-    set_helper_priority(&thread1, 100);
-    set_helper_priority(&thread2a, 101);
-    set_helper_priority(&thread2b, 101);
+    set_helper_priority(env, &thread1, 100);
+    set_helper_priority(env, &thread2a, 101);
+    set_helper_priority(env, &thread2b, 101);
 
     suspend_test_step = 0;
     ZF_LOGD("      ");
@@ -322,7 +322,7 @@ test_all_priorities(struct env* env)
         int idx = prio - MIN_PRIO;
         test_check(idx >= 0 && idx < NUM_PRIOS);
         create_helper_thread(env, threads[idx]);
-        set_helper_priority(threads[idx], prio);
+        set_helper_priority(env, threads[idx], prio);
 
         start_helper(env, threads[idx], (helper_fn_t) prio_test_func,
                      prio, (seL4_Word) &last_prio, ep, 0);
@@ -427,16 +427,16 @@ test_set_priority(struct env* env)
     helper_thread_t thread2;
     ZF_LOGD("test_set_priority starting\n");
     create_helper_thread(env, &thread1);
-    set_helper_priority(&thread1, SCHED0005_HIGHEST_PRIO);
-    set_helper_mcp(&thread1, SCHED0005_HIGHEST_PRIO);
+    set_helper_priority(env, &thread1, SCHED0005_HIGHEST_PRIO);
+    set_helper_mcp(env, &thread1, SCHED0005_HIGHEST_PRIO);
 
     create_helper_thread(env, &thread2);
     /* thread2 needs to start at a lower prio than thread1, so that when thread1 sets
      * its own prio down, this thread runs, but not before. */
-    set_helper_priority(&thread2, SCHED0005_HIGHEST_PRIO - 1);
+    set_helper_priority(env, &thread2, SCHED0005_HIGHEST_PRIO - 1);
     /* thread2 needs mcp SCHED0005_HIGHEST_PRIO - 2 so that it can raise thread1's
      * priority to that value */
-    set_helper_mcp(&thread2, SCHED0005_HIGHEST_PRIO - 2);
+    set_helper_mcp(env, &thread2, SCHED0005_HIGHEST_PRIO - 2);
 
     set_priority_step = 0;
     ZF_LOGD("      ");
@@ -636,17 +636,17 @@ test_ipc_prios(struct env* env)
     data.ep3 = vka_alloc_endpoint_leaky(vka);
 
     create_helper_thread(env, &thread0);
-    set_helper_priority(&thread0, 0);
+    set_helper_priority(env, &thread0, 0);
 
     create_helper_thread(env, &thread1);
-    set_helper_priority(&thread1, 1);
+    set_helper_priority(env, &thread1, 1);
 
     create_helper_thread(env, &thread2);
-    set_helper_priority(&thread2, 2);
+    set_helper_priority(env, &thread2, 2);
 
     create_helper_thread(env, &thread3);
-    set_helper_priority(&thread3, 3);
-    set_helper_mcp(&thread3, 3);
+    set_helper_priority(env, &thread3, 3);
+    set_helper_mcp(env, &thread3, 3);
 
     data.tcb0 = thread0.thread.tcb.cptr;
     data.tcb1 = thread1.thread.tcb.cptr;

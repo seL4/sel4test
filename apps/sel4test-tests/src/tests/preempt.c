@@ -55,8 +55,8 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
     create_helper_thread(env, &revoke_thread);
     create_helper_thread(env, &preempt_thread);
 
-    set_helper_priority(&preempt_thread, 101);
-    set_helper_priority(&revoke_thread, 100);
+    set_helper_priority(env, &preempt_thread, 101);
+    set_helper_priority(env, &revoke_thread, 100);
 
     /* Now create as many cnodes as possible. We will copy the cap into all
      * those cnodes. */
