@@ -245,8 +245,9 @@ run_test(struct testcase *test)
     /* Test intro banner. */
     printf("  %s\n", test->name);
 
-    error = sel4utils_configure_process(&test_process, &env.vka, &env.vspace,
-                                        env.init->priority, TESTS_APP);
+    sel4utils_process_config_t config = process_config_default_simple(&env.simple, TESTS_APP, env.init->priority);
+    config = process_config_mcp(config, seL4_MaxPrio);
+    error = sel4utils_configure_process_custom(&test_process, &env.vka, &env.vspace, config);
     assert(error == 0);
 
     /* set up caps about the process */

@@ -199,18 +199,14 @@ create_helper_process(env_t env, helper_thread_t *thread)
 
     thread->is_process = true;
 
-    sel4utils_process_config_t config = {
-        .is_elf = false,
-        .create_cspace = true,
-        .one_level_cspace_size_bits = env->cspace_size_bits,
-        .create_vspace = true,
-        .reservations = env->regions,
-        .num_reservations = env->num_regions,
-        .create_fault_endpoint = false,
-        .fault_endpoint = { .cptr = env->endpoint },
-        .priority = OUR_PRIO - 1,
-        .asid_pool = env->asid_pool,
-    };
+    sel4utils_process_config_t config = {0};
+    config = process_config_asid_pool(config, env->asid_pool);
+    config = process_config_noelf(config, NULL, 0);
+    config = process_config_create_cnode(config, env->cspace_size_bits);
+    config = process_config_create_vspace(config, env->regions, env->num_regions);
+    vka_object_t fault_endpoint = { .cptr = env->endpoint };
+    config = process_config_fault_endpoint(config, fault_endpoint);
+    config = process_config_priority(config, OUR_PRIO - 1);
 
     error = sel4utils_configure_process_custom(&thread->process, &env->vka, &env->vspace,
                                                config);
@@ -344,8 +340,11 @@ create_helper_thread(env_t env, helper_thread_t *thread)
     thread->fault_endpoint = env->endpoint;
     seL4_CapData_t data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits);
     error = sel4utils_configure_thread(&env->vka, &env->vspace, &env->vspace, env->endpoint,
-                                       OUR_PRIO - 1, env->cspace_root, data, &thread->thread);
+                                       env->cspace_root, data, &thread->thread);
     assert(error == 0);
+
+    /* set its priority */
+    set_helper_priority(env, thread, OUR_PRIO - 1);
 }
 
 int
