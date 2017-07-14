@@ -298,7 +298,6 @@ prio_test_func(seL4_Word my_prio, seL4_Word* last_prio, seL4_CPtr ep)
     return 0;
 }
 
-
 static int
 test_all_priorities(struct env* env)
 {

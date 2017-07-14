@@ -543,7 +543,6 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         seL4_Reply(tag);
         break;
 
-
     default:
         /* What? Why are we here? What just happened? */
         test_assert_fatal(0);
@@ -639,7 +638,6 @@ test_fault(env_t env, int fault_type, bool inter_as)
                                            faulter_vspace, seL4_NilData);
                 test_assert(!error);
                 set_helper_priority(env, &faulter_thread, prio);
-
 
                 start_helper(env, &handler_thread, (helper_fn_t) handle_fault,
                              handler_arg0, handler_arg1, fault_type, (badged << 1) | restart);

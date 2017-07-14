@@ -64,7 +64,6 @@ test_pagetable_arm(env_t env)
                                                   seL4_AllRights, 1, (void **) &vstart);
     vstart = ALIGN_UP(vstart, SUPSECT_SIZE * 2);
 
-
     /* Create us some frames to play with. */
     seL4_CPtr small_page = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
     seL4_CPtr small_page2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
@@ -291,7 +290,6 @@ test_pagetable_arm(env_t env)
                                                   seL4_AllRights, 1, (void **) &vstart);
     vstart = ALIGN_UP(vstart, LPAGE_SIZE * 2);
 
-
     /* Create us some frames to play with. */
     seL4_CPtr small_page = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
     seL4_CPtr small_page2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
@@ -419,7 +417,6 @@ do_test_pagetable_tlbflush_on_vaddr_reuse(seL4_CPtr cap1, seL4_CPtr cap2, seL4_W
     int error;
     seL4_Word vaddr;
     volatile seL4_Word* vptr = NULL;
-
 
     /* map, touch page 1 */
     vaddr = vstart;

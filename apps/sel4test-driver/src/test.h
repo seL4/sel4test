@@ -39,7 +39,6 @@ struct env {
 
     serial_objects_t serial_objects;
 
-
     /* init data frame vaddr */
     test_init_data_t *init;
     /* extra cap to the init data frame for mapping into the remote vspace */

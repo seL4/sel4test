@@ -22,8 +22,6 @@
 #define READY_MAGIC 0x12374153
 #define SUCCESS_MAGIC 0x12374151
 
-
-
 static int
 ipc_caller(seL4_Word ep0, seL4_Word ep1, seL4_Word word_bits, seL4_Word arg4)
 {

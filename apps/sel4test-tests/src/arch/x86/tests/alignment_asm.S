@@ -7,8 +7,8 @@
  * the BSD 2-Clause license. Note that NO WARRANTY is provided.
  * See "LICENSE_BSD2.txt" for details.
  *
- * @TAG(DATA61_BSD)                                                          
- */                                                                       
+ * @TAG(DATA61_BSD)
+ */
 #include <autoconf.h>
 #define STACK_OFFSET_BYTES $(16 - (CONFIG_WORD_SIZE / 8))
 

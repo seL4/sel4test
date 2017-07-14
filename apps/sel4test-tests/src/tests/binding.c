@@ -98,7 +98,6 @@ test_notification_binding(env_t env)
 }
 DEFINE_TEST(BIND0001, "Test that a bound tcb waiting on a sync endpoint receives normal sync ipc and notification notifications.", test_notification_binding)
 
-
 static int
 test_notification_binding_2(env_t env)
 {
@@ -202,4 +201,3 @@ test_notification_binding_4(env_t env)
 }
 DEFINE_TEST(BIND0004, "Test IPC ordering 2) bound tcb waits on bound notification 1) another tcb sends a message",
             test_notification_binding_4)
-

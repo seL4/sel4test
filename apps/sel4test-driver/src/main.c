@@ -109,8 +109,6 @@ init_env(env_t env)
                                      ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&env->simple));
 }
 
-
-
 /* Free a list of objects */
 static void
 free_objects(vka_object_t *objects, unsigned int num)
@@ -329,9 +327,6 @@ run_test(struct testcase *test)
     return result;
 }
 
-
-
-
 void *main_continued(void *arg UNUSED)
 {
 
@@ -384,7 +379,6 @@ void *main_continued(void *arg UNUSED)
 
     return NULL;
 }
-
 
 int main(void)
 {

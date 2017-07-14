@@ -68,7 +68,7 @@ fpu_worker(seL4_Word p1, seL4_Word p2, seL4_Word p3, seL4_Word p4)
         /* Do some random calculation (where we know the result). */
         double a = fpu_calculation();
 
-        /* It's workaround to solve precision discrepancy when comparing 
+        /* It's workaround to solve precision discrepancy when comparing
          * floating value in FPU from different sources */
         *state = a;
         a = *state;

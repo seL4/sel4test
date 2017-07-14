@@ -12,4 +12,3 @@
 #
 
 exec ./clean-log.sh "$@" | ./match-data.pl | ./generate-csv.pl
-

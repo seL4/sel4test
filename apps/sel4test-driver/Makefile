@@ -59,5 +59,3 @@ ${BUILD_DIR}/src/test_names.c: ${COMPONENTS}
 	@echo "[GEN] test_names.c"
 	${Q}mkdir -p $(dir $@)
 	${SOURCE_DIR}/scripts/extract-test-names.sh $(TOOLPREFIX)objdump ${BUILD_DIR}/../sel4test-tests/sel4test-tests.bin > $@
-
-

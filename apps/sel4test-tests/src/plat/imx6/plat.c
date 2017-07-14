@@ -15,7 +15,6 @@
 
 #include <sel4platsupport/plat/timer.h>
 
-
 void
 plat_add_uts(env_t env, allocman_t *alloc, test_init_data_t *data)
 {
@@ -52,5 +51,3 @@ plat_get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t dept
 
     return -1;
 }
-
-

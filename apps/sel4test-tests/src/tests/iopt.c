@@ -240,7 +240,6 @@ DEFINE_TEST(IOPT0011, "Test IOPT map and remap PT", test_iopt_map_remap_pt)
 
 #endif /* CONFIG_IOMMU */
 
-
 #ifdef CONFIG_ARM_SMMU
 /* tests for ARM SystemMMU */
 
@@ -303,7 +302,6 @@ test_iopt_basic_iopt(env_t env)
 }
 DEFINE_TEST(IOPT0001, "Testing basic ARM IOPT mapping", test_iopt_basic_iopt);
 
-
 static int
 test_iopt_basic_map_unmap(env_t env)
 {
@@ -361,7 +359,6 @@ test_iopt_no_overlapping_4k(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(IOPT0004, "Test ARM IOPT cannot map overlapping 4k pages", test_iopt_no_overlapping_4k)
-
 
 static int
 test_iopt_map_remap_pt(env_t env)

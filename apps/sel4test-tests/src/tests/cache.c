@@ -163,7 +163,6 @@ test_large_page_flush_operation(env_t env)
     return sel4test_get_result();
 }
 
-
 static int
 test_page_directory_flush(env_t env)
 {

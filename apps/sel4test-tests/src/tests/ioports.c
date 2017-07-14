@@ -56,7 +56,6 @@ increment_pc(seL4_CPtr tcb, seL4_Word inc)
     test_assert_fatal(!error);
 }
 
-
 static int
 handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault, void *unused)
 {

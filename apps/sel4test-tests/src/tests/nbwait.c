@@ -30,7 +30,6 @@ send_func(seL4_CPtr ep, seL4_Word msg, UNUSED seL4_Word arg4, UNUSED seL4_Word a
     return sel4test_get_result();
 }
 
-
 static int
 test_nbwait(env_t env)
 {
@@ -132,5 +131,3 @@ test_nbwait(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(NBWAIT0001, "Test seL4_NBRecv", test_nbwait)
-
-

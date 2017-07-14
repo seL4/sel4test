@@ -26,7 +26,6 @@ plat_add_uts(env_t env, allocman_t *alloc, test_init_data_t *data)
     ZF_LOGF_IF(error, "Failed to add GPT untyped to allocator");
 }
 
-
 void
 plat_init_env(env_t env, test_init_data_t *data)
 {

@@ -123,7 +123,6 @@ void cleanup_helper(env_t env, helper_thread_t *thread);
  */
 int check_zeroes(seL4_Word addr, seL4_Word size_bytes);
 
-
 /* Determine if two TCBs in the init thread's CSpace are not equal. Note that we
  * assume the thread is not currently executing.
  *

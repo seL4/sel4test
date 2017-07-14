@@ -11,18 +11,18 @@
 # @TAG(DATA61_BSD)
 #
 
-# 
+#
 # A simple script to extract the results that you care
 # about from the benchmarking output into nicely parsed xml.
 # Yes it is horrible
-# and depends totally on the format of that output. 
+# and depends totally on the format of that output.
 #
 #
 # Usage:
 # ./fitler-results file-with-results-to-select file-with-results
 #
 # Example entry for a result to select:
-# 
+#
 # Name of result 98 -> 100 1 wait_func send_func
 #
 # Format of file-with-results-to-select:
@@ -32,7 +32,7 @@
 #
 #$0: the name of this result (you invent it)
 #$1 The first priority
-#$2 the direction of the call 
+#$2 the direction of the call
 #$3 the second priority
 #$4 the length of the message
 #$5 the name of the first priorities function
@@ -41,18 +41,18 @@
 # Format of the file-with-results
 #
 # Entries should look like this (spaces don't matter):
-# 
+#
 # 98 -> 100, Length 1:
 #     wait_func:
-#         CCNT: 3667 
+#         CCNT: 3667
 #         PMC0: 0
 #         PMC1: 47
 #     send_func:
-#         CCNT: 3667 
+#         CCNT: 3667
 #         PMC0: 0
 #         PMC1: 47
 #
-# Currently only the first result is extracted. 
+# Currently only the first result is extracted.
 
 import re
 import sys
@@ -79,7 +79,6 @@ class Selection:
                 self.length == other.length and
                 self.firstFunction == other.firstFunction and
                 self.secondFunction == other.secondFunction)
-		        
 
 #this is the list of all of the results we want to select
 selections = []
@@ -108,10 +107,10 @@ print "<results>"
 entryStartRegexp = re.compile('([0-9]+) (<-|->) ([0-9]+), Length ([0-9]+):')
 
 # iterate through every result and look for our selections. Bail early if
-# we find them all. 
+# we find them all.
 #
 # complexity of this loop is O(nxm) where n is the number of selections and
-# m is the number of entries in the results file. 
+# m is the number of entries in the results file.
 line = results.readline()
 while len(line) > 0 and len(selections) > 0:
     match = entryStartRegexp.match(line.rstrip())
@@ -144,5 +143,3 @@ while len(line) > 0 and len(selections) > 0:
     line = results.readline()
 
 print "</results>"
-
-

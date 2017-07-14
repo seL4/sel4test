@@ -89,7 +89,7 @@ int smp_test_tcb_resume(env_t env)
 }
 DEFINE_TEST(MULTICORE0001, "Test suspending and resuming a thread on different core", smp_test_tcb_resume)
 
-static void 
+static void
 spin(env_t env, uint64_t ns)
 {
     uint64_t start = timestamp(env);
@@ -295,7 +295,7 @@ int smp_test_tcb_clh(env_t env)
     /* All threads start calling 'seL4_Yield', which results in a queue to be generated in CLH lock.
      * By the time we are trying to clean up threads, they should be already in CLH queue which
      * result the delay release of the lock and stalling of the core.
-     * 
+     *
      * There is no failing here.
      * If something is worng with IPI or lock handling we would stuck or possibly crash! */
 

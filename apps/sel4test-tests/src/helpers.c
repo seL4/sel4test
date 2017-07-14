@@ -10,7 +10,6 @@
  * @TAG(DATA61_BSD)
  */
 
-
 #include <sel4/sel4.h>
 #include <sel4utils/arch/util.h>
 #include <sel4utils/helpers.h>
@@ -66,7 +65,6 @@ get_free_slot(env_t env)
     return slot;
 }
 
-
 int
 cnode_copy(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights)
 {
@@ -75,8 +73,6 @@ cnode_copy(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights)
     vka_cspace_make_path(&env->vka, dest, &dest_path);
     return vka_cnode_copy(&dest_path, &src_path, rights);
 }
-
-
 
 int
 cnode_delete(env_t env, seL4_CPtr slot)
@@ -95,7 +91,6 @@ cnode_mint(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights, se
     vka_cspace_make_path(&env->vka, dest, &dest_path);
     return vka_cnode_mint(&dest_path, &src_path, rights, badge);
 }
-
 
 int
 cnode_move(env_t env, seL4_CPtr src, seL4_CPtr dest)
@@ -144,7 +139,6 @@ cnode_rotate(env_t env, seL4_CPtr src, seL4_CPtr pivot, seL4_CPtr dest)
     return vka_cnode_rotate(&dest_path, seL4_NilData, &pivot_path, seL4_NilData, &src_path);
 }
 
-
 int
 cnode_savecaller(env_t env, seL4_CPtr cap)
 {
@@ -152,8 +146,6 @@ cnode_savecaller(env_t env, seL4_CPtr cap)
     vka_cspace_make_path(&env->vka, cap, &path);
     return vka_cnode_saveCaller(&path);
 }
-
-
 
 int
 are_tcbs_distinct(seL4_CPtr tcb1, seL4_CPtr tcb2)
@@ -325,8 +317,6 @@ cleanup_helper(env_t env, helper_thread_t *thread)
         sel4utils_clean_up_thread(&env->vka, &env->vspace, &thread->thread);
     }
 }
-
-
 
 void
 create_helper_thread(env_t env, helper_thread_t *thread)

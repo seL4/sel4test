@@ -29,12 +29,12 @@ test_stack_alignment(struct env *env)
 {
     /* Stack should be aligned to 16-bytes, especially when SSEx is enabled
      * and movaps/movdqa instructions are emitted by the compiler.
-     * This test will fail if it's not 16-bytes aligned. If you came 
+     * This test will fail if it's not 16-bytes aligned. If you came
      * here because this test fails, this means that seL4 libraries
-     * and especially assembly code that sets up the stack failed to maintain 
+     * and especially assembly code that sets up the stack failed to maintain
      * 16-bytes alignment, and it needs to be fixed.
      * Note: the compiler, by default, maintains 16-bytes alignment.
-     */ 
+     */
     align_test_asm();
 
     return sel4test_get_result();

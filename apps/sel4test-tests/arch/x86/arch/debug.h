@@ -17,4 +17,3 @@
 #define TEST_NUM_INSTR_BPS seL4_NumDualFunctionMonitors
 #define TEST_FIRST_DATA_WP seL4_FirstDualFunctionMonitor
 #define TEST_FIRST_INSTR_BP seL4_FirstDualFunctionMonitor
-

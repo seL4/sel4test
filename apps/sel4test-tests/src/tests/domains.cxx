@@ -124,7 +124,6 @@ test_domains(struct env *env, F func)
     return sel4test_get_result();
 }
 
-
 /* The output from this test should show alternating "domain blocks", with,
  * within each, a single thread printing. For example:
  *

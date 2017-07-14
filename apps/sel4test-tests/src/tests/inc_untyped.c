@@ -15,7 +15,6 @@
 
 #include "../helpers.h"
 
-
 static int
 test_retype(env_t env)
 {
@@ -151,7 +150,6 @@ test_incretype(env_t env)
                                 0, 1);
     test_assert(!error);
 
-
     /* clean up */
     vka_free_object(&env->vka, &untyped);
 
@@ -207,10 +205,8 @@ test_incretype2(env_t env)
                                 slot[i++], 1);
     test_assert(error == seL4_NotEnoughMemory);
 
-
     vka_free_object(&env->vka, &untyped);
 
     return sel4test_get_result();
 }
 DEFINE_TEST(RETYPE0002, "Incremental retype test #2", test_incretype2)
-
