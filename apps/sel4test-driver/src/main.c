@@ -205,19 +205,20 @@ send_init_data(env_t env, seL4_CPtr endpoint, sel4utils_process_t *process)
 static void
 copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
-    /* Copy PS default timer's IRQ cap to child process. */
-    init->timer_irq_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, env->timer_objects.timer_irq_path.capPtr);
-    ZF_LOGF_IF(init->timer_irq_cap == 0,
-               "Failed to copy PS default timer IRQ cap to test child "
-               "process.");
+    /* struct deep copy */
+    init->to = env->timer_objects;
 
-    /* untyped cap for timer device untyped */
-    init->timer_paddr = env->timer_objects.timer_paddr;
-    init->timer_dev_ut_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, env->timer_objects.timer_dev_ut_obj.cptr);
-    ZF_LOGF_IF(init->timer_dev_ut_cap == 0,
-               "Failed to copy PS default timer device-ut to test child.");
+    /* copy irq caps */
+    for (size_t i = 0; i < env->timer_objects.nirqs; i++) {
+        init->to.irqs[i].handler_path.capPtr = sel4utils_copy_cap_to_process(test_process,
+                &env->vka, env->timer_objects.irqs[i].handler_path.capPtr);
+    }
 
-    arch_copy_timer_caps(init, env, test_process);
+    /* copy pmem ut frame caps */
+    for (size_t i = 0; i < env->timer_objects.nobjs; i++) {
+        init->to.objs[i].obj.cptr = sel4utils_copy_cap_to_process(test_process,
+                &env->vka, env->timer_objects.objs[i].obj.cptr);
+    }
 }
 
 static void
@@ -421,7 +422,8 @@ int main(void)
     /* init_timer_caps calls acpi_init(), which does unconditional printfs,
      * so it can't go before platsupport_serial_setup_simple().
      */
-    sel4platsupport_init_default_timer_caps(&env.vka, &env.vspace, &env.simple, &env.timer_objects);
+    error = sel4platsupport_init_default_timer_caps(&env.vka, &env.vspace, &env.simple, &env.timer_objects);
+    ZF_LOGF_IF(error, "Failed to init default timer caps");
     simple_print(&env.simple);
 
     /* switch to a bigger, safer stack with a guard page

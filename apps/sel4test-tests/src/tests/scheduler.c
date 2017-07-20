@@ -70,9 +70,7 @@ test_thread_suspend(env_t env)
     set_helper_priority(env, &t1, 100);
     start_helper(env, &t1, (helper_fn_t) counter_func, (seL4_Word) &counter, 0, 0, 0);
 
-    timer_periodic(env->timer->timer, 10 * NS_IN_MS);
-    timer_start(env->timer->timer);
-    sel4_timer_handle_single_irq(env->timer);
+    ltimer_set_timeout(&env->timer.ltimer, 10 * NS_IN_MS, TIMEOUT_PERIODIC);
 
     seL4_Word old_counter;
 
@@ -111,8 +109,7 @@ test_thread_suspend(env_t env)
     test_check(counter != old_counter);
 
     /* Done. */
-    timer_stop(env->timer->timer);
-    sel4_timer_handle_single_irq(env->timer);
+    ltimer_reset(&env->timer.ltimer);
     cleanup_helper(env, &t1);
 
     return sel4test_get_result();

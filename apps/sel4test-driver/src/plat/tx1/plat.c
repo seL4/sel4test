@@ -18,17 +18,6 @@
 #include <sel4platsupport/plat/timer.h>
 
 void
-plat_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
-{
-}
-
-void
-plat_copy_serial_caps(test_init_data_t *init, env_t env,
-                       sel4utils_process_t *test_process)
-{
-}
-
-void
 plat_init(env_t env)
 {
     ZF_LOGD("TX1: plat_init: Done.");

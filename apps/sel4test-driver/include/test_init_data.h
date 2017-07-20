@@ -51,22 +51,9 @@ typedef struct {
 #ifdef CONFIG_ARM_SMMU
     seL4_SlotRegion io_space_caps;
 #endif
-    /* cap to the sel4platsupport default timer irq handler */
-    seL4_CPtr timer_irq_cap;
-    /* cap to the sel4platsupport default timer device untyped */
-    seL4_CPtr timer_dev_ut_cap;
-    /* physical address of the timeout timer */
-    uintptr_t timer_paddr;
 
-    /* caps for clock timer */
-    seL4_CPtr clock_timer_irq_cap;
-    seL4_CPtr clock_timer_dev_ut_cap;
-    uintptr_t clock_timer_paddr;
-
-    /* Caps for the extra timer. */
-    seL4_CPtr extra_timer_irq_cap;
-    seL4_CPtr extra_timer_dev_ut_cap;
-    uintptr_t extra_timer_paddr;
+    /* objects for the default timer */
+    timer_objects_t to;
 
     /* cap to the sel4platsupport default timer io port */
     seL4_CPtr timer_io_port_cap;

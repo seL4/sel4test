@@ -24,8 +24,6 @@
 
 #include <sel4platsupport/timer.h>
 #include <sel4platsupport/plat/serial.h>
-#include <sel4platsupport/plat/timer.h>
-#include <platsupport/timer.h>
 
 #include <sel4utils/util.h>
 #include <sel4utils/mapping.h>
@@ -143,19 +141,15 @@ init_allocator(env_t env, test_init_data_t *init_data)
         }
     }
 
-    /* Add the event timer device-untyped to the allocator.
-     * We don't add the serial frame because it's not an untyped.
-     * It is passed to the child as an already-retyped frame object.
-     */
-    size_bits = seL4_PageBits;
-    vka_cspace_make_path(&env->vka, init_data->timer_dev_ut_cap, &path);
-    error = allocman_utspace_add_uts(allocator, 1, &path, &size_bits,
-                                     &init_data->timer_paddr, ALLOCMAN_UT_DEV);
-    ZF_LOGF_IF(error, "Failed to add timer ut to allocator");
-
     /* add any arch specific objects to the allocator */
     arch_init_allocator(env, init_data);
-    plat_add_uts(env, allocator, init_data);
+    for (size_t i = 0; i < init_data->to.nobjs; i++) {
+        vka_cspace_make_path(&env->vka, init_data->to.objs[i].obj.cptr, &path);
+        error = allocman_utspace_add_uts(allocator, 1, &path, &init_data->to.objs[i].obj.size_bits,
+                                         (uintptr_t *) &init_data->to.objs[i].region.base_addr,
+                                         ALLOCMAN_UT_DEV);
+        ZF_LOGF_IF(error, "Failed to add ut to allocman");
+    }
 
     /* create a vspace */
     void *existing_frames[init_data->stack_pages + 2];
@@ -181,26 +175,42 @@ init_allocator(env_t env, test_init_data_t *init_data)
 
 }
 
+seL4_CPtr get_irq_cap(void *data, int id, irq_type_t type) {
+    test_init_data_t *init = (test_init_data_t *) data;
+    for (size_t i = 0; i < init->to.nirqs; i++) {
+        if (init->to.irqs[i].irq.type == type) {
+            switch (type) {
+            case PS_MSI:
+                if (init->to.irqs[i].irq.msi.vector == id) {
+                    return init->to.irqs[i].handler_path.capPtr;
+                }
+                break;
+            case PS_IOAPIC:
+                if (init->to.irqs[i].irq.ioapic.vector == id) {
+                    return init->to.irqs[i].handler_path.capPtr;
+                }
+                break;
+            case PS_INTERRUPT:
+                if (init->to.irqs[i].irq.irq.number == id) {
+                    return init->to.irqs[i].handler_path.capPtr;
+                }
+                break;
+            case PS_NONE:
+                ZF_LOGF("Invalid irq type");
+            }
+        }
+    }
+
+    ZF_LOGF("Could not find irq");
+    return seL4_CapNull;
+}
+
 static seL4_Error
 get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
 {
     test_init_data_t *init = (test_init_data_t *) data;
-
-    if (irq == DEFAULT_TIMER_INTERRUPT) {
-        return seL4_CNode_Copy(root, index, depth, init->root_cnode,
-                                init->timer_irq_cap, seL4_WordBits, seL4_AllRights);
-    }
-    /* Though none of our serial drivers currently use their IRQ, it makes sense
-     * to also intercept the serial IRQ, because we'll have drivers using them
-     * soon.
-     */
-    if (irq == DEFAULT_SERIAL_INTERRUPT) {
-        return seL4_CNode_Copy(root, index, depth,
-                               init->root_cnode, init->serial_irq_cap, seL4_WordBits,
-                               seL4_AllRights);
-    }
-
-    return plat_get_irq(data, irq, root, index, depth);
+    return seL4_CNode_Copy(root, index, depth, init->root_cnode,
+                            get_irq_cap(data, irq, PS_INTERRUPT), seL4_WordBits, seL4_AllRights);
 }
 
 static uint8_t
@@ -228,17 +238,8 @@ void init_timer(env_t env, test_init_data_t *init_data)
     }
 
     if (config_set(CONFIG_HAVE_TIMER)) {
-        env->timer = arch_init_timer(env, init_data);
-        if (env->timer == NULL) {
-            ZF_LOGF("Failed to initialise default timer");
-        }
+        arch_init_timer(env, init_data);
     }
-
-    /* Call plat_init_env after arch_init_timer, in case the platform wants to
-     * use the same device for both the wall-clock and the event-timer (such as
-     * the TK1).
-     */
-    plat_init_env(env, init_data);
 }
 
 int
@@ -263,7 +264,6 @@ main(int argc, char **argv)
     env.cspace_size_bits = init_data->cspace_size_bits;
     env.tcb = init_data->tcb;
     env.domain = init_data->domain;
-    env.timer_untyped = init_data->timer_dev_ut_cap;
     env.asid_pool = init_data->asid_pool;
     env.asid_ctrl = init_data->asid_ctrl;
 #ifdef CONFIG_IOMMU

@@ -243,7 +243,7 @@ static int test_device_frame_ipcbuf(env_t env)
     cspacepath_t frame_path;
     int error;
     error = vka_cspace_alloc_path(&env->vka, &path);
-    vka_cspace_make_path(&env->vka, env->timer->frame.cptr, &frame_path);
+    vka_cspace_make_path(&env->vka, env->timer.to.objs[0].obj.cptr, &frame_path);
     vka_cnode_copy(&path, &frame_path, seL4_AllRights);
     test_assert(error == 0);
 
@@ -279,7 +279,7 @@ static int test_switch_device_frame_ipcbuf(env_t env)
     int error;
     seL4_CPtr ep;
     error = vka_cspace_alloc_path(&env->vka, &path);
-    vka_cspace_make_path(&env->vka, env->timer->frame.cptr, &frame_path);
+    vka_cspace_make_path(&env->vka, env->timer.to.objs[0].obj.cptr, &frame_path);
     vka_cnode_copy(&path, &frame_path, seL4_AllRights);
     test_assert(error == 0);
 

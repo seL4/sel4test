@@ -12,7 +12,8 @@
 
 #include "../../init.h"
 #include <sel4platsupport/plat/serial.h>
-#include <sel4platsupport/plat/timer.h>
+#include <sel4platsupport/io.h>
+#include <sel4platsupport/timer.h>
 #include <vka/capops.h>
 
 static cspacepath_t serial_frame_path = {0};
@@ -50,11 +51,21 @@ arch_init_allocator(env_t env, test_init_data_t *data)
     env->vka.utspace_alloc_at = serial_utspace_alloc_at_fn;
 }
 
-seL4_timer_t *
-arch_init_timer(env_t env, test_init_data_t *data)
+void arch_init_timer(env_t env, test_init_data_t *data)
 {
-   return sel4platsupport_get_default_timer(&env->vka, &env->vspace, &env->simple,
-                                            env->timer_notification.cptr);
+    ps_io_ops_t ops;
+    /* only initialise the interfaces we need */
+    int error = sel4platsupport_new_io_mapper(env->vspace, env->vka, &ops.io_mapper);
+    ZF_LOGF_IF(error, "Failed to get io mapper");
+
+    sel4platsupport_new_malloc_ops(&ops.malloc_ops);
+
+    error = sel4platsupport_init_timer_irqs(&env->vka, &env->simple,
+                env->timer_notification.cptr, &env->timer, &data->to);
+    ZF_LOGF_IF(error, "Failed to init default timer");
+
+    error = ltimer_default_init(&env->timer.ltimer, ops);
+    ZF_LOGF_IF(error, "Failed to describe default ltimer");
 }
 
 void

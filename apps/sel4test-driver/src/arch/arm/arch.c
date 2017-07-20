@@ -13,17 +13,9 @@
 #include "../../test.h"
 
 #include <sel4platsupport/device.h>
-#include <sel4platsupport/timer.h>
-#include <sel4platsupport/plat/timer.h>
 #include <sel4platsupport/plat/serial.h>
 #include <vka/capops.h>
 #include <sel4utils/process.h>
-
-void
-arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
-{
-    plat_copy_timer_caps(init, env, test_process);
-}
 
 void
 arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
@@ -32,8 +24,6 @@ arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *te
     init->serial_frame_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, env->serial_objects.arch_serial_objects.serial_frame_obj.cptr);
     ZF_LOGF_IF(init->serial_frame_cap == 0,
                "Failed to copy PS default serial Frame cap to sel4test-test process");
-
-    plat_copy_serial_caps(init, env, test_process);
 }
 
 env_t env;

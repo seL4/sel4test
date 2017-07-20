@@ -11,10 +11,11 @@
  */
 #include "../../init.h"
 
+#include <sel4platsupport/io.h>
+#include <sel4platsupport/timer.h>
+#include <platsupport/plat/timer.h>
 #include <platsupport/plat/serial.h>
-#include <sel4platsupport/plat/hpet.h>
-#include <sel4platsupport/device.h>
-#include <platsupport/plat/hpet.h>
+#include <sel4utils/sel4_zf_logif.h>
 
 static seL4_CPtr
 get_IOPort_cap(void *data, uint16_t start_port, uint16_t end_port)
@@ -34,7 +35,7 @@ get_msi(void *data, seL4_CNode root, seL4_Word index, uint8_t depth,
 {
     test_init_data_t *init = (test_init_data_t *) data;
     int error = seL4_CNode_Move(root, index, depth, init->root_cnode,
-            init->timer_irq_cap, seL4_WordBits);
+                                get_irq_cap(data, vector, PS_MSI), seL4_WordBits);
     assert(error == seL4_NoError);
     return error;
 }
@@ -45,48 +46,50 @@ get_ioapic(void *data, seL4_CNode root, seL4_Word index, uint8_t depth, seL4_Wor
 {
     test_init_data_t *init = (test_init_data_t *) data;
     int error = seL4_CNode_Move(root, index, depth, init->root_cnode,
-            init->timer_irq_cap, seL4_WordBits);
+            get_irq_cap(data, vector, PS_IOAPIC), seL4_WordBits);
     assert(error == seL4_NoError);
     return error;
 }
 
-void
-arch_init_simple(simple_t *simple) {
+void arch_init_simple(simple_t *simple) {
     simple->arch_simple.IOPort_cap = get_IOPort_cap;
     simple->arch_simple.msi = get_msi;
     simple->arch_simple.ioapic = get_ioapic;
 }
 
-seL4_timer_t *
-arch_init_timer(env_t env, test_init_data_t *data)
-{
-    /* Map the HPET so we can query its proprties */
-    vka_object_t frame;
-    void *vaddr;
-    vaddr = sel4platsupport_map_frame_at(&env->vka, &env->vspace, data->timer_paddr, seL4_PageBits, &frame);
-    int irq;
-    int vector;
-    ZF_LOGF_IF(vaddr == NULL, "Failed to map HPET paddr");
-    if (!hpet_supports_fsb_delivery(vaddr)) {
-        if (!config_set(CONFIG_IRQ_IOAPIC)) {
-            ZF_LOGF("HPET does not support FSB delivery and we are not using the IOAPIC");
-        }
-        uint32_t irq_mask = hpet_ioapic_irq_delivery_mask(vaddr);
-        /* grab the first irq */
-        irq = FFS(irq_mask) - 1;
-    } else {
-        irq = -1;
-    }
-    vector = DEFAULT_TIMER_INTERRUPT;
-    vspace_unmap_pages(&env->vspace, vaddr, 1, seL4_PageBits, VSPACE_PRESERVE);
-    vka_free_object(&env->vka, &frame);
-    return sel4platsupport_get_hpet_paddr(&env->vspace, &env->simple, &env->vka,
-                                         data->timer_paddr, env->timer_notification.cptr,
-                                         irq, vector);
-}
-
 void
 arch_init_allocator(env_t env, test_init_data_t *data)
 {
-    /* nothing to do */
+}
+
+void
+arch_init_timer(env_t env, test_init_data_t *data)
+{
+    ps_io_ops_t ops;
+    int error = sel4platsupport_new_io_ops(env->vspace, env->vka, &ops);
+    ZF_LOGF_IF(error, "Failed to get io ops");
+
+    /* set up the irqs */
+    error = sel4platsupport_init_timer_irqs(&env->vka, &env->simple,
+            env->timer_notification.cptr, &env->timer, &data->to);
+    ZF_LOGF_IF(error, "Failed to init timer");
+
+    if (!error) {
+        /* if this succeeds, sel4test-driver has set up the hpet for us */
+        error = ltimer_hpet_describe_default_irq(&env->timer.ltimer, ops, data->to.objs[0].region, PS_MSI);
+        if (!error) {
+            ZF_LOGD("Trying HPET");
+            ps_irq_t irq;
+            error = ltimer_get_nth_irq(&env->timer.ltimer, 0, &irq);
+            ZF_LOGF_IF(error, "Failed to get 0th hpet irq");
+            error = ltimer_hpet_init(&env->timer.ltimer, ops, irq, data->to.objs[0].region);
+        }
+    }
+
+    if (error) {
+        /* Get the PIT instead */
+        ZF_LOGD("Using PIT timer");
+        error = ltimer_pit_init_freq(&env->timer.ltimer, ops, data->tsc_freq);
+        ZF_LOGF_IF(error, "Failed to init pit");
+    }
 }

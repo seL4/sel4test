@@ -13,17 +13,10 @@
 #include <autoconf.h>
 #include "../../test.h"
 #include <simple/simple.h>
-#include <sel4platsupport/plat/timer.h>
 #include <sel4platsupport/plat/serial.h>
 #include <sel4platsupport/device.h>
 #include <platsupport/plat/hpet.h>
 #include <vka/capops.h>
-
-/* copy the caps required to set up the sel4platsupport default timer */
-void
-arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
-{
-}
 
 void
 arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)

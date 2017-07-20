@@ -21,6 +21,8 @@
 #include <utils/util.h>
 #include <vka/capops.h>
 
+#include <sel4platsupport/timer.h>
+
 #include "helpers.h"
 #include "test.h"
 
@@ -376,39 +378,53 @@ wait_for_timer_interrupt(env_t env)
 {
     seL4_Word sender_badge;
     seL4_Wait(env->timer_notification.cptr, &sender_badge);
-    sel4_timer_handle_single_irq(env->timer);
+    sel4platsupport_handle_timer_irq(&env->timer, sender_badge);
+}
+
+void
+wait(env_t env, uint64_t ns)
+{
+    ltimer_set_timeout(&env->timer.ltimer, ns, TIMEOUT_RELATIVE);
+    wait_for_timer_interrupt(env);
 }
 
 void
 sleep(env_t env, uint64_t ns)
 {
-    uint64_t start, end;
+    uint64_t start = 0;
+    uint64_t end = 0;
+    uint64_t new_end = 0;
 
-    ZF_LOGF_IF(env->clock_timer == NULL, "Clock timer not implemented on this platform!");
-    sel4_timer_handle_single_irq(env->timer);
-    start = timer_get_time(env->clock_timer->timer);
-    timer_start(env->timer->timer);
-    sel4_timer_handle_single_irq(env->timer);
+    UNUSED int error = ltimer_get_time(&env->timer.ltimer, &start);
+    end = start;
     do {
-        int error = timer_oneshot_relative(env->timer->timer, ns);
-        if (error) {
-            ZF_LOGF("Sleep failed with error %d\n", error);
-            /* terminates */
-        }
+        int error = ltimer_set_timeout(&env->timer.ltimer, ns - (end - start), TIMEOUT_RELATIVE);
+        ZF_LOGF_IF(error, "failed to get time");
+
         ZF_LOGV("Waiting for timer irq");
         wait_for_timer_interrupt(env);
-        end = timer_get_time(env->clock_timer->timer);
+        error = ltimer_get_time(&env->timer.ltimer, &new_end);
+        ZF_LOGF_IF(error, "failed to get time");
+
+        if (end == new_end) {
+            ZF_LOGE("Time doesn't appear to be changing");
+        }
+        end = new_end;
+
+
         ZF_LOGV("Got it");
         if (end - start < ns) {
-            ZF_LOGD("Wanted to wait: %llu, actually %llu\n", ns, end - start);
+            ZF_LOGE("Wanted to wait: %llu, actually %llu\n", ns, end - start);
         }
+
     } while (end - start < ns);
-    timer_stop(env->timer->timer);
 }
 
 uint64_t
 timestamp(env_t env)
 {
-    ZF_LOGF_IF(env->clock_timer == NULL, "Clock timer not implemented on this platform!");
-    return timer_get_time(env->clock_timer->timer);
+    uint64_t time = 0;
+    UNUSED int error = ltimer_get_time(&env->timer.ltimer, &time);
+    ZF_LOGF_IF(error, "failed to get time");
+    return time;
 }

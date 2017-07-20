@@ -619,11 +619,9 @@ int test_no_ret_with_cpl0(env_t env)
     stack_after_cpl = (uintptr_t)thread.thread.initial_stack_pointer;
 
     /* start a timer the we will wait on */
-    error = timer_start(env->timer->timer);
+    error = ltimer_set_timeout(&env->timer.ltimer, NS_IN_S / 10, TIMEOUT_PERIODIC);
     test_eq(error, 0);
-    error = timer_periodic(env->timer->timer, NS_IN_S / 10);
-    test_eq(error, 0);
-    sel4_timer_handle_single_irq(env->timer);
+    wait_for_timer_interrupt(env);
 
     for (int i = 0; i < 20; i++) {
         wait_for_timer_interrupt(env);
@@ -653,6 +651,7 @@ int test_no_ret_with_cpl0(env_t env)
         test_eq(error, 0);
     }
 
+    ltimer_reset(&env->timer.ltimer);
     cleanup_helper(env, &thread);
 
     return sel4test_get_result();

@@ -82,9 +82,7 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
     test_check(num_caps > 0);
     test_check((num_caps == (1 << (num_cnode_bits + CNODE_SIZE_BITS))));
 
-    timer_periodic(env->timer->timer, NS_IN_MS);
-    timer_start(env->timer->timer);
-    sel4_timer_handle_single_irq(env->timer);
+    ltimer_set_timeout(&env->timer.ltimer, NS_IN_MS, TIMEOUT_PERIODIC);
 
     /* Last thread to start runs first. */
     revoking = 0;
@@ -100,8 +98,7 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
 
     ZF_LOGD("    %d preemptions\n", preempt_count);
 
-    timer_stop(env->timer->timer);
-    sel4_timer_handle_single_irq(env->timer);
+    ltimer_reset(&env->timer.ltimer);
 
     return preempt_count;
 }
