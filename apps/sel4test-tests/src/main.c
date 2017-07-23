@@ -240,6 +240,7 @@ void init_timer(env_t env, test_init_data_t *init_data)
     if (config_set(CONFIG_HAVE_TIMER)) {
         arch_init_timer(env, init_data);
     }
+    ltimer_reset(&env->timer.ltimer);
 }
 
 int
@@ -294,6 +295,10 @@ main(int argc, char **argv)
         result = FAILURE;
         ZF_LOGF("Cannot find test %s\n", init_data->name);
     }
+
+    /* turn off the timer */
+    printf("Destroy timer\n");
+    sel4platsupport_destroy_timer(&env.timer, &env.vka);
 
     printf("Test %s %s\n", init_data->name, result == SUCCESS ? "passed" : "failed");
     /* send our result back */
