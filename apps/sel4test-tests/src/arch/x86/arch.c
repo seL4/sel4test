@@ -76,12 +76,10 @@ arch_init_timer(env_t env, test_init_data_t *data)
 
     if (!error) {
         /* if this succeeds, sel4test-driver has set up the hpet for us */
-        error = ltimer_hpet_describe_default_irq(&env->timer.ltimer, ops, data->to.objs[0].region, PS_MSI);
+        ps_irq_t irq;
+        error = ltimer_hpet_describe_with_region(&env->timer.ltimer, ops, data->to.objs[0].region, &irq);
         if (!error) {
             ZF_LOGD("Trying HPET");
-            ps_irq_t irq;
-            error = ltimer_get_nth_irq(&env->timer.ltimer, 0, &irq);
-            ZF_LOGF_IF(error, "Failed to get 0th hpet irq");
             error = ltimer_hpet_init(&env->timer.ltimer, ops, irq, data->to.objs[0].region);
         }
     }
