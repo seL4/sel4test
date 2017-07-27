@@ -15,7 +15,6 @@
 #include <platsupport/plat/clock.h>
 #include <sel4platsupport/io.h>
 #include <sel4platsupport/device.h>
-#include <sel4platsupport/plat/timer.h>
 
 void
 plat_init(env_t env)
