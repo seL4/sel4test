@@ -143,13 +143,8 @@ init_allocator(env_t env, test_init_data_t *init_data)
 
     /* add any arch specific objects to the allocator */
     arch_init_allocator(env, init_data);
-    for (size_t i = 0; i < init_data->to.nobjs; i++) {
-        vka_cspace_make_path(&env->vka, init_data->to.objs[i].obj.cptr, &path);
-        error = allocman_utspace_add_uts(allocator, 1, &path, &init_data->to.objs[i].obj.size_bits,
-                                         (uintptr_t *) &init_data->to.objs[i].region.base_addr,
-                                         ALLOCMAN_UT_DEV);
-        ZF_LOGF_IF(error, "Failed to add ut to allocman");
-    }
+    error = allocman_add_untypeds_from_timer_objects(allocator, &init_data->to);
+    ZF_LOGF_IF(error, "allocman failed to add timer_objects");
 
     /* create a vspace */
     void *existing_frames[init_data->stack_pages + 2];
@@ -210,7 +205,7 @@ get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
 {
     test_init_data_t *init = (test_init_data_t *) data;
     return seL4_CNode_Copy(root, index, depth, init->root_cnode,
-                            get_irq_cap(data, irq, PS_INTERRUPT), seL4_WordBits, seL4_AllRights);
+                            sel4platsupport_timer_objs_get_irq_cap(&init->to, irq, PS_INTERRUPT), seL4_WordBits, seL4_AllRights);
 }
 
 static uint8_t

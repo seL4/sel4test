@@ -201,26 +201,6 @@ send_init_data(env_t env, seL4_CPtr endpoint, sel4utils_process_t *process)
     return remote_vaddr;
 }
 
-/* copy the caps required to set up the sel4platsupport default timer */
-static void
-copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
-{
-    /* struct deep copy */
-    init->to = env->timer_objects;
-
-    /* copy irq caps */
-    for (size_t i = 0; i < env->timer_objects.nirqs; i++) {
-        init->to.irqs[i].handler_path.capPtr = sel4utils_copy_cap_to_process(test_process,
-                &env->vka, env->timer_objects.irqs[i].handler_path.capPtr);
-    }
-
-    /* copy pmem ut frame caps */
-    for (size_t i = 0; i < env->timer_objects.nobjs; i++) {
-        init->to.objs[i].obj.cptr = sel4utils_copy_cap_to_process(test_process,
-                &env->vka, env->timer_objects.objs[i].obj.cptr);
-    }
-}
-
 static void
 copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
@@ -267,7 +247,8 @@ run_test(struct testcase *test)
     env.init->cores = simple_get_core_count(&env.simple);
     /* setup data about untypeds */
     env.init->untypeds = copy_untypeds_to_process(&test_process, untypeds, num_untypeds);
-    copy_timer_caps(env.init, &env, &test_process);
+    error = sel4utils_copy_timer_caps_to_process(&env.init->to, &env.timer_objects, &env.vka, &test_process);
+    ZF_LOGF_IF(error, "Failed to copy timer_objects to test process");
     copy_serial_caps(env.init, &env, &test_process);
     /* copy the fault endpoint - we wait on the endpoint for a message
      * or a fault to see when the test finishes */
