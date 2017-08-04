@@ -414,7 +414,7 @@ sleep(env_t env, uint64_t ns)
 
         ZF_LOGV("Got it");
         if (end - start < ns) {
-            ZF_LOGE("Wanted to wait: %llu, actually %llu\n", ns, end - start);
+            ZF_LOGE("Wanted to wait: %"PRIu64", actually %"PRIu64"\n", ns, end - start);
         }
 
     } while (end - start < ns);
