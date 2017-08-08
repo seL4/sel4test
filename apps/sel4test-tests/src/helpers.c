@@ -373,6 +373,24 @@ set_helper_affinity(helper_thread_t *thread, seL4_Word affinity)
 #endif /* CONFIG_MAX_NUM_NODES */
 }
 
+seL4_CPtr
+get_helper_tcb(helper_thread_t *thread)
+{
+    return thread->thread.tcb.cptr;
+}
+
+uintptr_t
+get_helper_ipc_buffer_addr(helper_thread_t *thread)
+{
+    return thread->thread.ipc_buffer_addr;
+}
+
+uintptr_t
+get_helper_initial_stack_pointer(helper_thread_t *thread)
+{
+    return (uintptr_t)thread->thread.initial_stack_pointer;
+}
+
 void
 wait_for_timer_interrupt(env_t env)
 {

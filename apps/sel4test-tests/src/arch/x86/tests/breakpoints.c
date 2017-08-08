@@ -160,13 +160,13 @@ test_debug_api_single_step(struct env *env)
 
     error = setup_faulter_thread_for_test(env, &debuggee);
     test_eq(error, seL4_NoError);
-    error = seL4_TCB_SetBreakpoint(debuggee.thread.tcb.cptr,
+    error = seL4_TCB_SetBreakpoint(get_helper_tcb(&debuggee),
                                    TEST_FIRST_INSTR_BP, (seL4_Word)&single_step_guinea_pig,
                                    seL4_InstructionBreakpoint, 0, seL4_BreakOnRead);
     test_eq(error, seL4_NoError);
 
     start_helper(env, &debugger, &debugger_main,
-                 debuggee.thread.tcb.cptr, 0, 0, 0);
+                 get_helper_tcb(&debuggee), 0, 0, 0);
     start_helper(env, &debuggee, &debuggee_main, 0, 0, 0, 0);
 
     wait_for_helper(&debugger);

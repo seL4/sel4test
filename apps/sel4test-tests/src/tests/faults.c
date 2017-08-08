@@ -615,7 +615,7 @@ test_fault(env_t env, int fault_type, bool inter_as)
                     assert(handler_arg0 != -1);
 
                     /* copy the fault tcb to the handler */
-                    vka_cspace_make_path(&env->vka, faulter_thread.thread.tcb.cptr, &path);
+                    vka_cspace_make_path(&env->vka, get_helper_tcb(&faulter_thread), &path);
                     handler_arg1 = sel4utils_copy_path_to_process(&handler_thread.process, path);
                     assert(handler_arg1 != -1);
 
@@ -627,11 +627,11 @@ test_fault(env_t env, int fault_type, bool inter_as)
                     faulter_cspace = env->cspace_root;
                     faulter_vspace = env->page_directory;
                     handler_arg0 = fault_ep;
-                    handler_arg1 = faulter_thread.thread.tcb.cptr;
+                    handler_arg1 = get_helper_tcb(&faulter_thread);
                 }
 
                 set_helper_priority(env, &handler_thread, 101);
-                error = seL4_TCB_SetSpace(faulter_thread.thread.tcb.cptr,
+                error = seL4_TCB_SetSpace(get_helper_tcb(&faulter_thread),
                                            fault_ep,
                                            faulter_cspace,
                                            seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),

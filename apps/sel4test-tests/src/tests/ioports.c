@@ -105,10 +105,10 @@ test_native_ioports(env_t env)
     faulter_cspace = env->cspace_root;
     faulter_vspace = env->page_directory;
     handler_arg0 = fault_ep;
-    handler_arg1 = faulter_thread.thread.tcb.cptr;
+    handler_arg1 = get_helper_tcb(&faulter_thread);
     set_helper_priority(&handler_thread, 100);
 
-    error = seL4_TCB_Configure(faulter_thread.thread.tcb.cptr,
+    error = seL4_TCB_Configure(get_helper_tcb(&faulter_thread),
                                fault_ep,
                                100,
                                faulter_cspace,

@@ -86,7 +86,7 @@ test_domains(struct env *env, F func)
     for (int i = 0; i < CONFIG_NUM_DOMAINS; ++i) {
         create_helper_thread(env, &thread[i]);
         set_helper_priority(env, &thread[i], 64);
-        error = seL4_DomainSet_Set(env->domain, (seL4_Word)i, thread[i].thread.tcb.cptr);
+        error = seL4_DomainSet_Set(env->domain, (seL4_Word)i, get_helper_tcb(&thread[i]));
         assert(error == seL4_NoError);
     }
 
@@ -97,7 +97,7 @@ test_domains(struct env *env, F func)
     if (CONFIG_NUM_DOMAINS > 1 && shift) {
         assert(0);
         wait(env, POLL_DELAY_NS * 2);
-        error = seL4_DomainSet_Set(env->domain, CONFIG_NUM_DOMAINS - 1, thread[0].thread.tcb.cptr);
+        error = seL4_DomainSet_Set(env->domain, CONFIG_NUM_DOMAINS - 1, get_helper_tcb(&thread[0]));
         assert(error == seL4_NoError);
     }
 

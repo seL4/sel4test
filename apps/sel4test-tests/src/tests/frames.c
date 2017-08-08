@@ -157,7 +157,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     helper_thread_t faulter;
     create_helper_thread(env, &faulter);
     set_helper_priority(env, &faulter, 100);
-    err = seL4_TCB_SetSpace(faulter.thread.tcb.cptr,
+    err = seL4_TCB_SetSpace(get_helper_tcb(&faulter),
                              fault_ep,
                              env->cspace_root,
                              seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
@@ -197,7 +197,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     /* Recreate our two threads. */
     create_helper_thread(env, &faulter);
     set_helper_priority(env, &faulter, 100);
-    err = seL4_TCB_Configure(faulter.thread.tcb.cptr,
+    err = seL4_TCB_Configure(get_helper_tcb(&faulter),
                              fault_ep,
                              seL4_PrioProps_new(100, 100),
                              env->cspace_root,
@@ -250,13 +250,13 @@ static int test_device_frame_ipcbuf(env_t env)
     helper_thread_t other;
     create_helper_thread(env, &other);
     /* Try and create a thread with a device frame as its IPC buffer */
-    error = seL4_TCB_Configure(other.thread.tcb.cptr,
+    error = seL4_TCB_Configure(get_helper_tcb(&other),
                                0,
                                seL4_PrioProps_new(100, 100),
                                env->cspace_root,
                                seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
                                env->page_directory, seL4_NilData,
-                               other.thread.ipc_buffer_addr,
+                               get_helper_ipc_buffer_addr(&other),
                                path.capPtr);
     test_neq(error, 0);
     cleanup_helper(env, &other);
@@ -292,7 +292,7 @@ static int test_switch_device_frame_ipcbuf(env_t env)
     start_helper(env, &other, (helper_fn_t)wait_func, (seL4_Word)ep, 0, 0, 0);
     seL4_Recv(ep, NULL);
     /* now switch its IPC buffer, which should fail */
-    error = seL4_TCB_SetIPCBuffer(other.thread.tcb.cptr, other.thread.ipc_buffer_addr, path.capPtr);
+    error = seL4_TCB_SetIPCBuffer(get_helper_tcb(&other), get_helper_ipc_buffer_addr(&other), path.capPtr);
     test_neq(error, 0);
     /* thread should still be working */
     seL4_Recv(ep, NULL);

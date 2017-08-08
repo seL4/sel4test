@@ -117,6 +117,15 @@ int wait_for_helper(helper_thread_t *thread);
 
 /* free all resources associated with a helper and tear it down */
 void cleanup_helper(env_t env, helper_thread_t *thread);
+
+/* retrieve the TCB of a helper thread */
+seL4_CPtr get_helper_tcb(helper_thread_t *thread);
+
+/* retrieve the IPC buffer address of a helper thread */
+uintptr_t get_helper_ipc_buffer_addr(helper_thread_t *thread);
+
+uintptr_t get_helper_initial_stack_pointer(helper_thread_t *thread);
+
 /*
  * Check whether a given region of memory is zeroed out.
  */

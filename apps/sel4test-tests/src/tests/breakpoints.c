@@ -67,12 +67,12 @@ setup_faulter_thread_for_test(struct env *env, helper_thread_t *faulter_thread)
     int error;
 
     create_helper_thread(env, faulter_thread);
-    NAME_THREAD(faulter_thread->thread.tcb.cptr, "Faulter");
+    NAME_THREAD(get_helper_tcb(faulter_thread), "Faulter");
     /* Make the kernel send all faults to the endpoint that the handler thread
      * will be told to listen on.
      */
     error = seL4_TCB_SetSpace(
-                faulter_thread->thread.tcb.cptr,
+                get_helper_tcb(faulter_thread),
                 badged_fault_ep_cspath.capPtr,
                 env->cspace_root,
                 seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
@@ -183,7 +183,7 @@ static void
 setup_handler_thread_for_test(struct env *env, helper_thread_t *handler_thread)
 {
     create_helper_thread(env, handler_thread);
-    NAME_THREAD(handler_thread->thread.tcb.cptr, "Handler");
+    NAME_THREAD(get_helper_tcb(handler_thread), "Handler");
     set_helper_priority(env, handler_thread, BREAKPOINT_TEST_HANDLER_PRIO);
     start_helper(env, handler_thread, &breakpoint_handler_main,
                  (seL4_Word)&fault_ep_cspath,
@@ -219,7 +219,7 @@ test_debug_set_instruction_breakpoint(struct env *env)
         test_eq(error, seL4_NoError);
 
         ZF_LOGV("Setting BP reg %i to trigger at addr %p.\n", i, &breakpoint_code);
-        error = seL4_TCB_SetBreakpoint(faulter_thread.thread.tcb.cptr,
+        error = seL4_TCB_SetBreakpoint(get_helper_tcb(&faulter_thread),
                                        i, (seL4_Word)&breakpoint_code,
                                        seL4_InstructionBreakpoint, 0,
                                        seL4_BreakOnRead);
@@ -259,7 +259,7 @@ test_debug_set_data_breakpoint(struct env *env)
         setup_handler_thread_for_test(env, &handler_thread);
         setup_faulter_thread_for_test(env, &faulter_thread);
         ZF_LOGV("Setting WP reg %i to trigger at addr %p.\n", i, &bpd);
-        error = seL4_TCB_SetBreakpoint(faulter_thread.thread.tcb.cptr,
+        error = seL4_TCB_SetBreakpoint(get_helper_tcb(&faulter_thread),
                                        i, (seL4_Word)&bpd,
                                        seL4_DataBreakpoint, 4,
                                        seL4_BreakOnWrite);

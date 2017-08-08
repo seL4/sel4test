@@ -89,7 +89,7 @@ test_thread_suspend(env_t env)
     old_counter = counter;
 
     /* Suspend the thread, and wait again. */
-    seL4_TCB_Suspend(t1.thread.tcb.cptr);
+    seL4_TCB_Suspend(get_helper_tcb(&t1));
     wait_for_timer_interrupt(env);
 
     /* Counter should not have moved. */
@@ -104,7 +104,7 @@ test_thread_suspend(env_t env)
     old_counter = counter;
 
     /* Resume the thread and check it does move. */
-    seL4_TCB_Resume(t1.thread.tcb.cptr);
+    seL4_TCB_Resume(get_helper_tcb(&t1));
     wait_for_timer_interrupt(env);
     test_check(counter != old_counter);
 
@@ -137,7 +137,7 @@ DEFINE_TEST(SCHED0002, "Test resuming ourselves", test_resume_self)
  */
 static volatile int suspend_test_step;
 static int
-suspend_test_helper_2a(seL4_CPtr *t1, seL4_CPtr *t2a, seL4_CPtr *t2b)
+suspend_test_helper_2a(seL4_CPtr t1, seL4_CPtr t2a, seL4_CPtr t2b)
 {
     /* Helper function that runs at a higher priority. */
 
@@ -151,21 +151,21 @@ suspend_test_helper_2a(seL4_CPtr *t1, seL4_CPtr *t2a, seL4_CPtr *t2b)
     }
 
     /* Suspend helper 2b. */
-    int error = seL4_TCB_Suspend(*t2b);
+    int error = seL4_TCB_Suspend(t2b);
     test_check(!error);
 
     CHECK_STEP(suspend_test_step, 2);
 
     /* Now suspend ourselves, passing control to the low priority process to
      * resume 2b. */
-    error = seL4_TCB_Suspend(*t2a);
+    error = seL4_TCB_Suspend(t2a);
     test_check(!error);
 
     return sel4test_get_result();
 }
 
 static int
-suspend_test_helper_2b(seL4_CPtr *t1, seL4_CPtr *t2a, seL4_CPtr *t2b)
+suspend_test_helper_2b(seL4_CPtr t1, seL4_CPtr t2a, seL4_CPtr t2b)
 {
     /* Wait for 2a to get suspend_test_step set to 1. */
     test_check(suspend_test_step == 0 || suspend_test_step == 1);
@@ -188,12 +188,12 @@ suspend_test_helper_2b(seL4_CPtr *t1, seL4_CPtr *t2a, seL4_CPtr *t2b)
 }
 
 static int
-suspend_test_helper_1(seL4_CPtr *t1, seL4_CPtr *t2a, seL4_CPtr *t2b)
+suspend_test_helper_1(seL4_CPtr t1, seL4_CPtr t2a, seL4_CPtr t2b)
 {
     CHECK_STEP(suspend_test_step, 3);
 
     /* Our sole job is to wake up 2b. */
-    int error = seL4_TCB_Resume(*t2b);
+    int error = seL4_TCB_Resume(t2b);
     test_check(!error);
 
     /* We should have been preempted immediately, so by the time we run again,
@@ -238,19 +238,19 @@ test_suspend(struct env* env)
     set_helper_priority(env, &thread2b, 2);
 
     start_helper(env, &thread1, (helper_fn_t) suspend_test_helper_1,
-                 (seL4_Word) &thread1.thread.tcb.cptr,
-                 (seL4_Word) &thread2a.thread.tcb.cptr,
-                 (seL4_Word) &thread2b.thread.tcb.cptr, 0);
+                 (seL4_Word) get_helper_tcb(&thread1),
+                 (seL4_Word) get_helper_tcb(&thread2a),
+                 (seL4_Word) get_helper_tcb(&thread2b), 0);
 
     start_helper(env, &thread2a, (helper_fn_t) suspend_test_helper_2a,
-                 (seL4_Word) &thread1.thread.tcb.cptr,
-                 (seL4_Word) &thread2a.thread.tcb.cptr,
-                 (seL4_Word) &thread2b.thread.tcb.cptr, 0);
+                 (seL4_Word) get_helper_tcb(&thread1),
+                 (seL4_Word) get_helper_tcb(&thread2a),
+                 (seL4_Word) get_helper_tcb(&thread2b), 0);
 
     start_helper(env, &thread2b, (helper_fn_t) suspend_test_helper_2b,
-                 (seL4_Word) &thread1.thread.tcb.cptr,
-                 (seL4_Word) &thread2a.thread.tcb.cptr,
-                 (seL4_Word) &thread2b.thread.tcb.cptr, 0);
+                 (seL4_Word) get_helper_tcb(&thread1),
+                 (seL4_Word) get_helper_tcb(&thread2a),
+                 (seL4_Word) get_helper_tcb(&thread2b), 0);
 
     /* Now set their priorities to what we want */
     set_helper_priority(env, &thread1, 100);
@@ -348,7 +348,7 @@ DEFINE_TEST(SCHED0004, "Test threads at all priorities", test_all_priorities)
  */
 static volatile int set_priority_step;
 static int
-set_priority_helper_1(seL4_CPtr *t1, seL4_CPtr *t2)
+set_priority_helper_1(seL4_CPtr t1, seL4_CPtr t2)
 {
     test_check(set_priority_step == 0);
     ZF_LOGD("0...");
@@ -357,7 +357,7 @@ set_priority_helper_1(seL4_CPtr *t1, seL4_CPtr *t2)
     /*
      * Down our priority. This should force a reschedule and make thread 2 run.
      */
-    int error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 4 );
+    int error = seL4_TCB_SetPriority(t1, SCHED0005_HIGHEST_PRIO - 4 );
     test_check(!error);
 
     test_check(set_priority_step == 2);
@@ -365,41 +365,41 @@ set_priority_helper_1(seL4_CPtr *t1, seL4_CPtr *t2)
     set_priority_step = 3;
 
     /* set our priority back up - this should work as we did not down our max priority */
-    error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO);
+    error = seL4_TCB_SetPriority(t1, SCHED0005_HIGHEST_PRIO);
     test_check(error == seL4_NoError);
 
     /* now down our max_priority */
-    error = seL4_TCB_SetMCPriority(*t1, SCHED0005_HIGHEST_PRIO - 4);
+    error = seL4_TCB_SetMCPriority(t1, SCHED0005_HIGHEST_PRIO - 4);
     test_check(error == seL4_NoError);
 
     /* try to set our prio higher than our max prio, but lower than our prio */
-    error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 3);
+    error = seL4_TCB_SetPriority(t1, SCHED0005_HIGHEST_PRIO - 3);
     test_check(error == seL4_RangeError);
 
     /* try to set our max prio back up */
-    error = seL4_TCB_SetMCPriority(*t1, SCHED0005_HIGHEST_PRIO);
+    error = seL4_TCB_SetMCPriority(t1, SCHED0005_HIGHEST_PRIO);
     test_check(error == seL4_RangeError);
 
     return sel4test_get_result();
 }
 
 static int
-set_priority_helper_2(seL4_CPtr *t1, seL4_CPtr *t2)
+set_priority_helper_2(seL4_CPtr t1, seL4_CPtr t2)
 {
     test_check(set_priority_step == 1);
     ZF_LOGD("1...");
 
     /* Raise thread 1 to equal to ours, which should fail. */
-    int error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 1 + PRIORITY_FUDGE);
+    int error = seL4_TCB_SetPriority(t1, SCHED0005_HIGHEST_PRIO - 1 + PRIORITY_FUDGE);
     test_check(error == seL4_RangeError);
 
     /* Raise thread 1 to just below us. */
-    error = seL4_TCB_SetPriority(*t1, SCHED0005_HIGHEST_PRIO - 2);
+    error = seL4_TCB_SetPriority(t1, SCHED0005_HIGHEST_PRIO - 2);
     test_check(!error);
 
     /* Drop ours to below thread 1. Thread 1 should run. */
     set_priority_step = 2;
-    error = seL4_TCB_SetPriority(*t2, SCHED0005_HIGHEST_PRIO -3 );
+    error = seL4_TCB_SetPriority(t2, SCHED0005_HIGHEST_PRIO -3 );
     test_check(!error);
 
     /* Once thread 1 exits, we should run. */
@@ -438,12 +438,12 @@ test_set_priority(struct env* env)
     ZF_LOGD("      ");
 
     start_helper(env, &thread1, (helper_fn_t) set_priority_helper_1,
-                 (seL4_Word) &thread1.thread.tcb.cptr,
-                 (seL4_Word) &thread2.thread.tcb.cptr, 0, 0);
+                 (seL4_Word) get_helper_tcb(&thread1),
+                 (seL4_Word) get_helper_tcb(&thread2), 0, 0);
 
     start_helper(env, &thread2, (helper_fn_t) set_priority_helper_2,
-                 (seL4_Word) &thread1.thread.tcb.cptr,
-                 (seL4_Word) &thread2.thread.tcb.cptr, 0, 0);
+                 (seL4_Word) get_helper_tcb(&thread1),
+                 (seL4_Word) get_helper_tcb(&thread2), 0, 0);
 
     wait_for_helper(&thread1);
     wait_for_helper(&thread2);
@@ -644,10 +644,10 @@ test_ipc_prios(struct env* env)
     set_helper_priority(env, &thread3, 3);
     set_helper_mcp(env, &thread3, 3);
 
-    data.tcb0 = thread0.thread.tcb.cptr;
-    data.tcb1 = thread1.thread.tcb.cptr;
-    data.tcb2 = thread2.thread.tcb.cptr;
-    data.tcb3 = thread3.thread.tcb.cptr;
+    data.tcb0 = get_helper_tcb(&thread0);
+    data.tcb1 = get_helper_tcb(&thread1);
+    data.tcb2 = get_helper_tcb(&thread2);
+    data.tcb3 = get_helper_tcb(&thread3);
 
     ZF_LOGD("      ");
     ipc_test_step = 0;

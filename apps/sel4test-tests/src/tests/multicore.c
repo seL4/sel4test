@@ -54,7 +54,7 @@ int smp_test_tcb_resume(env_t env)
     test_check(counter != old_counter);
 
     /* Suspend the thread, and move it to new core. */
-    seL4_TCB_Suspend(t1.thread.tcb.cptr);
+    seL4_TCB_Suspend(get_helper_tcb(&t1));
     set_helper_affinity(&t1, 1);
 
     old_counter = counter;
@@ -67,12 +67,12 @@ int smp_test_tcb_resume(env_t env)
     old_counter = counter;
 
     /* Resume the thread and check it does move. */
-    seL4_TCB_Resume(t1.thread.tcb.cptr);
+    seL4_TCB_Resume(get_helper_tcb(&t1));
     sleep(env, 10 * NS_IN_MS);
     test_check(counter != old_counter);
 
     /* Suspend the thread. */
-    seL4_TCB_Suspend(t1.thread.tcb.cptr);
+    seL4_TCB_Suspend(get_helper_tcb(&t1));
 
     old_counter = counter;
 
@@ -228,7 +228,7 @@ int smp_test_tlb(env_t env)
 
     set_helper_priority(env, &handler_thread, 100);
 
-    error = seL4_TCB_Configure(faulter_thread.thread.tcb.cptr,
+    error = seL4_TCB_Configure(get_helper_tcb(&faulter_thread),
                                fault_ep,
                                seL4_PrioProps_new(100, 100),
                                env->cspace_root,

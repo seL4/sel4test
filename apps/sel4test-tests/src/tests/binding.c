@@ -169,7 +169,7 @@ test_notification_binding_prio(env_t env, uint8_t waiter_prio, uint8_t sender_pr
     create_helper_thread(env, &sender_thread);
     set_helper_priority(env, &sender_thread, sender_prio);
 
-    int error = seL4_TCB_BindNotification(waiter_thread.thread.tcb.cptr, notification_ep);
+    int error = seL4_TCB_BindNotification(get_helper_tcb(&waiter_thread), notification_ep);
     test_assert(error == seL4_NoError);
 
     start_helper(env, &waiter_thread, waiter, notification_ep, 0, 0, 0);

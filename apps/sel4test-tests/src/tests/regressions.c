@@ -440,7 +440,7 @@ int test_write_registers(env_t env)
 #error "Unsupported architecture"
 #endif
 
-    result = seL4_TCB_WriteRegisters(thread.thread.tcb.cptr, true, 0 /* ignored */,
+    result = seL4_TCB_WriteRegisters(get_helper_tcb(&thread), true, 0 /* ignored */,
                                      sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
 
     if (!result) {
@@ -616,7 +616,7 @@ int test_no_ret_with_cpl0(env_t env)
     /* start a low priority helper thread that we will attempt to change the CPL of */
     create_helper_thread(env, &thread);
     start_helper(env, &thread, (helper_fn_t) do_wait_for_cpl, 0, 0, 0, 0);
-    stack_after_cpl = (uintptr_t)thread.thread.initial_stack_pointer;
+    stack_after_cpl = (uintptr_t)get_helper_initial_stack_pointer(&thread);
 
     /* start a timer the we will wait on */
     error = ltimer_set_timeout(&env->timer.ltimer, NS_IN_S / 10, TIMEOUT_PERIODIC);
@@ -631,7 +631,7 @@ int test_no_ret_with_cpl0(env_t env)
         }
         /* reset the helper threads registers */
         seL4_UserContext context;
-        error = seL4_TCB_ReadRegisters(thread.thread.tcb.cptr, false, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
+        error = seL4_TCB_ReadRegisters(get_helper_tcb(&thread), false, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
         test_eq(error, 0);
         context.eip = (seL4_Word)do_wait_for_cpl;
         /* If all went well in the helper thread then the interrupt came in
@@ -647,7 +647,7 @@ int test_no_ret_with_cpl0(env_t env)
          * below call to WriteRegisters will overwrite the return address (which
          * was going to be sysexit) to our own function, which will then be running
          * at CPL0 */
-        error = seL4_TCB_WriteRegisters(thread.thread.tcb.cptr, true, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
+        error = seL4_TCB_WriteRegisters(get_helper_tcb(&thread), true, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
         test_eq(error, 0);
     }
 

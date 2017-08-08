@@ -400,13 +400,13 @@ test_ipc_abort_in_call(env_t env)
     seL4_Recv(ep, &sender_badge);
 
     /* Now suspend the thread. */
-    seL4_TCB_Suspend(thread_a.thread.tcb.cptr);
+    seL4_TCB_Suspend(get_helper_tcb(&thread_a));
 
     /* Now resume the thread. */
-    seL4_TCB_Resume(thread_a.thread.tcb.cptr);
+    seL4_TCB_Resume(get_helper_tcb(&thread_a));
 
     /* Now suspend it again for good measure. */
-    seL4_TCB_Suspend(thread_a.thread.tcb.cptr);
+    seL4_TCB_Suspend(get_helper_tcb(&thread_a));
 
     /* And delete it. */
     cleanup_helper(env, &thread_a);
