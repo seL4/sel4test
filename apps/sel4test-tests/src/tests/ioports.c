@@ -22,7 +22,7 @@
 #include "../test.h"
 #include "../helpers.h"
 
-#ifdef CONFIG_X86
+#ifdef CONFIG_ARCH_X86
 
 #define START_PORT 0
 #define END_PORT BIT(16)
@@ -65,7 +65,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault, void *
     while(1) {
         tag = seL4_Recv(fault_ep, &sender_badge);
 
-        test_check(seL4_MessageInfo_get_label(tag) == SEL4_USER_EXCEPTION_LABEL);
+        test_check(seL4_MessageInfo_get_label(tag) == seL4_Fault_UserException);
 
         total_faults++;
         increment_pc(tcb, 1);
@@ -106,11 +106,11 @@ test_native_ioports(env_t env)
     faulter_vspace = env->page_directory;
     handler_arg0 = fault_ep;
     handler_arg1 = get_helper_tcb(&faulter_thread);
-    set_helper_priority(&handler_thread, 100);
+    set_helper_priority(env, &handler_thread, 100);
 
     error = seL4_TCB_Configure(get_helper_tcb(&faulter_thread),
                                fault_ep,
-                               100,
+                               seL4_PrioProps_new(100, 100),
                                faulter_cspace,
                                seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
                                faulter_vspace, seL4_NilData,
