@@ -288,6 +288,7 @@ run_test(struct testcase *test)
     int result = seL4_GetMR(0);
     if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {
         sel4utils_print_fault_message(info, test->name);
+        printf("Register of root thread in test (may not be the thread that faulted)\n");
         sel4debug_dump_registers(test_process.thread.tcb.cptr);
         result = FAILURE;
     }
