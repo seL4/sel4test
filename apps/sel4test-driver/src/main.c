@@ -185,22 +185,6 @@ copy_untypeds_to_process(sel4utils_process_t *process, vka_object_t *untypeds, i
     return range;
 }
 
-/* map the init data into the process, and send the address via ipc */
-static void *
-send_init_data(env_t env, seL4_CPtr endpoint, sel4utils_process_t *process)
-{
-    /* map the cap into remote vspace */
-    void *remote_vaddr = vspace_map_pages(&process->vspace, &env->init_frame_cap_copy, NULL, seL4_AllRights, 1, PAGE_BITS_4K, 1);
-    assert(remote_vaddr != 0);
-
-    /* now send a message telling the process what address the data is at */
-    seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-    seL4_SetMR(0, (seL4_Word) remote_vaddr);
-    seL4_Send(endpoint, info);
-
-    return remote_vaddr;
-}
-
 static void
 copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
 {
@@ -218,7 +202,7 @@ copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_pr
 int
 run_test(struct testcase *test)
 {
-    UNUSED int error;
+    int error;
     sel4utils_process_t test_process;
 
     /* Test intro banner. */
@@ -254,6 +238,10 @@ run_test(struct testcase *test)
      * or a fault to see when the test finishes */
     seL4_CPtr endpoint = sel4utils_copy_cap_to_process(&test_process, &env.vka, test_process.fault_endpoint.cptr);
 
+    /* map the cap into remote vspace */
+    void *remote_vaddr = vspace_share_mem(&env.vspace, &test_process.vspace, env.init, 1, PAGE_BITS_4K, seL4_AllRights, 1);
+    assert(remote_vaddr != 0);
+
     /* WARNING: DO NOT COPY MORE CAPS TO THE PROCESS BEYOND THIS POINT,
      * AS THE SLOTS WILL BE CONSIDERED FREE AND OVERRIDDEN BY THE TEST PROCESS. */
     /* set up free slot range */
@@ -270,17 +258,15 @@ run_test(struct testcase *test)
 #endif
 
     /* set up args for the test process */
-    char endpoint_string[WORD_STRING_SIZE];
-    char sel4test_name[] = { TESTS_APP };
-    char *argv[] = {sel4test_name, endpoint_string};
-    snprintf(endpoint_string, WORD_STRING_SIZE, "%lu", (unsigned long)endpoint);
+    seL4_Word argc = 2;
+    char string_args[argc][WORD_STRING_SIZE];
+    char *argv[argc];
+    sel4utils_create_word_args(string_args, argv, argc, endpoint, remote_vaddr);
+
     /* spawn the process */
     error = sel4utils_spawn_process_v(&test_process, &env.vka, &env.vspace,
-                            ARRAY_SIZE(argv), argv, 1);
+                            argc, argv, 1);
     assert(error == 0);
-
-    /* send env.init_data to the new process */
-    void *remote_vaddr = send_init_data(&env, test_process.fault_endpoint.cptr, &test_process);
 
     /* wait on it to finish or fault, report result */
     seL4_MessageInfo_t info = seL4_Recv(test_process.fault_endpoint.cptr, NULL);
@@ -330,16 +316,6 @@ void *main_continued(void *arg UNUSED)
      * in to target processes */
     env.init = (test_init_data_t *) vspace_new_pages(&env.vspace, seL4_AllRights, 1, PAGE_BITS_4K);
     assert(env.init != NULL);
-
-    /* copy the cap to map into the remote process */
-    cspacepath_t src, dest;
-    vka_cspace_make_path(&env.vka, vspace_get_cap(&env.vspace, env.init), &src);
-
-    UNUSED int error = vka_cspace_alloc(&env.vka, &env.init_frame_cap_copy);
-    assert(error == 0);
-    vka_cspace_make_path(&env.vka, env.init_frame_cap_copy, &dest);
-    error = vka_cnode_copy(&dest, &src, seL4_AllRights);
-    assert(error == 0);
 
     /* copy the untyped size bits list across to the init frame */
     memcpy(env.init->untyped_size_bits_list, untyped_size_bits_list, sizeof(uint8_t) * num_untypeds);

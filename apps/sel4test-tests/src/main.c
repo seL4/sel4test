@@ -85,26 +85,6 @@ find_test(const char *name)
     return test;
 }
 
-static test_init_data_t *
-receive_init_data(seL4_CPtr endpoint)
-{
-    /* wait for a message */
-    seL4_Word badge;
-    UNUSED seL4_MessageInfo_t info;
-
-    info = seL4_Recv(endpoint, &badge);
-
-    /* check the label is correct */
-    assert(seL4_MessageInfo_get_label(info) == seL4_Fault_NullFault);
-    assert(seL4_MessageInfo_get_length(info) == 1);
-
-    test_init_data_t *init_data = (test_init_data_t *) seL4_GetMR(0);
-    assert(init_data->free_slots.start != 0);
-    assert(init_data->free_slots.end != 0);
-
-    return init_data;
-}
-
 static void
 init_allocator(env_t env, test_init_data_t *init_data)
 {
@@ -247,10 +227,10 @@ main(int argc, char **argv)
 
     /* parse args */
     assert(argc == 2);
-    endpoint = (seL4_CPtr) atoi(argv[1]);
+    endpoint = (seL4_CPtr) atoi(argv[0]);
 
     /* read in init data */
-    init_data = receive_init_data(endpoint);
+    init_data = (void*) atoi(argv[1]);
 
     /* configure env */
     env.cspace_root = init_data->root_cnode;
