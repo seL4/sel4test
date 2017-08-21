@@ -230,7 +230,7 @@ main(int argc, char **argv)
     endpoint = (seL4_CPtr) atoi(argv[0]);
 
     /* read in init data */
-    init_data = (void*) atoi(argv[1]);
+    init_data = (void*) atol(argv[1]);
 
     /* configure env */
     env.cspace_root = init_data->root_cnode;
