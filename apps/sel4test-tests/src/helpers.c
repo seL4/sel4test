@@ -373,6 +373,18 @@ get_helper_tcb(helper_thread_t *thread)
     return thread->thread.tcb.cptr;
 }
 
+seL4_CPtr
+get_helper_reply(helper_thread_t *thread)
+{
+    return thread->thread.reply.cptr;
+}
+
+seL4_CPtr
+get_helper_sched_context(helper_thread_t *thread)
+{
+    return thread->thread.sched_context.cptr;
+}
+
 uintptr_t
 get_helper_ipc_buffer_addr(helper_thread_t *thread)
 {

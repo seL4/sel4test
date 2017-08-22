@@ -121,6 +121,10 @@ void cleanup_helper(env_t env, helper_thread_t *thread);
 
 /* retrieve the TCB of a helper thread */
 seL4_CPtr get_helper_tcb(helper_thread_t *thread);
+/* retrieve the reply object cap of a helper thread (seL4_CapNull if not CONFIG_RT_KERNEL) */
+seL4_CPtr get_helper_reply(helper_thread_t *thread);
+/* retrieve the sched context cap of a helper thread (seL4_CapNull if not CONFIG_RT_KERNEL) */
+seL4_CPtr get_helper_sched_context(helper_thread_t *thread);
 
 /* retrieve the IPC buffer address of a helper thread */
 uintptr_t get_helper_ipc_buffer_addr(helper_thread_t *thread);
