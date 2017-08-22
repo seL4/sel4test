@@ -29,6 +29,11 @@ enum {
     FAULT_BAD_INSTRUCTION = 5,
 };
 
+enum {
+ BADGED,
+ RESTART
+};
+
 #define BAD_VADDR 0xf123456C
 #define GOOD_MAGIC 0x15831851
 #define BAD_MAGIC ~GOOD_MAGIC
@@ -397,12 +402,12 @@ set_good_magic_and_set_pc(seL4_CPtr tcb, seL4_Word new_pc)
 
 static int
 handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
-             int badged_or_restart)
+             int flags)
 {
     seL4_MessageInfo_t tag;
     seL4_Word sender_badge = 0;
-    seL4_Word badged = !!(badged_or_restart & 2);
-    seL4_Word restart = !!(badged_or_restart & 1);
+    bool badged = flags & BIT(BADGED);
+    bool restart = flags & BIT(RESTART);
 
     tag = seL4_Recv(fault_ep, &sender_badge);
 
@@ -639,8 +644,12 @@ test_fault(env_t env, int fault_type, bool inter_as)
                 test_assert(!error);
                 set_helper_priority(env, &faulter_thread, prio);
 
+                seL4_Word flags =
+                                  (badged ? BIT(BADGED) : 0)    |
+                                  (restart ? BIT(RESTART) : 0);
+
                 start_helper(env, &handler_thread, (helper_fn_t) handle_fault,
-                             handler_arg0, handler_arg1, fault_type, (badged << 1) | restart);
+                             handler_arg0, handler_arg1, fault_type, flags);
                 start_helper(env, &faulter_thread, (helper_fn_t) cause_fault,
                              fault_type, 0, 0, 0);
                 wait_for_helper(&handler_thread);
