@@ -464,7 +464,7 @@ DEFINE_TEST(SCHED0005, "Test set priority", test_set_priority)
  */
 static volatile int ipc_test_step;
 typedef struct ipc_test_data {
-    volatile seL4_CPtr ep0, ep1, ep2, ep3;
+    volatile seL4_CPtr ep0, ep1, ep2, ep3, reply;
     volatile seL4_Word bounces;
     volatile seL4_Word spins;
     seL4_CPtr tcb0, tcb1, tcb2, tcb3;
@@ -481,9 +481,9 @@ ipc_test_helper_0(ipc_test_data_t *data)
     while (1) {
         seL4_MessageInfo_t tag;
         seL4_Word sender_badge = 0;
-        tag = seL4_Recv(data->ep0, &sender_badge);
+        tag = api_recv(data->ep0, &sender_badge, data->reply);
         data->bounces++;
-        seL4_Reply(tag);
+        api_reply(data->reply, tag);
     }
 
     return sel4test_get_result();
@@ -498,7 +498,7 @@ ipc_test_helper_1(ipc_test_data_t *data)
     /* TEST PART 1 */
     /* Receive a pending send. */
     CHECK_STEP(ipc_test_step, 1);
-    tag = seL4_Recv(data->ep1, &sender_badge);
+    tag = api_recv(data->ep1, &sender_badge, data->reply);
 
     /* As soon as the wait is performed, we should be preempted. */
 
@@ -516,7 +516,7 @@ ipc_test_helper_1(ipc_test_data_t *data)
     /* TEST PART 2 */
     /* Receive a send that is not yet pending. */
     CHECK_STEP(ipc_test_step, 5);
-    tag = seL4_Recv(data->ep1, &sender_badge);
+    tag = api_recv(data->ep1, &sender_badge, data->reply);
 
     CHECK_STEP(ipc_test_step, 8);
     test_check(seL4_MessageInfo_get_length(tag) == 19);
@@ -648,6 +648,7 @@ test_ipc_prios(struct env* env)
     data.tcb1 = get_helper_tcb(&thread1);
     data.tcb2 = get_helper_tcb(&thread2);
     data.tcb3 = get_helper_tcb(&thread3);
+    data.reply = get_helper_reply(&thread0);
 
     ZF_LOGD("      ");
     ipc_test_step = 0;

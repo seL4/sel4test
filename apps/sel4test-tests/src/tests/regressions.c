@@ -447,7 +447,7 @@ int test_write_registers(env_t env)
         /* If we've successfully started the thread, block until it's checked
          * its registers.
          */
-        info = seL4_Recv(shared_endpoint, &badge);
+        info = api_recv(shared_endpoint, &badge, get_helper_reply(&thread));
     }
     cleanup_helper(env, &thread);
 

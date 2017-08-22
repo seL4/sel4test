@@ -254,7 +254,7 @@ test_reply_recv(env_t env)
         seL4_Signal(notification);
 
         /* ReplyRecv for the notification. */
-        TEST_REGISTERS(seL4_ReplyRecv(notification, seL4_MessageInfo_new(0, 0, 0, 0), NULL));
+        TEST_REGISTERS(api_reply_recv(notification, seL4_MessageInfo_new(0, 0, 0, 0), NULL, seL4_CapNull));
     }
 
     return sel4test_get_result();
@@ -273,7 +273,7 @@ test_nb_recv(env_t env)
         seL4_Signal(notification);
 
         /* Recv for the notification. */
-        TEST_REGISTERS(seL4_NBRecv(notification, NULL));
+        TEST_REGISTERS(api_nbrecv(notification, NULL, seL4_CapNull));
     }
 
     return sel4test_get_result();

@@ -57,13 +57,13 @@ increment_pc(seL4_CPtr tcb, seL4_Word inc)
 }
 
 static int
-handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault, void *unused)
+handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault, seL4_CPtr reply)
 {
     seL4_MessageInfo_t tag;
     seL4_Word sender_badge = 0;
 
     while(1) {
-        tag = seL4_Recv(fault_ep, &sender_badge);
+        tag = api_recv(fault_ep, &sender_badge, reply);
 
         test_check(seL4_MessageInfo_get_label(tag) == seL4_Fault_UserException);
 
@@ -123,7 +123,7 @@ test_native_ioports(env_t env)
     total_faults = 0;
 
     start_helper(env, &handler_thread, (helper_fn_t) handle_fault,
-                 handler_arg0, handler_arg1, 0, 0);
+                 handler_arg0, handler_arg1, 0, get_helper_reply(&handler_thread));
     start_helper(env, &faulter_thread, (helper_fn_t) do_ioports,
                  0, 0, 0, 0);
 

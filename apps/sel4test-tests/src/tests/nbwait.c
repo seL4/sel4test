@@ -36,6 +36,7 @@ test_nbwait(env_t env)
 
     vka_object_t notification = {0};
     vka_object_t endpoint = {0};
+    vka_object_t reply = {0};
     int error;
     seL4_MessageInfo_t info = {{0}};
     seL4_Word badge = 0;
@@ -46,6 +47,11 @@ test_nbwait(env_t env)
 
     error = vka_alloc_notification(&env->vka, &notification);
     test_eq(error, 0);
+
+    if (config_set(CONFIG_KERNEL_RT)) {
+        error = vka_alloc_reply(&env->vka, &reply);
+        test_eq(error, 0);
+    }
 
     /* bind the notification to the current thread */
     error = seL4_TCB_BindNotification(env->tcb, notification.cptr);
@@ -70,7 +76,7 @@ test_nbwait(env_t env)
     test_eq(error, 0);
 
     /* NBRecv on endpoint with no messages should return 0 immediately */
-    info = seL4_NBRecv(endpoint.cptr, &badge);
+    info = api_nbrecv(endpoint.cptr, &badge, reply.cptr);
     test_eq(badge, (seL4_Word)0);
 
     /* Poll on a notification with no messages should return 0 immediately */
@@ -92,11 +98,11 @@ test_nbwait(env_t env)
     seL4_Signal(badged_notification.capPtr);
 
     /* This time NBRecv the endpoint - since we are bound, we should get the badge from the signal again */
-    info = seL4_NBRecv(endpoint.cptr, &badge);
+    info = api_nbrecv(endpoint.cptr, &badge, reply.cptr);
     test_eq(badge, (seL4_Word)2);
 
     /* NBRecving again should return nothign */
-    info = seL4_NBRecv(endpoint.cptr, &badge);
+    info = api_nbrecv(endpoint.cptr, &badge, reply.cptr);
     test_eq(badge, (seL4_Word)0);
 
     /* now start a helper to send a message on the badged endpoint */
@@ -108,13 +114,13 @@ test_nbwait(env_t env)
     seL4_TCB_SetPriority(env->tcb, env->priority - 1);
 
     /* NBRecving should return helpers message */
-    info = seL4_NBRecv(endpoint.cptr, &badge);
+    info = api_nbrecv(endpoint.cptr, &badge, reply.cptr);
     test_eq(badge, (seL4_Word)1);
     test_eq(seL4_MessageInfo_get_length(info), (seL4_Word)1);
     test_eq(seL4_GetMR(0), (seL4_Word)0xdeadbeef);
 
     /* NBRecving again should return nothign */
-    info = seL4_NBRecv(endpoint.cptr, &badge);
+    info = api_nbrecv(endpoint.cptr, &badge, reply.cptr);
     test_eq(badge, (seL4_Word)0);
 
     /* clean up */

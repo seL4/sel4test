@@ -20,13 +20,13 @@
 #define NUM_BADGED_CLIENTS 32
 
 static int
-bouncer_func(seL4_CPtr ep, seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
+bouncer_func(seL4_CPtr ep, seL4_CPtr reply, seL4_Word arg2, seL4_Word arg3)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     seL4_Word sender_badge;
-    seL4_Recv(ep, &sender_badge);
+    api_recv(ep, &sender_badge, reply);
     while (1) {
-        seL4_ReplyRecv(ep, tag, &sender_badge);
+        api_reply_recv(ep, tag, &sender_badge, reply);
     }
     return 0;
 }
@@ -98,7 +98,7 @@ test_ep_cancelBadgedSends(env_t env)
     bounce_ep = vka_alloc_endpoint_leaky(&env->vka);
     create_helper_thread(env, &bouncer);
     set_helper_priority(env, &bouncer, 0);
-    start_helper(env, &bouncer, bouncer_func, bounce_ep, 0, 0, 0);
+    start_helper(env, &bouncer, bouncer_func, bounce_ep, get_helper_reply(&bouncer), 0, 0);
 
     for (int i = 0; i < NUM_BADGED_CLIENTS; i++) {
         start_helper(env, &senders[i].thread, (helper_fn_t) call_func,
@@ -106,16 +106,18 @@ test_ep_cancelBadgedSends(env_t env)
     }
 
     /* Let the sender threads run. */
+    seL4_CPtr reply = vka_alloc_reply_leaky(&env->vka);
+
     seL4_Call(bounce_ep, tag);
     /* Receive a message from each endpoint and check the badge. */
     for (int i = 0; i < NUM_BADGED_CLIENTS; i++) {
         seL4_Word sender_badge;
         seL4_MessageInfo_ptr_set_length(&tag, 1);
-        tag = seL4_Recv(ep, &sender_badge);
+        tag = api_recv(ep, &sender_badge, reply);
         assert(seL4_MessageInfo_get_length(tag) == 1);
         assert(seL4_GetMR(0) == sender_badge - 100);
         seL4_SetMR(0, ~seL4_GetMR(0));
-        seL4_Reply(tag);
+        api_reply(reply, tag);
     }
     /* Let the sender threads run. */
     seL4_Call(bounce_ep, tag);
@@ -152,18 +154,18 @@ test_ep_cancelBadgedSends(env_t env)
 }
 DEFINE_TEST(CANCEL_BADGED_SENDS_0001, "Basic endpoint cancelBadgedSends testing.", test_ep_cancelBadgedSends)
 
-static int ep_test_func(seL4_CPtr sync_ep, seL4_CPtr test_ep, volatile seL4_Word *status, seL4_Word arg4)
+static int ep_test_func(seL4_CPtr sync_ep, seL4_CPtr test_ep, volatile seL4_Word *status, seL4_CPtr reply)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     seL4_Word sender_badge;
     while (1) {
-        seL4_Recv(sync_ep, &sender_badge);
+        api_recv(sync_ep, &sender_badge, reply);
         /* Hit up the test end point */
-        seL4_MessageInfo_t reply = seL4_Call(test_ep, tag);
+        seL4_MessageInfo_t reply_tag = seL4_Call(test_ep, tag);
         /* See what the status was */
-        *status = !!(seL4_MessageInfo_get_label(reply) != seL4_InvalidCapability);
+        *status = !!(seL4_MessageInfo_get_label(reply_tag) != seL4_InvalidCapability);
         /* Reply */
-        seL4_Reply(tag);
+        api_reply(reply, tag);
     }
     return sel4test_get_result();
 }
@@ -193,7 +195,7 @@ test_ep_cancelBadgedSends2(env_t env)
     ep = vka_alloc_endpoint_leaky(&env->vka);
     /* spawn a thread to keep replying to any messages on main ep */
     create_helper_thread(env, &reply_thread);
-    start_helper(env, &reply_thread, bouncer_func, ep, 0, 0, 0);
+    start_helper(env, &reply_thread, bouncer_func, ep, get_helper_reply(&reply_thread), 0, 0);
     /* Spawn helper threads each with their own sync ep and a badged copy of the main ep */
     for (int i = 0; i < NUM_BADGED_CLIENTS; i++) {
         helpers[i].badged_ep = get_free_slot(env);
@@ -216,7 +218,8 @@ test_ep_cancelBadgedSends2(env_t env)
 
         create_helper_thread(env, &helpers[i].thread);
         start_helper(env, &helpers[i].thread, (helper_fn_t) ep_test_func,
-                     helpers[i].sync_ep, helpers[i].derived_badged_ep, (seL4_Word) &helpers[i].last_status, 0);
+                     helpers[i].sync_ep, helpers[i].derived_badged_ep, (seL4_Word) &helpers[i].last_status,
+                     get_helper_reply(&helpers[i].thread));
     }
     /* Test that every thread and endpoint is working */
     for (int i = 0; i < NUM_BADGED_CLIENTS; i++) {

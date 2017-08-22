@@ -21,6 +21,8 @@
 #include "../test.h"
 #include "../helpers.h"
 
+static seL4_CPtr global_reply;
+
 enum {
     FAULT_DATA_READ_PAGEFAULT = 1,
     FAULT_DATA_WRITE_PAGEFAULT = 2,
@@ -31,7 +33,8 @@ enum {
 
 enum {
  BADGED,
- RESTART
+ RESTART,
+ PROCESS
 };
 
 #define BAD_VADDR 0xf123456C
@@ -408,8 +411,10 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
     seL4_Word sender_badge = 0;
     bool badged = flags & BIT(BADGED);
     bool restart = flags & BIT(RESTART);
+    bool is_process = flags & BIT(PROCESS);
+    seL4_CPtr reply = is_process ? SEL4UTILS_REPLY_SLOT : global_reply;
 
-    tag = seL4_Recv(fault_ep, &sender_badge);
+    tag = api_recv(fault_ep, &sender_badge, reply);
 
     if (badged) {
         test_check(sender_badge == EXPECTED_BADGE);
@@ -431,7 +436,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
 
         set_good_magic_and_set_pc(tcb, (seL4_Word)read_fault_restart_address);
         if (restart) {
-            seL4_Reply(tag);
+            api_reply(reply, tag);
         }
         break;
 
@@ -448,7 +453,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
 
         set_good_magic_and_set_pc(tcb, (seL4_Word)write_fault_restart_address);
         if (restart) {
-            seL4_Reply(tag);
+            api_reply(reply, tag);
         }
         break;
 
@@ -468,7 +473,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
 
         set_good_magic_and_set_pc(tcb, (seL4_Word)instruction_fault_restart_address);
         if (restart) {
-            seL4_Reply(tag);
+            api_reply(reply, tag);
         }
         break;
 
@@ -502,7 +507,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         } else {
             seL4_MessageInfo_ptr_set_label(&tag, 1);
         }
-        seL4_Reply(tag);
+        api_reply(reply, tag);
         break;
 
     case FAULT_BAD_INSTRUCTION:
@@ -545,7 +550,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
             seL4_MessageInfo_ptr_set_label(&tag, 1);
         }
 
-        seL4_Reply(tag);
+        api_reply(reply, tag);
         break;
 
     default:
@@ -624,6 +629,8 @@ test_fault(env_t env, int fault_type, bool inter_as)
                     handler_arg1 = sel4utils_copy_path_to_process(&handler_thread.process, path);
                     assert(handler_arg1 != -1);
 
+                    global_reply = sel4utils_copy_cap_to_process(&handler_thread.process, &env->vka,
+                                                                 get_helper_reply(&handler_thread));
                     faulter_cspace = faulter_thread.process.cspace.cptr;
                     faulter_vspace = faulter_thread.process.pd.cptr;
                 } else {
@@ -633,6 +640,7 @@ test_fault(env_t env, int fault_type, bool inter_as)
                     faulter_vspace = env->page_directory;
                     handler_arg0 = fault_ep;
                     handler_arg1 = get_helper_tcb(&faulter_thread);
+                    global_reply = get_helper_reply(&handler_thread);
                 }
 
                 set_helper_priority(env, &handler_thread, 101);
@@ -644,7 +652,7 @@ test_fault(env_t env, int fault_type, bool inter_as)
                 test_assert(!error);
                 set_helper_priority(env, &faulter_thread, prio);
 
-                seL4_Word flags =
+                seL4_Word flags = (inter_as ? BIT(PROCESS) : 0) |
                                   (badged ? BIT(BADGED) : 0)    |
                                   (restart ? BIT(RESTART) : 0);
 

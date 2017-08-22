@@ -24,10 +24,11 @@
 #define FOR_EACH_LENGTH(len_var) \
     for(int len_var = MIN_LENGTH; len_var <= MAX_LENGTH; len_var++)
 
-typedef int (*test_func_t)(seL4_Word /* endpoint */, seL4_Word /* seed */, seL4_Word /* extra */);
+typedef int (*test_func_t)(seL4_Word /* endpoint */, seL4_Word /* seed */, seL4_Word /* reply */,
+                           seL4_CPtr /* extra */);
 
 static int
-send_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
+send_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
 {
     FOR_EACH_LENGTH(length) {
         seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length);
@@ -42,7 +43,7 @@ send_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
 }
 
 static int
-nbsend_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
+nbsend_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
 {
     FOR_EACH_LENGTH(length) {
         seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length);
@@ -57,7 +58,7 @@ nbsend_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
 }
 
 static int
-call_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
+call_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
 {
     FOR_EACH_LENGTH(length) {
         seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length);
@@ -89,13 +90,13 @@ call_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
 }
 
 static int
-wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
+wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
 {
     FOR_EACH_LENGTH(length) {
         seL4_MessageInfo_t tag;
         seL4_Word sender_badge = 0;
 
-        tag = seL4_Recv(endpoint, &sender_badge);
+        tag = api_recv(endpoint, &sender_badge, reply);
         seL4_Word actual_len = length;
         if (actual_len <= seL4_MsgMaxLength) {
             test_assert(seL4_MessageInfo_get_length(tag) == actual_len);
@@ -114,7 +115,7 @@ wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
 }
 
 static int
-nbwait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word nbwait_should_wait)
+nbwait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word nbwait_should_wait)
 {
     if (!nbwait_should_wait) {
         return sel4test_get_result();
@@ -124,7 +125,7 @@ nbwait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word nbwait_should_wait)
         seL4_MessageInfo_t tag;
         seL4_Word sender_badge = 0;
 
-        tag = seL4_Recv(endpoint, &sender_badge);
+        tag = api_recv(endpoint, &sender_badge, reply);
         seL4_Word actual_len = length;
         if (actual_len <= seL4_MsgMaxLength) {
             test_assert(seL4_MessageInfo_get_length(tag) == actual_len);
@@ -143,20 +144,24 @@ nbwait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word nbwait_should_wait)
 }
 
 static int
-replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
+replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Word extra)
 {
     int first = 1;
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
 
-    seL4_MessageInfo_t tag;
     FOR_EACH_LENGTH(length) {
         seL4_Word sender_badge = 0;
 
         /* First reply/wait can't reply. */
         if (first) {
+#ifdef CONFIG_KERNEL_RT
+            tag = seL4_NBSendRecv(endpoint, tag, endpoint, &sender_badge, reply);
+#else
             tag = seL4_Recv(endpoint, &sender_badge);
+#endif
             first = 0;
         } else {
-            tag = seL4_ReplyRecv(endpoint, tag, &sender_badge);
+            tag = api_reply_recv(endpoint, tag, &sender_badge, reply);
         }
 
         seL4_Word actual_len = length;
@@ -185,13 +190,13 @@ replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
     }
 
     /* Need to do one last reply to match call. */
-    seL4_Reply(tag);
+    api_reply(reply, tag);
 
     return sel4test_get_result();
 }
 
 static int
-reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
+reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Word unused)
 {
     int first = 1;
 
@@ -201,12 +206,12 @@ reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
 
         /* First reply/wait can't reply. */
         if (!first) {
-            seL4_Reply(tag);
+            api_reply(reply, tag);
         } else {
             first = 0;
         }
 
-        tag = seL4_Recv(endpoint, &sender_badge);
+        tag = api_recv(endpoint, &sender_badge, reply);
 
         seL4_Word actual_len = length;
         /* Sanity check the received message. */
@@ -234,7 +239,7 @@ reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word arg2)
     }
 
     /* Need to do one last reply to match call. */
-    seL4_Reply(tag);
+    api_reply(reply, tag);
 
     return sel4test_get_result();
 }
@@ -259,6 +264,7 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
                         ZF_LOGD("%d %s %d\n",
                                 sender_prio, sender_first ? "->" : "<-", waiter_prio);
                         seL4_Word thread_a_arg0, thread_b_arg0;
+                        seL4_CPtr thread_a_reply, thread_b_reply;
 
                         if (inter_as) {
                             create_helper_process(env, &thread_a);
@@ -272,11 +278,16 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
                             thread_b_arg0 = sel4utils_copy_path_to_process(&thread_b.process, path);
                             assert(thread_b_arg0 != -1);
 
+                            thread_a_reply = SEL4UTILS_REPLY_SLOT;
+                            thread_b_reply = SEL4UTILS_REPLY_SLOT;
+
                         } else {
                             create_helper_thread(env, &thread_a);
                             create_helper_thread(env, &thread_b);
                             thread_a_arg0 = ep;
                             thread_b_arg0 = ep;
+                            thread_a_reply = get_helper_reply(&thread_a);
+                            thread_b_reply = get_helper_reply(&thread_b);
                         }
 
                         set_helper_priority(env, &thread_a, sender_prio);
@@ -295,14 +306,14 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
                          * thread enqueued last will be run first, for a given priority. */
                         if (sender_first) {
                             start_helper(env, &thread_b, (helper_fn_t) fb, thread_b_arg0, start_number,
-                                         nbwait_should_wait, 0);
+                                         thread_b_reply, nbwait_should_wait);
                             start_helper(env, &thread_a, (helper_fn_t) fa, thread_a_arg0, start_number,
-                                         nbwait_should_wait, 0);
+                                        thread_a_reply, nbwait_should_wait);
                         } else {
                             start_helper(env, &thread_a, (helper_fn_t) fa, thread_a_arg0, start_number,
-                                         nbwait_should_wait, 0);
+                                        thread_a_reply, nbwait_should_wait);
                             start_helper(env, &thread_b, (helper_fn_t) fb, thread_b_arg0, start_number,
-                                         nbwait_should_wait, 0);
+                                         thread_b_reply, nbwait_should_wait);
                         }
 
                         wait_for_helper(&thread_a);
@@ -386,6 +397,7 @@ test_ipc_abort_in_call(env_t env)
     vka_t * vka = &env->vka;
 
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);
+    seL4_CPtr reply = vka_alloc_reply_leaky(vka);
 
     seL4_Word start_number = 0xabbacafe;
 
@@ -397,7 +409,7 @@ test_ipc_abort_in_call(env_t env)
     /* Wait for the endpoint that it's going to call. */
     seL4_Word sender_badge = 0;
 
-    seL4_Recv(ep, &sender_badge);
+    api_recv(ep, &sender_badge, reply);
 
     /* Now suspend the thread. */
     seL4_TCB_Suspend(get_helper_tcb(&thread_a));
