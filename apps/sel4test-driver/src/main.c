@@ -278,7 +278,7 @@ run_test(struct testcase *test)
     assert(error == 0);
 
     /* wait on it to finish or fault, report result */
-    seL4_MessageInfo_t info = seL4_Recv(test_process.fault_endpoint.cptr, NULL);
+    seL4_MessageInfo_t info = api_wait(test_process.fault_endpoint.cptr, NULL);
 
     int result = seL4_GetMR(0);
     if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {

@@ -160,7 +160,7 @@ breakpoint_handler_main(seL4_Word _fault_ep_cspath, seL4_Word a1, seL4_Word a2, 
     seL4_Word label;
 
     /* Wait for the faulter to trigger an event. */
-    tag = seL4_Recv(fault_ep_cspath.capPtr, &sender_badge);
+    tag = api_wait(fault_ep_cspath.capPtr, &sender_badge);
     ZF_LOGV("Handler got a fault on the ep.\n");
     label = seL4_MessageInfo_get_label(tag);
 

@@ -206,7 +206,7 @@ handler_func(seL4_CPtr fault_ep, volatile seL4_Word *pf)
     seL4_Word sender_badge = 0;
 
     /* Waiting for fault from faulter */
-    tag = seL4_Recv(fault_ep, &sender_badge);
+    tag = api_wait(fault_ep, &sender_badge);
     *pf = seL4_MessageInfo_get_label(tag);
     return 0;
 }

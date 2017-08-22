@@ -59,7 +59,7 @@ int debugger_main(seL4_Word a0, seL4_Word a1, seL4_Word a2, seL4_Word a3)
      * will get a fault on the fault EP. At that point we can enable
      * single-stepping on the debuggee thread.
      */
-    tag = seL4_Recv(fault_ep_cspath.capPtr, &badge);
+    tag = api_wait(fault_ep_cspath.capPtr, &badge);
 
     if (seL4_MessageInfo_get_label(tag) != seL4_Fault_DebugException) {
         ZF_LOGE("debugger: Got unexpected fault %zd.\n",

@@ -21,6 +21,7 @@
 #include <vka/object.h>
 #include <sel4test/test.h>
 #include <sel4platsupport/timer.h>
+#include <sel4utils/api.h>
 #include <simple/simple.h>
 #include <vspace/vspace.h>
 
