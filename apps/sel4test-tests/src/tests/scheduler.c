@@ -326,7 +326,7 @@ test_all_priorities(struct env* env)
 
     /* Now block. */
     seL4_Word sender_badge = 0;
-    seL4_Recv(ep, &sender_badge);
+    seL4_Wait(ep, &sender_badge);
 
     /* When we get woken up, last_prio should be MIN_PRIO. */
     test_check(last_prio == MIN_PRIO);

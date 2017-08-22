@@ -45,7 +45,7 @@ void reply_to_parent(seL4_Word result)
     seL4_Send(shared_endpoint, info);
 
     /* Block to avoid returning and assume our parent will kill us. */
-    (void)seL4_Recv(shared_endpoint, &badge);
+    seL4_Wait(shared_endpoint, &badge);
 }
 
 /* Test the registers we have been setup with and pass the result back to our
@@ -541,7 +541,7 @@ int test_ldrex_cleared(env_t env)
     start_helper(env, &thread, (helper_fn_t) do_ldrex, 0, 0, 0, 0);
 
     /* Wait for the child to do ldrex and signal us. */
-    seL4_Recv(shared_endpoint, &badge);
+    seL4_Wait(shared_endpoint, &badge);
 
     /* Wait for the child to do strex and exit. */
     result = wait_for_helper(&thread);

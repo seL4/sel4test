@@ -235,7 +235,7 @@ test_recv(env_t env)
         seL4_Signal(notification);
 
         /* Recv for the notification. */
-        TEST_REGISTERS(seL4_Recv(notification, NULL));
+        TEST_REGISTERS(seL4_Wait(notification, NULL));
     }
 
     return sel4test_get_result();

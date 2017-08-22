@@ -290,12 +290,12 @@ static int test_switch_device_frame_ipcbuf(env_t env)
     create_helper_thread(env, &other);
     /* start the thread and make sure it works */
     start_helper(env, &other, (helper_fn_t)wait_func, (seL4_Word)ep, 0, 0, 0);
-    seL4_Recv(ep, NULL);
+    seL4_Wait(ep, NULL);
     /* now switch its IPC buffer, which should fail */
     error = seL4_TCB_SetIPCBuffer(get_helper_tcb(&other), get_helper_ipc_buffer_addr(&other), path.capPtr);
     test_neq(error, 0);
     /* thread should still be working */
-    seL4_Recv(ep, NULL);
+    seL4_Wait(ep, NULL);
     /* all done */
     wait_for_helper(&other);
     cleanup_helper(env, &other);
