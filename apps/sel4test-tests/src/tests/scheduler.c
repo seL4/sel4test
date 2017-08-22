@@ -25,19 +25,9 @@
 #define MAX_PRIO (OUR_PRIO - 1)
 #define NUM_PRIOS (MAX_PRIO - MIN_PRIO + 1)
 
-/*
- * Performing printf on non-debug x86 will perform kernel invocations. So, eliminate printf
- * there, but keep it everywhere else where it's useful.
- */
-#if defined(CONFIG_ARCH_IA32) && !defined(CONFIG_DEBUG_BUILD)
-#define SAFE_PRINTF(x...) do { } while(0)
-#else
-#define SAFE_PRINTF(x...) ZF_LOGD(x)
-#endif
-
 #define CHECK_STEP(var, x) do { \
         test_check((var) == x); \
-        SAFE_PRINTF(#x "..."); \
+        ZF_LOGD(#x "..."); \
         var = (x) + 1; \
     } while (0)
 
