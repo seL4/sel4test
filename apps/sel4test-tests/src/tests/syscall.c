@@ -150,7 +150,12 @@
         test_assert(a15 == 0xdeadbeefdead000f); \
     } while (0)
 #elif defined(CONFIG_ARCH_IA32)
+#ifdef CONFIG_KERNEL_RT
+#define TEST_MRS 0
+#else
 #define TEST_MRS 0, 0
+#endif
+
 #define TEST_REGISTERS(code) \
     do { \
         register int a00 = 0xdead0000; \
@@ -200,8 +205,10 @@ GENERATE_SYSCALL_TEST(SYSCALL0001, seL4_Send,
 GENERATE_SYSCALL_TEST(SYSCALL0002, seL4_NBSend,
                       seL4_NBSend(env->cspace_root, seL4_MessageInfo_new(0, 0, 0, 0)))
 
+#ifndef CONFIG_KERNEL_RT
 GENERATE_SYSCALL_TEST(SYSCALL0003, seL4_Reply,
                       seL4_Reply(seL4_MessageInfo_new(0, 0, 0, 0)))
+#endif
 
 GENERATE_SYSCALL_TEST(SYSCALL0004, seL4_Signal,
                       seL4_Signal(env->cspace_root))
@@ -309,8 +316,27 @@ GENERATE_SYSCALL_TEST(SYSCALL0014, seL4_SendWithMRs,
 GENERATE_SYSCALL_TEST(SYSCALL0015, seL4_NBSendWithMRs,
                       seL4_NBSendWithMRs(env->cspace_root, seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
 
+#ifndef CONFIG_KERNEL_RT
 GENERATE_SYSCALL_TEST(SYSCALL0016, seL4_ReplyWithMRs,
                       seL4_ReplyWithMRs(seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
-
+#endif
 GENERATE_SYSCALL_TEST(SYSCALL0017, seL4_CallWithMRs,
                       seL4_CallWithMRs(env->cspace_root, seL4_MessageInfo_new(0, 0, 0 , 0), TEST_MRS))
+
+#ifdef CONFIG_KERNEL_RT
+static int
+test_nbsend_recv(env_t env)
+{
+    seL4_CPtr ntfn = vka_alloc_notification_leaky(&env->vka);
+
+    for (int i = 0; i < 10; i++) {
+        /* Notify it so we don't block */
+        seL4_Signal(ntfn);
+        TEST_REGISTERS(api_nbsend_recv(env->cspace_root, seL4_MessageInfo_new(0, 0, 0, 0),
+                                       ntfn, NULL, seL4_CapNull));
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SYSCALL0018, "Basic seL4_NBSendRecv testing", test_nbsend_recv)
+#endif
