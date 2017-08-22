@@ -617,8 +617,12 @@ test_fault(env_t env, int fault_type, bool inter_as)
                     /* copy the fault endpoint to the faulter */
                     cspacepath_t path;
                     vka_cspace_make_path(&env->vka,  fault_ep, &path);
-                    fault_ep = sel4utils_copy_path_to_process(&faulter_thread.process, path);
-                    assert(fault_ep != -1);
+                    seL4_CPtr remote_fault_ep = sel4utils_copy_path_to_process(&faulter_thread.process, path);
+                    assert(remote_fault_ep != -1);
+
+                    if (!config_set(CONFIG_KERNEL_RT)) {
+                        fault_ep = remote_fault_ep;
+                    }
 
                     /* copy the fault endpoint to the handler */
                     handler_arg0 = sel4utils_copy_path_to_process(&handler_thread.process, path);
