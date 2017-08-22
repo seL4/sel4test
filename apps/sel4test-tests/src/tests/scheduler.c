@@ -448,6 +448,7 @@ test_set_priority(struct env* env)
 DEFINE_TEST(SCHED0005, "Test set priority", test_set_priority)
 #endif
 
+#ifndef CONFIG_KERNEL_RT /* this test does not work on the RT kernel as it relies on FIFO IPC */
 /*
  * Perform IPC Send operations across priorities and ensure that strict
  * priority-based scheduling is still observed.
@@ -662,3 +663,4 @@ test_ipc_prios(struct env* env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0006, "Test IPC priorities for Send", test_ipc_prios)
+#endif /* CONFIG_KERNEL_RT */
