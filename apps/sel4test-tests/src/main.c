@@ -195,6 +195,18 @@ cnode_size_bits(void *data)
     return init->cspace_size_bits;
 }
 
+static seL4_CPtr
+sched_ctrl(void *data, int core)
+{
+    return ((test_init_data_t *) data)->sched_ctrl + core;
+}
+
+static int
+core_count(UNUSED void *data)
+{
+    return ((test_init_data_t *) data)->cores;
+}
+
 void init_timer(env_t env, test_init_data_t *init_data)
 {
     /* minimal simple implementation to get the platform
@@ -204,6 +216,8 @@ void init_timer(env_t env, test_init_data_t *init_data)
     env->simple.arch_simple.data = (void *) init_data;
     env->simple.init_cap = sel4utils_process_init_cap;
     env->simple.cnode_size = cnode_size_bits;
+    env->simple.sched_ctrl = sched_ctrl;
+    env->simple.core_count = core_count;
 
     arch_init_simple(&env->simple);
 
@@ -242,6 +256,7 @@ main(int argc, char **argv)
     env.domain = init_data->domain;
     env.asid_pool = init_data->asid_pool;
     env.asid_ctrl = init_data->asid_ctrl;
+    env.sched_ctrl = init_data->sched_ctrl;
 #ifdef CONFIG_IOMMU
     env.io_space = init_data->io_space;
 #endif

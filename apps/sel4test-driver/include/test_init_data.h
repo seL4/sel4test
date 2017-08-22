@@ -82,6 +82,9 @@ typedef struct {
     /* priority the test process is running at */
     int priority;
 
+    /* sched control cap */
+    seL4_CPtr sched_ctrl;
+
     /* List of elf regions in the test process image, this
      * is provided so the test process can launch copies of itself.
      *

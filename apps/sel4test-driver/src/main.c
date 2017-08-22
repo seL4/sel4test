@@ -229,6 +229,15 @@ run_test(struct testcase *test)
     env.init->io_space_caps = arch_copy_iospace_caps_to_process(&test_process, &env);
 #endif
     env.init->cores = simple_get_core_count(&env.simple);
+    /* copy the sched ctrl caps to the remote process */
+    if (config_set(CONFIG_KERNEL_RT)) {
+        seL4_CPtr sched_ctrl = simple_get_sched_ctrl(&env.simple, 0);
+        env.init->sched_ctrl = sel4utils_copy_cap_to_process(&test_process, &env.vka, sched_ctrl);
+        for (int i = 1; i < env.init->cores; i++) {
+            sched_ctrl = simple_get_sched_ctrl(&env.simple, i);
+            sel4utils_copy_cap_to_process(&test_process, &env.vka, sched_ctrl);
+        }
+    }
     /* setup data about untypeds */
     env.init->untypeds = copy_untypeds_to_process(&test_process, untypeds, num_untypeds);
     error = sel4utils_copy_timer_caps_to_process(&env.init->to, &env.timer_objects, &env.vka, &test_process);
