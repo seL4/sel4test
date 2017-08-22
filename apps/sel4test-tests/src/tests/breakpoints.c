@@ -71,9 +71,10 @@ setup_faulter_thread_for_test(struct env *env, helper_thread_t *faulter_thread)
     /* Make the kernel send all faults to the endpoint that the handler thread
      * will be told to listen on.
      */
-    error = seL4_TCB_SetSpace(
+    error = api_tcb_set_space(
                 get_helper_tcb(faulter_thread),
                 badged_fault_ep_cspath.capPtr,
+                seL4_CapNull,
                 env->cspace_root,
                 seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
                 env->page_directory, seL4_NilData);

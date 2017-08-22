@@ -228,14 +228,11 @@ int smp_test_tlb(env_t env)
 
     set_helper_priority(env, &handler_thread, 100);
 
-    error = seL4_TCB_Configure(get_helper_tcb(&faulter_thread),
-                               fault_ep,
-                               seL4_PrioProps_new(100, 100),
-                               env->cspace_root,
-                               seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
-                               env->page_directory, seL4_NilData,
-                               faulter_thread.thread.ipc_buffer_addr,
-                               faulter_thread.thread.ipc_buffer);
+    error = api_tcb_set_space(get_helper_tcb(&faulter_thread),
+                              fault_ep, seL4_CapNull,
+                              env->cspace_root,
+                              seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                              env->page_directory, seL4_NilData);
     test_assert(!error);
 
     /* Move handler to core 1 and faulter to the last available core */

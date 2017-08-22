@@ -157,8 +157,8 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     helper_thread_t faulter;
     create_helper_thread(env, &faulter);
     set_helper_priority(env, &faulter, 100);
-    err = seL4_TCB_SetSpace(get_helper_tcb(&faulter),
-                             fault_ep,
+    err = api_tcb_set_space(get_helper_tcb(&faulter),
+                             fault_ep, seL4_CapNull,
                              env->cspace_root,
                              seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
                              env->page_directory, seL4_NilData);
@@ -197,9 +197,9 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     /* Recreate our two threads. */
     create_helper_thread(env, &faulter);
     set_helper_priority(env, &faulter, 100);
-    err = seL4_TCB_Configure(get_helper_tcb(&faulter),
-                             fault_ep,
-                             seL4_PrioProps_new(100, 100),
+    err = api_tcb_configure(get_helper_tcb(&faulter),
+                             fault_ep, seL4_CapNull,
+                             seL4_PrioProps_new(100, 100), get_helper_sched_context(&faulter),
                              env->cspace_root,
                              seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
                              env->page_directory, seL4_NilData,
@@ -250,9 +250,10 @@ static int test_device_frame_ipcbuf(env_t env)
     helper_thread_t other;
     create_helper_thread(env, &other);
     /* Try and create a thread with a device frame as its IPC buffer */
-    error = seL4_TCB_Configure(get_helper_tcb(&other),
-                               0,
+    error = api_tcb_configure(get_helper_tcb(&other),
+                               0, seL4_CapNull,
                                seL4_PrioProps_new(100, 100),
+                               get_helper_sched_context(&other),
                                env->cspace_root,
                                seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
                                env->page_directory, seL4_NilData,

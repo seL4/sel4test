@@ -108,9 +108,10 @@ test_native_ioports(env_t env)
     handler_arg1 = get_helper_tcb(&faulter_thread);
     set_helper_priority(env, &handler_thread, 100);
 
-    error = seL4_TCB_Configure(get_helper_tcb(&faulter_thread),
-                               fault_ep,
+    error = api_tcb_configure(get_helper_tcb(&faulter_thread),
+                               fault_ep, seL4_CapNull,
                                seL4_PrioProps_new(100, 100),
+                               get_helper_sched_context(&faulter_thread),
                                faulter_cspace,
                                seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
                                faulter_vspace, seL4_NilData,

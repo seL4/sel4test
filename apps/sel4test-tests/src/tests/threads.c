@@ -25,7 +25,8 @@ int test_tcb_null_cspace_configure(env_t env)
     create_helper_thread(env, &thread);
 
     /* This should fail because we're passing an invalid CSpace cap. */
-    error = seL4_TCB_Configure(get_helper_tcb(&thread), 0, seL4_PrioProps_new(100, 100), seL4_CapNull,
+    error = api_tcb_configure(get_helper_tcb(&thread), 0, seL4_CapNull,
+                               seL4_PrioProps_new(100, 100), seL4_CapNull, seL4_CapNull,
                                seL4_CapData_Guard_new(0, 0), env->page_directory,
                                seL4_CapData_Guard_new(0, 0), 0, 0);
 
@@ -43,7 +44,7 @@ int test_tcb_null_cspace_setspace(env_t env)
     create_helper_thread(env, &thread);
 
     /* This should fail because we're passing an invalid CSpace cap. */
-    error = seL4_TCB_SetSpace(get_helper_tcb(&thread), 0, seL4_CapNull,
+    error = api_tcb_set_space(get_helper_tcb(&thread), 0, seL4_CapNull, seL4_CapNull,
                               seL4_CapData_Guard_new(0, 0), env->page_directory,
                               seL4_CapData_Guard_new(0, 0));
 
