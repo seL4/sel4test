@@ -142,14 +142,6 @@ cnode_rotate(env_t env, seL4_CPtr src, seL4_CPtr pivot, seL4_CPtr dest)
 }
 
 int
-cnode_savecaller(env_t env, seL4_CPtr cap)
-{
-    cspacepath_t path;
-    vka_cspace_make_path(&env->vka, cap, &path);
-    return vka_cnode_saveCaller(&path);
-}
-
-int
 are_tcbs_distinct(seL4_CPtr tcb1, seL4_CPtr tcb2)
 {
     seL4_UserContext regs;

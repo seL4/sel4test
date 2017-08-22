@@ -14,6 +14,7 @@
 #include <sel4/sel4.h>
 #include <vka/vka.h>
 #include <vka/object.h>
+#include <vka/capops.h>
 
 #include "../test.h"
 #include "../helpers.h"
@@ -284,6 +285,15 @@ test_cnode_rotate(env_t env)
 }
 DEFINE_TEST(CNODEOP0008, "Basic seL4_CNode_Rotate() testing", test_cnode_rotate)
 
+#ifndef CONFIG_KERNEL_RT
+static int
+cnode_savecaller(env_t env, seL4_CPtr cap)
+{
+    cspacepath_t path;
+    vka_cspace_make_path(&env->vka, cap, &path);
+    return vka_cnode_saveCaller(&path);
+}
+
 static int
 test_cnode_savecaller(env_t env)
 {
@@ -306,3 +316,4 @@ test_cnode_savecaller(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(CNODEOP0009, "Basic seL4_CNode_SaveCaller() testing", test_cnode_savecaller)
+#endif /* CONFIG_KERNEL_RT */
