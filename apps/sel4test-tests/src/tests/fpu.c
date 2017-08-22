@@ -169,7 +169,7 @@ int smp_test_fpu(env_t env)
     for(int i = 0; i < env->cores; i++) {
         create_helper_thread(env, &t[i]);
 
-        set_helper_affinity(&t[i], i);
+        set_helper_affinity(env, &t[i], i);
         start_helper(env, &t[i], (helper_fn_t) smp_fpu_worker, (seL4_Word) &ex, (seL4_Word) &run, 0, 0);
     }
 
@@ -180,7 +180,7 @@ int smp_test_fpu(env_t env)
     for(int it = 0; it < 100; it++) {
         for(int i = 0; i < env->cores; i++) {
             /* Migrate threads to next core... */
-            set_helper_affinity(&t[i], (i + 1) % env->cores);
+            set_helper_affinity(env, &t[i], (i + 1) % env->cores);
         }
         /* Lets do some calculation */
         sleep(env, 10 * NS_IN_MS);

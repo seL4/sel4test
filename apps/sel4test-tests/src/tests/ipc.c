@@ -282,8 +282,8 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
                         set_helper_priority(env, &thread_a, sender_prio);
                         set_helper_priority(env, &thread_b, waiter_prio);
 
-                        set_helper_affinity(&thread_a, core_a);
-                        set_helper_affinity(&thread_b, core_b);
+                        set_helper_affinity(env, &thread_a, core_a);
+                        set_helper_affinity(env, &thread_b, core_b);
 
                         /* Set the flag for nbwait_func that tells it whether or not it really
                          * should wait. */

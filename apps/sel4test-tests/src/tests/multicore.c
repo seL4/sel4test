@@ -55,7 +55,7 @@ int smp_test_tcb_resume(env_t env)
 
     /* Suspend the thread, and move it to new core. */
     seL4_TCB_Suspend(get_helper_tcb(&t1));
-    set_helper_affinity(&t1, 1);
+    set_helper_affinity(env, &t1, 1);
 
     old_counter = counter;
 
@@ -117,7 +117,7 @@ int smp_test_tcb_move(env_t env)
     test_check(counter == old_counter);
 
     for(int i = 1; i < env->cores; i++) {
-        set_helper_affinity(&t1, i);
+        set_helper_affinity(env, &t1, i);
 
         old_counter = counter;
 
@@ -155,7 +155,7 @@ int smp_test_tcb_delete(env_t env)
     /* Now, counter should not have moved. */
     test_check(counter == old_counter);
 
-    set_helper_affinity(&t1, 1);
+    set_helper_affinity(env, &t1, 1);
 
     old_counter = counter;
 
@@ -239,8 +239,8 @@ int smp_test_tlb(env_t env)
     test_assert(!error);
 
     /* Move handler to core 1 and faulter to the last available core */
-    set_helper_affinity(&handler_thread, 1);
-    set_helper_affinity(&faulter_thread, env->cores - 1);
+    set_helper_affinity(env, &handler_thread, 1);
+    set_helper_affinity(env, &faulter_thread, env->cores - 1);
 
     start_helper(env, &handler_thread, (helper_fn_t) handler_func, fault_ep, (seL4_Word) &tag, 0, 0);
     start_helper(env, &faulter_thread, (helper_fn_t) faulter_func, (seL4_Word) &shared_mem, 0, 0, 0);
@@ -288,7 +288,7 @@ int smp_test_tcb_clh(env_t env)
     for(int i = 1; i < env->cores; i++) {
         create_helper_thread(env, &t[i]);
 
-        set_helper_affinity(&t[i], i);
+        set_helper_affinity(env, &t[i], i);
         start_helper(env, &t[i], (helper_fn_t) kernel_entry_func, (seL4_Word) NULL, 0, 0, 0);
     }
 
@@ -308,7 +308,7 @@ int smp_test_tcb_clh(env_t env)
     for(int i = 1; i < env->cores; i++) {
         create_helper_thread(env, &t[i]);
 
-        set_helper_affinity(&t[i], i);
+        set_helper_affinity(env, &t[i], i);
         start_helper(env, &t[i], (helper_fn_t) kernel_entry_func, (seL4_Word) NULL, 0, 0, 0);
     }
 
