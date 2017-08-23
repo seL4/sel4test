@@ -452,3 +452,75 @@ timestamp(env_t env)
     ZF_LOGF_IF(error, "failed to get time");
     return time;
 }
+
+int
+set_helper_sched_params(UNUSED env_t env, UNUSED helper_thread_t *thread, UNUSED uint64_t budget,
+        UNUSED uint64_t period, UNUSED seL4_Word badge)
+{
+    seL4_Word refills = 0;
+    if (budget < period) {
+#ifdef CONFIG_KERNEL_RT
+        refills = seL4_MaxExtraRefills(seL4_MinSchedContextBits);
+#endif
+    }
+    return api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0),
+                                       thread->thread.sched_context.cptr,
+                                       budget, period, refills, badge);
+}
+
+int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
+                          seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
+{
+    create_helper_thread(env, passive);
+    start_helper(env, passive, fn, ep, arg1, arg2, arg3);
+
+    /* Wait for helper to signal it has initialised */
+    ZF_LOGD("Wait for passive thread to init");
+    seL4_Wait(ep, NULL);
+    ZF_LOGD("Done");
+    /* convert to passive */
+    return api_sc_unbind(passive->thread.sched_context.cptr);
+}
+
+int
+restart_after_syscall(env_t env, helper_thread_t *helper)
+{
+    /* save and resume helper->*/
+    seL4_UserContext regs;
+
+    int error = seL4_TCB_ReadRegisters(helper->thread.tcb.cptr, false, 0,
+                                   sizeof(seL4_UserContext) / sizeof(seL4_Word), &regs);
+    test_eq(error, seL4_NoError);
+
+    /* skip the call */
+    sel4utils_set_instruction_pointer(&regs, sel4utils_get_instruction_pointer(regs) + ARCH_SYSCALL_INSTRUCTION_SIZE);
+
+
+    error = seL4_TCB_WriteRegisters(helper->thread.tcb.cptr, true, 0,
+                                    sizeof(seL4_UserContext) / sizeof(seL4_Word), &regs);
+    test_eq(error, seL4_NoError);
+
+    return 0;
+}
+
+void
+set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep)
+{
+    ZF_LOGF_IF(!config_set(CONFIG_KERNEL_RT), "Unsupported on non MCS kernel");
+    int error;
+    seL4_CapData_t null = {{0}};
+    if (thread->is_process) {
+        error = api_tcb_set_space(thread->thread.tcb.cptr,
+                      thread->fault_endpoint, tfep, thread->process.cspace.cptr,
+                      seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                      thread->process.pd.cptr, null);
+    } else {
+        error = api_tcb_set_space(thread->thread.tcb.cptr, thread->fault_endpoint, tfep,
+                                  env->cspace_root,
+                                  seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                                  vspace_get_root(&env->vspace), null);
+    }
+    if (error != seL4_NoError) {
+        ZF_LOGF("Failed to set tfep\n");
+    }
+}

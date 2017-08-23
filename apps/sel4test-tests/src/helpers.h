@@ -97,6 +97,8 @@ void create_helper_thread(env_t env, helper_thread_t *thread);
 /* create a helper with a clone of the current vspace loadable elf segments,
  * and a new cspace */
 void create_helper_process(env_t env, helper_thread_t *thread);
+int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
+                          seL4_Word arg1, seL4_Word arg2, seL4_Word arg3);
 
 /* set a helper threads priority */
 void set_helper_priority(env_t env, helper_thread_t *thread, seL4_Word prio);
@@ -107,11 +109,21 @@ void set_helper_mcp(env_t env, helper_thread_t *thread, seL4_Word mcp);
 /* set a helper threads core affinity. This will have no effect on passive threads. */
 void set_helper_affinity(env_t env, helper_thread_t *thread, seL4_Word affinity);
 
+/* if CONFIG_KERNEL_RT is set, set the helpers scheduling parameters */
+int set_helper_sched_params(UNUSED env_t env, UNUSED helper_thread_t *thread, UNUSED uint64_t budget,
+        UNUSED uint64_t period, seL4_Word badge);
+
+/* set a helper threads timeout fault handler */
+void set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep);
+
 /* Start a helper. Note: arguments to helper processes will be copied into
  * the address space of that process. Do not pass pointers to data only in
  * the local vspace, this will fail. */
 void start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
                   seL4_Word arg0, seL4_Word arg1, seL4_Word arg2, seL4_Word arg3);
+
+/* save a threads seL4_UserContext, increment instruction pointer, and resume */
+int restart_after_syscall(env_t env, helper_thread_t *thread);
 
 /* wait for a helper thread to finish */
 int wait_for_helper(helper_thread_t *thread);
