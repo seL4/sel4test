@@ -663,4 +663,656 @@ test_ipc_prios(struct env* env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0006, "Test IPC priorities for Send", test_ipc_prios)
+#endif
+
+#ifdef CONFIG_KERNEL_RT
+#define SCHED0007_NUM_CLIENTS 5
+#define SCHED0007_PRIO(x) ((seL4_Word)(seL4_MaxPrio - 1 - SCHED0007_NUM_CLIENTS + (x)))
+
+static void
+sched0007_client(seL4_CPtr endpoint, int order)
+{
+    seL4_SetMR(0, order);
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
+
+    ZF_LOGD("Client %d call", order);
+    info = seL4_Call(endpoint, info);
+}
+
+static int
+sched0007_server(seL4_CPtr endpoint, seL4_CPtr reply)
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+
+    api_recv(endpoint, NULL, reply);
+
+    for (int i = SCHED0007_NUM_CLIENTS - 1; i >= 0; i--) {
+        test_eq(SCHED0007_PRIO(i), seL4_GetMR(0));
+        if (i > 0) {
+            api_reply_recv(endpoint, info, NULL, reply);
+        }
+    }
+
+    return true;
+}
+
+static inline void
+sched0007_start_client(env_t env, helper_thread_t clients[], seL4_CPtr endpoint, int i)
+{
+    start_helper(env, &clients[i], (helper_fn_t) sched0007_client, endpoint, SCHED0007_PRIO(i), 0, 0);
+}
+
+int
+test_ipc_ordered(env_t env)
+{
+    seL4_CPtr endpoint;
+    helper_thread_t server;
+    helper_thread_t clients[SCHED0007_NUM_CLIENTS];
+
+    endpoint = vka_alloc_endpoint_leaky(&env->vka);
+    test_assert_fatal(endpoint != 0);
+
+    /* create clients, smallest prio first */
+    for (int i = 0; i < SCHED0007_NUM_CLIENTS; i++) {
+        create_helper_thread(env, &clients[i]);
+
+        set_helper_priority(env, &clients[i], SCHED0007_PRIO(i));
+    }
+
+    /* create the server */
+    create_helper_thread(env, &server);
+    set_helper_priority(env, &server, seL4_MaxPrio - 1);
+
+    compile_time_assert(sched0007_clients_correct, SCHED0007_NUM_CLIENTS == 5);
+
+    /* start the clients out of order to queue on the endpoint in order */
+    sched0007_start_client(env, clients, endpoint, 2);
+    sched0007_start_client(env, clients, endpoint, 0);
+    sched0007_start_client(env, clients, endpoint, 4);
+    sched0007_start_client(env, clients, endpoint, 1);
+    sched0007_start_client(env, clients, endpoint, 3);
+
+    /* start the server */
+    start_helper(env, &server, (helper_fn_t) sched0007_server, endpoint, server.thread.reply.cptr, 0, 0);
+
+    /* server returns success if all requests are processed in order */
+    return wait_for_helper(&server);
+}
+DEFINE_TEST(SCHED0007, "Test IPC priorities", test_ipc_ordered);
+
+#define SCHED0008_NUM_CLIENTS 5
+
+static NORETURN void
+sched0008_client(int id, seL4_CPtr endpoint)
+{
+    while(1) {
+        ZF_LOGD("Client call %d\n", id);
+        seL4_Call(endpoint, seL4_MessageInfo_new(0, 0, 0, 0));
+    }
+}
+
+static inline int
+check_receive_ordered(env_t env, seL4_CPtr endpoint, int pos, seL4_CPtr replies[])
+{
+    seL4_Word badge;
+    seL4_Word expected_badge = SCHED0008_NUM_CLIENTS - 1;
+
+    /* check we receive messages in expected order */
+    for (int i = 0; i < SCHED0008_NUM_CLIENTS; i++) {
+        ZF_LOGD("Server wait\n");
+        api_recv(endpoint, &badge, replies[i]);
+
+        if (pos == i) {
+            ZF_LOGD("Server expecting %d\n", 0);
+            /* client 0 should be in here */
+            test_eq(badge, (seL4_Word)0);
+        } else {
+            ZF_LOGD("Server expecting %d\n", expected_badge);
+            test_eq(expected_badge, badge);
+            expected_badge--;
+        }
+    }
+
+    /* now reply to all callers */
+    for (int i = 0; i < SCHED0008_NUM_CLIENTS; i++) {
+        seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+        seL4_Send(replies[i], info);
+    }
+
+    /* let everyone queue up again */
+    sleep(env, 1 * NS_IN_S);
+    return sel4test_get_result();
+}
+
+int test_change_prio_on_endpoint(env_t env)
+{
+    int error;
+    helper_thread_t clients[SCHED0008_NUM_CLIENTS];
+    seL4_CPtr replies[SCHED0008_NUM_CLIENTS];
+    seL4_CPtr endpoint;
+    seL4_CPtr badged_endpoints[SCHED0008_NUM_CLIENTS];
+
+    endpoint = vka_alloc_endpoint_leaky(&env->vka);
+
+    int highest = seL4_MaxPrio - 1;
+    int lowest = highest - SCHED0008_NUM_CLIENTS - 2;
+    int prio = highest - SCHED0008_NUM_CLIENTS - 1;
+    int middle = highest - 3;
+
+    assert(highest > lowest && highest > middle && middle > lowest);
+
+    /* set up all the clients */
+    for (int i = 0; i < SCHED0008_NUM_CLIENTS; i++) {
+        create_helper_thread(env, &clients[i]);
+        set_helper_priority(env, &clients[i], prio);
+        badged_endpoints[i] = get_free_slot(env);
+        error = cnode_mint(env, endpoint, badged_endpoints[i], seL4_AllRights, seL4_CapData_Badge_new(i));
+        test_eq(error, seL4_NoError);
+        replies[i] = clients[i].thread.reply.cptr;
+        ZF_LOGD("Client %d, prio %d\n", i, prio);
+        prio++;
+    }
+
+  	seL4_Word badge;
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+
+    /* first test that changing prio while on an endpoint works */
+    seL4_CPtr reply = vka_alloc_reply_leaky(&env->vka);
+    test_neq(reply, (seL4_Word)seL4_CapNull);
+
+    /* start one clients so it queue on the endpoint */
+    start_helper(env, &clients[0], (helper_fn_t) sched0008_client, 0, badged_endpoints[0], 0, 0);
+    /* change its prio down */
+    set_helper_priority(env, &clients[0], lowest);
+    /* wait for a message */
+    api_recv(endpoint, &badge, reply);
+    test_eq(badge, (seL4_Word)0);
+
+    /* now send another message */
+    seL4_Send(reply, info);
+    /* change its prio up */
+    set_helper_priority(env, &clients[0], lowest + 1);
+    /* get another message */
+    api_recv(endpoint, &badge, reply);
+    test_eq(badge, (seL4_Word)0);
+    seL4_Send(reply, info);
+
+    /* Now test moving client 0 into all possible places in the endpoint queue */
+   /* first start the rest */
+    for (int i = 1; i < SCHED0008_NUM_CLIENTS; i++) {
+        start_helper(env, &clients[i], (helper_fn_t) sched0008_client, i, badged_endpoints[i], 0, 0);
+    }
+
+    /* let everyone queue on endpoint */
+    sleep(env, 1 * US_IN_S);
+
+    ZF_LOGD("lower -> lowest");
+    ZF_LOGD("Client 0, prio %d\n", lowest);
+    /* move client 0's prio from lower -> lowest*/
+    set_helper_priority(env, &clients[0], lowest);
+    check_receive_ordered(env, endpoint, 4, replies);
+
+    ZF_LOGD("higher -> middle");
+    ZF_LOGD("Client 0, prio %d\n", middle);
+    /* higher -> to middle */
+    set_helper_priority(env, &clients[0], middle);
+    check_receive_ordered(env, endpoint, 2, replies);
+
+    ZF_LOGD("higher -> highest");
+    ZF_LOGD("Client 0, prio %d\n", highest - 1);
+    /* higher -> to highest */
+    set_helper_priority(env, &clients[0], highest - 1);
+    check_receive_ordered(env, endpoint, 0, replies);
+
+    ZF_LOGD("higher -> highest");
+    ZF_LOGD("Client 0, prio %d\n", highest);
+    /* highest -> even higher */
+    set_helper_priority(env, &clients[0], highest);
+    check_receive_ordered(env, endpoint, 0, replies);
+
+    ZF_LOGD("lower -> highest");
+    ZF_LOGD("Client 0, prio %d\n", highest - 1);
+    /* lower -> highest */
+    set_helper_priority(env, &clients[0], highest - 1);
+    check_receive_ordered(env, endpoint, 0, replies);
+
+    ZF_LOGD("lower -> middle");
+    ZF_LOGD("Client 0, prio %d\n", middle);
+    /* lower -> middle */
+    set_helper_priority(env, &clients[0], middle);
+    check_receive_ordered(env, endpoint, 2, replies);
+
+    ZF_LOGD("lower -> lowest");
+    ZF_LOGD("Client 0, prio %d\n", lowest);
+    /* lower -> lowest */
+    set_helper_priority(env, &clients[0], lowest);
+    check_receive_ordered(env, endpoint, 4, replies);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0008, "Test changing prio while in endpoint queues results in correct message order",
+        test_change_prio_on_endpoint)
+
+#define SCHED0009_SERVERS 5
+
+static NORETURN void
+sched0009_server(seL4_CPtr endpoint, int id, seL4_CPtr reply)
+{
+    /* wait to start */
+    ZF_LOGD("Server %d: awake", id);
+    seL4_Word badge;
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
+    api_recv(endpoint, &badge, reply);
+
+    while (1) {
+        ZF_LOGD("Server %d: ReplyRecv", id);
+        seL4_SetMR(0, id);
+        api_reply_recv(endpoint, info, &badge, reply);
+    }
+}
+
+static int
+test_ordered_ipc_fastpath(env_t env)
+{
+    helper_thread_t threads[SCHED0009_SERVERS];
+    seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
+
+    /* set up servers */
+    for (int i = 0; i < SCHED0009_SERVERS; i++) {
+        int prio = seL4_MaxPrio - 1 - SCHED0009_SERVERS + i;
+        ZF_LOGD("Server %d, prio %d\n", i, prio);
+        create_helper_thread(env, &threads[i]);
+        set_helper_priority(env, &threads[i], prio);
+    }
+
+    /* start the first server */
+    start_helper(env, &threads[0], (helper_fn_t) sched0009_server, endpoint, 0,
+            get_helper_reply(&threads[0]), 0);
+
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
+    ZF_LOGD("Client Call\n");
+    seL4_Call(endpoint, info);
+    test_eq(seL4_GetMR(0), (seL4_Word)0);
+
+    /* resume all other servers */
+    for (int i = 1; i < SCHED0009_SERVERS; i++) {
+        start_helper(env, &threads[i], (helper_fn_t) sched0009_server, endpoint, i,
+                     get_helper_reply(&threads[i]), 0);
+        /* sleep and allow it to run */
+        sleep(env, 1 * NS_IN_S);
+        /* since we resume a higher prio server each time this should work */
+        seL4_Call(endpoint, info);
+        test_eq(seL4_GetMR(0), (seL4_Word)i);
+    }
+
+    /* At this point all servers are queued on the endpoint */
+    /* now we will call and the highest prio server should reply each time */
+    for (int i = 0; i < SCHED0009_SERVERS; i++) {
+        seL4_Call(endpoint, info);
+        test_eq(seL4_GetMR(0), (seL4_Word)(SCHED0009_SERVERS - 1));
+    }
+
+    /* suspend each server in reverse prio order, should get next message from lower prio server */
+    for (int i = SCHED0009_SERVERS - 1; i >= 0; i--) {
+        seL4_TCB_Suspend(threads[i].thread.tcb.cptr);
+        /* don't call on the endpoint once all servers are suspended */
+        if (i > 0) {
+            seL4_Call(endpoint, info);
+            test_eq(seL4_GetMR(0), (seL4_Word)(i - 1));
+        }
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0009, "Test ordered ipc on reply wait fastpath", test_ordered_ipc_fastpath)
+
+int
+sched0010_fn(volatile int *state)
+{
+    state++;
+    return 0;
+}
+
+int
+test_resume_empty_or_no_sched_context(env_t env)
+{
+    /* resuming a thread with empty or no scheduling context should work (it puts the thread in a runnable state)
+     * but the thread cannot run until it receives a scheduling context */
+
+    sel4utils_thread_t thread;
+    seL4_CapData_t data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits);
+    sel4utils_thread_config_t config = thread_config_default(&env->simple, env->cspace_root,
+            data, 0, OUR_PRIO - 1);
+
+    int error = sel4utils_configure_thread_config(&env->vka, &env->vspace, &env->vspace,
+                                              config, &thread);
+    assert(error == 0);
+
+    error = api_sc_unbind(thread.sched_context.cptr);
+    test_eq(error, 0);
+
+    volatile int state = 0;
+    error = sel4utils_start_thread(&thread, (void *) sched0010_fn, (void *) &state, NULL, 1);
+    test_eq(error, seL4_NoError);
+
+    error = seL4_TCB_Resume(thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* let the thread 'run' */
+    sleep(env, 10 * NS_IN_MS);
+    test_eq(state, 0);
+
+    /* nuke the sc */
+    error = cnode_delete(env, thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* resume it */
+    error = seL4_TCB_Resume(thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* let the thread 'run' */
+    sleep(env, 10 * NS_IN_MS);
+    test_eq(state, 0);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0010, "Test resuming a thread with empty or missing scheduling context",
+            test_resume_empty_or_no_sched_context)
+
+#if CONFIG_HAVE_TIMER
+
+void
+sched0011_helper(void)
+{
+    while (1);
+}
+
+int
+test_scheduler_accuracy(env_t env)
+{
+    /*
+     * Start a thread with a 1s timeslice at our priority, and make sure it
+     * runs for that long
+     */
+    helper_thread_t helper;
+
+    create_helper_thread(env, &helper);
+    uint64_t period = 100 * US_IN_MS;
+    set_helper_sched_params(env, &helper, period, period, 0);
+    start_helper(env, &helper, (helper_fn_t) sched0011_helper, 0, 0, 0, 0);
+    set_helper_priority(env, &helper, OUR_PRIO);
+    seL4_Yield();
+    for (int i = 0; i < 11; i++) {
+        uint64_t start = timestamp(env);
+        seL4_Yield();
+        uint64_t end = timestamp(env);
+        /* calculate diff in ms */
+        uint64_t diff = (end - start) / NS_IN_US;
+        if (i > 0) {
+            test_geq(diff, period - 2 * US_IN_MS);
+            test_leq(diff, period + 2 * US_IN_MS);
+            if (diff > US_IN_S) {
+                ZF_LOGD("Too late: by %llu us", diff - US_IN_S);
+            } else {
+                ZF_LOGD("Too soon: by %llu us", US_IN_S - diff);
+            }
+        }
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0011, "Test scheduler accuracy",
+            test_scheduler_accuracy)
+
+/* used by sched0012, 0013, 0014 */
+static void
+periodic_thread(int id, volatile unsigned long *counters)
+{
+    counters[id] = 0;
+
+    while (1) {
+        counters[id]++;
+        test_assert_fatal(counters[id] < 10000);
+        printf("Tick\n");
+        seL4_Yield();
+    }
+}
+
+int
+test_one_periodic_thread(env_t env)
+{
+    helper_thread_t helper;
+    volatile unsigned long counter;
+    int error;
+
+    /* set priority down so we can run the helper(s) at a higher prio */
+    error = seL4_TCB_SetPriority(env->tcb, env->priority - 1);
+    test_eq(error, seL4_NoError);
+
+    create_helper_thread(env, &helper);
+    set_helper_priority(env, &helper, env->priority);
+    error = set_helper_sched_params(env, &helper, 0.2 * US_IN_S, US_IN_S, 0);
+    test_eq(error, seL4_NoError);
+
+    start_helper(env, &helper, (helper_fn_t) periodic_thread, 0, (seL4_Word) &counter, 0, 0);
+
+    while (counter < 10) {
+        printf("Tock %ld\n", counter);
+        sleep(env, NS_IN_S);
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0012, "Test one periodic thread", test_one_periodic_thread)
+
+int
+test_two_periodic_threads(env_t env)
+{
+    const int num_threads = 2;
+    helper_thread_t helpers[num_threads];
+    volatile unsigned long counters[num_threads];
+
+    /* set priority down so we can run the helper(s) at a higher prio */
+    int error = seL4_TCB_SetPriority(env->tcb, env->priority - 1);
+    test_eq(error, seL4_NoError);
+
+    for (int i = 0; i < num_threads; i++) {
+        create_helper_thread(env, &helpers[i]);
+        set_helper_priority(env, &helpers[i], env->priority);
+    }
+
+    set_helper_sched_params(env, &helpers[0], 0.1 * US_IN_S, 2 * US_IN_S, 0);
+    set_helper_sched_params(env, &helpers[1], 0.1 * US_IN_S, 3 * US_IN_S, 0);
+
+    for (int i = 0; i < num_threads; i++) {
+        start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 0, 0);
+    }
+
+    while (counters[0] < 3 && counters[1] < 3) {
+        sleep(env, NS_IN_S);
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0013, "Test two periodic threads", test_two_periodic_threads);
+
+int
+test_ordering_periodic_threads(env_t env)
+{
+    /*
+     * Set up 3 periodic threads with different budgets.
+     * All 3 threads increment global counters,
+     * check their increments are inline with their budgets.
+     */
+
+    const int num_threads = 3;
+    helper_thread_t helpers[num_threads];
+    volatile unsigned long counters[num_threads];
+
+    /* set priority down so we can run the helper(s) at a higher prio */
+    int error = seL4_TCB_SetPriority(env->tcb, env->priority - 1);
+    test_eq(error, seL4_NoError);
+
+    /* sleep for a bit first - collect any waiting timer irqs */
+    sleep(env, 50 * NS_IN_MS);
+
+    for (int i = 0; i < num_threads; i++) {
+        create_helper_thread(env, &helpers[i]);
+        set_helper_priority(env, &helpers[i], env->priority);
+    }
+
+    set_helper_sched_params(env, &helpers[0], 10 * US_IN_MS, 100 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[1], 10 * US_IN_MS, 200 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[2], 10 * US_IN_MS, 800 * US_IN_MS, 0);
+
+    for (int i = 0; i < num_threads; i++) {
+        start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 0, 0);
+    }
+
+    /* stop once 2 reaches 11 increments */
+    const unsigned long limit = 11u;
+    while (counters[2] < limit) {
+        sleep(env, NS_IN_S);
+    }
+
+    ZF_LOGD("O: %lu\n1: %lu\n2: %lu\n", counters[0], counters[1], counters[2]);
+
+    /* zero should have run 8 times as much as 2 */
+    test_geq(counters[0], (limit - 1) * 8);
+    /* one should have run 4 times as much as 2 */
+    test_geq(counters[1], (limit - 1) * 4);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0014, "Test periodic thread ordering", test_ordering_periodic_threads)
+
+static void
+sched0015_helper(int id, ltimer_t *timer, volatile unsigned long long *counters)
+{
+    counters[id] = 0;
+
+    uint64_t prev = 0;
+    int error = ltimer_get_time(timer, &prev);
+    test_eq(error, 0);
+    while (1) {
+        uint64_t now = 0;
+        error = ltimer_get_time(timer, &now);
+        uint64_t diff = now - prev;
+        if (diff < 10 * NS_IN_US) {
+            counters[id]++;
+        }
+        prev = now;
+    }
+}
+
+int
+test_budget_overrun(env_t env)
+{
+    /* Run two periodic threads that do not yeild but count the approximate
+     * amount of time that they run for in 10's of nanoseconds.
+     *
+     * Each thread has a different share of the processor.
+     * Both threads are higher prio than the test runner thread.
+     * Make sure the test runner thread gets to run, and that
+     * the two threads run roughly according to their budgets
+     */
+    volatile unsigned long long counters[2];
+    helper_thread_t thirty, fifty;
+    int error;
+
+    /* set priority down so we can run the helper(s) at a higher prio */
+    error = seL4_TCB_SetPriority(env->tcb, env->priority - 1);
+    test_eq(error, seL4_NoError);
+
+    create_helper_thread(env, &thirty);
+    create_helper_thread(env, &fifty);
+
+    set_helper_priority(env, &thirty, env->priority);
+    set_helper_priority(env, &fifty, env->priority);
+
+    set_helper_sched_params(env, &fifty, 0.1 * US_IN_S, 0.2 * US_IN_S, 0);
+    set_helper_sched_params(env, &thirty, 0.1 * US_IN_S, 0.3 * US_IN_S, 0);
+
+    start_helper(env, &fifty,  (helper_fn_t) sched0015_helper, 1, (seL4_Word) &env->timer.ltimer,
+                 (seL4_Word) counters, 0);
+    start_helper(env, &thirty, (helper_fn_t) sched0015_helper, 0, (seL4_Word) &env->timer.ltimer,
+                  (seL4_Word) counters, 0);
+
+    uint64_t ticks = 0;
+    while (counters[1] < 10000000) {
+         sleep(env, US_IN_S);
+         ticks++;
+         ZF_LOGD("Tick %llu", counters[1]);
+    }
+    error = seL4_TCB_Suspend(thirty.thread.tcb.cptr);
+    test_eq(error, 0);
+    test_geq(counters[0], 0llu);
+
+    error = seL4_TCB_Suspend(fifty.thread.tcb.cptr);
+    test_eq(error, 0);
+    test_geq(counters[1], 0llu);
+
+    /* we should have run in the 20% of time left by thirty and fifty threads */
+    test_geq(ticks, 0llu);
+    /* fifty should have run more than thirty */
+    test_geq(counters[1], counters[0]);
+
+    ZF_LOGD("Result: 30%% incremented %llu, 50%% incremened %llu\n",
+            counters[0], counters[1]);
+
+    return sel4test_get_result();
+}
+
+#endif /* CONFIG_HAVE_TIMER */
+
+static void
+sched0016_helper(volatile int *state)
+{
+    while (1) {
+        printf("Hello\n");
+        *state = *state + 1;
+        seL4_Yield();
+    }
+
+    ZF_LOGF("Should not get here!");
+}
+
+int
+test_resume_no_overflow(env_t env)
+{
+    /* test thread cannot exceed its budget by being suspended and resumed */
+    helper_thread_t helper;
+    volatile int state = 0;
+    int error = 0;
+
+    /* set priority down so we can run the helper(s) at a higher prio */
+    error = seL4_TCB_SetPriority(env->tcb, env->priority);
+    test_eq(error, seL4_NoError);
+
+    create_helper_thread(env, &helper);
+    set_helper_priority(env, &helper, env->priority);
+
+    /* this thread only runs for 1 second every 10 minutes */
+    set_helper_sched_params(env, &helper, 1 * US_IN_S, 10 * SEC_IN_MINUTE * US_IN_S, 0);
+
+    start_helper(env, &helper,  (helper_fn_t) sched0016_helper, (seL4_Word) &state,
+                 0, 0, 0);
+    seL4_Yield();
+    test_eq(state, 1);
+
+    for (int i = 0; i < 10; i++) {
+        error = seL4_TCB_Suspend(helper.thread.tcb.cptr);
+        test_eq(error, 0);
+
+        error = seL4_TCB_Resume(helper.thread.tcb.cptr);
+        test_eq(error, 0);
+
+        seL4_Yield();
+
+        test_eq(state, 1);
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0016, "Test resume cannot be used to exceed budget", test_resume_no_overflow);
 #endif /* CONFIG_KERNEL_RT */
