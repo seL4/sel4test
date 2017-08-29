@@ -1,0 +1,4 @@
+.git/*
+*LICENSE_*.txt
+master-configs
+.licenseignore
