@@ -90,18 +90,6 @@ test_frame_exported(env_t env)
 }
 DEFINE_TEST(FRAMEEXPORTS0001, "Test that we can access all exported frames", test_frame_exported)
 
-#if defined(CONFIG_ARCH_ARM)
-/* XN support is only implemented for ARM currently. */
-
-/* Function that generates a fault. If we're mapped XN we should instruction
- * fault at the start of the function. If not we should data fault on 0x42.
- */
-static int fault(seL4_Word arg1, seL4_Word arg2, seL4_Word arg3, seL4_Word arg4)
-{
-    *(char*)0x42 = 'c';
-    return 0;
-}
-
 /* Wait for a VM fault originating on the given EP the return the virtual
  * address it occurred at. Returns the sentinel 0xffffffff if the message
  * received was not a VM fault.
@@ -114,6 +102,18 @@ static int handle(seL4_CPtr fault_ep, seL4_CPtr reply, seL4_Word arg3, seL4_Word
     } else {
         return (int)0xffffffff;
     }
+}
+
+#if defined(CONFIG_ARCH_ARM)
+/* XN support is only implemented for ARM currently. */
+
+/* Function that generates a fault. If we're mapped XN we should instruction
+ * fault at the start of the function. If not we should data fault on 0x42.
+ */
+static int fault(seL4_Word arg1, seL4_Word arg2, seL4_Word arg3, seL4_Word arg4)
+{
+    *(char*)0x42 = 'c';
+    return 0;
 }
 
 static int test_xn(env_t env, seL4_ArchObjectType frame_type)
@@ -304,3 +304,74 @@ static int test_switch_device_frame_ipcbuf(env_t env)
 }
 DEFINE_TEST(FRAMEDIPC0002, "Test that we cannot switch a threads IPC buffer to a device frame", test_switch_device_frame_ipcbuf)
 #endif /* CONFIG_HAVE_TIMER */
+
+static int touch_data_fault(seL4_Word data, seL4_Word fault_ep, seL4_Word arg3, seL4_Word arg4)
+{
+    *(volatile int*)data = 42;
+    /* if we got here we should wake the fault handler up with an error so the test doesn't hang forever.
+     * we do that by generating a different fault */
+    utils_undefined_instruction();
+    return sel4test_get_result();
+}
+
+static int test_unmap_on_delete(env_t env)
+{
+    int err;
+    /* Get ourselves a frame. */
+    cspacepath_t frame_path;
+    seL4_CPtr frame_cap = vka_alloc_frame_leaky(&env->vka, seL4_PageBits);
+    test_assert(frame_cap != seL4_CapNull);
+    vka_cspace_make_path(&env->vka, frame_cap, &frame_path);
+
+    /* create a copy of the frame cap */
+    cspacepath_t frame_copy;
+    err = vka_cspace_alloc_path(&env->vka, &frame_copy);
+    test_assert(err == seL4_NoError);
+    vka_cnode_copy(&frame_copy, &frame_path, seL4_AllRights);
+
+    /* Map it in */
+    uintptr_t cookie = 0;
+    void *dest = vspace_map_pages(&env->vspace, &frame_copy.capPtr, &cookie, seL4_AllRights, 1, seL4_PageBits, 1);
+    test_assert(dest != NULL);
+
+    /* verify we can access it */
+    *(volatile int*)dest = 0;
+
+    /* now delete the copy of the frame we mapped in */
+    vka_cnode_delete(&frame_copy);
+
+    /* Setup a fault endpoint. */
+    seL4_CPtr fault_ep = vka_alloc_endpoint_leaky(&env->vka);
+    cspacepath_t path;
+    vka_cspace_make_path(&env->vka, fault_ep, &path);
+    test_assert(fault_ep != seL4_CapNull);
+
+    /* Then setup the thread that will fault. */
+    helper_thread_t faulter;
+    create_helper_thread(env, &faulter);
+    set_helper_priority(env, &faulter, 100);
+    err = api_tcb_set_space(get_helper_tcb(&faulter),
+                             fault_ep, seL4_CapNull,
+                             env->cspace_root,
+                             seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                             env->page_directory, seL4_NilData);
+    start_helper(env, &faulter, touch_data_fault, (seL4_Word)dest, 0, 0 ,0);
+
+    /* Now a fault handler that will catch and diagnose its fault. */
+    helper_thread_t handler;
+    create_helper_thread(env, &handler);
+    set_helper_priority(env, &handler, 100);
+    start_helper(env, &handler, handle, fault_ep, get_helper_reply(&handler), 0, 0);
+
+    /* Wait for the fault to happen */
+    void *res = (void*)(seL4_Word)wait_for_helper(&handler);
+
+    /* check that we got a fault as expected */
+    test_eq((uintptr_t)res, (uintptr_t)dest);
+
+    cleanup_helper(env, &handler);
+    cleanup_helper(env, &faulter);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(FRAMEDIPC0003, "Test that deleting a frame cap unmaps the frame", test_unmap_on_delete)
