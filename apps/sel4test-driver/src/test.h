@@ -28,6 +28,8 @@
 /* This file is shared with seltest-tests. */
 #include <test_init_data.h>
 
+#define TESTS_APP "sel4test-tests"
+
 struct env {
     /* An initialised vka that may be used by the test. */
     vka_t vka;
@@ -43,6 +45,13 @@ struct env {
     test_init_data_t *init;
     /* extra cap to the init data frame for mapping into the remote vspace */
     seL4_CPtr init_frame_cap_copy;
+
+    void* remote_vaddr;
+    sel4utils_process_t test_process;
+    seL4_CPtr endpoint;
+
+    int num_untypeds;
+    vka_object_t* untypeds;
 };
 
 vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(env_t env);

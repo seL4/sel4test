@@ -43,8 +43,6 @@
 #include <vspace/vspace.h>
 #include "test.h"
 
-#define TESTS_APP "sel4test-tests"
-
 /* ammount of untyped memory to reserve for the driver (32mb) */
 #define DRIVER_UNTYPED_MEMORY (1 << 25)
 /* Number of untypeds to try and use to allocate the driver memory.
@@ -63,8 +61,6 @@ static sel4utils_alloc_data_t data;
 
 /* environment encapsulating allocation interfaces etc */
 static struct env env;
-/* the number of untyped objects we have to give out to processes */
-static int num_untypeds;
 /* list of untypeds to give out to test processes */
 static vka_object_t untypeds[CONFIG_MAX_NUM_BOOTINFO_UNTYPED_CAPS];
 /* list of sizes (in bits) corresponding to untyped */
@@ -131,8 +127,8 @@ allocate_untypeds(vka_object_t *untypeds, size_t bytes, unsigned int max_untyped
         /* keep allocating until we run out, or if allocating would
          * cause us to allocate too much memory*/
         while (num_untypeds < max_untypeds &&
-               allocated + BIT(size_bits) <= bytes &&
-               vka_alloc_untyped(&env.vka, size_bits, &untypeds[num_untypeds]) == 0) {
+                allocated + BIT(size_bits) <= bytes &&
+                vka_alloc_untyped(&env.vka, size_bits, &untypeds[num_untypeds]) == 0) {
             allocated += BIT(size_bits);
             num_untypeds++;
         }
@@ -166,145 +162,6 @@ populate_untypeds(vka_object_t *untypeds)
     return num_untypeds;
 }
 
-/* copy untyped caps into a processes cspace, return the cap range they can be found in */
-static seL4_SlotRegion
-copy_untypeds_to_process(sel4utils_process_t *process, vka_object_t *untypeds, int num_untypeds)
-{
-    seL4_SlotRegion range = {0};
-
-    for (int i = 0; i < num_untypeds; i++) {
-        seL4_CPtr slot = sel4utils_copy_cap_to_process(process, &env.vka, untypeds[i].cptr);
-
-        /* set up the cap range */
-        if (i == 0) {
-            range.start = slot;
-        }
-        range.end = slot;
-    }
-    assert((range.end - range.start) + 1 == num_untypeds);
-    return range;
-}
-
-static void
-copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
-{
-    init->serial_irq_cap = sel4utils_copy_cap_to_process(test_process, &env->vka,
-                                               env->serial_objects.serial_irq_path.capPtr);
-    ZF_LOGF_IF(init->serial_irq_cap == 0,
-               "Failed to copy PS default serial IRQ cap to test child "
-               "process.");
-
-    arch_copy_serial_caps(init, env, test_process);
-}
-
-/* Run a single test.
- * Each test is launched as its own process. */
-int
-run_test(struct testcase *test)
-{
-    int error;
-    sel4utils_process_t test_process;
-
-    /* Test intro banner. */
-    printf("  %s\n", test->name);
-
-    sel4utils_process_config_t config = process_config_default_simple(&env.simple, TESTS_APP, env.init->priority);
-    config = process_config_mcp(config, seL4_MaxPrio);
-    error = sel4utils_configure_process_custom(&test_process, &env.vka, &env.vspace, config);
-    assert(error == 0);
-
-    /* set up caps about the process */
-    env.init->stack_pages = CONFIG_SEL4UTILS_STACK_SIZE / PAGE_SIZE_4K;
-    env.init->stack = test_process.thread.stack_top - CONFIG_SEL4UTILS_STACK_SIZE;
-    env.init->page_directory = sel4utils_copy_cap_to_process(&test_process, &env.vka, test_process.pd.cptr);
-    env.init->root_cnode = SEL4UTILS_CNODE_SLOT;
-    env.init->tcb = sel4utils_copy_cap_to_process(&test_process, &env.vka, test_process.thread.tcb.cptr);
-    env.init->domain = sel4utils_copy_cap_to_process(&test_process, &env.vka, simple_get_init_cap(&env.simple, seL4_CapDomain));
-    env.init->asid_pool = sel4utils_copy_cap_to_process(&test_process, &env.vka, simple_get_init_cap(&env.simple, seL4_CapInitThreadASIDPool));
-    env.init->asid_ctrl = sel4utils_copy_cap_to_process(&test_process, &env.vka, simple_get_init_cap(&env.simple, seL4_CapASIDControl));
-#ifdef CONFIG_IOMMU
-    env.init->io_space = sel4utils_copy_cap_to_process(&test_process, &env.vka, simple_get_init_cap(&env.simple, seL4_CapIOSpace));
-#endif /* CONFIG_IOMMU */
-#ifdef CONFIG_ARM_SMMU
-    env.init->io_space_caps = arch_copy_iospace_caps_to_process(&test_process, &env);
-#endif
-    env.init->cores = simple_get_core_count(&env.simple);
-    /* copy the sched ctrl caps to the remote process */
-    if (config_set(CONFIG_KERNEL_RT)) {
-        seL4_CPtr sched_ctrl = simple_get_sched_ctrl(&env.simple, 0);
-        env.init->sched_ctrl = sel4utils_copy_cap_to_process(&test_process, &env.vka, sched_ctrl);
-        for (int i = 1; i < env.init->cores; i++) {
-            sched_ctrl = simple_get_sched_ctrl(&env.simple, i);
-            sel4utils_copy_cap_to_process(&test_process, &env.vka, sched_ctrl);
-        }
-    }
-    /* setup data about untypeds */
-    env.init->untypeds = copy_untypeds_to_process(&test_process, untypeds, num_untypeds);
-    error = sel4utils_copy_timer_caps_to_process(&env.init->to, &env.timer_objects, &env.vka, &test_process);
-    ZF_LOGF_IF(error, "Failed to copy timer_objects to test process");
-    copy_serial_caps(env.init, &env, &test_process);
-    /* copy the fault endpoint - we wait on the endpoint for a message
-     * or a fault to see when the test finishes */
-    seL4_CPtr endpoint = sel4utils_copy_cap_to_process(&test_process, &env.vka, test_process.fault_endpoint.cptr);
-
-    /* map the cap into remote vspace */
-    void *remote_vaddr = vspace_share_mem(&env.vspace, &test_process.vspace, env.init, 1, PAGE_BITS_4K, seL4_AllRights, 1);
-    assert(remote_vaddr != 0);
-
-    /* WARNING: DO NOT COPY MORE CAPS TO THE PROCESS BEYOND THIS POINT,
-     * AS THE SLOTS WILL BE CONSIDERED FREE AND OVERRIDDEN BY THE TEST PROCESS. */
-    /* set up free slot range */
-    env.init->cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
-    env.init->free_slots.start = endpoint + 1;
-    env.init->free_slots.end = (1u << CONFIG_SEL4UTILS_CSPACE_SIZE_BITS);
-    assert(env.init->free_slots.start < env.init->free_slots.end);
-    /* copy test name */
-    strncpy(env.init->name, test->name + strlen("TEST_"), TEST_NAME_MAX);
-    /* ensure string is null terminated */
-    env.init->name[TEST_NAME_MAX - 1] = '\0';
-#ifdef CONFIG_DEBUG_BUILD
-    seL4_DebugNameThread(test_process.thread.tcb.cptr, env.init->name);
-#endif
-
-    /* set up args for the test process */
-    seL4_Word argc = 2;
-    char string_args[argc][WORD_STRING_SIZE];
-    char *argv[argc];
-    sel4utils_create_word_args(string_args, argv, argc, endpoint, remote_vaddr);
-
-    /* spawn the process */
-    error = sel4utils_spawn_process_v(&test_process, &env.vka, &env.vspace,
-                            argc, argv, 1);
-    assert(error == 0);
-
-    /* wait on it to finish or fault, report result */
-    seL4_MessageInfo_t info = api_wait(test_process.fault_endpoint.cptr, NULL);
-
-    int result = seL4_GetMR(0);
-    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {
-        sel4utils_print_fault_message(info, test->name);
-        printf("Register of root thread in test (may not be the thread that faulted)\n");
-        sel4debug_dump_registers(test_process.thread.tcb.cptr);
-        result = FAILURE;
-    }
-
-    /* unmap the env.init data frame */
-    vspace_unmap_pages(&test_process.vspace, remote_vaddr, 1, PAGE_BITS_4K, NULL);
-
-    /* reset all the untypeds for the next test */
-    for (int i = 0; i < num_untypeds; i++) {
-        cspacepath_t path;
-        vka_cspace_make_path(&env.vka, untypeds[i].cptr, &path);
-        vka_cnode_revoke(&path);
-    }
-
-    /* destroy the process */
-    sel4utils_destroy_process(&test_process, &env.vka);
-
-    test_assert(result == SUCCESS);
-    return result;
-}
-
 void *main_continued(void *arg UNUSED)
 {
 
@@ -319,7 +176,8 @@ void *main_continued(void *arg UNUSED)
     printf("\n");
 
     /* allocate lots of untyped memory for tests to use */
-    num_untypeds = populate_untypeds(untypeds);
+    env.num_untypeds = populate_untypeds(untypeds);
+    env.untypeds = untypeds;
 
     /* create a frame that will act as the init data, we can then map that
      * in to target processes */
@@ -327,7 +185,7 @@ void *main_continued(void *arg UNUSED)
     assert(env.init != NULL);
 
     /* copy the untyped size bits list across to the init frame */
-    memcpy(env.init->untyped_size_bits_list, untyped_size_bits_list, sizeof(uint8_t) * num_untypeds);
+    memcpy(env.init->untyped_size_bits_list, untyped_size_bits_list, sizeof(uint8_t) * env.num_untypeds);
 
     /* parse elf region data about the test image to pass to the tests app */
     num_elf_regions = sel4utils_elf_num_regions(TESTS_APP);
@@ -343,7 +201,7 @@ void *main_continued(void *arg UNUSED)
     plat_init(&env);
 
     /* now run the tests */
-    sel4test_run_tests("sel4test", run_test);
+    sel4test_run_tests("sel4test", &env);
 
     return NULL;
 }
