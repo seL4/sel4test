@@ -19,4 +19,4 @@ if [ $# -ne 2 ]; then
 fi
 
 echo "#include <sel4test/test.h>"
-echo ""; $1 -t -j _test_case $2 | grep -E " [lg][ ]+O _test_case.*TEST_" | tr -s ' ' | cut -d ' ' -f 5 | sort | while read line; do echo "__attribute__((used)) __attribute__((section(\"_test_case\"))) testcase_t ${line} = { .name = \"${line}\"};"; done; echo ""
+echo ""; $1 -t -j _test_case $2 | grep -E " [lg][ ]+O _test_case.*TEST_" | tr -s ' ' | cut -d ' ' -f 5 | sort | while read line; do echo "__attribute__((used)) __attribute__((section(\"_test_case\"))) testcase_t ${line} = { .name = \"${line}\", .test_type = BASIC};"; done; echo ""
