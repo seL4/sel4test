@@ -19,7 +19,7 @@
 #include <sel4/sel4.h>
 #include <vka/object.h>
 
-#include "../helpers.h"
+#include "test.h"
 
 /*
  * Perform the codeblock given in "code", testing registers before and after to
@@ -190,7 +190,7 @@
             TEST_REGISTERS(_code); \
         return sel4test_get_result(); \
     } \
-    DEFINE_TEST(_test, "Basic " #_syscall "() testing", test_ ## _syscall)
+    DEFINE_TEST_BOOTSTRAP(_test, "Basic " #_syscall "() testing", test_ ## _syscall)
 
 /*
  * Generate testing stubs for each of the basic system calls.
@@ -200,10 +200,10 @@ GENERATE_SYSCALL_TEST(SYSCALL0000, seL4_Yield,
                       seL4_Yield());
 
 GENERATE_SYSCALL_TEST(SYSCALL0001, seL4_Send,
-                      seL4_Send(env->cspace_root, seL4_MessageInfo_new(0, 0, 0, 0)))
+                      seL4_Send(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0)))
 
 GENERATE_SYSCALL_TEST(SYSCALL0002, seL4_NBSend,
-                      seL4_NBSend(env->cspace_root, seL4_MessageInfo_new(0, 0, 0, 0)))
+                      seL4_NBSend(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0)))
 
 #ifndef CONFIG_KERNEL_RT
 GENERATE_SYSCALL_TEST(SYSCALL0003, seL4_Reply,
@@ -211,10 +211,10 @@ GENERATE_SYSCALL_TEST(SYSCALL0003, seL4_Reply,
 #endif
 
 GENERATE_SYSCALL_TEST(SYSCALL0004, seL4_Signal,
-                      seL4_Signal(env->cspace_root))
+                      seL4_Signal(simple_get_cnode(&env->simple)))
 
 GENERATE_SYSCALL_TEST(SYSCALL0005, seL4_Call,
-                      seL4_Call(env->cspace_root, seL4_MessageInfo_new(0, 0, 0 , 0)))
+                      seL4_Call(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0)))
 
 static int
 test_debug_put_char(env_t env)
@@ -226,7 +226,7 @@ test_debug_put_char(env_t env)
     }
     return sel4test_get_result();
 }
-DEFINE_TEST(SYSCALL0006, "Basic seL4_DebugPutChar() testing", test_debug_put_char)
+DEFINE_TEST_BOOTSTRAP(SYSCALL0006, "Basic seL4_DebugPutChar() testing", test_debug_put_char)
 
 /* Slightly more complex tests for waiting, because we actually have
  * to wait on something real. */
@@ -247,7 +247,7 @@ test_recv(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SYSCALL0010, "Basic seL4_Recv() testing", test_recv)
+DEFINE_TEST_BOOTSTRAP(SYSCALL0010, "Basic seL4_Recv() testing", test_recv)
 
 static int
 test_reply_recv(env_t env)
@@ -266,7 +266,7 @@ test_reply_recv(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SYSCALL0011, "Basic seL4_ReplyRecv() testing", test_reply_recv)
+DEFINE_TEST_BOOTSTRAP(SYSCALL0011, "Basic seL4_ReplyRecv() testing", test_reply_recv)
 
 static int
 test_nb_recv(env_t env)
@@ -285,7 +285,7 @@ test_nb_recv(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SYSCALL0012, "Basic seL4_NBRecv() testing", test_nb_recv)
+DEFINE_TEST_BOOTSTRAP(SYSCALL0012, "Basic seL4_NBRecv() testing", test_nb_recv)
 
 static int
 test_wait(env_t env)
@@ -304,24 +304,24 @@ test_wait(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SYSCALL0013, "Basic seL4_Wait() testing", test_wait)
+DEFINE_TEST_BOOTSTRAP(SYSCALL0013, "Basic seL4_Wait() testing", test_wait)
 
 /*
  * Let's not forget our friends in the *WithMRs community.
  */
 
 GENERATE_SYSCALL_TEST(SYSCALL0014, seL4_SendWithMRs,
-                      seL4_SendWithMRs(env->cspace_root, seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
+                      seL4_SendWithMRs(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
 
 GENERATE_SYSCALL_TEST(SYSCALL0015, seL4_NBSendWithMRs,
-                      seL4_NBSendWithMRs(env->cspace_root, seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
+                      seL4_NBSendWithMRs(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
 
 #ifndef CONFIG_KERNEL_RT
 GENERATE_SYSCALL_TEST(SYSCALL0016, seL4_ReplyWithMRs,
                       seL4_ReplyWithMRs(seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
 #endif
 GENERATE_SYSCALL_TEST(SYSCALL0017, seL4_CallWithMRs,
-                      seL4_CallWithMRs(env->cspace_root, seL4_MessageInfo_new(0, 0, 0 , 0), TEST_MRS))
+                      seL4_CallWithMRs(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
 
 #ifdef CONFIG_KERNEL_RT
 static int
@@ -332,7 +332,7 @@ test_nbsend_recv(env_t env)
     for (int i = 0; i < 10; i++) {
         /* Notify it so we don't block */
         seL4_Signal(ntfn);
-        TEST_REGISTERS(api_nbsend_recv(env->cspace_root, seL4_MessageInfo_new(0, 0, 0, 0),
+        TEST_REGISTERS(api_nbsend_recv(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0),
                                        ntfn, NULL, seL4_CapNull));
     }
 
