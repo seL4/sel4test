@@ -338,5 +338,5 @@ test_nbsend_recv(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SYSCALL0018, "Basic seL4_NBSendRecv testing", test_nbsend_recv)
+DEFINE_TEST_BOOTSTRAP(SYSCALL0018, "Basic seL4_NBSendRecv testing", test_nbsend_recv)
 #endif
