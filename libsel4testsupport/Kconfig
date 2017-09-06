@@ -10,5 +10,12 @@
 # @TAG(DATA61_BSD)
 #
 
-components-$(CONFIG_APP_TESTS)        += sel4test-tests
-sel4test-tests: common libsel4 libmuslc libcpio libsel4utils libsel4muslcsys libsel4allocman libsel4test libsel4testsupport libelf libplatsupport libsel4platsupport libsel4vspace libsel4simple-default libsel4debug libsel4sync
+menuconfig LIB_SEL4_TESTSUPPORT
+    bool "libsel4testsupport"
+    depends on HAVE_LIBC && HAVE_LIB_SEL4 && HAVE_LIB_UTILS
+    default y
+    help
+        Support library for sel4test apps.
+
+config HAVE_LIB_SEL4_TESTSUPPORT
+    bool

@@ -17,6 +17,7 @@
 #include <vka/capops.h>
 
 #include "test.h"
+#include <sel4testsupport/testreporter.h>
 
 /* Bootstrap test type. */
 static inline void bootstrap_set_up_test_type(env_t e)

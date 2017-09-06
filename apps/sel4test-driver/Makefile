@@ -33,7 +33,7 @@ ASMFILES += $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/plat/${PLA
 
 # Libraries required to build the target
 LIBS = c sel4 cpio elf sel4muslcsys sel4vka sel4allocman \
-       platsupport sel4platsupport sel4test sel4vspace \
+       platsupport sel4platsupport sel4test sel4testsupport sel4vspace \
        sel4utils sel4simple utils sel4debug
 LIBS += sel4simple-default
 

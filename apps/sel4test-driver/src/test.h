@@ -19,6 +19,7 @@
 #include <vka/vka.h>
 #include <vka/object.h>
 #include <sel4test/test.h>
+#include <sel4testsupport/testreporter.h>
 #include <sel4utils/process.h>
 #include <simple/simple.h>
 #include <vspace/vspace.h>

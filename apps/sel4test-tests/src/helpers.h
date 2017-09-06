@@ -23,6 +23,7 @@
 #include <platsupport/timer.h>
 
 #include "test.h"
+#include <sel4testsupport/testreporter.h>
 
 #define OUR_PRIO (env->priority)
 /* args provided by the user */

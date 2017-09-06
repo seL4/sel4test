@@ -10,5 +10,14 @@
 # @TAG(DATA61_BSD)
 #
 
-components-$(CONFIG_APP_TESTS)        += sel4test-tests
-sel4test-tests: common libsel4 libmuslc libcpio libsel4utils libsel4muslcsys libsel4allocman libsel4test libsel4testsupport libelf libplatsupport libsel4platsupport libsel4vspace libsel4simple-default libsel4debug libsel4sync
+# Targets
+TARGETS := libsel4testsupport.a
+
+# Source files required to build the target
+CFILES := $(sort $(patsubst $(SOURCE_DIR)/%,%,$(wildcard $(SOURCE_DIR)/src/*.c)))
+
+# Header files/directories this library provides
+HDRFILES := \
+	$(sort $(wildcard $(SOURCE_DIR)/include/*)) \
+
+include $(SEL4_COMMON)/common.mk
