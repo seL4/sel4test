@@ -140,20 +140,53 @@ int is_slot_empty(env_t env, seL4_Word slot);
 /* Get a free slot */
 seL4_Word get_free_slot(env_t env);
 
-/* timer */
-void wait_for_timer_interrupt(env_t env);
-/* sleep for an exact time: check the time when the timeout comes in and set the timeout for further if needed.
- * Due to race conditions on waiting for interrupts sleep may *not* be used if you have started
- * created_timer_interrupt_thread. As it uses a single underlying timer and callback this cannot be used
- * by more than one thread */
-void sleep(env_t env, uint64_t ns);
 /* busy wait for a period of time. This assumes that you have some thread (such as create_timer_interrupt_thread)
  * handling the timer interrupts. This can be used instead of sleep in circumstances where you want multiple
  * threads performing waits */
 void sleep_busy(env_t env, uint64_t ns);
-/* helper for retrieving the timestamp from the timer. you must either be handling timer interrupts yourself
- * or have started create_timer_interrupt_thread */\
-uint64_t timestamp(env_t env);
+
+/* sel4test RPC helpers - sel4test-tests sel4test-tests requesting services from sel4test-driver*/
+
+/* Request a sleep for at least @ns. Callees to this function will block until
+ * it's waken up and this function then returns. No concurrent calls to sel4test_sleep
+ * are allowed, and trying to do this has undefined behavior.
+ */
+void sel4test_sleep(env_t env, uint64_t ns);
+
+/* Request a timestamp. Timestamps might not be accurate and report
+ * longer time especially if working with multpile domains
+ */
+uint64_t sel4test_timestamp(env_t env);
+
+/* Request periodic signals every @ns, at least.
+ * This function is similar to the sel4test_sleep function above,
+ * but will get periodic notifications.
+ *
+ * Tests that request periodic timer using this function call can, if they want,
+ * wait for signals themselves, unlike sleep, on the env->timer_notification.
+ */
+void sel4test_periodic_start(env_t env, uint64_t ns);
+
+/* Request a timer reset. This should cancel receiving signals from
+ * previous sleep, periodic calls.
+ *
+ * If there were previous calls that set timeouts, sleep or periodic timer,
+ * they will be discarded, and tests will no longer get notifications on
+ * env->timer_notification.
+ *
+ * If this function is not called, and there were previous calls to sleep and/or
+ * periodic timer services, sel4test-driver will keep signaling
+ * the test notification whenever there is a timer interrupt, regardless
+ * of there exists a test waiting on the env->timer_notification or not.
+ */
+void sel4test_timer_reset(env_t env);
+
+/* This is a helper function part of the sel4test_timer interface.
+ * It simply waits on a valid env->timer_notification. Tests that
+ * do calls to sel4test_rpc_timer_* above and expect notifications
+ * from sel4test-driver can choose to use this function.
+ */
+void sel4test_ntfn_timer_wait(env_t env);
 
 /* helper for creating a thread to handle timer interrupts */
 int create_timer_interrupt_thread(env_t env, helper_thread_t *thread);

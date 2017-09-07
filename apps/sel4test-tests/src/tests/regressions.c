@@ -618,13 +618,8 @@ int test_no_ret_with_cpl0(env_t env)
     start_helper(env, &thread, (helper_fn_t) do_wait_for_cpl, 0, 0, 0, 0);
     stack_after_cpl = (uintptr_t)get_helper_initial_stack_pointer(&thread);
 
-    /* start a timer the we will wait on */
-    error = ltimer_set_timeout(&env->timer.ltimer, NS_IN_S / 10, TIMEOUT_PERIODIC);
-    test_eq(error, 0);
-    wait_for_timer_interrupt(env);
-
     for (int i = 0; i < 20; i++) {
-        wait_for_timer_interrupt(env);
+        sel4test_sleep(env, NS_IN_S / 10);
         if (got_cpl) {
             wait_for_helper(&thread);
             break;
@@ -651,7 +646,6 @@ int test_no_ret_with_cpl0(env_t env)
         test_eq(error, 0);
     }
 
-    ltimer_reset(&env->timer.ltimer);
     cleanup_helper(env, &thread);
 
     return sel4test_get_result();

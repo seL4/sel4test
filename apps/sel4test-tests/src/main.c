@@ -123,8 +123,6 @@ init_allocator(env_t env, test_init_data_t *init_data)
 
     /* add any arch specific objects to the allocator */
     arch_init_allocator(env, init_data);
-    error = allocman_add_untypeds_from_timer_objects(allocator, &init_data->to);
-    ZF_LOGF_IF(error, "allocman failed to add timer_objects");
 
     /* create a vspace */
     void *existing_frames[init_data->stack_pages + 2];
@@ -150,44 +148,6 @@ init_allocator(env_t env, test_init_data_t *init_data)
 
 }
 
-seL4_CPtr get_irq_cap(void *data, int id, irq_type_t type) {
-    test_init_data_t *init = (test_init_data_t *) data;
-    for (size_t i = 0; i < init->to.nirqs; i++) {
-        if (init->to.irqs[i].irq.type == type) {
-            switch (type) {
-            case PS_MSI:
-                if (init->to.irqs[i].irq.msi.vector == id) {
-                    return init->to.irqs[i].handler_path.capPtr;
-                }
-                break;
-            case PS_IOAPIC:
-                if (init->to.irqs[i].irq.ioapic.vector == id) {
-                    return init->to.irqs[i].handler_path.capPtr;
-                }
-                break;
-            case PS_INTERRUPT:
-                if (init->to.irqs[i].irq.irq.number == id) {
-                    return init->to.irqs[i].handler_path.capPtr;
-                }
-                break;
-            case PS_NONE:
-                ZF_LOGF("Invalid irq type");
-            }
-        }
-    }
-
-    ZF_LOGF("Could not find irq");
-    return seL4_CapNull;
-}
-
-static seL4_Error
-get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth)
-{
-    test_init_data_t *init = (test_init_data_t *) data;
-    return seL4_CNode_Copy(root, index, depth, init->root_cnode,
-                            sel4platsupport_timer_objs_get_irq_cap(&init->to, irq, PS_INTERRUPT), seL4_WordBits, seL4_AllRights);
-}
-
 static uint8_t
 cnode_size_bits(void *data)
 {
@@ -207,30 +167,17 @@ core_count(UNUSED void *data)
     return ((test_init_data_t *) data)->cores;
 }
 
-void init_timer(env_t env, test_init_data_t *init_data)
+void init_simple(env_t env, test_init_data_t *init_data)
 {
-    /* minimal simple implementation to get the platform
-     * default timer off the ground */
-    env->simple.arch_simple.irq = get_irq;
+    /* minimal simple implementation */
     env->simple.data = (void *) init_data;
     env->simple.arch_simple.data = (void *) init_data;
     env->simple.init_cap = sel4utils_process_init_cap;
     env->simple.cnode_size = cnode_size_bits;
     env->simple.sched_ctrl = sched_ctrl;
     env->simple.core_count = core_count;
-    sync_mutex_new(&env->vka, &env->timer_mutex);
 
     arch_init_simple(&env->simple);
-
-    int error = vka_alloc_notification(&env->vka, &env->timer_notification);
-    if (error != 0) {
-        ZF_LOGF("Failed to allocate notification object");
-    }
-
-    if (config_set(CONFIG_HAVE_TIMER)) {
-        arch_init_timer(env, init_data);
-        ltimer_reset(&env->timer.ltimer);
-    }
 }
 
 int
@@ -268,11 +215,13 @@ main(int argc, char **argv)
     env.num_regions = init_data->num_elf_regions;
     memcpy(env.regions, init_data->elf_regions, sizeof(sel4utils_elf_region_t) * env.num_regions);
 
+    env.timer_notification.cptr = init_data->timer_ntfn;
+
     /* initialse cspace, vspace and untyped memory allocation */
     init_allocator(&env, init_data);
 
-    /* initialise the timer */
-    init_timer(&env, init_data);
+    /* initialise simple */
+    init_simple(&env, init_data);
 
     /* find the test */
     testcase_t *test = find_test(init_data->name);
@@ -286,11 +235,6 @@ main(int argc, char **argv)
     } else {
         result = FAILURE;
         ZF_LOGF("Cannot find test %s\n", init_data->name);
-    }
-
-    /* turn off the timer */
-    if (config_set(CONFIG_HAVE_TIMER)) {
-        sel4platsupport_destroy_timer(&env.timer, &env.vka);
     }
 
     printf("Test %s %s\n", init_data->name, result == SUCCESS ? "passed" : "failed");

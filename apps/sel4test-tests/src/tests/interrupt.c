@@ -17,33 +17,16 @@
 
 #include <utils/util.h>
 
-static int
-test_interrupt(env_t env)
-{
-    int error = ltimer_set_timeout(&env->timer.ltimer, 1 * NS_IN_S, TIMEOUT_PERIODIC);
-    test_eq(error, 0);
-
-    for (int i = 0; i < 3; i++) {
-        wait_for_timer_interrupt(env);
-        ZF_LOGV("Tick\n");
-    }
-
-    ltimer_reset(&env->timer.ltimer);
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(INTERRUPT0001, "Test interrupts with timer", test_interrupt, config_set(CONFIG_HAVE_TIMER));
-
 static void
 interrupt_helper(env_t env, volatile int *state, int runs, seL4_CPtr endpoint)
 {
     while (*state < runs) {
        *state = *state + 1;
        ZF_LOGD("Tick");
-       wait_for_timer_interrupt(env);
+       sel4test_ntfn_timer_wait(env);
    }
    ZF_LOGD("Boom");
-   wait_for_timer_interrupt(env);
+   sel4test_ntfn_timer_wait(env);
 
 }
 
@@ -77,13 +60,13 @@ test_interrupt_notification_sc(env_t env)
                                                env->timer_notification.cptr);
     test_eq(error, seL4_NoError);
 
-    ltimer_reset(&env->timer.ltimer);
-    error = ltimer_set_timeout(&env->timer.ltimer, 10 * NS_IN_MS, TIMEOUT_PERIODIC);
-    test_check(error == 0);
+    sel4test_periodic_start(env, 10 * NS_IN_MS);
 
     /* wait for the helper */
     wait_for_helper(&helper);
     test_eq(state, runs);
+
+    sel4test_timer_reset(env);
 
     return sel4test_get_result();
 }
@@ -124,8 +107,7 @@ test_interrupt_notification_and_tcb_sc(env_t env)
     error = api_sc_unbind(helper_without_sc.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
-    error = ltimer_set_timeout(&env->timer.ltimer, 10 * NS_IN_MS, TIMEOUT_PERIODIC);
-    test_check(error == 0);
+    sel4test_periodic_start(env, 10 * NS_IN_MS);
 
     error = api_sc_bind(helper_without_sc.thread.sched_context.cptr,
                                    env->timer_notification.cptr);
@@ -137,6 +119,8 @@ test_interrupt_notification_and_tcb_sc(env_t env)
 
     wait_for_helper(&helper_without_sc);
     test_eq(state_without_sc, runs);
+
+    sel4test_timer_reset(env);
 
     return sel4test_get_result();
 }
@@ -168,11 +152,11 @@ test_interrupt_no_sc(env_t env)
     error = api_sc_unbind(helper.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
 
-    ltimer_reset(&env->timer.ltimer);
-    error = ltimer_set_timeout(&env->timer.ltimer, 10 * NS_IN_MS, TIMEOUT_PERIODIC);
-    test_check(error == 0);
+    sel4test_periodic_start(env, 10 * NS_IN_MS);
 
     test_eq(state, (seL4_Word) prev_state);
+
+    sel4test_timer_reset(env);
 
     return sel4test_get_result();
 }
@@ -219,8 +203,7 @@ test_interrupt_notification_sc_two_clients(env_t env)
                                    env->timer_notification.cptr);
     test_eq(error, seL4_NoError);
 
-    ltimer_reset(&env->timer.ltimer);
-    error = ltimer_set_timeout(&env->timer.ltimer, 10 * NS_IN_MS, TIMEOUT_PERIODIC);
+    sel4test_periodic_start(env, 10 * NS_IN_MS);
 
     /* wait for the helper */
     wait_for_helper(&helper_first);
@@ -228,6 +211,8 @@ test_interrupt_notification_sc_two_clients(env_t env)
 
     test_eq(state_first, runs);
     test_eq(state_second, runs);
+
+    sel4test_timer_reset(env);
 
     return sel4test_get_result();
 }
@@ -267,12 +252,11 @@ test_interrupt_delete_sc(env_t env)
     /* now delete it */
     vka_free_object(&env->vka, &helper.thread.sched_context);
 
-    ltimer_reset(&env->timer.ltimer);
-    error = ltimer_set_timeout(&env->timer.ltimer, 10 * NS_IN_MS, TIMEOUT_PERIODIC);
-    test_check(error == 0);
+    sel4test_periodic_start(env, 10 * NS_IN_MS);
 
     test_eq(state, prev_state);
 
+    sel4test_timer_reset(env);
     return sel4test_get_result();
 }
 DEFINE_TEST(INTERRUPT0006, "Test interrupts after deleting scheduling context bound to notification", test_interrupt_delete_sc, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_KERNEL_RT));

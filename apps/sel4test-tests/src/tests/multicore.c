@@ -41,12 +41,12 @@ int smp_test_tcb_resume(env_t env)
     seL4_Word old_counter;
 
     /* Let the counter thread run. */
-    sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, 10 * NS_IN_MS);
 
     old_counter = counter;
 
     /* Let it run again on the current core. */
-    sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, 10 * NS_IN_MS);
 
     /* Now, counter should have moved. */
     test_check(counter != old_counter);
@@ -58,7 +58,7 @@ int smp_test_tcb_resume(env_t env)
     old_counter = counter;
 
     /* Check if the thread is running. */
-    sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, 10 * NS_IN_MS);
 
     /* Counter should not have moved. */
     test_check(counter == old_counter);
@@ -66,7 +66,7 @@ int smp_test_tcb_resume(env_t env)
 
     /* Resume the thread and check it does move. */
     seL4_TCB_Resume(get_helper_tcb(&t1));
-    sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, 10 * NS_IN_MS);
     test_check(counter != old_counter);
 
     /* Suspend the thread. */
@@ -75,7 +75,7 @@ int smp_test_tcb_resume(env_t env)
     old_counter = counter;
 
     /* Check if the thread is running. */
-    sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, 10 * NS_IN_MS);
 
     /* Counter should not have moved. */
     test_check(counter == old_counter);
@@ -89,12 +89,10 @@ DEFINE_TEST(MULTICORE0001, "Test suspending and resuming a thread on different c
 
 int smp_test_tcb_move(env_t env)
 {
-    helper_thread_t t1, timer_interrupt;
+    helper_thread_t t1;
     volatile seL4_Word counter;
     ZF_LOGD("smp_test_tcb_move\n");
     create_helper_thread(env, &t1);
-
-    create_timer_interrupt_thread(env, &timer_interrupt);
 
     set_helper_priority(env, &t1, 100);
     start_helper(env, &t1, (helper_fn_t) counter_func, (seL4_Word) &counter, 0, 0, 0);
@@ -130,12 +128,10 @@ DEFINE_TEST(MULTICORE0002, "Test thread is runnable on all available cores (0 + 
 
 int smp_test_tcb_delete(env_t env)
 {
-    helper_thread_t t1, timer_interrupt;
+    helper_thread_t t1;
     volatile seL4_Word counter;
     ZF_LOGD("smp_test_tcb_delete\n");
     create_helper_thread(env, &t1);
-
-    create_timer_interrupt_thread(env, &timer_interrupt);
 
     set_helper_priority(env, &t1, 100);
     start_helper(env, &t1, (helper_fn_t) counter_func, (seL4_Word) &counter, 0, 0, 0);
@@ -238,19 +234,19 @@ int smp_test_tlb(env_t env)
     start_helper(env, &faulter_thread, (helper_fn_t) faulter_func, (seL4_Word) &shared_mem, 0, 0, 0);
 
     /* Wait for all threads to check in */
-    sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, 10 * NS_IN_MS);
 
     /* Map new page to shared address space */
     shared_mem = (seL4_Word) vspace_new_pages(&env->vspace, seL4_AllRights, 1, seL4_PageBits);
 
     /* Wait for some access... */
-    sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, 10 * NS_IN_MS);
 
     /* Unmap the page */
     vspace_unmap_pages(&env->vspace, (void *) shared_mem, 1, seL4_PageBits, &env->vka);
 
     /* Wait for some access... */
-    sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, 10 * NS_IN_MS);
 
     /* We should see page fault */
     test_check(tag == seL4_Fault_VMFault);

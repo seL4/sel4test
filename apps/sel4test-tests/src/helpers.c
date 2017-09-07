@@ -397,63 +397,33 @@ get_helper_initial_stack_pointer(helper_thread_t *thread)
     return (uintptr_t)thread->thread.initial_stack_pointer;
 }
 
-void
-wait_for_timer_interrupt(env_t env)
+static void
+sel4test_send_time_request(seL4_CPtr ep, uint64_t ns, sel4test_output_t request_type, timeout_type_t timeout_type)
 {
-    seL4_Word sender_badge;
-    seL4_Wait(env->timer_notification.cptr, &sender_badge);
-    sync_mutex_lock(&env->timer_mutex);
-    sel4platsupport_handle_timer_irq(&env->timer, sender_badge);
-    sync_mutex_unlock(&env->timer_mutex);
-}
+    seL4_MessageInfo_t tag;
+    seL4_SetMR(0, request_type);
 
-void
-sleep(env_t env, uint64_t ns)
-{
-    uint64_t current;
-    uint64_t end;
-    uint64_t next;
-
-    /* grab the timer lock */
-    sync_mutex_lock(&env->timer_mutex);
-
-    UNUSED int error = ltimer_get_time(&env->timer.ltimer, &current);
-    ZF_LOGF_IF(error, "failed to get time");
-    end = current + ns;
-    while (current < end) {
-        int error = ltimer_set_timeout(&env->timer.ltimer, end, TIMEOUT_ABSOLUTE);
-        ZF_LOGF_IF(error, "failed to set timeout");
-        ZF_LOGV("Waiting for timer irq");
-        /* release the lock whilst we wait for the interrupt */
-        sync_mutex_unlock(&env->timer_mutex);
-        wait_for_timer_interrupt(env);
-        /* reacquire the lock */
-        sync_mutex_lock(&env->timer_mutex);
-        error = ltimer_get_time(&env->timer.ltimer, &next);
-        ZF_LOGF_IF(error, "failed to get time");
-        if (next == current) {
-            ZF_LOGE("Looks like time is not progressing %"PRIu64" -> %"PRIu64" since last interrupt", current, next);
-        }
-        current = next;
+    switch(request_type) {
+        case SEL4TEST_TIME_TIMEOUT:
+            seL4_SetMR(1, timeout_type);
+            sel4utils_64_set_mr(2, ns);
+            tag = seL4_MessageInfo_new(0, 0, 0, (seL4_Uint32) SEL4UTILS_64_WORDS + 2);
+            break;
+        case SEL4TEST_TIME_TIMESTAMP:
+        case SEL4TEST_TIME_RESET:
+             tag = seL4_MessageInfo_new(0, 0, 0, 1);
+            break;
+        default:
+            ZF_LOGE("Invalid time request\n");
+            break;
     }
-    /* release the timer lock */
-    sync_mutex_unlock(&env->timer_mutex);
-}
 
-uint64_t
-timestamp(env_t env)
-{
-    uint64_t time = 0;
-    sync_mutex_lock(&env->timer_mutex);
-    UNUSED int error = ltimer_get_time(&env->timer.ltimer, &time);
-    sync_mutex_unlock(&env->timer_mutex);
-    ZF_LOGF_IF(error, "failed to get time");
-    return time;
+    seL4_Call(ep, tag);
 }
 
 void sleep_busy(env_t env, uint64_t ns) {
-    uint64_t start = timestamp(env);
-    uint64_t now = timestamp(env);
+    uint64_t start = sel4test_timestamp(env);
+    uint64_t now = sel4test_timestamp(env);
     int same = 0;
     while (now < start + ns) {
         if (now == start) {
@@ -464,28 +434,64 @@ void sleep_busy(env_t env, uint64_t ns) {
         } else {
             same = 0;
         }
-        now = timestamp(env);
+        now = sel4test_timestamp(env);
     }
 }
 
-static int
-timer_interrupt_loop(seL4_Word arg0, seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
+inline void
+sel4test_sleep(env_t env, uint64_t ns)
 {
-    env_t env = (env_t)arg0;
-    while (1) {
-        wait_for_timer_interrupt(env);
-    }
+    /*
+     * sleep is meant to block the calling thread for at least @ns. RPC costs and
+     * delivering timer notifications are not accounted for. Due to the fact that
+     * sleep requests are RPC calls on the same env->ep, only one test can request a sleep
+     * on a time. It is possible, however, that 2 (or more) threads request a sleep,
+     * being serialised, and wait on the same env->timer_notification at the same time,
+     * in which case the first thread in the queue will only be notified and not the
+     * other(s). This is a limitation, and the current interface won't handle it. Only
+     * one thread can request/wait/sleep/wakeup on a time.
+     */
+
+    sel4test_send_time_request(env->endpoint, ns, SEL4TEST_TIME_TIMEOUT, TIMEOUT_RELATIVE);
+    /* The tests have a timer_notification that they can wait on by default.
+     * sel4-driver will notify us on timer_notification when it gets a timer interrupt
+     */
+    seL4_Wait(env->timer_notification.cptr, NULL);
 }
 
-int
-create_timer_interrupt_thread(env_t env, helper_thread_t *thread)
+inline void
+sel4test_periodic_start(env_t env, uint64_t ns)
 {
-    assert(thread);
-    create_helper_thread(env, thread);
-    start_helper(env, thread, timer_interrupt_loop, (seL4_Word)env, 0, 0, 0);
-    return 0;
+    sel4test_send_time_request(env->endpoint, ns, SEL4TEST_TIME_TIMEOUT, TIMEOUT_PERIODIC);
 }
 
+uint64_t
+sel4test_timestamp(env_t env)
+{
+    /*
+     * Request a timestamp from sel4test-driver. The request is sent over the fault ep,
+     * and, being synchronous, sel4test-driver sends back the timestamp in the RPC reply.
+     * RPC costs are not accounted for.
+     */
+    uint64_t time = 0;
+
+    sel4test_send_time_request(env->endpoint, 0, SEL4TEST_TIME_TIMESTAMP, 0);
+    time = sel4utils_64_get_mr(1);
+
+    return time;
+}
+
+inline void
+sel4test_timer_reset(env_t env)
+{
+    sel4test_send_time_request(env->endpoint, 0, SEL4TEST_TIME_RESET, 0);
+}
+
+inline void
+sel4test_ntfn_timer_wait(env_t env)
+{
+    seL4_Wait(env->timer_notification.cptr, NULL);
+}
 int
 set_helper_sched_params(UNUSED env_t env, UNUSED helper_thread_t *thread, UNUSED uint64_t budget,
         UNUSED uint64_t period, UNUSED seL4_Word badge)

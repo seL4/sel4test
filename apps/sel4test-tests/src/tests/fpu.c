@@ -171,7 +171,7 @@ int smp_test_fpu(env_t env)
     }
 
     /* Lets threads check in and do some calculation */
-    sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, 10 * NS_IN_MS);
 
     /* Do lots of migrations */
     for(int it = 0; it < 100; it++) {
@@ -180,7 +180,7 @@ int smp_test_fpu(env_t env)
             set_helper_affinity(env, &t[i], (i + 1) % env->cores);
         }
         /* Lets do some calculation */
-        sleep(env, 10 * NS_IN_MS);
+        sel4test_sleep(env, 10 * NS_IN_MS);
     }
 
     /* Notify threads to return */

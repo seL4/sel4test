@@ -56,19 +56,17 @@ test_thread_suspend(env_t env)
     set_helper_priority(env, &t1, 100);
     start_helper(env, &t1, (helper_fn_t) counter_func, (seL4_Word) &counter, 0, 0, 0);
 
-    ltimer_set_timeout(&env->timer.ltimer, 10 * NS_IN_MS, TIMEOUT_PERIODIC);
+    sel4test_periodic_start(env, 10 * NS_IN_MS);
 
     seL4_Word old_counter;
 
-    /* Let the counter thread run. We might have a pending interrupt, so
-     * wait twice. */
-    wait_for_timer_interrupt(env);
-    wait_for_timer_interrupt(env);
+    /* Let the counter thread run. */
+    sel4test_ntfn_timer_wait(env);
 
     old_counter = counter;
 
     /* Let it run again. */
-    wait_for_timer_interrupt(env);
+    sel4test_ntfn_timer_wait(env);
 
     /* Now, counter should have moved. */
     test_check(counter != old_counter);
@@ -76,14 +74,14 @@ test_thread_suspend(env_t env)
 
     /* Suspend the thread, and wait again. */
     seL4_TCB_Suspend(get_helper_tcb(&t1));
-    wait_for_timer_interrupt(env);
+    sel4test_ntfn_timer_wait(env);
 
     /* Counter should not have moved. */
     test_check(counter == old_counter);
     old_counter = counter;
 
     /* Check once more for good measure. */
-    wait_for_timer_interrupt(env);
+    sel4test_ntfn_timer_wait(env);
 
     /* Counter should not have moved. */
     test_check(counter == old_counter);
@@ -91,11 +89,10 @@ test_thread_suspend(env_t env)
 
     /* Resume the thread and check it does move. */
     seL4_TCB_Resume(get_helper_tcb(&t1));
-    wait_for_timer_interrupt(env);
+    sel4test_ntfn_timer_wait(env);
     test_check(counter != old_counter);
 
     /* Done. */
-    ltimer_reset(&env->timer.ltimer);
     cleanup_helper(env, &t1);
 
     return sel4test_get_result();
@@ -769,7 +766,7 @@ check_receive_ordered(env_t env, seL4_CPtr endpoint, int pos, seL4_CPtr replies[
     }
 
     /* let everyone queue up again */
-    sleep(env, 1 * NS_IN_S);
+    sel4test_sleep(env, 1 * NS_IN_S);
     return sel4test_get_result();
 }
 
@@ -833,7 +830,7 @@ int test_change_prio_on_endpoint(env_t env)
     }
 
     /* let everyone queue on endpoint */
-    sleep(env, 1 * US_IN_S);
+    sel4test_sleep(env, 1 * US_IN_S);
 
     ZF_LOGD("lower -> lowest");
     ZF_LOGD("Client 0, prio %d\n", lowest);
@@ -928,7 +925,7 @@ test_ordered_ipc_fastpath(env_t env)
         start_helper(env, &threads[i], (helper_fn_t) sched0009_server, endpoint, i,
                      get_helper_reply(&threads[i]), 0);
         /* sleep and allow it to run */
-        sleep(env, 1 * NS_IN_S);
+        sel4test_sleep(env, 1 * NS_IN_S);
         /* since we resume a higher prio server each time this should work */
         seL4_Call(endpoint, info);
         test_eq(seL4_GetMR(0), (seL4_Word)i);
@@ -988,7 +985,7 @@ test_resume_empty_or_no_sched_context(env_t env)
     test_eq(error, seL4_NoError);
 
     /* let the thread 'run' */
-    sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, 10 * NS_IN_MS);
     test_eq(state, 0);
 
     /* nuke the sc */
@@ -1000,7 +997,7 @@ test_resume_empty_or_no_sched_context(env_t env)
     test_eq(error, seL4_NoError);
 
     /* let the thread 'run' */
-    sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, 10 * NS_IN_MS);
     test_eq(state, 0);
 
     return sel4test_get_result();
@@ -1021,19 +1018,18 @@ test_scheduler_accuracy(env_t env)
      * Start a thread with a 1s timeslice at our priority, and make sure it
      * runs for that long
      */
-    helper_thread_t helper, timer_interrupt;
+    helper_thread_t helper;
 
     create_helper_thread(env, &helper);
-    create_timer_interrupt_thread(env, &timer_interrupt);
     uint64_t period = 100 * US_IN_MS;
     set_helper_sched_params(env, &helper, period, period, 0);
     start_helper(env, &helper, (helper_fn_t) sched0011_helper, 0, 0, 0, 0);
     set_helper_priority(env, &helper, OUR_PRIO);
     seL4_Yield();
     for (int i = 0; i < 11; i++) {
-        uint64_t start = timestamp(env);
+        uint64_t start = sel4test_timestamp(env);
         seL4_Yield();
-        uint64_t end = timestamp(env);
+        uint64_t end = sel4test_timestamp(env);
         /* calculate diff in ms */
         uint64_t diff = (end - start) / NS_IN_US;
         if (i > 0) {
@@ -1086,7 +1082,7 @@ test_one_periodic_thread(env_t env)
 
     while (counter < 10) {
         printf("Tock %ld\n", counter);
-        sleep(env, NS_IN_S);
+        sel4test_sleep(env, NS_IN_S);
     }
 
     return sel4test_get_result();
@@ -1117,7 +1113,7 @@ test_two_periodic_threads(env_t env)
     }
 
     while (counters[0] < 3 && counters[1] < 3) {
-        sleep(env, NS_IN_S);
+        sel4test_sleep(env, NS_IN_S);
     }
 
     return sel4test_get_result();
@@ -1142,7 +1138,7 @@ test_ordering_periodic_threads(env_t env)
     test_eq(error, seL4_NoError);
 
     /* sleep for a bit first - collect any waiting timer irqs */
-    sleep(env, 50 * NS_IN_MS);
+    sel4test_sleep(env, 50 * NS_IN_MS);
 
     for (int i = 0; i < num_threads; i++) {
         create_helper_thread(env, &helpers[i]);
@@ -1160,7 +1156,7 @@ test_ordering_periodic_threads(env_t env)
     /* stop once 2 reaches 11 increments */
     const unsigned long limit = 11u;
     while (counters[2] < limit) {
-        sleep(env, NS_IN_S);
+        sel4test_sleep(env, NS_IN_S);
     }
 
     ZF_LOGD("O: %lu\n1: %lu\n2: %lu\n", counters[0], counters[1], counters[2]);
@@ -1180,9 +1176,9 @@ sched0015_helper(int id, env_t env, volatile unsigned long long *counters)
     counters[id] = 0;
 
     uint64_t prev = 0;
-    prev = timestamp(env);
+    prev = sel4test_timestamp(env);
     while (1) {
-        uint64_t now = timestamp(env);
+        uint64_t now = sel4test_timestamp(env);
         uint64_t diff = now - prev;
         if (diff < 10 * NS_IN_US) {
             counters[id]++;
@@ -1204,7 +1200,6 @@ test_budget_overrun(env_t env)
      */
     volatile unsigned long long counters[2];
     helper_thread_t thirty, fifty;
-    helper_thread_t timer_interrupt;
     int error;
 
     /* set priority down so we can run the helper(s) at a higher prio */
@@ -1220,8 +1215,6 @@ test_budget_overrun(env_t env)
     set_helper_sched_params(env, &fifty, 0.1 * US_IN_S, 0.2 * US_IN_S, 0);
     set_helper_sched_params(env, &thirty, 0.1 * US_IN_S, 0.3 * US_IN_S, 0);
 
-    create_timer_interrupt_thread(env, &timer_interrupt);
-
     start_helper(env, &fifty,  (helper_fn_t) sched0015_helper, 1, (seL4_Word)env,
                  (seL4_Word) counters, 0);
     start_helper(env, &thirty, (helper_fn_t) sched0015_helper, 0, (seL4_Word)env,
@@ -1229,7 +1222,7 @@ test_budget_overrun(env_t env)
 
     uint64_t ticks = 0;
     while (counters[1] < 10000000) {
-         sleep(env, US_IN_S);
+         sel4test_sleep(env, US_IN_S);
          ticks++;
          ZF_LOGD("Tick %llu", counters[1]);
     }
@@ -1380,7 +1373,7 @@ test_yieldTo_cleanup(env_t env)
 
     /* wait for them to execute */
     ZF_LOGD("Sleep\n");
-    sleep(env, NS_IN_S);
+    sel4test_sleep(env, NS_IN_S);
 
     ZF_LOGD("suspend to\n");
     /* suspend yielded to thread */
@@ -1406,7 +1399,7 @@ test_yieldTo_cleanup(env_t env)
 
     /* let them run */
     ZF_LOGD("Sleep\n");
-    sleep(env, NS_IN_S);
+    sel4test_sleep(env, NS_IN_S);
 
     /* delete yielded to thread */
     ZF_LOGD("Delete yielded to\n");
@@ -1428,7 +1421,7 @@ test_yieldTo_cleanup(env_t env)
 
     /* wait for them to execute */
     ZF_LOGD("sleep\n");
-    sleep(env, NS_IN_S);
+    sel4test_sleep(env, NS_IN_S);
 
     /* delete yielded from thread */
     /* delete yielded from thread */

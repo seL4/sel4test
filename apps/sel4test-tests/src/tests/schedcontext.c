@@ -84,14 +84,14 @@ test_sched_control_reconfigure(env_t env)
     start_helper(env, &thread, (helper_fn_t) sched_context_0002_fn, 0, 0, 0, 0);
 
     /* let it run a little */
-    sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, 10 * NS_IN_MS);
 
     /* reconfigure a resumed thread */
     error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 10000llu, 10000llu, 0, 0);
     test_eq(error, seL4_NoError);
 
     /* let it run a little */
-    sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, 10 * NS_IN_MS);
 
     /* less */
     error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 3000llu, 3000llu, 0, 0);
@@ -176,7 +176,7 @@ test_delete_tcb_sched_context(env_t env)
     start_helper(env, &helper, (helper_fn_t) sched_context_0005_helper_fn, (seL4_Word) &state, 0, 0, 0);
 
     /* let helper run */
-    sleep(env, 1 * NS_IN_S);
+    sel4test_sleep(env, 1 * NS_IN_S);
 
     printf("Sleep....\n");
     int prev_state = state;
@@ -187,7 +187,7 @@ test_delete_tcb_sched_context(env_t env)
 
     /* let it run again */
     printf("Sleep....\n");
-    sleep(env, 1 * NS_IN_S);
+    sel4test_sleep(env, 1 * NS_IN_S);
     printf("Awake\n");
 
     /* it should not have run */
@@ -448,7 +448,7 @@ test_sched_context_goes_to_to_caller_on_reply_cap_delete(env_t env)
     start_helper(env, &client, (helper_fn_t) sched_context_0009_client_fn, ep, 0, 0, 0);
 
     /* wait a bit, client should have called server */
-    sleep(env, 0.2 * NS_IN_S);
+    sel4test_sleep(env, 0.2 * NS_IN_S);
     test_ge(state, prev_state);
     prev_state = state;
 
@@ -457,7 +457,7 @@ test_sched_context_goes_to_to_caller_on_reply_cap_delete(env_t env)
     test_eq(error, seL4_NoError);
 
     /* wait a bit, check server not running anymore */
-    sleep(env, 0.2 * NS_IN_S);
+    sel4test_sleep(env, 0.2 * NS_IN_S);
     test_eq(state, prev_state);
 
     /* save and resume client */
@@ -500,7 +500,7 @@ test_sched_context_unbind_server(env_t env)
     start_helper(env, &client, (helper_fn_t) sched_context_0010_client_fn, ep, 0, 0, 0);
 
     /* wait a bit, client should have called server */
-    sleep(env, 0.2 * NS_IN_S);
+    sel4test_sleep(env, 0.2 * NS_IN_S);
     test_ge(state, prev_state);
     prev_state = state;
 
@@ -509,7 +509,7 @@ test_sched_context_unbind_server(env_t env)
     test_eq(error, seL4_NoError);
 
     /* wait a bit, check server not running anymore */
-    sleep(env, 0.2 * NS_IN_S);
+    sel4test_sleep(env, 0.2 * NS_IN_S);
     test_eq(state, prev_state);
 
     /* rebind the scheduling context to the client */
@@ -559,7 +559,7 @@ test_revoke_reply_on_call_chain_returns_sc(env_t env)
     start_helper(env, &client, (helper_fn_t) sched_context_0009_client_fn, ep, 0, 0, 0);
 
     /* let a call b which calls the server, let the server run a bit */
-    sleep(env, 0.2 * NS_IN_S);
+    sel4test_sleep(env, 0.2 * NS_IN_S);
     test_ge(state, 0);
 
     /* kill the servers reply cap */
@@ -568,7 +568,7 @@ test_revoke_reply_on_call_chain_returns_sc(env_t env)
 
     /* check server stopped running */
     int prev_state = state;
-    sleep(env, 0.2 * NS_IN_S);
+    sel4test_sleep(env, 0.2 * NS_IN_S);
     test_eq(prev_state, state);
 
     /* kill the proxies reply cap */
@@ -607,7 +607,7 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
     start_helper(env, &client, (helper_fn_t) sched_context_0009_client_fn, ep, 0, 0, 0);
 
     /* let a call b which calls the server, let the server run a bit */
-    sleep(env, 0.2 * NS_IN_S);
+    sel4test_sleep(env, 0.2 * NS_IN_S);
     test_ge(state, 0);
 
     /* kill the proxies reply cap */
@@ -622,7 +622,7 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
 
     /* check server is not still running */
     int prev_state = state;
-    sleep(env, 0.2 * NS_IN_S);
+    sel4test_sleep(env, 0.2 * NS_IN_S);
     test_eq(state, prev_state);
 
     /* save and resume client */
@@ -657,7 +657,7 @@ test_revoke_sched_context_on_call_chain(env_t env)
     start_helper(env, &client, (helper_fn_t) sched_context_0009_client_fn, ep, 0, 0, 0);
 
     /* let client call proxy which calls the server, let the server run a bit */
-    sleep(env, 0.2 * NS_IN_S);
+    sel4test_sleep(env, 0.2 * NS_IN_S);
     test_ge(state, 0);
 
     /* nuke the scheduling context */
@@ -665,7 +665,7 @@ test_revoke_sched_context_on_call_chain(env_t env)
 
     /* check server stopped running */
     int prev_state = state;
-    sleep(env, 0.2 * NS_IN_S);
+    sel4test_sleep(env, 0.2 * NS_IN_S);
     test_eq(prev_state, state);
 
     /* nuke the reply cap */

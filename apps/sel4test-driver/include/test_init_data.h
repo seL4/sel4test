@@ -45,11 +45,11 @@ typedef struct {
     seL4_SlotRegion io_space_caps;
 #endif
 
-    /* objects for the default timer */
-    timer_objects_t to;
-
-    /* cap to the sel4platsupport default timer io port */
-    seL4_CPtr timer_io_port_cap;
+    /* copied (by sel4test-driver) notification cap that tests can wait
+     * on when requesting a time service from sel4test-driver (e.g. sleep),
+     * and expecting a signal and/or notification.
+     */
+    seL4_CPtr timer_ntfn;
 
     /* Paddr of the sel4platsupport default serial mmio region. */
     uintptr_t serial_paddr;

@@ -51,23 +51,6 @@ arch_init_allocator(env_t env, test_init_data_t *data)
     env->vka.utspace_alloc_at = serial_utspace_alloc_at_fn;
 }
 
-void arch_init_timer(env_t env, test_init_data_t *data)
-{
-    ps_io_ops_t ops = {};
-    /* only initialise the interfaces we need */
-    int error = sel4platsupport_new_io_mapper(env->vspace, env->vka, &ops.io_mapper);
-    ZF_LOGF_IF(error, "Failed to get io mapper");
-
-    sel4platsupport_new_malloc_ops(&ops.malloc_ops);
-
-    error = sel4platsupport_init_timer_irqs(&env->vka, &env->simple,
-                env->timer_notification.cptr, &env->timer, &data->to);
-    ZF_LOGF_IF(error, "Failed to init default timer");
-
-    error = ltimer_default_init(&env->timer.ltimer, ops);
-    ZF_LOGF_IF(error, "Failed to describe default ltimer");
-}
-
 void
 arch_init_simple(simple_t *simple) {
     /* nothing to do */

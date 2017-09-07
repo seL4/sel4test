@@ -29,7 +29,7 @@ config_option(Sel4testHaveCache HAVE_CACHE
 add_config_library(sel4test-driver "${configure_string}")
 
 file(GLOB static
-    src/*.c src/arch/${KernelArch}/*.c src/plat/${KernelPlatform}/*.c
+    src/*.c src/tests/*.c src/arch/${KernelArch}/*.c src/plat/${KernelPlatform}/*.c
     src/arch/${KernelArch}/*.S src/plat/${KernelPlatform}/*.S
 )
 

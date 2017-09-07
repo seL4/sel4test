@@ -81,8 +81,6 @@ test_domains(struct env *env, F func)
 
     UNUSED int error;
     helper_thread_t thread[CONFIG_NUM_DOMAINS];
-    helper_thread_t timer_thread;
-    create_timer_interrupt_thread(env, &timer_thread);
 
     for (int i = 0; i < CONFIG_NUM_DOMAINS; ++i) {
         create_helper_thread(env, &thread[i]);
@@ -96,7 +94,7 @@ test_domains(struct env *env, F func)
     }
 
     if (CONFIG_NUM_DOMAINS > 1 && shift) {
-        sleep(env, POLL_DELAY_NS * 2);
+        sel4test_sleep(env, POLL_DELAY_NS * 2);
         error = seL4_DomainSet_Set(env->domain, CONFIG_NUM_DOMAINS - 1, get_helper_tcb(&thread[0]));
         assert(error == seL4_NoError);
     }

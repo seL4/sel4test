@@ -33,7 +33,7 @@ static int
 preempt_count_func(env_t env)
 {
     while (revoking < 2) {
-        wait_for_timer_interrupt(env);
+        sel4test_ntfn_timer_wait(env);
         if (revoking == 1) {
             preempt_count++;
         }
@@ -80,8 +80,7 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
     test_check(num_caps > 0);
     test_check((num_caps == (1 << (num_cnode_bits + CNODE_SIZE_BITS))));
 
-    ltimer_set_timeout(&env->timer.ltimer, NS_IN_MS, TIMEOUT_PERIODIC);
-    wait_for_timer_interrupt(env);
+    sel4test_periodic_start(env, NS_IN_MS);
 
     /* Last thread to start runs first. */
     revoking = 0;
@@ -96,8 +95,6 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
     cleanup_helper(env, &revoke_thread);
 
     ZF_LOGD("    %d preemptions\n", preempt_count);
-
-    ltimer_reset(&env->timer.ltimer);
 
     return preempt_count;
 }

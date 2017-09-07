@@ -44,6 +44,9 @@
 
 #include <vspace/vspace.h>
 #include "test.h"
+#include "timer.h"
+
+#include <sel4platsupport/io.h>
 
 /* ammount of untyped memory to reserve for the driver (32mb) */
 #define DRIVER_UNTYPED_MEMORY (1 << 25)
@@ -105,6 +108,13 @@ init_env(driver_env_t env)
 
     bootstrap_configure_virtual_pool(allocman, vaddr,
                                      ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&env->simple));
+
+
+    error = sel4platsupport_new_io_mapper(env->vspace, env->vka, &env->ops.io_mapper);
+    ZF_LOGF_IF(error, "Failed to initialise IO mapper");
+
+    error = sel4platsupport_new_malloc_ops(&env->ops.malloc_ops);
+    ZF_LOGF_IF(error, "Failed to malloc new ops");
 }
 
 /* Free a list of objects */
@@ -164,6 +174,35 @@ populate_untypeds(vka_object_t *untypeds)
     return num_untypeds;
 }
 
+static void init_timer(void)
+{
+    if (config_set(CONFIG_HAVE_TIMER)) {
+        int error;
+
+        error = vka_alloc_notification(&env.vka, &env.timer_notification);
+        ZF_LOGF_IF(error, "Failed to allocate notification object");
+
+        error = vka_alloc_notification(&env.vka, &env.timer_notify_test);
+        ZF_LOGF_IF(error, "Failed to allocate notification object for tests");
+
+        error = sel4platsupport_init_default_timer(&env.vka, &env.vspace, &env.simple,
+                  env.timer_notification.cptr, &env.timer);
+        ZF_LOGF_IF(error, "Failed to initialise default timer");
+
+        error = seL4_TCB_BindNotification(simple_get_tcb(&env.simple), env.timer_notification.cptr);
+        ZF_LOGF_IF(error, "Failed to bind timer notification to sel4test-driver\n");
+
+        /* If we use the timer RPC on RT kernel, we need to allocate a reply cap for
+         * timer RPC requests
+         */
+        if (config_set(CONFIG_KERNEL_RT)) {
+            error = vka_alloc_reply(&env.vka, &env.reply);
+            ZF_LOGF_IF(error, "Failed to allocate reply");
+        }
+    }
+
+}
+
 void sel4test_start_suite(const char *name)
 {
     if (config_set(CONFIG_PRINT_XML)) {
@@ -192,6 +231,8 @@ void sel4test_end_test(test_result_t result)
     if (config_set(CONFIG_PRINT_XML)) {
         printf("\t</testcase>\n");
     }
+
+    timer_reset(&env);
 }
 
 void sel4test_end_suite(int num_tests, int num_tests_passed, int skipped_tests)
@@ -447,11 +488,9 @@ int main(void)
     /* enable serial driver */
     platsupport_serial_setup_simple(&env.vspace, &env.simple, &serial_vka);
 
-    /* init_timer_caps calls acpi_init(), which does unconditional printfs,
-     * so it can't go before platsupport_serial_setup_simple().
-     */
-    error = sel4platsupport_init_default_timer_caps(&env.vka, &env.vspace, &env.simple, &env.timer_objects);
-    ZF_LOGF_IF(error, "Failed to init default timer caps");
+    /* Initialise ltimer */
+    init_timer();
+
     simple_print(&env.simple);
 
     /* switch to a bigger, safer stack with a guard page
@@ -459,6 +498,8 @@ int main(void)
     printf("Switching to a safer, bigger stack... ");
     fflush(stdout);
     void *res;
+
+    /* Run sel4test-test related tests */
     error = sel4utils_run_on_stack(&env.vspace, main_continued, NULL, &res);
     test_assert_fatal(error == 0);
     test_assert_fatal(res == 0);

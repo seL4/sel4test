@@ -17,6 +17,7 @@
 #include <vka/capops.h>
 
 #include "test.h"
+#include "timer.h"
 #include <sel4testsupport/testreporter.h>
 
 /* Bootstrap test type. */
@@ -77,6 +78,174 @@ copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *
     arch_copy_serial_caps(init, env, test_process);
 }
 
+/* A pending timeout requests from tests */
+static bool timeServer_timeoutPending = false;
+/* timeServer_ns holds the previously requested timeout time. The meaning of
+ * the value depends on the timeout type i.e. it can be a relative or absolute
+ */
+static uint64_t timeServer_ns;
+/* The absolute time a request is supposed to expire */
+static uint64_t timeServer_Expire;
+static seL4_CPtr reply_cap;
+static timeout_type_t timeServer_timeoutType;
+
+static inline void timer_cleanup(void) {
+    timeServer_timeoutPending = false;
+    timeServer_ns = timeServer_Expire = 0;
+}
+
+static void handle_timer_interrupt(driver_env_t env) {
+    uint64_t timeServer_now;
+
+    /* Check that this interrupt is coming from a previous timeout request */
+    if (timeServer_timeoutPending) {
+
+        timeServer_now = timestamp(env);
+
+        /* If timer interrupt came earlier than requested ns, reprogram the timer */
+        if (timeServer_now < timeServer_Expire) {
+            if (timeServer_timeoutType == TIMEOUT_ABSOLUTE) {
+                timeout(env, timeServer_Expire, timeServer_timeoutType);
+            } else {
+                timeout(env, timeServer_Expire - timeServer_now, timeServer_timeoutType);
+            }
+        } else { /* Slept succesfully for at least ns */
+            if (timeServer_timeoutType == TIMEOUT_PERIODIC) {
+                timeServer_Expire += timeServer_ns;
+            } else {
+                timer_cleanup();
+            }
+
+            /* Signal tests that might be waiting for timer signals */
+            seL4_Signal(env->timer_notify_test.cptr);
+        }
+    }
+}
+
+static void handle_timer_requests(driver_env_t env, sel4test_output_t test_output) {
+
+    seL4_MessageInfo_t info;
+
+    switch (test_output) {
+
+        case SEL4TEST_TIME_TIMEOUT:
+
+            timeServer_timeoutType = seL4_GetMR(1);
+            timeServer_ns = sel4utils_64_get_mr(2);
+
+            if (timeServer_timeoutPending) {
+                ZF_LOGD("Overwriting a previous timeout request\n");
+            } else {
+                timeServer_timeoutPending = true;
+            }
+
+            if (timeServer_timeoutType == TIMEOUT_ABSOLUTE) {
+                timeServer_Expire = timeServer_ns;
+            } else {
+                timeServer_Expire = timestamp(env) + timeServer_ns;
+            }
+
+            timeout(env, timeServer_ns, timeServer_timeoutType);
+
+            info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+
+            seL4_SetMR(0, 0);
+            api_reply(reply_cap, info);
+            break;
+
+        case SEL4TEST_TIME_TIMESTAMP:
+            timeServer_ns = timestamp(env);
+            sel4utils_64_set_mr(1, timeServer_ns);
+            info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, SEL4UTILS_64_WORDS + 1);
+            seL4_SetMR(0, 0);
+            api_reply(reply_cap, info);
+            break;
+
+        case SEL4TEST_TIME_RESET:
+            timer_reset(env);
+            info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+            seL4_SetMR(0, 0);
+            timer_cleanup();
+            api_reply(reply_cap, info);
+            break;
+
+        default:
+            ZF_LOGF("Invalid time request");
+            break;
+    }
+
+}
+
+/* This function waits on:
+ * Timer interrupts (from hardware)
+ * Requests from tests (sel4driver acts as a server)
+ * Results from sel4test/tests
+ */
+static int sel4test_driver_wait(driver_env_t env, struct testcase *test)
+{
+    seL4_MessageInfo_t info;
+    sel4test_output_t test_output;
+    int result = SUCCESS;
+    seL4_Word badge = 0;
+
+    reply_cap = env->reply.cptr;
+
+    while(1) {
+        /* wait for tests to finish or fault, receive test request or report result */
+        info = api_recv(env->test_process.fault_endpoint.cptr, &badge, reply_cap);
+        test_output = seL4_GetMR(0);
+
+        /* FIXME: Assumptions made at the time of writing this code:
+         * 1) fault sync EP cap has a badge of 0
+         * 2) notification_cap bound to sel4test-driver TCB, and has a non zero badge.
+         * 3) sel4test-driver only sets up and expects timer interrupts. If, in the
+         * future, other types of interrupts are to be handled, the following code would
+         * be wrong, and would need refactoring.
+         *
+         * For now, assume it is a timer interrupt, handle it and signal any test processes
+         * that might be waiting on it.
+         */
+        if (badge != 0) {
+            assert(config_set(CONFIG_HAVE_TIMER));
+        }
+
+        if (config_set(CONFIG_HAVE_TIMER) && badge != 0) {
+            /* handle timer interrupts in hardware */
+            sel4platsupport_handle_timer_irq(&env->timer, badge);
+            /* Driver does extra work to check whether timeout succeeded and signals
+             * clients/tests
+             */
+            handle_timer_interrupt(env);
+            continue;
+        }
+
+        if (sel4test_isTimerRPC(test_output)) {
+
+            if (config_set(CONFIG_HAVE_TIMER)) {
+               handle_timer_requests(env, test_output);
+               continue;
+            } else {
+                ZF_LOGF("Requesting a timer service from sel4test-driver while there is no"
+                    "supported HW timer.");
+            }
+        }
+
+        result = test_output;
+        if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {
+            sel4utils_print_fault_message(info, test->name);
+            printf("Register of root thread in test (may not be the thread that faulted)\n");
+            sel4debug_dump_registers(env->test_process.thread.tcb.cptr);
+            result = FAILURE;
+        } else {
+            result = SUCCESS;
+        }
+
+        timer_cleanup();
+
+        return result;
+    }
+}
+
 void basic_set_up(uintptr_t e)
 {
     int error;
@@ -93,6 +262,9 @@ void basic_set_up(uintptr_t e)
     env->init->page_directory = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, env->test_process.pd.cptr);
     env->init->root_cnode = SEL4UTILS_CNODE_SLOT;
     env->init->tcb = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, env->test_process.thread.tcb.cptr);
+
+    env->init->timer_ntfn = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, env->timer_notify_test.cptr);
+
     env->init->domain = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple, seL4_CapDomain));
     env->init->asid_pool = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple, seL4_CapInitThreadASIDPool));
     env->init->asid_ctrl = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple, seL4_CapASIDControl));
@@ -101,10 +273,6 @@ void basic_set_up(uintptr_t e)
 #endif /* CONFIG_IOMMU */
 #ifdef CONFIG_ARM_SMMU
     env->init->io_space_caps = arch_copy_iospace_caps_to_process(&(env->test_process), &env);
-#endif
-#ifdef CONFIG_ARCH_X86
-    /* pass the entire io port range for the timer io port for simplicity */
-    env->init->timer_io_port_cap = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple, seL4_CapIOPort));
 #endif
     env->init->cores = simple_get_core_count(&env->simple);
     /* copy the sched ctrl caps to the remote process */
@@ -118,8 +286,6 @@ void basic_set_up(uintptr_t e)
     }
     /* setup data about untypeds */
     env->init->untypeds = copy_untypeds_to_process(&(env->test_process), env->untypeds, env->num_untypeds, env);
-    error = sel4utils_copy_timer_caps_to_process(&env->init->to, &env->timer_objects, &env->vka, &(env->test_process));
-    ZF_LOGF_IF(error, "Failed to copy timer_objects to test process");
     copy_serial_caps(env->init, env, &(env->test_process));
     /* copy the fault endpoint - we wait on the endpoint for a message
      * or a fault to see when the test finishes */
@@ -164,15 +330,9 @@ basic_run_test(struct testcase *test, uintptr_t e)
     ZF_LOGF_IF(error != 0, "Failed to start test process!");
 
     /* wait on it to finish or fault, report result */
-    seL4_MessageInfo_t info = api_wait(env->test_process.fault_endpoint.cptr, NULL);
+    int result = sel4test_driver_wait(env, test);
 
-    test_result_t result = seL4_GetMR(0);
-    if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {
-        sel4utils_print_fault_message(info, test->name);
-        printf("Register of root thread in test (may not be the thread that faulted)\n");
-        sel4debug_dump_registers(env->test_process.thread.tcb.cptr);
-        result = FAILURE;
-    }
+    test_assert(result == SUCCESS);
 
     return result;
 }

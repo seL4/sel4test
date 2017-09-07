@@ -37,7 +37,24 @@ struct driver_env {
     vspace_t vspace;
     /* abtracts over kernel version and boot environment */
     simple_t simple;
-    timer_objects_t timer_objects;
+
+    /* IO ops for devices */
+    ps_io_ops_t ops;
+
+    /* initialised timer */
+    seL4_timer_t timer;
+
+    /* The main timer notification that sel4-driver receives ltimer IRQ on */
+    vka_object_t timer_notification;
+
+    /* A notification used by sel4-driver to signal sel4test-tests that there
+     * is a timer interrupt. The timer_notify_test is copied to new tests
+     * before actually starting them.
+     */
+    vka_object_t timer_notify_test;
+
+    /* Only needed if we're on RT kernel */
+    vka_object_t reply;
 
     serial_objects_t serial_objects;
 
