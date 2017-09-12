@@ -262,7 +262,7 @@ test_ept_no_overlapping_large(env_t env)
 }
 DEFINE_TEST(EPT0005, "Test EPT cannot map overlapping large pages", test_ept_no_overlapping_large)
 
-#ifndef CONFIG_PAE_PAGING
+#ifdef CONFIG_ARCH_IA32
 static int
 test_ept_aligned_4m(env_t env)
 {
@@ -293,9 +293,7 @@ test_ept_aligned_4m(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(EPT0006, "Test EPT 4M mappings must be 4M aligned and cannot overlap", test_ept_aligned_4m)
-#endif
 
-#ifndef CONFIG_PAE_PAGING
 static int
 test_ept_no_overlapping_pt_4m(env_t env)
 {
@@ -338,7 +336,7 @@ test_ept_no_overlapping_pt_4m(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(EPT0007, "Test EPT 4m frame and PT cannot overlap", test_ept_no_overlapping_pt_4m)
-#endif
+#endif /* CONFIG_ARCH_IA32 */
 
 static int
 test_ept_map_remap_pd(env_t env)
