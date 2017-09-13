@@ -175,7 +175,7 @@ sel4test_run_tests(const char *name, struct env* e)
         test_assert_fatal(num_tests > 0);
         for (int i = 0; i < num_tests; i++) {
             if (tests[i]->test_type == test_types[tt]->id) {
-                _sel4test_start_new_test();
+                sel4test_start_new_test();
 
                 sel4test_start_test(tests[i]->name, num_tests);
                 if (test_types[tt]->set_up != NULL) {
