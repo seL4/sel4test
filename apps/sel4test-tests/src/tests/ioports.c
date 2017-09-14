@@ -35,7 +35,7 @@ static void
 increment_pc(seL4_CPtr tcb, seL4_Word inc)
 {
     seL4_UserContext ctx;
-    seL4_Word error = seL4_TCB_ReadRegisters(tcb,
+    seL4_Error error = seL4_TCB_ReadRegisters(tcb,
                                    false,
                                    0,
                                    sizeof(ctx) / sizeof(seL4_Word),
