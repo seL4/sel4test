@@ -277,7 +277,8 @@ main(int argc, char **argv)
     testcase_t *test = find_test(init_data->name);
 
     /* run the test */
-    int result = 0;
+    sel4test_reset();
+    test_result_t result = SUCCESS;
     if (test) {
         printf("Running test %s (%s)\n", test->name, test->description);
         result = test->function(&env);
