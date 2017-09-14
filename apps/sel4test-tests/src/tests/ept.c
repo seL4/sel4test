@@ -38,11 +38,11 @@ map_ept_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr *pd, seL4
     int error;
 
     *pd = vka_alloc_ept_page_directory_leaky(&env->vka);
-    test_assert_fatal(*pd);
+    test_assert(*pd);
     *pt = vka_alloc_ept_page_table_leaky(&env->vka);
-    test_assert_fatal(*pt);
+    test_assert(*pt);
     *frame = vka_alloc_frame_leaky(&env->vka, seL4_PageBits);
-    test_assert_fatal(*frame);
+    test_assert(*frame);
 
     error = seL4_X86_EPTPD_Map(*pd, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error == seL4_NoError);
@@ -60,9 +60,9 @@ map_ept_set(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPt
     int error;
 
     *pml4 = vka_alloc_ept_pml4_leaky(&env->vka);
-    test_assert_fatal(*pml4);
+    test_assert(*pml4);
     *pdpt = vka_alloc_ept_page_directory_pointer_table_leaky(&env->vka);
-    test_assert_fatal(*pdpt);
+    test_assert(*pdpt);
 
     error = seL4_X86_ASIDPool_Assign(env->asid_pool, *pml4);
     test_assert(error == seL4_NoError);
@@ -81,9 +81,9 @@ map_ept_set_large_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr
     int error;
 
     *pd = vka_alloc_ept_page_directory_leaky(&env->vka);
-    test_assert_fatal(*pd);
+    test_assert(*pd);
     *frame = vka_alloc_frame_leaky(&env->vka, seL4_LargePageBits);
-    test_assert_fatal(*frame);
+    test_assert(*frame);
 
     error = seL4_X86_EPTPD_Map(*pd, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     if (error != seL4_NoError) {
@@ -103,9 +103,9 @@ map_ept_set_large(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, se
     int error;
 
     *pml4 = vka_alloc_ept_pml4_leaky(&env->vka);
-    test_assert_fatal(*pml4);
+    test_assert(*pml4);
     *pdpt = vka_alloc_ept_page_directory_pointer_table_leaky(&env->vka);
-    test_assert_fatal(*pdpt);
+    test_assert(*pdpt);
 
     error = seL4_X86_ASIDPool_Assign(env->asid_pool, *pml4);
     test_assert(error == seL4_NoError);
@@ -239,7 +239,7 @@ test_ept_no_overlapping_4k(env_t env)
     test_assert(error == seL4_NoError);
 
     frame = vka_alloc_frame_leaky(&env->vka, seL4_PageBits);
-    test_assert_fatal(frame);
+    test_assert(frame);
     error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
@@ -255,7 +255,7 @@ test_ept_no_overlapping_large(env_t env)
     test_assert(error == seL4_NoError);
 
     frame = vka_alloc_frame_leaky(&env->vka, seL4_LargePageBits);
-    test_assert_fatal(frame);
+    test_assert(frame);
     error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
@@ -272,7 +272,7 @@ test_ept_aligned_4m(env_t env)
     test_assert(error == seL4_NoError);
 
     frame2 = vka_alloc_frame_leaky(&env->vka, PAGE_BITS_4M);
-    test_assert_fatal(frame2);
+    test_assert(frame2);
     /* Try and map a page at +2m */
     error = seL4_X86_Page_MapEPT(frame2, pml4, EPT_MAP_BASE + OFFSET_2MB, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
@@ -303,7 +303,7 @@ test_ept_no_overlapping_pt_4m(env_t env)
     test_assert(error == seL4_NoError);
 
     pt = vka_alloc_ept_page_table_leaky(&env->vka);
-    test_assert_fatal(pt);
+    test_assert(pt);
     /* now try and map a PT at both 2m entries */
     error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
@@ -356,7 +356,7 @@ test_ept_map_remap_pd(env_t env)
 
     /* should be able to map in a new PT */
     pt = vka_alloc_ept_page_table_leaky(&env->vka);
-    test_assert_fatal(pt);
+    test_assert(pt);
     error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error == seL4_NoError);
     return sel4test_get_result();
@@ -373,7 +373,7 @@ test_ept_no_overlapping_pt(env_t env)
 
     /* Mapping in a new PT should fail */
     pt = vka_alloc_ept_page_table_leaky(&env->vka);
-    test_assert_fatal(pt);
+    test_assert(pt);
     error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
@@ -391,7 +391,7 @@ test_ept_no_overlapping_pd(env_t env)
 
     /* Mapping in a new PT should fail */
     pd = vka_alloc_ept_page_directory_leaky(&env->vka);
-    test_assert_fatal(pd);
+    test_assert(pd);
     error = seL4_X86_EPTPD_Map(pd, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
@@ -417,7 +417,7 @@ test_ept_map_remap_pt(env_t env)
 
     /* should be able to map in a frame now */
     frame = vka_alloc_frame_leaky(&env->vka, seL4_PageBits);
-    test_assert_fatal(frame);
+    test_assert(frame);
     error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error == seL4_NoError);
     return sel4test_get_result();

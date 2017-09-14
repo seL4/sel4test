@@ -375,21 +375,21 @@ set_good_magic_and_set_pc(seL4_CPtr tcb, seL4_Word new_pc)
                                    0,
                                    sizeof(ctx) / sizeof(seL4_Word),
                                    &ctx);
-    test_assert_fatal(!error);
+    test_check(!error);
 #if defined(CONFIG_ARCH_AARCH32)
-    test_assert_fatal(ctx.r0 == BAD_MAGIC);
+    test_check(ctx.r0 == BAD_MAGIC);
     ctx.r0 = GOOD_MAGIC;
     ctx.pc = new_pc;
 #elif defined(CONFIG_ARCH_AARCH64)
-    test_assert_fatal((int)ctx.x0 == BAD_MAGIC);
+    test_check((int)ctx.x0 == BAD_MAGIC);
     ctx.x0 = GOOD_MAGIC;
     ctx.pc = new_pc;
 #elif defined(CONFIG_ARCH_X86_64)
-    test_assert_fatal((int)ctx.rax == BAD_MAGIC);
+    test_check((int)ctx.rax == BAD_MAGIC);
     ctx.rax = GOOD_MAGIC;
     ctx.rip = new_pc;
 #elif defined(CONFIG_ARCH_IA32)
-    test_assert_fatal(ctx.eax == BAD_MAGIC);
+    test_check(ctx.eax == BAD_MAGIC);
     ctx.eax = GOOD_MAGIC;
     ctx.eip = new_pc;
 #else
@@ -400,7 +400,7 @@ set_good_magic_and_set_pc(seL4_CPtr tcb, seL4_Word new_pc)
                                     0,
                                     sizeof(ctx) / sizeof(seL4_Word),
                                     &ctx);
-    test_assert_fatal(!error);
+    test_check(!error);
 }
 
 static int
@@ -555,7 +555,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
 
     default:
         /* What? Why are we here? What just happened? */
-        test_assert_fatal(0);
+        test_assert(0);
         break;
     }
 

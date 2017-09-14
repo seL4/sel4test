@@ -20,24 +20,25 @@
 #include "../helpers.h"
 
 #if defined(CONFIG_ARCH_ARM)
-static void
+static int
 fill_memory(seL4_Word addr, seL4_Word size_bytes)
 {
-    test_assert_fatal(IS_ALIGNED(addr, sizeof(seL4_Word)));
-    test_assert_fatal(IS_ALIGNED(size_bytes, sizeof(seL4_Word)));
+    test_assert(IS_ALIGNED(addr, sizeof(seL4_Word)));
+    test_assert(IS_ALIGNED(size_bytes, sizeof(seL4_Word)));
     seL4_Word *p = (void*)addr;
     seL4_Word size_words = size_bytes / sizeof(seL4_Word);
     while (size_words--) {
         *p++ = size_words ^ 0xbeefcafe;
     }
+    return SUCCESS;
 }
 
 static int
 __attribute__((warn_unused_result))
 check_memory(seL4_Word addr, seL4_Word size_bytes)
 {
-    test_assert_fatal(IS_ALIGNED(addr, sizeof(seL4_Word)));
-    test_assert_fatal(IS_ALIGNED(size_bytes, sizeof(seL4_Word)));
+    test_assert(IS_ALIGNED(addr, sizeof(seL4_Word)));
+    test_assert(IS_ALIGNED(size_bytes, sizeof(seL4_Word)));
     seL4_Word *p = (void*)addr;
     seL4_Word size_words = size_bytes / sizeof(seL4_Word);
     while (size_words--) {
@@ -82,7 +83,7 @@ test_pagetable_arm(env_t env)
 
     /* Check we can't map the supersection in at an address it's not aligned
      * to. */
-    test_assert_fatal(supersection != 0);
+    test_assert(supersection != 0);
     error = seL4_ARM_Page_Map(supersection, env->page_directory,
                               vstart + SUPSECT_SIZE / 2, seL4_AllRights, seL4_ARM_Default_VMAttributes);
     test_assert(error == seL4_AlignmentError);
@@ -94,7 +95,8 @@ test_pagetable_arm(env_t env)
 
     /* Now fill it with stuff to check later. */
     /* TDDO fx these constants */
-    fill_memory(vstart + SUPSECT_SIZE, SUPSECT_SIZE);
+    error = fill_memory(vstart + SUPSECT_SIZE, SUPSECT_SIZE);
+    test_assert(error == SUCCESS);
 
     /* Check we now can't map a section over the top. */
     error = seL4_ARM_Page_Map(section, env->page_directory,

@@ -18,7 +18,7 @@
 
 int test_trivial(env_t env)
 {
-    test_assert_fatal(2 > 1);
+    test_geq(2, 1);
     return sel4test_get_result();
 }
 DEFINE_TEST(TRIVIAL0000, "Ensure the test framework functions", test_trivial)

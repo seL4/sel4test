@@ -74,7 +74,7 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
                         env->cspace_root, ep, seL4_WordBits,
                         seL4_AllRights);
 
-            test_assert_fatal(!error);
+            test_assert(!error);
             num_caps++;
         }
         ZF_LOGD(".");

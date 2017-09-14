@@ -24,7 +24,7 @@
 #include "../helpers.h"
 #include "frame_type.h"
 
-int touch_data(void *vaddr, char old_data, char new_data, size_t size_bits) {
+void touch_data(void *vaddr, char old_data, char new_data, size_t size_bits) {
     char *data = (char*)vaddr;
     /* we walk backwards testing each byte of the frame to ensure a couple of things
      1. a frame of the correct size is mapped in
@@ -33,11 +33,10 @@ int touch_data(void *vaddr, char old_data, char new_data, size_t size_bits) {
         16 entries in a paging structure, and not just a single entry in a higher level structure
      */
     for (size_t i = BIT(size_bits) - 1; i > 1; i--) {
-        test_assert(data[i] == old_data);
+        test_eq(data[i], old_data);
         data[i] = new_data;
-        test_assert(data[i] == new_data);
+        test_eq(data[i], new_data);
     }
-    return sel4test_get_result();
 }
 
 static int
@@ -71,7 +70,7 @@ test_frame_exported(env_t env)
 
             /* Touch the memory */
             char *data = (char*)vaddr;
-            test_assert(touch_data(data, 0, 'U', frame_types[i].size_bits));
+            touch_data(data, 0, 'U', frame_types[i].size_bits);
 
             err = seL4_ARCH_Page_Remap(frame,
                                        env->page_directory,
@@ -79,7 +78,7 @@ test_frame_exported(env_t env)
                                        seL4_ARCH_Default_VMAttributes);
             test_assert(!err);
             /* ensure the memory is what it was before and touch it again */
-            test_assert(touch_data(vaddr, 'U', 'V', frame_types[i].size_bits));
+            touch_data(vaddr, 'U', 'V', frame_types[i].size_bits);
 
             vspace_unmap_pages(&env->vspace, (void*)vaddr, 1, frame_types[i].size_bits, VSPACE_PRESERVE);
             test_assert(err == seL4_NoError);

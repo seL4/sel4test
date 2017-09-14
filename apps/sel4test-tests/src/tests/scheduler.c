@@ -710,7 +710,7 @@ test_ipc_ordered(env_t env)
     helper_thread_t clients[SCHED0007_NUM_CLIENTS];
 
     endpoint = vka_alloc_endpoint_leaky(&env->vka);
-    test_assert_fatal(endpoint != 0);
+    test_assert(endpoint != 0);
 
     /* create clients, smallest prio first */
     for (int i = 0; i < SCHED0007_NUM_CLIENTS; i++) {
@@ -1072,7 +1072,7 @@ periodic_thread(int id, volatile unsigned long *counters)
 
     while (1) {
         counters[id]++;
-        test_assert_fatal(counters[id] < 10000);
+        test_assert(counters[id] < 10000);
         printf("Tick\n");
         seL4_Yield();
     }
