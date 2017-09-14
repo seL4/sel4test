@@ -28,7 +28,7 @@ arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *te
 
 env_t env;
 int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,
-        uintptr_t paddr, seL4_Word *cookie)
+                               uintptr_t paddr, seL4_Word *cookie)
 {
     if (paddr == env->serial_objects.arch_serial_objects.serial_frame_paddr) {
         cspacepath_t tmp_frame_path;
@@ -43,7 +43,8 @@ int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word t
     return env->vka.utspace_alloc_at(data, dest, type, size_bits, paddr, cookie);
 }
 
-vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(env_t _env) {
+vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(env_t _env)
+{
     static bool call_once = false;
     if (call_once) {
         ZF_LOGF("This function can only be called once.");
