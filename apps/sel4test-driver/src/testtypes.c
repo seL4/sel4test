@@ -36,7 +36,7 @@ static inline void bootstrap_tear_down(env_t e)
 {
     ZF_LOGD("tear down bootstrap test\n");
 }
-static inline int bootstrap_run_test(struct testcase* test, env_t e)
+static inline test_result_t bootstrap_run_test(struct testcase* test, env_t e)
 {
     return test->function(e);
 }
@@ -133,7 +133,7 @@ void basic_set_up(env_t env)
     assert(env->init->free_slots.start < env->init->free_slots.end);
 }
 
-int
+test_result_t
 basic_run_test(struct testcase *test, env_t env)
 {
     int error;
@@ -160,7 +160,7 @@ basic_run_test(struct testcase *test, env_t env)
     /* wait on it to finish or fault, report result */
     seL4_MessageInfo_t info = api_wait(env->test_process.fault_endpoint.cptr, NULL);
 
-    int result = seL4_GetMR(0);
+    test_result_t result = seL4_GetMR(0);
     if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {
         sel4utils_print_fault_message(info, test->name);
         printf("Register of root thread in test (may not be the thread that faulted)\n");
@@ -168,7 +168,6 @@ basic_run_test(struct testcase *test, env_t env)
         result = FAILURE;
     }
 
-    test_assert(result == SUCCESS);
     return result;
 }
 
