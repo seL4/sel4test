@@ -155,7 +155,7 @@ basic_run_test(struct testcase *test, env_t env)
     /* spawn the process */
     error = sel4utils_spawn_process_v(&(env->test_process), &env->vka, &env->vspace,
                                       argc, argv, 1);
-    assert(error == 0);
+    ZF_LOGF_IF(error != 0, "Failed to start test process!");
 
     /* wait on it to finish or fault, report result */
     seL4_MessageInfo_t info = api_wait(env->test_process.fault_endpoint.cptr, NULL);
