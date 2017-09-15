@@ -12,8 +12,12 @@
 
 cmake_minimum_required(VERSION 3.7.2)
 
-add_subdirectory(apps/sel4test-tests)
-add_subdirectory(apps/sel4test-driver)
-add_subdirectory(libsel4testsupport)
+project(libsel4testsupport C)
 
-GenerateSimulateScript()
+file(GLOB deps src/*.c)
+
+list(SORT deps)
+
+add_library(sel4testsupport STATIC EXCLUDE_FROM_ALL ${deps})
+target_include_directories(sel4testsupport PUBLIC include)
+target_link_libraries(sel4testsupport Configuration muslc sel4 utils sel4test)
