@@ -25,9 +25,16 @@
 
 #include <utils/util.h>
 
+#include <sel4utils/serial_server/test.h>
+
 /* Force the _test_type and _test_case section to be created even if no tests are defined. */
 static USED SECTION("_test_type") struct {} dummy_test_type;
 static USED SECTION("_test_case") struct {} dummy_test_case;
+
+/* Used to ensure that serial server parent tests are included */
+UNUSED void dummy_func() {
+    get_serial_server_parent_tests();
+}
 
 testcase_t*
 sel4test_get_test(const char *name)
