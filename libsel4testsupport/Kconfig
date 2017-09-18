@@ -12,7 +12,7 @@
 
 menuconfig LIB_SEL4_TESTSUPPORT
     bool "libsel4testsupport"
-    depends on HAVE_LIBC && HAVE_LIB_SEL4 && HAVE_LIB_UTILS && HAVE_LIB_SEL4_UTILS
+    depends on HAVE_LIBC && HAVE_LIB_SEL4 && HAVE_LIB_UTILS && HAVE_LIB_SEL4_SERIAL_SERVER
     default y
     help
         Support library for sel4test apps.

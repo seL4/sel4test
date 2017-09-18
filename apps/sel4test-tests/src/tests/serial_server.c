@@ -18,8 +18,8 @@
 #include <allocman/vka.h>
 #include <allocman/bootstrap.h>
 #include <sel4utils/thread.h>
-#include <sel4utils/serial_server/parent.h>
-#include <sel4utils/serial_server/client.h>
+#include <serial_server/parent.h>
+#include <serial_server/client.h>
 
 #include "../test.h"
 #include "../helpers.h"
