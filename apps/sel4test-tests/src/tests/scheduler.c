@@ -693,7 +693,7 @@ sched0007_server(seL4_CPtr endpoint, seL4_CPtr reply)
         }
     }
 
-    return true;
+    return SUCCESS;
 }
 
 static inline void
@@ -1072,7 +1072,7 @@ periodic_thread(int id, volatile unsigned long *counters)
 
     while (1) {
         counters[id]++;
-        test_assert(counters[id] < 10000);
+        test_leq(counters[id], (unsigned long) 10000);
         printf("Tick\n");
         seL4_Yield();
     }

@@ -457,7 +457,7 @@ server_fn(seL4_CPtr endpoint, seL4_CPtr reply, volatile int *state)
     ZF_LOGD("Server awake!\n");
     int i = 0;
     while (i < RUNS) {
-        test_assert(seL4_GetMR(0) == 12345678);
+        test_eq(seL4_GetMR(0), (seL4_Word) 12345678);
         seL4_SetMR(0, 0xdeadbeef);
         *state = *state + 1;
         ZF_LOGD("Server replyRecv\n");
@@ -480,13 +480,13 @@ proxy_fn(seL4_CPtr receive_endpoint, seL4_CPtr call_endpoint, seL4_Word reply, v
 
     int i = 0;
     while (i < RUNS) {
-        test_assert(seL4_GetMR(0) == 12345678);
+        test_eq(seL4_GetMR(0), (seL4_Word) 12345678);
         seL4_SetMR(0, 12345678);
 
         ZF_LOGD("Proxy call\n");
         seL4_Call(call_endpoint, info);
 
-        test_assert(seL4_GetMR(0) == 0xdeadbeef);
+        test_eq(seL4_GetMR(0), (seL4_Word) 0xdeadbeef);
 
         seL4_SetMR(0, 0xdeadbeef);
         ZF_LOGD("Proxy replyRecv\n");
@@ -511,7 +511,7 @@ client_fn(seL4_CPtr endpoint, bool fastpath, int unused, volatile int *state)
         ZF_LOGD("Client calling on ep %lu\n", endpoint);
         info = seL4_Call(endpoint, info);
 
-        test_assert(seL4_GetMR(0) == 0xdeadbeef);
+        test_eq(seL4_GetMR(0), (seL4_Word) 0xdeadbeef);
         i++;
         *state = *state + 1;
     }
@@ -649,7 +649,7 @@ ipc0016_reply_once_fn(seL4_CPtr endpoint, seL4_CPtr reply)
     ZF_LOGD("Recv\n");
     seL4_Wait(endpoint, NULL);
 
-    test_assert(!"should not get here");
+    test_check(!"should not get here");
 }
 
 static int test_transfer_on_reply(env_t env)
