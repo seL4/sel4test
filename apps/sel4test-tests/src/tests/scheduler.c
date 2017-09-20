@@ -1315,4 +1315,137 @@ test_resume_no_overflow(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0016, "Test resume cannot be used to exceed budget", test_resume_no_overflow);
+
+void
+sched0017_helper_fn(seL4_CPtr sc, volatile seL4_SchedContext_YieldTo_t *ret)
+{
+    ZF_LOGD("Yield To");
+    *ret = seL4_SchedContext_YieldTo(sc);
+}
+
+int
+test_yieldTo_errors(env_t env)
+{
+    volatile seL4_SchedContext_YieldTo_t ret;
+
+    /* can't yieldTo self */
+    ret = seL4_SchedContext_YieldTo(simple_get_sc(&env->simple));
+    test_eq(ret.error, seL4_IllegalOperation);
+
+    /* can't yield to unbound sched context */
+    seL4_CPtr sched_context = vka_alloc_sched_context_leaky(&env->vka);
+    ret = seL4_SchedContext_YieldTo(sched_context);
+    test_eq(ret.error, seL4_IllegalOperation);
+
+    /* yield to unrunnable thread (permitted, but should return immediately) */
+    helper_thread_t helper;
+    create_helper_thread(env, &helper);
+    ret = seL4_SchedContext_YieldTo(helper.thread.sched_context.cptr);
+    test_eq(ret.error, seL4_NoError);
+    test_eq(ret.consumed, 0llu);
+
+    /* start the thread and have it try to yield to us - but fail as
+     * we have a higher mcp
+     */
+    ZF_LOGD("Yield to MCP check\n");
+    set_helper_mcp(env, &helper, 0);
+    start_helper(env, &helper, (helper_fn_t) sched0017_helper_fn, simple_get_sc(&env->simple),
+                 (seL4_Word) &ret, 0, 0);
+
+    ZF_LOGD("Wait for helper\n");
+    wait_for_helper(&helper);
+    test_eq(ret.error, seL4_IllegalOperation);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0017, "Test seL4_SchedContext_YieldTo errors", test_yieldTo_errors);
+
+int
+sched0018_to_fn(void)
+{
+    while(1) {
+        ZF_LOGD("Running");
+    }
+}
+
+int
+test_yieldTo_cleanup(env_t env)
+{
+    int error;
+    helper_thread_t to, from;
+    volatile seL4_SchedContext_YieldTo_t ret;
+
+    create_helper_thread(env, &to);
+    create_helper_thread(env, &from);
+
+    start_helper(env, &to, (helper_fn_t) sched0018_to_fn, 0, 0, 0, 0);
+    start_helper(env, &from, (helper_fn_t) sched0017_helper_fn, to.thread.sched_context.cptr, (seL4_Word) &ret, 0, 0);
+
+    set_helper_mcp(env, &to, seL4_MaxPrio);
+    set_helper_mcp(env, &from, seL4_MaxPrio);
+    error = set_helper_sched_params(env, &to, 10 * US_IN_S, 10 * US_IN_S, 0);
+    test_eq(error, seL4_NoError);
+    error = set_helper_sched_params(env, &from, 10 * US_IN_S, 10 * US_IN_S, 0);
+    test_eq(error, seL4_NoError);
+
+    /* wait for them to execute */
+    ZF_LOGD("Sleep\n");
+    sleep(env, NS_IN_S);
+
+    ZF_LOGD("suspend to\n");
+    /* suspend yielded to thread */
+    error = seL4_TCB_Suspend(to.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    ZF_LOGD("Wait for from\n");
+    wait_for_helper(&from);
+    test_eq(ret.error, seL4_NoError);
+    test_ge(ret.consumed, 0llu);
+
+    /* restart threads */
+    cleanup_helper(env, &from);
+    cleanup_helper(env, &to);
+
+    create_helper_thread(env, &from);
+    create_helper_thread(env, &to);
+    set_helper_mcp(env, &to, seL4_MaxPrio);
+    set_helper_mcp(env, &from, seL4_MaxPrio);
+    start_helper(env, &to, (helper_fn_t) sched0018_to_fn, 0, 0, 0, 0);
+    start_helper(env, &from, (helper_fn_t) sched0017_helper_fn, to.thread.sched_context.cptr,
+                 (seL4_Word) &ret, 0, 0);
+
+    /* let them run */
+    ZF_LOGD("Sleep\n");
+    sleep(env, NS_IN_S);
+
+    /* delete yielded to thread */
+    ZF_LOGD("Delete yielded to\n");
+    cleanup_helper(env, &to);
+
+    ZF_LOGD("Wait for from\n");
+    wait_for_helper(&from);
+    test_eq(ret.error, seL4_NoError);
+    test_ge(ret.consumed, 0llu);
+
+    /* restart threads */
+    cleanup_helper(env, &from);
+
+    create_helper_thread(env, &from);
+    create_helper_thread(env, &to);
+    start_helper(env, &to, (helper_fn_t) sched0018_to_fn, 0, 0, 0, 0);
+    start_helper(env, &from, (helper_fn_t) sched0017_helper_fn, to.thread.sched_context.cptr,
+                 (seL4_Word) &ret, 0, 0);
+
+    /* wait for them to execute */
+    ZF_LOGD("sleep\n");
+    sleep(env, NS_IN_S);
+
+    /* delete yielded from thread */
+    /* delete yielded from thread */
+    ZF_LOGD("delete from\n");
+    cleanup_helper(env, &from);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0018, "Test clean up cases after seL4_SchedContext_YieldTo", test_yieldTo_cleanup);
 #endif /* CONFIG_KERNEL_RT */
