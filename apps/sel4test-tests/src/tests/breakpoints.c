@@ -492,6 +492,8 @@ test_debug_api_software_break_request(struct env *env)
     /* Ensure the fault address is the address of the function */
     test_eq(result, 0);
     test_eq(fault_data.reason, (seL4_Word)seL4_SoftwareBreakRequest);
+    test_eq(fault_data.vaddr,
+            (seL4_Word)&(TEST_SOFTWARE_BREAK_EXPECTED_FAULT_LABEL));
     return sel4test_get_result();
 }
 DEFINE_TEST(BREAK_REQUEST_001, "Use an INT3/BKPT instruction to trigger a "
