@@ -202,7 +202,6 @@ test_notification_binding_4(env_t env)
 DEFINE_TEST(BIND0004, "Test IPC ordering 2) bound tcb waits on bound notification 1) another tcb sends a message",
             test_notification_binding_4)
 
-#ifdef CONFIG_KERNEL_RT
 static void
 bind0005_helper(seL4_CPtr endpoint, volatile int *state)
 {
@@ -257,7 +256,7 @@ test_notification_binding_no_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(BIND005, "Test passing thread notification binding with no scheduling context", test_notification_binding_no_sc)
+DEFINE_TEST_MAYBE(BIND005, "Test passing thread notification binding with no scheduling context", test_notification_binding_no_sc, config_set(CONFIG_KERNEL_RT))
 
 static int
 test_notification_binding_with_sc(env_t env)
@@ -300,5 +299,4 @@ test_notification_binding_with_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(BIND006, "Test passing thread notification binding with a scheduling context", test_notification_binding_with_sc)
-#endif
+DEFINE_TEST_MAYBE(BIND006, "Test passing thread notification binding with a scheduling context", test_notification_binding_with_sc, config_set(CONFIG_KERNEL_RT))
