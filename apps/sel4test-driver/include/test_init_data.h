@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef __TEST_SHMEM_INIT_DATA_H
-#define __TEST_SHMEM_INIT_DATA_H
+#pragma once
 
 #include <stdint.h>
 
@@ -111,4 +110,3 @@ typedef struct {
     uint64_t tc_size;
 } test_init_data_t;
 
-#endif
