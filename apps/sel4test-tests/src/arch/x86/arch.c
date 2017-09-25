@@ -15,6 +15,7 @@
 #include <sel4platsupport/timer.h>
 #include <platsupport/plat/timer.h>
 #include <platsupport/plat/serial.h>
+#include <sel4platsupport/arch/io.h>
 #include <sel4utils/sel4_zf_logif.h>
 
 static seL4_CPtr
@@ -70,6 +71,9 @@ arch_init_timer(env_t env, test_init_data_t *data)
     ps_io_ops_t ops = { 0 };
     int error = sel4platsupport_new_io_ops(env->vspace, env->vka, &ops);
     ZF_LOGF_IF(error, "Failed to get io ops");
+
+    error = sel4platsupport_get_io_port_ops(&ops.io_port_ops, &env->simple);
+    ZF_LOGF_IF(error, "Failed to get io port ops");
 
     /* set up the irqs */
     error = sel4platsupport_init_timer_irqs(&env->vka, &env->simple,
