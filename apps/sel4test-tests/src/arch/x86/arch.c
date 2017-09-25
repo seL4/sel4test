@@ -65,7 +65,7 @@ arch_init_allocator(env_t env, test_init_data_t *data)
 void
 arch_init_timer(env_t env, test_init_data_t *data)
 {
-    ps_io_ops_t ops;
+    ps_io_ops_t ops = { 0 };
     int error = sel4platsupport_new_io_ops(env->vspace, env->vka, &ops);
     ZF_LOGF_IF(error, "Failed to get io ops");
 

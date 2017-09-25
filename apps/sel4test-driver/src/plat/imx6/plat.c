@@ -19,8 +19,8 @@ void
 plat_init(env_t env)
 {
     int error;
-    ps_io_ops_t io_ops;
-    clock_sys_t clock;
+    ps_io_ops_t io_ops = { 0 };
+    clock_sys_t clock = { 0 };
     clk_t *clk;
 
     error = sel4platsupport_new_io_mapper(env->vspace, env->vka, &io_ops.io_mapper);
