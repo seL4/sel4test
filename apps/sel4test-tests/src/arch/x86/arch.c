@@ -22,10 +22,12 @@ get_IOPort_cap(void *data, uint16_t start_port, uint16_t end_port)
 {
     test_init_data_t *init = (test_init_data_t *) data;
 
-    assert(start_port >= SERIAL_CONSOLE_COM1_PORT &&
-           start_port <= SERIAL_CONSOLE_COM1_PORT_END);
-
-    return init->serial_io_port_cap;
+    if (start_port >= SERIAL_CONSOLE_COM1_PORT &&
+           start_port <= SERIAL_CONSOLE_COM1_PORT_END) {
+        return init->serial_io_port_cap;
+    } else {
+        return init->timer_io_port_cap;
+    }
 }
 
 static seL4_Error
