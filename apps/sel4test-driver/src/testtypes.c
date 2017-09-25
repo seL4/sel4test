@@ -101,6 +101,10 @@ void basic_set_up(env_t env)
 #ifdef CONFIG_ARM_SMMU
     env->init->io_space_caps = arch_copy_iospace_caps_to_process(&(env->test_process), &env);
 #endif
+#ifdef CONFIG_ARCH_X86
+    /* pass the entire io port range for the timer io port for simplicity */
+    env->init->timer_io_port_cap = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple, seL4_CapIOPort));
+#endif
     env->init->cores = simple_get_core_count(&env->simple);
     /* copy the sched ctrl caps to the remote process */
     if (config_set(CONFIG_KERNEL_RT)) {
