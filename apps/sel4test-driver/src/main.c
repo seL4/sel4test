@@ -260,7 +260,8 @@ void sel4test_run_tests(struct env* e)
     qsort(test_types, num_test_types, sizeof(struct test_type*), test_type_comparator);
 
     /* Count how many tests actually exist and allocate space for them */
-    int max_tests = (int)(__stop__test_case - __start__test_case);
+    int tc_tests = e->init->tc_size / sizeof(struct test_type);
+    int max_tests = (int)(__stop__test_case - __start__test_case) + tc_tests;
     struct testcase *tests[max_tests];
 
     /* Extract and filter the tests based on the regex */
@@ -268,13 +269,22 @@ void sel4test_run_tests(struct env* e)
     int error = regcomp(&reg, CONFIG_TESTPRINTER_REGEX, REG_EXTENDED | REG_NOSUB);
     ZF_LOGF_IF(error, "Error compiling regex \"%s\"\n", CONFIG_TESTPRINTER_REGEX);
 
-    /* figure out how many tests in total to run */
-    int num_tests = 0;
+    int num_tests = 0;      /* The number of tests to run */
+    int seen_tests = 0;     /* The number of tests seen (as some tests are not enabled) */
     for (struct testcase *i = __start__test_case; i < __stop__test_case; i++) {
         if (regexec(&reg, i->name, 0, NULL, 0) == 0) {
             tests[num_tests] = i;
             num_tests++;
         }
+        seen_tests++;
+    }
+    for (struct testcase *i = (struct testcase*) e->init->tc_start;
+            seen_tests < max_tests; i++) {
+        if (i->enabled == 1 && regexec(&reg, i->name, 0, NULL, 0) == 0) {
+            tests[num_tests] = i;
+            num_tests++;
+        }
+        seen_tests++;
     }
 
     regfree(&reg);
@@ -381,6 +391,9 @@ void *main_continued(void *arg UNUSED)
     /* setup init data that won't change test-to-test */
     env.init->priority = seL4_MaxPrio - 1;
     plat_init(&env);
+
+    /* find the _test_case section in sel4test-tests so we can extract test cases*/
+    env.init->tc_start = sel4utils_elf_get_section("sel4test-tests", "_test_case", &env.init->tc_size);
 
     /* now run the tests */
     sel4test_run_tests(&env);

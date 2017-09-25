@@ -139,7 +139,7 @@ basic_run_test(struct testcase *test, env_t env)
     int error;
 
     /* copy test name */
-    strncpy(env->init->name, test->name + strlen("TEST_"), TEST_NAME_MAX);
+    strncpy(env->init->name, test->name, TEST_NAME_MAX);
     /* ensure string is null terminated */
     env->init->name[TEST_NAME_MAX - 1] = '\0';
 #ifdef CONFIG_DEBUG_BUILD

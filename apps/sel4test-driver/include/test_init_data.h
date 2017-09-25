@@ -15,10 +15,8 @@
 #include <stdint.h>
 
 #include <sel4/sel4.h>
+#include <sel4test/test.h>
 #include <sel4utils/elf.h>
-
-/* max test name size */
-#define TEST_NAME_MAX 40
 
 /* Increase if the sel4test-tests binary
  * has new loadable sections added */
@@ -107,6 +105,10 @@ typedef struct {
 
     /* number of available cores */
     seL4_Word cores;
+
+    /* test case section details */
+    uintptr_t tc_start;
+    uint64_t tc_size;
 } test_init_data_t;
 
 #endif

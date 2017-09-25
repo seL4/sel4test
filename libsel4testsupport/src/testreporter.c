@@ -48,3 +48,4 @@ sel4test_get_test(const char *name)
 
     return NULL;
 }
+
