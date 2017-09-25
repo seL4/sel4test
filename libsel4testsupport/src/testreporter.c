@@ -32,7 +32,8 @@ static USED SECTION("_test_type") struct {} dummy_test_type;
 static USED SECTION("_test_case") struct {} dummy_test_case;
 
 /* Used to ensure that serial server parent tests are included */
-UNUSED void dummy_func() {
+UNUSED void dummy_func()
+{
     get_serial_server_parent_tests();
 }
 
