@@ -356,56 +356,56 @@ test_send_wait(env_t env)
 {
     return test_ipc_pair(env, send_func, wait_func, false, env->cores);
 }
-DEFINE_TEST(IPC0001, "Test seL4_Send + seL4_Recv", test_send_wait)
+DEFINE_TEST(IPC0001, "Test seL4_Send + seL4_Recv", test_send_wait, true)
 
 static int
 test_call_replywait(env_t env)
 {
     return test_ipc_pair(env, call_func, replywait_func, false, env->cores);
 }
-DEFINE_TEST(IPC0002, "Test seL4_Call + seL4_ReplyRecv", test_call_replywait)
+DEFINE_TEST(IPC0002, "Test seL4_Call + seL4_ReplyRecv", test_call_replywait, true)
 
 static int
 test_call_reply_and_wait(env_t env)
 {
     return test_ipc_pair(env, call_func, reply_and_wait_func, false, env->cores);
 }
-DEFINE_TEST(IPC0003, "Test seL4_Send + seL4_Reply + seL4_Recv", test_call_reply_and_wait)
+DEFINE_TEST(IPC0003, "Test seL4_Send + seL4_Reply + seL4_Recv", test_call_reply_and_wait, true)
 
 static int
 test_nbsend_wait(env_t env)
 {
     return test_ipc_pair(env, nbsend_func, nbwait_func, false, 1);
 }
-DEFINE_TEST(IPC0004, "Test seL4_NBSend + seL4_Recv", test_nbsend_wait)
+DEFINE_TEST(IPC0004, "Test seL4_NBSend + seL4_Recv", test_nbsend_wait, true)
 
 static int
 test_send_wait_interas(env_t env)
 {
     return test_ipc_pair(env, send_func, wait_func, true, env->cores);
 }
-DEFINE_TEST(IPC1001, "Test inter-AS seL4_Send + seL4_Recv", test_send_wait_interas)
+DEFINE_TEST(IPC1001, "Test inter-AS seL4_Send + seL4_Recv", test_send_wait_interas, true)
 
 static int
 test_call_replywait_interas(env_t env)
 {
     return test_ipc_pair(env, call_func, replywait_func, true, env->cores);
 }
-DEFINE_TEST(IPC1002, "Test inter-AS seL4_Call + seL4_ReplyRecv", test_call_replywait_interas)
+DEFINE_TEST(IPC1002, "Test inter-AS seL4_Call + seL4_ReplyRecv", test_call_replywait_interas, true)
 
 static int
 test_call_reply_and_wait_interas(env_t env)
 {
     return test_ipc_pair(env, call_func, reply_and_wait_func, true, env->cores);
 }
-DEFINE_TEST(IPC1003, "Test inter-AS seL4_Send + seL4_Reply + seL4_Recv", test_call_reply_and_wait_interas)
+DEFINE_TEST(IPC1003, "Test inter-AS seL4_Send + seL4_Reply + seL4_Recv", test_call_reply_and_wait_interas, true)
 
 static int
 test_nbsend_wait_interas(env_t env)
 {
     return test_ipc_pair(env, nbsend_func, nbwait_func, true, 1);
 }
-DEFINE_TEST(IPC1004, "Test inter-AS seL4_NBSend + seL4_Recv", test_nbsend_wait_interas)
+DEFINE_TEST(IPC1004, "Test inter-AS seL4_NBSend + seL4_Recv", test_nbsend_wait_interas, true)
 
 static int
 test_ipc_abort_in_call(env_t env)
@@ -442,7 +442,7 @@ test_ipc_abort_in_call(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0010, "Test suspending an IPC mid-Call()", test_ipc_abort_in_call)
+DEFINE_TEST(IPC0010, "Test suspending an IPC mid-Call()", test_ipc_abort_in_call, true)
 
 #ifdef CONFIG_KERNEL_RT
 #define RUNS 10
@@ -592,7 +592,7 @@ int test_single_client_slowpath_same_prio(env_t env)
 {
     return single_client_server_chain_test(env, 0, 0);
 }
-DEFINE_TEST(IPC0011, "Client-server inheritance: slowpath, same prio", test_single_client_slowpath_same_prio)
+DEFINE_TEST(IPC0011, "Client-server inheritance: slowpath, same prio", test_single_client_slowpath_same_prio, true)
 
 int test_single_client_slowpath_higher_prio(env_t env)
 {
@@ -612,14 +612,14 @@ int test_single_client_fastpath_higher_prio(env_t env)
 {
     return single_client_server_chain_test(env, 1, 1);
 }
-DEFINE_TEST(IPC0014, "Client-server inheritance: fastpath, client higher prio", test_single_client_fastpath_higher_prio)
+DEFINE_TEST(IPC0014, "Client-server inheritance: fastpath, client higher prio", test_single_client_fastpath_higher_prio, true)
 
 int
 test_single_client_fastpath_same_prio(env_t env)
 {
     return single_client_server_chain_test(env, 1, 0);
 }
-DEFINE_TEST(IPC0015, "Client-server inheritance: fastpath, client same prio", test_single_client_fastpath_same_prio)
+DEFINE_TEST(IPC0015, "Client-server inheritance: fastpath, client same prio", test_single_client_fastpath_same_prio, true)
 
 static void
 ipc0016_call_once_fn(seL4_CPtr endpoint, volatile int *state)
@@ -776,7 +776,7 @@ test_send_to_no_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0017, "Test seL4_Send/seL4_NBSend to a server with no scheduling context", test_send_to_no_sc)
+DEFINE_TEST(IPC0017, "Test seL4_Send/seL4_NBSend to a server with no scheduling context", test_send_to_no_sc, true)
 
 static void
 ipc0018_helper(seL4_CPtr endpoint, volatile int *state)
@@ -872,7 +872,7 @@ delete_sc_client_sending_on_endpoint(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0019, "Test deleteing the scheduling context while a client is sending on an endpoint", delete_sc_client_sending_on_endpoint);
+DEFINE_TEST(IPC0019, "Test deleteing the scheduling context while a client is sending on an endpoint", delete_sc_client_sending_on_endpoint, true);
 
 static void
 ipc0020_helper(seL4_CPtr endpoint, volatile int *state)
@@ -1232,13 +1232,13 @@ static int test_nbsendrecv(env_t env)
 {
     return test_ipc_pair(env, (test_func_t) nbsendrecv_func, (test_func_t) nbsendrecv_func, false, env->cores);
 }
-DEFINE_TEST(IPC0025, "Test seL4_nbsendrecv + seL4_nbsendrecv", test_nbsendrecv)
+DEFINE_TEST(IPC0025, "Test seL4_nbsendrecv + seL4_nbsendrecv", test_nbsendrecv, true)
 
 static int test_nbsendrecv_interas(env_t env)
 {
     return test_ipc_pair(env, (test_func_t) nbsendrecv_func, (test_func_t) nbsendrecv_func, false, env->cores);
 }
-DEFINE_TEST(IPC0026, "Test interas seL4_nbsendrecv + seL4_nbsendrecv", test_nbsendrecv_interas)
+DEFINE_TEST(IPC0026, "Test interas seL4_nbsendrecv + seL4_nbsendrecv", test_nbsendrecv_interas, true)
 
 static int
 test_sched_donation_low_prio_server(env_t env)
@@ -1282,7 +1282,7 @@ test_sched_donation_low_prio_server(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0027, "Test sched donation to low prio server", test_sched_donation_low_prio_server)
+DEFINE_TEST(IPC0027, "Test sched donation to low prio server", test_sched_donation_low_prio_server, true)
 
 #if CONFIG_MAX_NUM_NODES > 1
 
@@ -1353,6 +1353,6 @@ test_sched_donation_cross_core(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0028, "Cross core sched donation", test_sched_donation_cross_core);
+DEFINE_TEST(IPC0028, "Cross core sched donation", test_sched_donation_cross_core, true);
 #endif /* CONFIG_MAX_NUM_NODES */
 #endif /* CONFIG_KERNEL_RT */

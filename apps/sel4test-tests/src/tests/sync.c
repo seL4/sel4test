@@ -84,7 +84,7 @@ test_bin_sem(struct env *env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SYNC001, "libsel4sync Test binary semaphores", test_bin_sem)
+DEFINE_TEST(SYNC001, "libsel4sync Test binary semaphores", test_bin_sem, true)
 
 static int
 sem_func(env_t env, int threadid)
@@ -141,7 +141,7 @@ test_sem(struct env *env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SYNC002, "libsel4sync Test semaphores", test_sem)
+DEFINE_TEST(SYNC002, "libsel4sync Test semaphores", test_sem, true)
 
 static int
 consumer_func(env_t env, int threadid)
@@ -254,7 +254,7 @@ test_monitor(struct env *env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SYNC003, "libsel4sync Test monitors", test_monitor)
+DEFINE_TEST(SYNC003, "libsel4sync Test monitors", test_monitor, true)
 
 static int
 broadcaster_func(env_t env, int threadid)
@@ -338,4 +338,4 @@ test_monitor_broadcast(struct env *env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SYNC004, "libsel4sync Test monitors - broadcast", test_monitor_broadcast)
+DEFINE_TEST(SYNC004, "libsel4sync Test monitors - broadcast", test_monitor_broadcast, true)

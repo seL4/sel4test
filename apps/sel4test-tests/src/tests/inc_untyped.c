@@ -115,7 +115,7 @@ test_retype(env_t env)
     vka_free_object(&env->vka, &cnode);
     return sel4test_get_result();
 }
-DEFINE_TEST(RETYPE0000, "Retype test", test_retype)
+DEFINE_TEST(RETYPE0000, "Retype test", test_retype, true)
 
 static int
 test_incretype(env_t env)
@@ -155,7 +155,7 @@ test_incretype(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(RETYPE0001, "Incremental retype test", test_incretype)
+DEFINE_TEST(RETYPE0001, "Incremental retype test", test_incretype, true)
 
 static int
 test_incretype2(env_t env)
@@ -209,4 +209,4 @@ test_incretype2(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(RETYPE0002, "Incremental retype test #2", test_incretype2)
+DEFINE_TEST(RETYPE0002, "Incremental retype test #2", test_incretype2, true)

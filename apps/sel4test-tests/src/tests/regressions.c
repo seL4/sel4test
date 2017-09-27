@@ -458,7 +458,7 @@ int test_write_registers(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(REGRESSIONS0001, "Ensure WriteRegisters functions correctly", test_write_registers)
+DEFINE_TEST(REGRESSIONS0001, "Ensure WriteRegisters functions correctly", test_write_registers, true)
 
 #if defined(CONFIG_ARCH_ARM)
 #if defined(CONFIG_ARCH_AARCH32)
@@ -550,7 +550,7 @@ int test_ldrex_cleared(env_t env)
 
     return result;
 }
-DEFINE_TEST(REGRESSIONS0002, "Test the load-exclusive monitor is cleared on context switch", test_ldrex_cleared)
+DEFINE_TEST(REGRESSIONS0002, "Test the load-exclusive monitor is cleared on context switch", test_ldrex_cleared, true)
 #endif
 
 #if defined(CONFIG_ARCH_IA32) && CONFIG_HAVE_TIMER
@@ -656,5 +656,5 @@ int test_no_ret_with_cpl0(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(REGRESSIONS0003, "Test return to user with CPL0 exploit", test_no_ret_with_cpl0)
+DEFINE_TEST(REGRESSIONS0003, "Test return to user with CPL0 exploit", test_no_ret_with_cpl0, true)
 #endif /* defined(CONFIG_ARCH_IA32) && CONFIG_HAVE_TIMER */

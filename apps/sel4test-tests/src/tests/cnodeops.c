@@ -63,7 +63,7 @@ test_cnode_copy(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CNODEOP0001, "Basic seL4_CNode_Copy() testing", test_cnode_copy)
+DEFINE_TEST(CNODEOP0001, "Basic seL4_CNode_Copy() testing", test_cnode_copy, true)
 
 static int
 test_cnode_delete(env_t env)
@@ -85,7 +85,7 @@ test_cnode_delete(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CNODEOP0002, "Basic seL4_CNode_Delete() testing", test_cnode_delete)
+DEFINE_TEST(CNODEOP0002, "Basic seL4_CNode_Delete() testing", test_cnode_delete, true)
 
 static int
 test_cnode_mint(env_t env)
@@ -114,7 +114,7 @@ test_cnode_mint(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CNODEOP0003, "Basic seL4_CNode_Mint() testing", test_cnode_mint)
+DEFINE_TEST(CNODEOP0003, "Basic seL4_CNode_Mint() testing", test_cnode_mint, true)
 
 static int
 test_cnode_move(env_t env)
@@ -147,7 +147,7 @@ test_cnode_move(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CNODEOP0004, "Basic seL4_CNode_Move() testing", test_cnode_move)
+DEFINE_TEST(CNODEOP0004, "Basic seL4_CNode_Move() testing", test_cnode_move, true)
 
 static int
 test_cnode_mutate(env_t env)
@@ -181,7 +181,7 @@ test_cnode_mutate(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CNODEOP0005, "Basic seL4_CNode_Mutate() testing", test_cnode_mutate)
+DEFINE_TEST(CNODEOP0005, "Basic seL4_CNode_Mutate() testing", test_cnode_mutate, true)
 
 static int
 test_cnode_cancelBadgedSends(env_t env)
@@ -203,7 +203,7 @@ test_cnode_cancelBadgedSends(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CNODEOP0006, "Basic seL4_CNode_CancelBadgedSends() testing", test_cnode_cancelBadgedSends)
+DEFINE_TEST(CNODEOP0006, "Basic seL4_CNode_CancelBadgedSends() testing", test_cnode_cancelBadgedSends, true)
 
 static int
 test_cnode_revoke(env_t env)
@@ -225,7 +225,7 @@ test_cnode_revoke(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CNODEOP0007, "Basic seL4_CNode_Revoke() testing", test_cnode_revoke)
+DEFINE_TEST(CNODEOP0007, "Basic seL4_CNode_Revoke() testing", test_cnode_revoke, true)
 
 static int
 test_cnode_rotate(env_t env)
@@ -283,7 +283,7 @@ test_cnode_rotate(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CNODEOP0008, "Basic seL4_CNode_Rotate() testing", test_cnode_rotate)
+DEFINE_TEST(CNODEOP0008, "Basic seL4_CNode_Rotate() testing", test_cnode_rotate, true)
 
 #ifndef CONFIG_KERNEL_RT
 static int
@@ -315,5 +315,5 @@ test_cnode_savecaller(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CNODEOP0009, "Basic seL4_CNode_SaveCaller() testing", test_cnode_savecaller)
+DEFINE_TEST(CNODEOP0009, "Basic seL4_CNode_SaveCaller() testing", test_cnode_savecaller, true)
 #endif /* CONFIG_KERNEL_RT */

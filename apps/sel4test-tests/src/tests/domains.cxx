@@ -121,7 +121,7 @@ test_run_domains(struct env* env)
 {
     return test_domains<false>(env, fdom1);
 }
-DEFINE_TEST(DOMAINS0004, "Run threads in domains()", test_run_domains)
+DEFINE_TEST(DOMAINS0004, "Run threads in domains()", test_run_domains, true)
 
 #if CONFIG_NUM_DOMAINS > 1
 /* The output of this test differs from that of DOMAINS0004 in that the thread
@@ -139,7 +139,7 @@ test_run_domains_shift(struct env* env)
 {
     return test_domains<true>(env, fdom1);
 }
-DEFINE_TEST(DOMAINS0005, "Move thread between domains()", test_run_domains_shift)
+DEFINE_TEST(DOMAINS0005, "Move thread between domains()", test_run_domains_shift, true)
 #endif
 #endif /* CONFIG_HAVE_TIMER */
 
@@ -148,18 +148,18 @@ test_own_domain1(struct env* env)
 {
     return own_domain_success(env);
 }
-DEFINE_TEST(DOMAINS0001, "Change domain successfully()", test_own_domain1)
+DEFINE_TEST(DOMAINS0001, "Change domain successfully()", test_own_domain1, true)
 
 static int
 test_own_domain2(struct env* env)
 {
     return own_domain_baddom(env);
 }
-DEFINE_TEST(DOMAINS0002, "Try non-existant domain()", test_own_domain2)
+DEFINE_TEST(DOMAINS0002, "Try non-existant domain()", test_own_domain2, true)
 
 static int
 test_own_domain3(struct env* env)
 {
     return own_domain_badcap(env);
 }
-DEFINE_TEST(DOMAINS0003, "Invoke non-domain cap()", test_own_domain3)
+DEFINE_TEST(DOMAINS0003, "Invoke non-domain cap()", test_own_domain3, true)

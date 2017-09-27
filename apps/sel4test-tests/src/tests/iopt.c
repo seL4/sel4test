@@ -108,7 +108,7 @@ test_iopt_basic_iopt(env_t env)
     delete_iospace(env, iospace);
     return sel4test_get_result();
 }
-DEFINE_TEST(IOPT0001, "Testing basic IOPT mapping", test_iopt_basic_iopt)
+DEFINE_TEST(IOPT0001, "Testing basic IOPT mapping", test_iopt_basic_iopt, true)
 
 static int
 test_iopt_basic_map_unmap(env_t env)
@@ -141,7 +141,7 @@ test_iopt_basic_map_unmap(env_t env)
     delete_iospace(env, iospace);
     return sel4test_get_result();
 }
-DEFINE_TEST(IOPT0002, "Test basic IOPT mapping then unmapping", test_iopt_basic_map_unmap)
+DEFINE_TEST(IOPT0002, "Test basic IOPT mapping then unmapping", test_iopt_basic_map_unmap, true)
 
 static int
 test_iopt_no_overlapping_4k(env_t env)
@@ -160,7 +160,7 @@ test_iopt_no_overlapping_4k(env_t env)
     delete_iospace(env, iospace);
     return sel4test_get_result();
 }
-DEFINE_TEST(IOPT0004, "Test IOPT cannot map overlapping 4k pages", test_iopt_no_overlapping_4k)
+DEFINE_TEST(IOPT0004, "Test IOPT cannot map overlapping 4k pages", test_iopt_no_overlapping_4k, true)
 
 static int
 test_iopt_map_remap_top_pt(env_t env)
@@ -188,7 +188,7 @@ test_iopt_map_remap_top_pt(env_t env)
     delete_iospace(env, iospace);
     return sel4test_get_result();
 }
-DEFINE_TEST(IOPT0008, "Test IOPT map and remap top PT", test_iopt_map_remap_top_pt)
+DEFINE_TEST(IOPT0008, "Test IOPT map and remap top PT", test_iopt_map_remap_top_pt, true)
 
 static int
 test_iopt_no_overlapping_pt(env_t env)
@@ -208,7 +208,7 @@ test_iopt_no_overlapping_pt(env_t env)
     delete_iospace(env, iospace);
     return sel4test_get_result();
 }
-DEFINE_TEST(IOPT0009, "Test iopt no overlapping PT", test_iopt_no_overlapping_pt)
+DEFINE_TEST(IOPT0009, "Test iopt no overlapping PT", test_iopt_no_overlapping_pt, true)
 
 static int
 test_iopt_map_remap_pt(env_t env)
@@ -236,7 +236,7 @@ test_iopt_map_remap_pt(env_t env)
     delete_iospace(env, iospace);
     return sel4test_get_result();
 }
-DEFINE_TEST(IOPT0011, "Test IOPT map and remap PT", test_iopt_map_remap_pt)
+DEFINE_TEST(IOPT0011, "Test IOPT map and remap PT", test_iopt_map_remap_pt, true)
 
 #endif /* CONFIG_IOMMU */
 
@@ -300,7 +300,7 @@ test_iopt_basic_iopt(env_t env)
     }
     return sel4test_get_result();
 }
-DEFINE_TEST(IOPT0001, "Testing basic ARM IOPT mapping", test_iopt_basic_iopt);
+DEFINE_TEST(IOPT0001, "Testing basic ARM IOPT mapping", test_iopt_basic_iopt, true);
 
 static int
 test_iopt_basic_map_unmap(env_t env)
@@ -333,7 +333,7 @@ test_iopt_basic_map_unmap(env_t env)
     }
     return sel4test_get_result();
 }
-DEFINE_TEST(IOPT0002, "Test basic ARM IOPT mapping then unmapping", test_iopt_basic_map_unmap)
+DEFINE_TEST(IOPT0002, "Test basic ARM IOPT mapping then unmapping", test_iopt_basic_map_unmap, true)
 
 static int
 test_iopt_no_overlapping_4k(env_t env)
@@ -358,7 +358,7 @@ test_iopt_no_overlapping_4k(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IOPT0004, "Test ARM IOPT cannot map overlapping 4k pages", test_iopt_no_overlapping_4k)
+DEFINE_TEST(IOPT0004, "Test ARM IOPT cannot map overlapping 4k pages", test_iopt_no_overlapping_4k, true)
 
 static int
 test_iopt_map_remap_pt(env_t env)
@@ -391,7 +391,7 @@ test_iopt_map_remap_pt(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IOPT0008, "Test ARM IOPT map and remap PT", test_iopt_map_remap_pt)
+DEFINE_TEST(IOPT0008, "Test ARM IOPT map and remap PT", test_iopt_map_remap_pt, true)
 
 static int
 test_iopt_no_overlapping_pt(env_t env)
@@ -415,6 +415,6 @@ test_iopt_no_overlapping_pt(env_t env)
     }
     return sel4test_get_result();
 }
-DEFINE_TEST(IOPT0009, "Test ARM iopt no overlapping PT", test_iopt_no_overlapping_pt)
+DEFINE_TEST(IOPT0009, "Test ARM iopt no overlapping PT", test_iopt_no_overlapping_pt, true)
 
 #endif

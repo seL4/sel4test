@@ -276,7 +276,7 @@ test_pagetable_arm(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(PT0001, "Fun with page tables on ARM", test_pagetable_arm)
+DEFINE_TEST(PT0001, "Fun with page tables on ARM", test_pagetable_arm, true)
 
 #elif defined(CONFIG_ARCH_AARCH64)
 #define LPAGE_SIZE   (1 << (vka_get_object_size(seL4_ARM_LargePageObject, 0)))
@@ -405,7 +405,7 @@ test_pagetable_arm(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(PT0001, "Fun with page tables on ARM", test_pagetable_arm)
+DEFINE_TEST(PT0001, "Fun with page tables on ARM", test_pagetable_arm, true)
 #endif /* CONFIG_ARCH_AARCHxx */
 
 #if 0
@@ -515,7 +515,7 @@ test_pagetable_tlbflush_on_vaddr_reuse(env_t env)
     vmem_free(vstart);
     return result;
 }
-DEFINE_TEST(PT0002, "Reusing virtual addresses flushes TLB", test_pagetable_tlbflush_on_vaddr_reuse)
+DEFINE_TEST(PT0002, "Reusing virtual addresses flushes TLB", test_pagetable_tlbflush_on_vaddr_reuse, true)
 #endif /* 0 */
 
 #endif /* CONFIG_ARCH_ARM */

@@ -34,7 +34,7 @@ int test_tcb_null_cspace_configure(env_t env)
 
     return error ? sel4test_get_result() : FAILURE;
 }
-DEFINE_TEST(THREADS0004, "seL4_TCB_Configure with a NULL CSpace should fail", test_tcb_null_cspace_configure)
+DEFINE_TEST(THREADS0004, "seL4_TCB_Configure with a NULL CSpace should fail", test_tcb_null_cspace_configure, true)
 
 int test_tcb_null_cspace_setspace(env_t env)
 {
@@ -52,4 +52,4 @@ int test_tcb_null_cspace_setspace(env_t env)
 
     return error ? sel4test_get_result() : FAILURE;
 }
-DEFINE_TEST(THREADS0005, "seL4_TCB_SetSpace with a NULL CSpace should fail", test_tcb_null_cspace_setspace)
+DEFINE_TEST(THREADS0005, "seL4_TCB_SetSpace with a NULL CSpace should fail", test_tcb_null_cspace_setspace, true)

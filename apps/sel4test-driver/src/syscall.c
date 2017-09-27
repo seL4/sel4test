@@ -190,7 +190,7 @@
             TEST_REGISTERS(_code); \
         return sel4test_get_result(); \
     } \
-    DEFINE_TEST_BOOTSTRAP(_test, "Basic " #_syscall "() testing", test_ ## _syscall)
+    DEFINE_TEST_BOOTSTRAP(_test, "Basic " #_syscall "() testing", test_ ## _syscall, true)
 
 /*
  * Generate testing stubs for each of the basic system calls.
@@ -226,7 +226,7 @@ test_debug_put_char(env_t env)
     }
     return sel4test_get_result();
 }
-DEFINE_TEST_BOOTSTRAP(SYSCALL0006, "Basic seL4_DebugPutChar() testing", test_debug_put_char)
+DEFINE_TEST_BOOTSTRAP(SYSCALL0006, "Basic seL4_DebugPutChar() testing", test_debug_put_char, true)
 
 /* Slightly more complex tests for waiting, because we actually have
  * to wait on something real. */
@@ -247,7 +247,7 @@ test_recv(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST_BOOTSTRAP(SYSCALL0010, "Basic seL4_Recv() testing", test_recv)
+DEFINE_TEST_BOOTSTRAP(SYSCALL0010, "Basic seL4_Recv() testing", test_recv, true)
 
 static int
 test_reply_recv(env_t env)
@@ -266,7 +266,7 @@ test_reply_recv(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST_BOOTSTRAP(SYSCALL0011, "Basic seL4_ReplyRecv() testing", test_reply_recv)
+DEFINE_TEST_BOOTSTRAP(SYSCALL0011, "Basic seL4_ReplyRecv() testing", test_reply_recv, true)
 
 static int
 test_nb_recv(env_t env)
@@ -285,7 +285,7 @@ test_nb_recv(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST_BOOTSTRAP(SYSCALL0012, "Basic seL4_NBRecv() testing", test_nb_recv)
+DEFINE_TEST_BOOTSTRAP(SYSCALL0012, "Basic seL4_NBRecv() testing", test_nb_recv, true)
 
 static int
 test_wait(env_t env)
@@ -304,7 +304,7 @@ test_wait(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST_BOOTSTRAP(SYSCALL0013, "Basic seL4_Wait() testing", test_wait)
+DEFINE_TEST_BOOTSTRAP(SYSCALL0013, "Basic seL4_Wait() testing", test_wait, true)
 
 /*
  * Let's not forget our friends in the *WithMRs community.
@@ -338,5 +338,5 @@ test_nbsend_recv(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST_BOOTSTRAP(SYSCALL0018, "Basic seL4_NBSendRecv testing", test_nbsend_recv)
+DEFINE_TEST_BOOTSTRAP(SYSCALL0018, "Basic seL4_NBSendRecv testing", test_nbsend_recv, true)
 #endif

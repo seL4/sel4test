@@ -104,7 +104,7 @@ test_thread_suspend(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0000, "Test suspending and resuming a thread (flaky)", test_thread_suspend)
+DEFINE_TEST(SCHED0000, "Test suspending and resuming a thread (flaky)", test_thread_suspend, true)
 #endif /* CONFIG_HAVE_TIMER */
 
 /*
@@ -120,7 +120,7 @@ test_resume_self(struct env* env)
     ZF_LOGD("Ending test_resume_self\n");
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0002, "Test resuming ourselves", test_resume_self)
+DEFINE_TEST(SCHED0002, "Test resuming ourselves", test_resume_self, true)
 
 /*
  * Test TCB Suspend/Resume.
@@ -262,7 +262,7 @@ test_suspend(struct env* env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0003, "Test TCB suspend/resume", test_suspend)
+DEFINE_TEST(SCHED0003, "Test TCB suspend/resume", test_suspend, true)
 
 #endif /* !CONFIG_FT */
 
@@ -330,7 +330,7 @@ test_all_priorities(struct env* env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0004, "Test threads at all priorities", test_all_priorities)
+DEFINE_TEST(SCHED0004, "Test threads at all priorities", test_all_priorities, true)
 
 #define SCHED0005_HIGHEST_PRIO (seL4_MaxPrio - 2)
 /*
@@ -445,7 +445,7 @@ test_set_priority(struct env* env)
     cleanup_helper(env, &thread2);
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0005, "Test set priority", test_set_priority)
+DEFINE_TEST(SCHED0005, "Test set priority", test_set_priority, true)
 #endif
 
 #ifndef CONFIG_KERNEL_RT /* this test does not work on the RT kernel as it relies on FIFO IPC */
@@ -662,7 +662,7 @@ test_ipc_prios(struct env* env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0006, "Test IPC priorities for Send", test_ipc_prios)
+DEFINE_TEST(SCHED0006, "Test IPC priorities for Send", test_ipc_prios, true)
 #endif
 
 #ifdef CONFIG_KERNEL_RT
@@ -738,7 +738,7 @@ test_ipc_ordered(env_t env)
     /* server returns success if all requests are processed in order */
     return wait_for_helper(&server);
 }
-DEFINE_TEST(SCHED0007, "Test IPC priorities", test_ipc_ordered);
+DEFINE_TEST(SCHED0007, "Test IPC priorities", test_ipc_ordered, true);
 
 #define SCHED0008_NUM_CLIENTS 5
 
@@ -964,7 +964,7 @@ test_ordered_ipc_fastpath(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0009, "Test ordered ipc on reply wait fastpath", test_ordered_ipc_fastpath)
+DEFINE_TEST(SCHED0009, "Test ordered ipc on reply wait fastpath", test_ordered_ipc_fastpath, true)
 
 int
 sched0010_fn(volatile int *state)
@@ -1103,7 +1103,7 @@ test_one_periodic_thread(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0012, "Test one periodic thread", test_one_periodic_thread)
+DEFINE_TEST(SCHED0012, "Test one periodic thread", test_one_periodic_thread, true)
 
 int
 test_two_periodic_threads(env_t env)
@@ -1134,7 +1134,7 @@ test_two_periodic_threads(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0013, "Test two periodic threads", test_two_periodic_threads);
+DEFINE_TEST(SCHED0013, "Test two periodic threads", test_two_periodic_threads, true);
 
 int
 test_ordering_periodic_threads(env_t env)
@@ -1184,7 +1184,7 @@ test_ordering_periodic_threads(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0014, "Test periodic thread ordering", test_ordering_periodic_threads)
+DEFINE_TEST(SCHED0014, "Test periodic thread ordering", test_ordering_periodic_threads, true)
 
 static void
 sched0015_helper(int id, ltimer_t *timer, volatile unsigned long long *counters)
@@ -1314,7 +1314,7 @@ test_resume_no_overflow(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0016, "Test resume cannot be used to exceed budget", test_resume_no_overflow);
+DEFINE_TEST(SCHED0016, "Test resume cannot be used to exceed budget", test_resume_no_overflow, true);
 
 void
 sched0017_helper_fn(seL4_CPtr sc, volatile seL4_SchedContext_YieldTo_t *ret)
@@ -1358,7 +1358,7 @@ test_yieldTo_errors(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0017, "Test seL4_SchedContext_YieldTo errors", test_yieldTo_errors);
+DEFINE_TEST(SCHED0017, "Test seL4_SchedContext_YieldTo errors", test_yieldTo_errors, true);
 
 int
 sched0018_to_fn(void)
@@ -1447,5 +1447,5 @@ test_yieldTo_cleanup(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0018, "Test clean up cases after seL4_SchedContext_YieldTo", test_yieldTo_cleanup);
+DEFINE_TEST(SCHED0018, "Test clean up cases after seL4_SchedContext_YieldTo", test_yieldTo_cleanup, true);
 #endif /* CONFIG_KERNEL_RT */

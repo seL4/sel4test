@@ -136,6 +136,6 @@ test_native_ioports(env_t env)
 
     return (total_faults == EXPECTED_FAULTS) ? SUCCESS : FAILURE;
 }
-DEFINE_TEST(IOPORTS1000, "Test fault if directly using I/O ports", test_native_ioports)
+DEFINE_TEST(IOPORTS1000, "Test fault if directly using I/O ports", test_native_ioports, true)
 
 #endif

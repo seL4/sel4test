@@ -129,7 +129,7 @@ test_ept_basic_ept(env_t env)
     test_assert(error == seL4_NoError);
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT0001, "Testing basic EPT mapping", test_ept_basic_ept)
+DEFINE_TEST(EPT0001, "Testing basic EPT mapping", test_ept_basic_ept, true)
 
 static int
 test_ept_basic_map_unmap(env_t env)
@@ -158,7 +158,7 @@ test_ept_basic_map_unmap(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT0002, "Test basic EPT mapping then unmapping", test_ept_basic_map_unmap)
+DEFINE_TEST(EPT0002, "Test basic EPT mapping then unmapping", test_ept_basic_map_unmap, true)
 
 static int
 test_ept_basic_map_unmap_large(env_t env)
@@ -183,7 +183,7 @@ test_ept_basic_map_unmap_large(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT0003, "Test basic EPT mapping then unmapping of large frame", test_ept_basic_map_unmap_large)
+DEFINE_TEST(EPT0003, "Test basic EPT mapping then unmapping of large frame", test_ept_basic_map_unmap_large, true)
 
 static int
 test_ept_regression_1(env_t env)
@@ -203,7 +203,7 @@ test_ept_regression_1(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT1001, "EPT Regression: Unmap large frame then invoke EPT PD unmap on frame", test_ept_regression_1)
+DEFINE_TEST(EPT1001, "EPT Regression: Unmap large frame then invoke EPT PD unmap on frame", test_ept_regression_1, true)
 
 static int
 test_ept_regression_2(env_t env)
@@ -228,7 +228,7 @@ test_ept_regression_2(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT1002, "EPT Regression: Invoke EPT PD Unmap on large frame", test_ept_regression_2)
+DEFINE_TEST(EPT1002, "EPT Regression: Invoke EPT PD Unmap on large frame", test_ept_regression_2, true)
 
 static int
 test_ept_no_overlapping_4k(env_t env)
@@ -244,7 +244,7 @@ test_ept_no_overlapping_4k(env_t env)
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT0004, "Test EPT cannot map overlapping 4k pages", test_ept_no_overlapping_4k)
+DEFINE_TEST(EPT0004, "Test EPT cannot map overlapping 4k pages", test_ept_no_overlapping_4k, true)
 
 static int
 test_ept_no_overlapping_large(env_t env)
@@ -260,7 +260,7 @@ test_ept_no_overlapping_large(env_t env)
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT0005, "Test EPT cannot map overlapping large pages", test_ept_no_overlapping_large)
+DEFINE_TEST(EPT0005, "Test EPT cannot map overlapping large pages", test_ept_no_overlapping_large, true)
 
 #ifdef CONFIG_ARCH_IA32
 static int
@@ -292,7 +292,7 @@ test_ept_aligned_4m(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT0006, "Test EPT 4M mappings must be 4M aligned and cannot overlap", test_ept_aligned_4m)
+DEFINE_TEST(EPT0006, "Test EPT 4M mappings must be 4M aligned and cannot overlap", test_ept_aligned_4m, true)
 
 static int
 test_ept_no_overlapping_pt_4m(env_t env)
@@ -335,7 +335,7 @@ test_ept_no_overlapping_pt_4m(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT0007, "Test EPT 4m frame and PT cannot overlap", test_ept_no_overlapping_pt_4m)
+DEFINE_TEST(EPT0007, "Test EPT 4m frame and PT cannot overlap", test_ept_no_overlapping_pt_4m, true)
 #endif /* CONFIG_ARCH_IA32 */
 
 static int
@@ -361,7 +361,7 @@ test_ept_map_remap_pd(env_t env)
     test_assert(error == seL4_NoError);
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT0008, "Test EPT map and remap PD", test_ept_map_remap_pd)
+DEFINE_TEST(EPT0008, "Test EPT map and remap PD", test_ept_map_remap_pd, true)
 
 static int
 test_ept_no_overlapping_pt(env_t env)
@@ -379,7 +379,7 @@ test_ept_no_overlapping_pt(env_t env)
     return sel4test_get_result();
 
 }
-DEFINE_TEST(EPT0009, "Test EPT no overlapping PT", test_ept_no_overlapping_pt)
+DEFINE_TEST(EPT0009, "Test EPT no overlapping PT", test_ept_no_overlapping_pt, true)
 
 static int
 test_ept_no_overlapping_pd(env_t env)
@@ -397,7 +397,7 @@ test_ept_no_overlapping_pd(env_t env)
     return sel4test_get_result();
 
 }
-DEFINE_TEST(EPT0010, "Test EPT no overlapping PD", test_ept_no_overlapping_pd)
+DEFINE_TEST(EPT0010, "Test EPT no overlapping PD", test_ept_no_overlapping_pd, true)
 
 static int
 test_ept_map_remap_pt(env_t env)
@@ -422,6 +422,6 @@ test_ept_map_remap_pt(env_t env)
     test_assert(error == seL4_NoError);
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT0011, "Test EPT map and remap PT", test_ept_map_remap_pt)
+DEFINE_TEST(EPT0011, "Test EPT map and remap PT", test_ept_map_remap_pt, true)
 
 #endif /* CONFIG_VTX */

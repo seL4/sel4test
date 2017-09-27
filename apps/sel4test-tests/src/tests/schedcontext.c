@@ -58,7 +58,7 @@ test_sched_control_configure(env_t env)
     return sel4test_get_result();
 
 }
-DEFINE_TEST(SCHED_CONTEXT_0001, "Test api_sched_ctrl_configure", test_sched_control_configure)
+DEFINE_TEST(SCHED_CONTEXT_0001, "Test api_sched_ctrl_configure", test_sched_control_configure, true)
 
 
 static NORETURN int
@@ -101,7 +101,7 @@ test_sched_control_reconfigure(env_t env)
     /* done! */
     return SUCCESS;
 }
-DEFINE_TEST(SCHED_CONTEXT_0002, "Test reconfiguring a thread", test_sched_control_reconfigure)
+DEFINE_TEST(SCHED_CONTEXT_0002, "Test reconfiguring a thread", test_sched_control_reconfigure, true)
 
 int
 test_bind_errors(env_t env)
@@ -156,7 +156,7 @@ test_bind_errors(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0003, "Basic api_sc_bind/UnbindObject testing", test_bind_errors);
+DEFINE_TEST(SCHED_CONTEXT_0003, "Basic api_sc_bind/UnbindObject testing", test_bind_errors, true);
 
 void
 sched_context_0005_helper_fn(volatile int *state)
@@ -196,7 +196,7 @@ test_delete_tcb_sched_context(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0005, "Test deleting a scheduling context prevents the bound tcb from running", test_delete_tcb_sched_context);
+DEFINE_TEST(SCHED_CONTEXT_0005, "Test deleting a scheduling context prevents the bound tcb from running", test_delete_tcb_sched_context, true);
 
 void
 sched_context_0006_helper_fn(seL4_CPtr notification, int *state)
@@ -273,7 +273,7 @@ test_delete_tcb_on_notification_context(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0006, "Test deleting a tcb running on a notifications scheduling context returns it", test_delete_tcb_on_notification_context);
+DEFINE_TEST(SCHED_CONTEXT_0006, "Test deleting a tcb running on a notifications scheduling context returns it", test_delete_tcb_on_notification_context, true);
 
 int
 sched_context_007_helper_fn(void)
@@ -475,7 +475,7 @@ test_sched_context_goes_to_to_caller_on_reply_cap_delete(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0009, "Test scheduling context goes to caller if reply cap deleted", test_sched_context_goes_to_to_caller_on_reply_cap_delete)
+DEFINE_TEST(SCHED_CONTEXT_0009, "Test scheduling context goes to caller if reply cap deleted", test_sched_context_goes_to_to_caller_on_reply_cap_delete, true)
 
 int
 test_sched_context_unbind_server(env_t env)
@@ -525,7 +525,7 @@ test_sched_context_unbind_server(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0010, "Test unbinding scheduling context from server", test_sched_context_unbind_server)
+DEFINE_TEST(SCHED_CONTEXT_0010, "Test unbinding scheduling context from server", test_sched_context_unbind_server, true)
 
 void
 sched_context_0011_proxy_fn(seL4_CPtr in, seL4_CPtr out, seL4_CPtr reply)
@@ -584,7 +584,7 @@ test_revoke_reply_on_call_chain_returns_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0011, "Test revoking a reply on a call chain returns scheduling context along chain", test_revoke_reply_on_call_chain_returns_sc)
+DEFINE_TEST(SCHED_CONTEXT_0011, "Test revoking a reply on a call chain returns scheduling context along chain", test_revoke_reply_on_call_chain_returns_sc, true)
 
 /* sched 0011 but unordered */
 int
@@ -635,7 +635,7 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0012, "Test revoking a reply on a call chain unorderd", test_revoke_reply_on_call_chain_unordered)
+DEFINE_TEST(SCHED_CONTEXT_0012, "Test revoking a reply on a call chain unorderd", test_revoke_reply_on_call_chain_unordered, true)
 
 int
 test_revoke_sched_context_on_call_chain(env_t env)
@@ -703,5 +703,5 @@ test_revoke_sched_context_on_call_chain(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0013, "Test revoking a scheduling context on a call chain", test_revoke_sched_context_on_call_chain)
+DEFINE_TEST(SCHED_CONTEXT_0013, "Test revoking a scheduling context on a call chain", test_revoke_sched_context_on_call_chain, true)
 #endif /* CONFIG_KERNEL_RT */
