@@ -323,7 +323,7 @@ test_passive_thread_start(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED_CONTEXT0007, "test resuming a passive thread and binding scheduling context",
-            test_passive_thread_start)
+            test_passive_thread_start, true)
 
 static void
 sched_context0008_client_fn(seL4_CPtr send_ep, seL4_CPtr wait_ep)
@@ -404,7 +404,7 @@ test_delete_sendwait_tcb(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED_CONTEXT_0008, "Test deleting a tcb running on donated sc",
-            test_delete_sendwait_tcb)
+            test_delete_sendwait_tcb, true)
 
 void
 sched_context_0009_server_fn(seL4_CPtr ep, volatile int *state, seL4_CPtr reply)

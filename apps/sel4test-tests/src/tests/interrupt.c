@@ -235,7 +235,7 @@ test_interrupt_notification_sc_two_clients(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(INTERRUPT0005, "Test the same scheduling context cannot be loaned to different threads",
-            test_interrupt_notification_sc_two_clients);
+            test_interrupt_notification_sc_two_clients, true);
 
 /* test deleting the scheduling context stops the notification from donating it */
 static int

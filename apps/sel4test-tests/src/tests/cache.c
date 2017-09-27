@@ -248,8 +248,8 @@ test_page_directory_flush(env_t env)
     return sel4test_get_result();
 }
 
-DEFINE_TEST_MAYBE(CACHEFLUSH0001, "Test a cache maintenance on pages", test_page_flush, config_set(CONFIG_HAVE_CACHE))
-DEFINE_TEST_MAYBE(CACHEFLUSH0002, "Test a cache maintenance on page directories", test_page_directory_flush, config_set(CONFIG_HAVE_CACHE))
-DEFINE_TEST_MAYBE(CACHEFLUSH0003, "Test that cache maintenance can be done on large pages", test_large_page_flush_operation, config_set(CONFIG_HAVE_CACHE))
+DEFINE_TEST(CACHEFLUSH0001, "Test a cache maintenance on pages", test_page_flush, config_set(CONFIG_HAVE_CACHE))
+DEFINE_TEST(CACHEFLUSH0002, "Test a cache maintenance on page directories", test_page_directory_flush, config_set(CONFIG_HAVE_CACHE))
+DEFINE_TEST(CACHEFLUSH0003, "Test that cache maintenance can be done on large pages", test_large_page_flush_operation, config_set(CONFIG_HAVE_CACHE))
 
 #endif

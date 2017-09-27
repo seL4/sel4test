@@ -244,7 +244,7 @@ test_debug_set_instruction_breakpoint(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(BREAKPOINT_001, "Attempt to set and trigger an instruction breakpoint",
-            test_debug_set_instruction_breakpoint)
+            test_debug_set_instruction_breakpoint, config_set(CONFIG_HARDWARE_DEBUG_API))
 
 static int
 test_debug_set_data_breakpoint(struct env *env)
@@ -283,7 +283,7 @@ test_debug_set_data_breakpoint(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(BREAKPOINT_002, "Attempt to set and trigger a data breakpoint",
-            test_debug_set_data_breakpoint)
+            test_debug_set_data_breakpoint, config_set(CONFIG_HARDWARE_DEBUG_API))
 
 static int
 test_debug_get_instruction_breakpoint(struct env *env)
@@ -318,7 +318,7 @@ test_debug_get_instruction_breakpoint(struct env *env)
 DEFINE_TEST(BREAKPOINT_003, "Attempt to set, then get, an instruction breakpoint "
             "expecting that the values returned by GetBreakpoint will match those "
             "set in SetBreakpoint.",
-            test_debug_get_instruction_breakpoint)
+            test_debug_get_instruction_breakpoint, config_set(CONFIG_HARDWARE_DEBUG_API))
 
 static int
 test_debug_get_data_breakpoint(struct env *env)
@@ -353,7 +353,7 @@ test_debug_get_data_breakpoint(struct env *env)
 DEFINE_TEST(BREAKPOINT_004, "Attempt to set, then get, a data breakpoint "
             "expecting that the values returned by GetBreakpoint will match those "
             "set in SetBreakpoint.",
-            test_debug_get_data_breakpoint)
+            test_debug_get_data_breakpoint, config_set(CONFIG_HARDWARE_DEBUG_API))
 
 static int
 test_debug_unset_instruction_breakpoint(struct env *env)
@@ -384,7 +384,7 @@ test_debug_unset_instruction_breakpoint(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(BREAKPOINT_005, "Attempt to set, then unset, then query the status of, an "
-            "instruction breakpoint", test_debug_unset_instruction_breakpoint)
+            "instruction breakpoint", test_debug_unset_instruction_breakpoint, config_set(CONFIG_HARDWARE_DEBUG_API))
 
 static int
 test_debug_unset_data_breakpoint(struct env *env)
@@ -415,7 +415,7 @@ test_debug_unset_data_breakpoint(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(BREAKPOINT_006, "Attempt to set, then unset, then query the status of, a "
-            "data breakpoint", test_debug_unset_data_breakpoint)
+            "data breakpoint", test_debug_unset_data_breakpoint, config_set(CONFIG_HARDWARE_DEBUG_API))
 
 static int
 test_debug_api_setbp_invalid_values(struct env *env)
@@ -466,7 +466,7 @@ test_debug_api_setbp_invalid_values(struct env *env)
 }
 DEFINE_TEST(BREAKPOINT_007, "Attempt to pass various invalid values to the "
             "invocations, and expect error return values.",
-            test_debug_api_setbp_invalid_values)
+            test_debug_api_setbp_invalid_values, config_set(CONFIG_HARDWARE_DEBUG_API))
 
 static int
 test_debug_api_software_break_request(struct env *env)
@@ -499,6 +499,6 @@ test_debug_api_software_break_request(struct env *env)
 DEFINE_TEST(BREAK_REQUEST_001, "Use an INT3/BKPT instruction to trigger a "
             "breakpoint, and ensure the correct message is delivered to the "
             "listening handler.",
-            test_debug_api_software_break_request)
+            test_debug_api_software_break_request, config_set(CONFIG_HARDWARE_DEBUG_API))
 
 #endif /* CONFIG_HARDWARE_DEBUG_API */

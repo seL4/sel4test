@@ -891,7 +891,7 @@ int test_change_prio_on_endpoint(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0008, "Test changing prio while in endpoint queues results in correct message order",
-        test_change_prio_on_endpoint)
+        test_change_prio_on_endpoint, true)
 
 #define SCHED0009_SERVERS 5
 
@@ -1017,7 +1017,7 @@ test_resume_empty_or_no_sched_context(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0010, "Test resuming a thread with empty or missing scheduling context",
-            test_resume_empty_or_no_sched_context)
+            test_resume_empty_or_no_sched_context, true)
 
 #if CONFIG_HAVE_TIMER
 
@@ -1062,7 +1062,7 @@ test_scheduler_accuracy(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0011, "Test scheduler accuracy",
-            test_scheduler_accuracy)
+            test_scheduler_accuracy, true)
 
 /* used by sched0012, 0013, 0014 */
 static void

@@ -908,7 +908,7 @@ test_timeout_fault_in_server(env_t env)
 
 }
 DEFINE_TEST(TIMEOUTFAULT0002, "Handle a timeout fault in a server",
-            test_timeout_fault_in_server)
+            test_timeout_fault_in_server, true)
 
 static void
 timeout_fault_proxy_fn(seL4_CPtr in, seL4_CPtr out, seL4_CPtr ro)
