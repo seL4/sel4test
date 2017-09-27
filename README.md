@@ -1,3 +1,15 @@
+<!--
+ Copyright 2017, Data61
+ Commonwealth Scientific and Industrial Research Organisation (CSIRO)
+ ABN 41 687 119 230.
+
+ This software may be distributed and modified according to the terms of
+ the BSD 2-Clause license. Note that NO WARRANTY is provided.
+ See "LICENSE_BSD2.txt" for details.
+
+ @TAG(DATA61_BSD)
+-->
+
 # sel4test
 
 Library for creating and running tests for seL4.
@@ -22,3 +34,5 @@ To define a larger test in `sel4test-tests`:
 
 For an example, take a look at [`trivial.c`](http://bitbucket.keg.ertos.in.nicta.com.au/projects/SEL4/repos/sel4test/browse/apps/sel4test-tests/src/tests/trivial.c) in `sel4test`.
 
+# License
+The files in this repository are release under standard open source licenses. Please see individual file headers and the `LICENSE_BSD2`.txt file for details.
