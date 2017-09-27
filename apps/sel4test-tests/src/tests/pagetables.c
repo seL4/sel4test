@@ -18,6 +18,7 @@
 #include <utils/util.h>
 
 #include "../helpers.h"
+#include "frame_type.h"
 
 #if defined(CONFIG_ARCH_ARM)
 static int
@@ -408,12 +409,9 @@ test_pagetable_arm(env_t env)
 DEFINE_TEST(PT0001, "Fun with page tables on ARM", test_pagetable_arm, true)
 #endif /* CONFIG_ARCH_AARCHxx */
 
-#if 0
-/* This test is commented out while we wait for the bugfix */
-
 /* Assumes caps can be mapped in at vaddr (= [vaddr,vaddr + 3*size) */
 static int
-do_test_pagetable_tlbflush_on_vaddr_reuse(seL4_CPtr cap1, seL4_CPtr cap2, seL4_Word vstart,
+do_test_pagetable_tlbflush_on_vaddr_reuse(env_t env, seL4_CPtr cap1, seL4_CPtr cap2, seL4_Word vstart,
                                           seL4_Word size)
 {
     int error;
@@ -472,7 +470,10 @@ test_pagetable_tlbflush_on_vaddr_reuse(env_t env)
     int result = SUCCESS;
 
     /* Grab some free vspace big enough to hold a couple of supersections. */
-    seL4_Word vstart = vmem_alloc(4 * SUPSECT_SIZE, 4 * SUPSECT_SIZE);
+    void *vstart;
+    reservation_t reserve = vspace_reserve_range_aligned(&env->vspace, VSPACE_RV_SIZE, VSPACE_RV_ALIGN_BITS,
+            seL4_AllRights, 1, &vstart);
+    test_assert(reserve.res);
 
     seL4_CPtr cap1, cap2;
     /* Create us some frames to play with. */
@@ -483,13 +484,13 @@ test_pagetable_tlbflush_on_vaddr_reuse(env_t env)
     /* supersection */
     cap1 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SuperSectionObject, 0);
     cap2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SuperSectionObject, 0);
-    if (do_test_pagetable_tlbflush_on_vaddr_reuse(cap1, cap2, vstart, SUPSECT_SIZE) == FAILURE) {
+    if (do_test_pagetable_tlbflush_on_vaddr_reuse(env, cap1, cap2, vstart, SUPSECT_SIZE) == FAILURE) {
         result = FAILURE;
     }
     /* section */
     cap1 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SectionObject, 0);
     cap2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SectionObject, 0);
-    if (do_test_pagetable_tlbflush_on_vaddr_reuse(cap1, cap2, vstart, SUPSECT_SIZE) == FAILURE) {
+    if (do_test_pagetable_tlbflush_on_vaddr_reuse(env, cap1, cap2, vstart, SUPSECT_SIZE) == FAILURE) {
         result = FAILURE;
     }
 
@@ -501,21 +502,18 @@ test_pagetable_tlbflush_on_vaddr_reuse(env_t env)
     /* Large page */
     cap1 = vka_alloc_object_leaky(&env->vka, seL4_ARM_LargePageObject, 0);
     cap2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_LargePageObject, 0);
-    if (do_test_pagetable_tlbflush_on_vaddr_reuse(cap1, cap2, vstart, LPAGE_SIZE) == FAILURE) {
+    if (do_test_pagetable_tlbflush_on_vaddr_reuse(env, cap1, cap2, vstart, LPAGE_SIZE) == FAILURE) {
         result = FAILURE;
     }
     /* small page */
     cap1 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
     cap2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
-    if (do_test_pagetable_tlbflush_on_vaddr_reuse(cap1, cap2, vstart, PAGE_SIZE_4K) == FAILURE) {
+    if (do_test_pagetable_tlbflush_on_vaddr_reuse(env, cap1, cap2, vstart, PAGE_SIZE_4K) == FAILURE) {
         result = FAILURE;
     }
 
-    /* clean up */
-    vmem_free(vstart);
     return result;
 }
 DEFINE_TEST(PT0002, "Reusing virtual addresses flushes TLB", test_pagetable_tlbflush_on_vaddr_reuse, true)
-#endif /* 0 */
 
 #endif /* CONFIG_ARCH_ARM */

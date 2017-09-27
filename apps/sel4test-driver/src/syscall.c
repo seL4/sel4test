@@ -184,13 +184,15 @@
 #endif
 
 /* Generate a stub that tests the code "_code" with TEST_REGISTERS. */
-#define GENERATE_SYSCALL_TEST(_test, _syscall, _code) \
+#define GENERATE_SYSCALL_TEST_MAYBE(_test, _syscall, _code, _enabled) \
     static int test_ ## _syscall(env_t env) { \
         for (int i = 0; i < 10; i++) \
             TEST_REGISTERS(_code); \
         return sel4test_get_result(); \
     } \
-    DEFINE_TEST_BOOTSTRAP(_test, "Basic " #_syscall "() testing", test_ ## _syscall, true)
+    DEFINE_TEST_BOOTSTRAP(_test, "Basic " #_syscall "() testing", test_ ## _syscall, _enabled)
+#define GENERATE_SYSCALL_TEST(_test, _syscall, _code) \
+    GENERATE_SYSCALL_TEST_MAYBE(_test, _syscall, _code, true)
 
 /*
  * Generate testing stubs for each of the basic system calls.
@@ -205,10 +207,8 @@ GENERATE_SYSCALL_TEST(SYSCALL0001, seL4_Send,
 GENERATE_SYSCALL_TEST(SYSCALL0002, seL4_NBSend,
                       seL4_NBSend(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0)))
 
-#ifndef CONFIG_KERNEL_RT
-GENERATE_SYSCALL_TEST(SYSCALL0003, seL4_Reply,
-                      seL4_Reply(seL4_MessageInfo_new(0, 0, 0, 0)))
-#endif
+GENERATE_SYSCALL_TEST_MAYBE(SYSCALL0003, seL4_Reply,
+                      seL4_Reply(seL4_MessageInfo_new(0, 0, 0, 0)), !config_set(CONFIG_KERNEL_RT))
 
 GENERATE_SYSCALL_TEST(SYSCALL0004, seL4_Signal,
                       seL4_Signal(simple_get_cnode(&env->simple)))
@@ -316,10 +316,8 @@ GENERATE_SYSCALL_TEST(SYSCALL0014, seL4_SendWithMRs,
 GENERATE_SYSCALL_TEST(SYSCALL0015, seL4_NBSendWithMRs,
                       seL4_NBSendWithMRs(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
 
-#ifndef CONFIG_KERNEL_RT
-GENERATE_SYSCALL_TEST(SYSCALL0016, seL4_ReplyWithMRs,
-                      seL4_ReplyWithMRs(seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
-#endif
+GENERATE_SYSCALL_TEST_MAYBE(SYSCALL0016, seL4_ReplyWithMRs,
+                      seL4_ReplyWithMRs(seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS), !config_set(CONFIG_KERNEL_RT))
 GENERATE_SYSCALL_TEST(SYSCALL0017, seL4_CallWithMRs,
                       seL4_CallWithMRs(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
 
@@ -338,5 +336,5 @@ test_nbsend_recv(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST_BOOTSTRAP(SYSCALL0018, "Basic seL4_NBSendRecv testing", test_nbsend_recv, true)
+DEFINE_TEST_BOOTSTRAP(SYSCALL0018, "Basic seL4_NBSendRecv testing", test_nbsend_recv, config_set(CONFIG_KERNEL_RT))
 #endif

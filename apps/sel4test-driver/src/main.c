@@ -194,7 +194,7 @@ void sel4test_end_test(test_result_t result)
     }
 }
 
-void sel4test_end_suite(int num_tests, int num_tests_passed)
+void sel4test_end_suite(int num_tests, int num_tests_passed, int skipped_tests)
 {
     if (config_set(CONFIG_PRINT_XML)) {
         printf("</testsuite>\n");
@@ -202,12 +202,12 @@ void sel4test_end_suite(int num_tests, int num_tests_passed)
         if (num_tests_passed != num_tests) {
             printf("Test suite failed. %d/%d tests passed.\n", num_tests_passed, num_tests);
         } else {
-            printf("Test suite passed. %d tests passed.\n", num_tests);
+            printf("Test suite passed. %d tests passed. %d tests disabled.\n", num_tests, skipped_tests);
         }
     }
 }
 
-void sel4test_stop_tests(test_result_t result, int tests_done, int tests_failed, int num_tests)
+void sel4test_stop_tests(test_result_t result, int tests_done, int tests_failed, int num_tests, int skipped_tests)
 {
     /* if its a special abort case, output why we are aborting */
     switch (result) {
@@ -233,7 +233,7 @@ void sel4test_stop_tests(test_result_t result, int tests_done, int tests_failed,
     num_tests++;
     sel4test_end_test(sel4test_get_result());
 
-    sel4test_end_suite(tests_done, tests_done - tests_failed);
+    sel4test_end_suite(tests_done, tests_done - tests_failed, skipped_tests);
 
     if (tests_failed > 0) {
         printf("*** FAILURES DETECTED ***\n");
@@ -246,14 +246,18 @@ void sel4test_stop_tests(test_result_t result, int tests_done, int tests_failed,
 }
 
 static int collate_tests(testcase_t *tests_in, int n, testcase_t *tests_out[], int out_index,
-                                  regex_t *reg)
+                                  regex_t *reg, int* skipped_tests)
 {
     for (int i = 0; i < n; i++) {
         /* make sure the string is null terminated */
         tests_in[i].name[TEST_NAME_MAX - 1] = '\0';
-        if (tests_in[i].enabled && regexec(reg, tests_in[i].name, 0, NULL, 0) == 0) {
-            tests_out[out_index] = &tests_in[i];
-            out_index++;
+        if (regexec(reg, tests_in[i].name, 0, NULL, 0) == 0) {
+            if (tests_in[i].enabled) {
+                tests_out[out_index] = &tests_in[i];
+                out_index++;
+            } else {
+                (*skipped_tests)++;
+            }
         }
     }
 
@@ -287,10 +291,11 @@ void sel4test_run_tests(struct env* e)
     int error = regcomp(&reg, CONFIG_TESTPRINTER_REGEX, REG_EXTENDED | REG_NOSUB);
     ZF_LOGF_IF(error, "Error compiling regex \"%s\"\n", CONFIG_TESTPRINTER_REGEX);
 
+    int skipped_tests = 0;
     /* get all the tests in the test case section in the driver */
-    int num_tests = collate_tests(__start__test_case, driver_tests, tests, 0, &reg);
+    int num_tests = collate_tests(__start__test_case, driver_tests, tests, 0, &reg, &skipped_tests);
     /* get all the tests in the sel4test_tests app */
-    num_tests = collate_tests(sel4test_tests, tc_tests, tests, num_tests, &reg);
+    num_tests = collate_tests(sel4test_tests, tc_tests, tests, num_tests, &reg, &skipped_tests);
 
     /* finished with regex */
     regfree(&reg);
@@ -342,7 +347,7 @@ void sel4test_run_tests(struct env* e)
                 if (result != SUCCESS) {
                     tests_failed++;
                     if (config_set(CONFIG_TESTPRINTER_HALT_ON_TEST_FAILURE) || result == ABORT) {
-                        sel4test_stop_tests(result, tests_done, tests_failed, num_tests + 1);
+                        sel4test_stop_tests(result, tests_done, tests_failed, num_tests + 1, skipped_tests);
                         return;
                     }
                 }
@@ -357,7 +362,7 @@ void sel4test_run_tests(struct env* e)
     }
 
     /* and we're done */
-    sel4test_stop_tests(SUCCESS, tests_done, tests_failed, num_tests + 1);
+    sel4test_stop_tests(SUCCESS, tests_done, tests_failed, num_tests + 1, skipped_tests);
 }
 
 void *main_continued(void *arg UNUSED)

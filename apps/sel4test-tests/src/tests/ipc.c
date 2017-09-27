@@ -592,34 +592,34 @@ int test_single_client_slowpath_same_prio(env_t env)
 {
     return single_client_server_chain_test(env, 0, 0);
 }
-DEFINE_TEST(IPC0011, "Client-server inheritance: slowpath, same prio", test_single_client_slowpath_same_prio, true)
+DEFINE_TEST(IPC0011, "Client-server inheritance: slowpath, same prio", test_single_client_slowpath_same_prio, config_set(CONFIG_KERNEL_RT))
 
 int test_single_client_slowpath_higher_prio(env_t env)
 {
     return single_client_server_chain_test(env, 0, 1);
 }
 DEFINE_TEST(IPC0012, "Client-server inheritance: slowpath, client higher prio",
-            test_single_client_slowpath_higher_prio)
+            test_single_client_slowpath_higher_prio, config_set(CONFIG_KERNEL_RT))
 
 int test_single_client_slowpath_lower_prio(env_t env)
 {
     return single_client_server_chain_test(env, 0, -1);
 }
 DEFINE_TEST(IPC0013, "Client-server inheritance: slowpath, client lower prio",
-test_single_client_slowpath_lower_prio)
+test_single_client_slowpath_lower_prio, config_set(CONFIG_KERNEL_RT))
 
 int test_single_client_fastpath_higher_prio(env_t env)
 {
     return single_client_server_chain_test(env, 1, 1);
 }
-DEFINE_TEST(IPC0014, "Client-server inheritance: fastpath, client higher prio", test_single_client_fastpath_higher_prio, true)
+DEFINE_TEST(IPC0014, "Client-server inheritance: fastpath, client higher prio", test_single_client_fastpath_higher_prio, config_set(CONFIG_KERNEL_RT))
 
 int
 test_single_client_fastpath_same_prio(env_t env)
 {
     return single_client_server_chain_test(env, 1, 0);
 }
-DEFINE_TEST(IPC0015, "Client-server inheritance: fastpath, client same prio", test_single_client_fastpath_same_prio, true)
+DEFINE_TEST(IPC0015, "Client-server inheritance: fastpath, client same prio", test_single_client_fastpath_same_prio, config_set(CONFIG_KERNEL_RT))
 
 static void
 ipc0016_call_once_fn(seL4_CPtr endpoint, volatile int *state)
@@ -687,7 +687,7 @@ static int test_transfer_on_reply(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(IPC0016, "Test reply returns scheduling context",
-            test_transfer_on_reply);
+            test_transfer_on_reply, config_set(CONFIG_KERNEL_RT));
 
 /* used by ipc0017 and ipc0019 */
 static void
@@ -776,7 +776,7 @@ test_send_to_no_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0017, "Test seL4_Send/seL4_NBSend to a server with no scheduling context", test_send_to_no_sc, true)
+DEFINE_TEST(IPC0017, "Test seL4_Send/seL4_NBSend to a server with no scheduling context", test_send_to_no_sc, config_set(CONFIG_KERNEL_RT))
 
 static void
 ipc0018_helper(seL4_CPtr endpoint, volatile int *state)
@@ -838,7 +838,7 @@ test_receive_no_sc(env_t env)
      return sel4test_get_result();
 }
 DEFINE_TEST(IPC0018, "Test receive from a client with no scheduling context",
-            test_receive_no_sc);
+            test_receive_no_sc, config_set(CONFIG_KERNEL_RT));
 
 static int
 delete_sc_client_sending_on_endpoint(env_t env)
@@ -872,7 +872,7 @@ delete_sc_client_sending_on_endpoint(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0019, "Test deleteing the scheduling context while a client is sending on an endpoint", delete_sc_client_sending_on_endpoint, true);
+DEFINE_TEST(IPC0019, "Test deleteing the scheduling context while a client is sending on an endpoint", delete_sc_client_sending_on_endpoint, config_set(CONFIG_KERNEL_RT));
 
 static void
 ipc0020_helper(seL4_CPtr endpoint, volatile int *state)
@@ -924,7 +924,7 @@ delete_sc_client_waiting_on_endpoint(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(IPC0020, "test deleting a scheduling context while the client is waiting on an endpoint",
-delete_sc_client_waiting_on_endpoint);
+delete_sc_client_waiting_on_endpoint, config_set(CONFIG_KERNEL_RT));
 
 static void ipc21_faulter_fn(int *addr)
 {
@@ -987,7 +987,7 @@ static int test_fault_handler_donated_sc(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(IPC0021, "Test fault handler on donated scheduling context",
-            test_fault_handler_donated_sc);
+            test_fault_handler_donated_sc, config_set(CONFIG_KERNEL_RT));
 
 static void
 ipc22_client_fn(seL4_CPtr endpoint, volatile int *state)
@@ -1108,7 +1108,7 @@ static int test_stack_spawning_server(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(IPC0022, "Test stack spawning server with scheduling context donation",
-test_stack_spawning_server);
+test_stack_spawning_server, config_set(CONFIG_KERNEL_RT));
 
 static void ipc23_client_fn(seL4_CPtr ep, volatile int *state)
 {
@@ -1174,7 +1174,7 @@ static int test_delete_reply_cap_sc(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(IPC0023, "Test deleting the scheduling context tracked in a reply cap",
-            test_delete_reply_cap_sc)
+            test_delete_reply_cap_sc, config_set(CONFIG_KERNEL_RT))
 
 static int test_delete_reply_cap_then_sc(env_t env)
 {
@@ -1226,19 +1226,19 @@ static int test_delete_reply_cap_then_sc(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(IPC0024, "Test deleting the reply cap in the scheduling context",
-            test_delete_reply_cap_then_sc);
+            test_delete_reply_cap_then_sc, config_set(CONFIG_KERNEL_RT));
 
 static int test_nbsendrecv(env_t env)
 {
     return test_ipc_pair(env, (test_func_t) nbsendrecv_func, (test_func_t) nbsendrecv_func, false, env->cores);
 }
-DEFINE_TEST(IPC0025, "Test seL4_nbsendrecv + seL4_nbsendrecv", test_nbsendrecv, true)
+DEFINE_TEST(IPC0025, "Test seL4_nbsendrecv + seL4_nbsendrecv", test_nbsendrecv, config_set(CONFIG_KERNEL_RT))
 
 static int test_nbsendrecv_interas(env_t env)
 {
     return test_ipc_pair(env, (test_func_t) nbsendrecv_func, (test_func_t) nbsendrecv_func, false, env->cores);
 }
-DEFINE_TEST(IPC0026, "Test interas seL4_nbsendrecv + seL4_nbsendrecv", test_nbsendrecv_interas, true)
+DEFINE_TEST(IPC0026, "Test interas seL4_nbsendrecv + seL4_nbsendrecv", test_nbsendrecv_interas, config_set(CONFIG_KERNEL_RT))
 
 static int
 test_sched_donation_low_prio_server(env_t env)
@@ -1282,9 +1282,7 @@ test_sched_donation_low_prio_server(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0027, "Test sched donation to low prio server", test_sched_donation_low_prio_server, true)
-
-#if CONFIG_MAX_NUM_NODES > 1
+DEFINE_TEST(IPC0027, "Test sched donation to low prio server", test_sched_donation_low_prio_server, config_set(CONFIG_KERNEL_RT))
 
 static void
 ipc28_server_fn(seL4_CPtr ep, seL4_CPtr reply, volatile int *state)
@@ -1353,6 +1351,5 @@ test_sched_donation_cross_core(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0028, "Cross core sched donation", test_sched_donation_cross_core, true);
-#endif /* CONFIG_MAX_NUM_NODES */
+DEFINE_TEST(IPC0028, "Cross core sched donation", test_sched_donation_cross_core, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_MAX_NUM_NODES) && CONFIG_MAX_NUM_NODES > 1);
 #endif /* CONFIG_KERNEL_RT */

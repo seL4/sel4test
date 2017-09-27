@@ -17,7 +17,6 @@
 
 #include "../helpers.h"
 
-#ifdef CONFIG_KERNEL_RT
 int
 test_sched_control_configure(env_t env)
 {
@@ -58,7 +57,7 @@ test_sched_control_configure(env_t env)
     return sel4test_get_result();
 
 }
-DEFINE_TEST(SCHED_CONTEXT_0001, "Test api_sched_ctrl_configure", test_sched_control_configure, true)
+DEFINE_TEST(SCHED_CONTEXT_0001, "Test api_sched_ctrl_configure", test_sched_control_configure, config_set(CONFIG_KERNEL_RT))
 
 
 static NORETURN int
@@ -101,7 +100,7 @@ test_sched_control_reconfigure(env_t env)
     /* done! */
     return SUCCESS;
 }
-DEFINE_TEST(SCHED_CONTEXT_0002, "Test reconfiguring a thread", test_sched_control_reconfigure, true)
+DEFINE_TEST(SCHED_CONTEXT_0002, "Test reconfiguring a thread", test_sched_control_reconfigure, config_set(CONFIG_KERNEL_RT))
 
 int
 test_bind_errors(env_t env)
@@ -156,7 +155,7 @@ test_bind_errors(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0003, "Basic api_sc_bind/UnbindObject testing", test_bind_errors, true);
+DEFINE_TEST(SCHED_CONTEXT_0003, "Basic api_sc_bind/UnbindObject testing", test_bind_errors, config_set(CONFIG_KERNEL_RT));
 
 void
 sched_context_0005_helper_fn(volatile int *state)
@@ -196,7 +195,7 @@ test_delete_tcb_sched_context(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0005, "Test deleting a scheduling context prevents the bound tcb from running", test_delete_tcb_sched_context, true);
+DEFINE_TEST(SCHED_CONTEXT_0005, "Test deleting a scheduling context prevents the bound tcb from running", test_delete_tcb_sched_context, config_set(CONFIG_KERNEL_RT));
 
 void
 sched_context_0006_helper_fn(seL4_CPtr notification, int *state)
@@ -273,7 +272,7 @@ test_delete_tcb_on_notification_context(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0006, "Test deleting a tcb running on a notifications scheduling context returns it", test_delete_tcb_on_notification_context, true);
+DEFINE_TEST(SCHED_CONTEXT_0006, "Test deleting a tcb running on a notifications scheduling context returns it", test_delete_tcb_on_notification_context, config_set(CONFIG_KERNEL_RT));
 
 int
 sched_context_007_helper_fn(void)
@@ -323,13 +322,13 @@ test_passive_thread_start(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED_CONTEXT0007, "test resuming a passive thread and binding scheduling context",
-            test_passive_thread_start, true)
+            test_passive_thread_start, config_set(CONFIG_KERNEL_RT))
 
 static void
 sched_context0008_client_fn(seL4_CPtr send_ep, seL4_CPtr wait_ep)
 {
     ZF_LOGD("Client send\n");
-    seL4_NBSendWait(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
+    api_nbsend_wait(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
 }
 
 static void
@@ -337,11 +336,11 @@ sched_context0008_proxy_fn(seL4_CPtr send_ep, seL4_CPtr wait_ep)
 {
     /* signal to test runner that we are initialised and waiting for client */
     ZF_LOGD("Proxy init\n");
-    seL4_NBSendWait(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
+    api_nbsend_wait(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
 
     /* forward on the message we got */
     ZF_LOGD("Proxy fwd\n");
-    seL4_NBSendWait(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
+    api_nbsend_wait(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
 
     ZF_LOGF("Should not get here");
 }
@@ -351,7 +350,7 @@ sched_context0008_server_fn(seL4_CPtr init_ep, seL4_CPtr wait_ep)
 {
     ZF_LOGD("Server init\n");
     /* tell test runner we are done by sending to init ep, then wait for proxy message */
-    seL4_NBSendWait(init_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
+    api_nbsend_wait(init_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
     ZF_LOGD("Server exit\n");
     /* hold on to scheduling context */
 }
@@ -404,7 +403,7 @@ test_delete_sendwait_tcb(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED_CONTEXT_0008, "Test deleting a tcb running on donated sc",
-            test_delete_sendwait_tcb, true)
+            test_delete_sendwait_tcb, config_set(CONFIG_KERNEL_RT))
 
 void
 sched_context_0009_server_fn(seL4_CPtr ep, volatile int *state, seL4_CPtr reply)
@@ -421,12 +420,6 @@ sched_context_0009_client_fn(seL4_CPtr ep)
 {
     ZF_LOGD("Client call\n");
     seL4_Call(ep, seL4_MessageInfo_new(0, 0, 0, 0));
-}
-
-void
-sched_context_0010_client_fn(seL4_CPtr ep)
-{
-    seL4_NBSendWait(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL);
 }
 
 int
@@ -475,7 +468,13 @@ test_sched_context_goes_to_to_caller_on_reply_cap_delete(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0009, "Test scheduling context goes to caller if reply cap deleted", test_sched_context_goes_to_to_caller_on_reply_cap_delete, true)
+DEFINE_TEST(SCHED_CONTEXT_0009, "Test scheduling context goes to caller if reply cap deleted", test_sched_context_goes_to_to_caller_on_reply_cap_delete, config_set(CONFIG_KERNEL_RT))
+
+void
+sched_context_0010_client_fn(seL4_CPtr ep)
+{
+    api_nbsend_wait(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL);
+}
 
 int
 test_sched_context_unbind_server(env_t env)
@@ -525,7 +524,7 @@ test_sched_context_unbind_server(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0010, "Test unbinding scheduling context from server", test_sched_context_unbind_server, true)
+DEFINE_TEST(SCHED_CONTEXT_0010, "Test unbinding scheduling context from server", test_sched_context_unbind_server, config_set(CONFIG_KERNEL_RT))
 
 void
 sched_context_0011_proxy_fn(seL4_CPtr in, seL4_CPtr out, seL4_CPtr reply)
@@ -584,7 +583,7 @@ test_revoke_reply_on_call_chain_returns_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0011, "Test revoking a reply on a call chain returns scheduling context along chain", test_revoke_reply_on_call_chain_returns_sc, true)
+DEFINE_TEST(SCHED_CONTEXT_0011, "Test revoking a reply on a call chain returns scheduling context along chain", test_revoke_reply_on_call_chain_returns_sc, config_set(CONFIG_KERNEL_RT))
 
 /* sched 0011 but unordered */
 int
@@ -635,7 +634,7 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0012, "Test revoking a reply on a call chain unorderd", test_revoke_reply_on_call_chain_unordered, true)
+DEFINE_TEST(SCHED_CONTEXT_0012, "Test revoking a reply on a call chain unorderd", test_revoke_reply_on_call_chain_unordered, config_set(CONFIG_KERNEL_RT))
 
 int
 test_revoke_sched_context_on_call_chain(env_t env)
@@ -703,5 +702,4 @@ test_revoke_sched_context_on_call_chain(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT_0013, "Test revoking a scheduling context on a call chain", test_revoke_sched_context_on_call_chain, true)
-#endif /* CONFIG_KERNEL_RT */
+DEFINE_TEST(SCHED_CONTEXT_0013, "Test revoking a scheduling context on a call chain", test_revoke_sched_context_on_call_chain, config_set(CONFIG_KERNEL_RT))

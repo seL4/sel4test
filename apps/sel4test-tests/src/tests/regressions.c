@@ -553,7 +553,7 @@ int test_ldrex_cleared(env_t env)
 DEFINE_TEST(REGRESSIONS0002, "Test the load-exclusive monitor is cleared on context switch", test_ldrex_cleared, true)
 #endif
 
-#if defined(CONFIG_ARCH_IA32) && CONFIG_HAVE_TIMER
+#if defined(CONFIG_ARCH_IA32)
 static volatile int got_cpl = 0;
 static volatile uintptr_t stack_after_cpl = 0;
 static volatile uint32_t kernel_hash;
@@ -656,5 +656,5 @@ int test_no_ret_with_cpl0(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(REGRESSIONS0003, "Test return to user with CPL0 exploit", test_no_ret_with_cpl0, true)
-#endif /* defined(CONFIG_ARCH_IA32) && CONFIG_HAVE_TIMER */
+DEFINE_TEST(REGRESSIONS0003, "Test return to user with CPL0 exploit", test_no_ret_with_cpl0, config_set(CONFIG_HAVE_TIMER))
+#endif /* defined(CONFIG_ARCH_IA32) */

@@ -17,8 +17,6 @@
 
 #include <utils/util.h>
 
-#if CONFIG_HAVE_TIMER
-
 static int
 test_interrupt(env_t env)
 {
@@ -34,9 +32,8 @@ test_interrupt(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(INTERRUPT0001, "Test interrupts with timer", test_interrupt, true);
+DEFINE_TEST(INTERRUPT0001, "Test interrupts with timer", test_interrupt, config_set(CONFIG_HAVE_TIMER));
 
-#ifdef CONFIG_KERNEL_RT
 static void
 interrupt_helper(env_t env, volatile int *state, int runs, seL4_CPtr endpoint)
 {
@@ -90,7 +87,7 @@ test_interrupt_notification_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(INTERRUPT0002, "Test interrupts with scheduling context donation from notification object", test_interrupt_notification_sc, true);
+DEFINE_TEST(INTERRUPT0002, "Test interrupts with scheduling context donation from notification object", test_interrupt_notification_sc, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_KERNEL_RT));
 
 /* test an interrupt handling thread with a scheduling context doesn't inherit the notification objects scheduling context */
 static int
@@ -143,7 +140,7 @@ test_interrupt_notification_and_tcb_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(INTERRUPT0003, "Test interrupts with scheduling context donation from notification object and without (two clients)", test_interrupt_notification_and_tcb_sc, true);
+DEFINE_TEST(INTERRUPT0003, "Test interrupts with scheduling context donation from notification object and without (two clients)", test_interrupt_notification_and_tcb_sc, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_KERNEL_RT));
 
 /* test that if niether the thread or notification object have a scheduling context, nothing happens */
 static int
@@ -179,7 +176,7 @@ test_interrupt_no_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(INTERRUPT0004, "Test interrupts with no scheduling context at all", test_interrupt_no_sc, true);
+DEFINE_TEST(INTERRUPT0004, "Test interrupts with no scheduling context at all", test_interrupt_no_sc, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_KERNEL_RT));
 
 /* test that a second interrupt handling thread on the same endpoint works */
 int
@@ -235,7 +232,7 @@ test_interrupt_notification_sc_two_clients(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(INTERRUPT0005, "Test the same scheduling context cannot be loaned to different threads",
-            test_interrupt_notification_sc_two_clients, true);
+            test_interrupt_notification_sc_two_clients, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_KERNEL_RT));
 
 /* test deleting the scheduling context stops the notification from donating it */
 static int
@@ -278,6 +275,4 @@ test_interrupt_delete_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(INTERRUPT0006, "Test interrupts after deleting scheduling context bound to notification", test_interrupt_delete_sc, true);
-#endif /* CONFIG_HAVE_TIMER */
-#endif /* CONFIG_KERNEL_RT */
+DEFINE_TEST(INTERRUPT0006, "Test interrupts after deleting scheduling context bound to notification", test_interrupt_delete_sc, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_KERNEL_RT));

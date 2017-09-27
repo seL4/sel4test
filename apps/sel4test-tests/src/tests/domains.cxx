@@ -59,7 +59,6 @@ own_domain_badcap(struct env *env)
     return (error == seL4_IllegalOperation) ? SUCCESS : FAILURE;
 }
 
-#ifdef CONFIG_HAVE_TIMER
 int fdom1(seL4_Word id, env_t env)
 {
     int countdown = 50;
@@ -121,9 +120,8 @@ test_run_domains(struct env* env)
 {
     return test_domains<false>(env, fdom1);
 }
-DEFINE_TEST(DOMAINS0004, "Run threads in domains()", test_run_domains, true)
+DEFINE_TEST(DOMAINS0004, "Run threads in domains()", test_run_domains, config_set(CONFIG_HAVE_TIMER))
 
-#if CONFIG_NUM_DOMAINS > 1
 /* The output of this test differs from that of DOMAINS0004 in that the thread
  * in domain 0 is moved into domain 1 after a short delay. This should be
  * visible in the output, where the "domain block" for domain 1 should contain
@@ -139,9 +137,7 @@ test_run_domains_shift(struct env* env)
 {
     return test_domains<true>(env, fdom1);
 }
-DEFINE_TEST(DOMAINS0005, "Move thread between domains()", test_run_domains_shift, true)
-#endif
-#endif /* CONFIG_HAVE_TIMER */
+DEFINE_TEST(DOMAINS0005, "Move thread between domains()", test_run_domains_shift, config_set(CONFIG_HAVE_TIMER) && CONFIG_NUM_DOMAINS > 1)
 
 static int
 test_own_domain1(struct env* env)

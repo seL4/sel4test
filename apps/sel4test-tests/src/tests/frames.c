@@ -233,8 +233,8 @@ static int test_xn_large_frame(env_t env)
     return test_xn(env, seL4_ARM_LargePageObject);
 }
 DEFINE_TEST(FRAMEXN0002, "Test that we can map a large frame XN", test_xn_large_frame, config_set(CONFIG_ARCH_ARM))
+#endif /* CONFIG_ARCH_ARM */
 
-#endif
 static int test_device_frame_ipcbuf(env_t env)
 {
     cspacepath_t path;

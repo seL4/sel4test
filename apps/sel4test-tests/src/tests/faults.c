@@ -679,27 +679,23 @@ test_fault(env_t env, int fault_type, bool inter_as)
     return sel4test_get_result();
 }
 
-#ifndef CONFIG_FT
-
 static int test_read_fault(env_t env)
 {
     return test_fault(env, FAULT_DATA_READ_PAGEFAULT, false);
 }
-DEFINE_TEST(PAGEFAULT0001, "Test read page fault", test_read_fault, true)
+DEFINE_TEST(PAGEFAULT0001, "Test read page fault", test_read_fault, !config_set(CONFIG_FT))
 
 static int test_write_fault(env_t env)
 {
     return test_fault(env, FAULT_DATA_WRITE_PAGEFAULT, false);
 }
-DEFINE_TEST(PAGEFAULT0002, "Test write page fault", test_write_fault, true)
+DEFINE_TEST(PAGEFAULT0002, "Test write page fault", test_write_fault, !config_set(CONFIG_FT))
 
 static int test_execute_fault(env_t env)
 {
     return test_fault(env,  FAULT_INSTRUCTION_PAGEFAULT, false);
 }
-DEFINE_TEST(PAGEFAULT0003, "Test execute page fault", test_execute_fault, true)
-
-#endif
+DEFINE_TEST(PAGEFAULT0003, "Test execute page fault", test_execute_fault, !config_set(CONFIG_FT))
 
 static int test_bad_syscall(env_t env)
 {
@@ -737,16 +733,13 @@ static int test_bad_syscall_interas(env_t env)
 }
 DEFINE_TEST(PAGEFAULT1004, "Test unknown system call (inter-AS)", test_bad_syscall_interas, true)
 
-#if 0
-/* This test needs some work. */
+/* This test currently fails. It is disabled until it can be investigated and fixed. */
 static int test_bad_instruction_interas(env_t env)
 {
-    return test_fault(&env->vka, FAULT_BAD_INSTRUCTION, true);
+    return test_fault(env, FAULT_BAD_INSTRUCTION, true);
 }
-DEFINE_TEST(PAGEFAULT1005, "Test undefined instruction (inter-AS)", test_bad_instruction_interas, true)
-#endif
+DEFINE_TEST(PAGEFAULT1005, "Test undefined instruction (inter-AS)", test_bad_instruction_interas, false)
 
-#ifdef CONFIG_KERNEL_RT
 static void
 timeout_fault_0001_fn(void)
 {
@@ -779,7 +772,7 @@ test_timeout_fault(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(TIMEOUTFAULT0001, "Test timeout fault", test_timeout_fault, true)
+DEFINE_TEST(TIMEOUTFAULT0001, "Test timeout fault", test_timeout_fault, config_set(CONFIG_KERNEL_RT))
 
 void
 timeout_fault_server_fn(seL4_CPtr ep, ltimer_t *timer, seL4_CPtr ro)
@@ -908,7 +901,7 @@ test_timeout_fault_in_server(env_t env)
 
 }
 DEFINE_TEST(TIMEOUTFAULT0002, "Handle a timeout fault in a server",
-            test_timeout_fault_in_server, true)
+            test_timeout_fault_in_server, config_set(CONFIG_KERNEL_RT))
 
 static void
 timeout_fault_proxy_fn(seL4_CPtr in, seL4_CPtr out, seL4_CPtr ro)
@@ -971,5 +964,4 @@ test_timeout_fault_nested_servers(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(TIMEOUTFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers, true)
-#endif /* CONFIG_KERNEL_RT */
+DEFINE_TEST(TIMEOUTFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers, config_set(CONFIG_KERNEL_RT))
