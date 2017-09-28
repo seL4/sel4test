@@ -277,10 +277,10 @@ void sel4test_run_tests(struct env* e)
     /* Count how many tests actually exist and allocate space for them */
     int driver_tests = (int)(__stop__test_case - __start__test_case);
     uint64_t tc_size;
-    struct testcase *sel4test_tests = (struct testcase *) sel4utils_elf_get_section("sel4test-tests", "_test_case", &tc_size);
-    int tc_tests = tc_size / sizeof(struct testcase);
+    testcase_t *sel4test_tests = (testcase_t *) sel4utils_elf_get_section("sel4test-tests", "_test_case", &tc_size);
+    int tc_tests = tc_size / sizeof(testcase_t);
     int all_tests = driver_tests + tc_tests;
-    struct testcase *tests[all_tests];
+    testcase_t *tests[all_tests];
 
     /* Extract and filter the tests based on the regex */
     regex_t reg;
@@ -296,7 +296,7 @@ void sel4test_run_tests(struct env* e)
     regfree(&reg);
 
     /* Sort the tests to remove any non determinism in test ordering */
-    qsort(tests, num_tests, sizeof(struct testcase*), test_comparator);
+    qsort(tests, num_tests, sizeof(testcase_t*), test_comparator);
 
     /* Now that they are sorted we can easily ensure there are no duplicate tests.
      * this just ensures some sanity as if there are duplicates, they could have some
