@@ -245,6 +245,21 @@ void sel4test_stop_tests(test_result_t result, int tests_done, int tests_failed,
     printf("\n\n");
 }
 
+static int collate_tests(testcase_t *tests_in, int n, testcase_t *tests_out[], int out_index,
+                                  regex_t *reg)
+{
+    for (int i = 0; i < n; i++) {
+        /* make sure the string is null terminated */
+        tests_in[i].name[TEST_NAME_MAX - 1] = '\0';
+        if (tests_in[i].enabled && regexec(reg, tests_in[i].name, 0, NULL, 0) == 0) {
+            tests_out[out_index] = &tests_in[i];
+            out_index++;
+        }
+    }
+
+    return out_index;
+}
+
 void sel4test_run_tests(struct env* e)
 {
     /* Iterate through test types. */
@@ -260,33 +275,24 @@ void sel4test_run_tests(struct env* e)
     qsort(test_types, num_test_types, sizeof(struct test_type*), test_type_comparator);
 
     /* Count how many tests actually exist and allocate space for them */
-    int tc_tests = e->init->tc_size / sizeof(struct test_type);
-    int max_tests = (int)(__stop__test_case - __start__test_case) + tc_tests;
-    struct testcase *tests[max_tests];
+    int driver_tests = (int)(__stop__test_case - __start__test_case);
+    uint64_t tc_size;
+    struct testcase *sel4test_tests = (struct testcase *) sel4utils_elf_get_section("sel4test-tests", "_test_case", &tc_size);
+    int tc_tests = tc_size / sizeof(struct testcase);
+    int all_tests = driver_tests + tc_tests;
+    struct testcase *tests[all_tests];
 
     /* Extract and filter the tests based on the regex */
     regex_t reg;
     int error = regcomp(&reg, CONFIG_TESTPRINTER_REGEX, REG_EXTENDED | REG_NOSUB);
     ZF_LOGF_IF(error, "Error compiling regex \"%s\"\n", CONFIG_TESTPRINTER_REGEX);
 
-    int num_tests = 0;      /* The number of tests to run */
-    int seen_tests = 0;     /* The number of tests seen (as some tests are not enabled) */
-    for (struct testcase *i = __start__test_case; i < __stop__test_case; i++) {
-        if (regexec(&reg, i->name, 0, NULL, 0) == 0) {
-            tests[num_tests] = i;
-            num_tests++;
-        }
-        seen_tests++;
-    }
-    for (struct testcase *i = (struct testcase*) e->init->tc_start;
-            seen_tests < max_tests; i++) {
-        if (i->enabled == 1 && regexec(&reg, i->name, 0, NULL, 0) == 0) {
-            tests[num_tests] = i;
-            num_tests++;
-        }
-        seen_tests++;
-    }
+    /* get all the tests in the test case section in the driver */
+    int num_tests = collate_tests(__start__test_case, driver_tests, tests, 0, &reg);
+    /* get all the tests in the sel4test_tests app */
+    num_tests = collate_tests(sel4test_tests, tc_tests, tests, num_tests, &reg);
 
+    /* finished with regex */
     regfree(&reg);
 
     /* Sort the tests to remove any non determinism in test ordering */
@@ -391,9 +397,6 @@ void *main_continued(void *arg UNUSED)
     /* setup init data that won't change test-to-test */
     env.init->priority = seL4_MaxPrio - 1;
     plat_init(&env);
-
-    /* find the _test_case section in sel4test-tests so we can extract test cases*/
-    env.init->tc_start = sel4utils_elf_get_section("sel4test-tests", "_test_case", &env.init->tc_size);
 
     /* now run the tests */
     sel4test_run_tests(&env);

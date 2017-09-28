@@ -105,8 +105,5 @@ typedef struct {
     /* number of available cores */
     seL4_Word cores;
 
-    /* test case section details */
-    uintptr_t tc_start;
-    uint64_t tc_size;
 } test_init_data_t;
 
