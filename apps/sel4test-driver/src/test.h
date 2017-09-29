@@ -10,8 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 /* this file is shared between sel4test-driver an sel4test-tests */
-#ifndef __TEST_H
-#define __TEST_H
+#pragma once
 
 #include <autoconf.h>
 #include <sel4/bootinfo.h>
@@ -67,4 +66,3 @@ void plat_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_
 seL4_SlotRegion arch_copy_iospace_caps_to_process(sel4utils_process_t *process, env_t env);
 #endif
 
-#endif /* __TEST_H */

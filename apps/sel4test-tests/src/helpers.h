@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef __HELPERS_H
-#define __HELPERS_H
+#pragma once
 
 #include <vka/vka.h>
 #include <vspace/vspace.h>
@@ -184,4 +183,3 @@ void wait(env_t env, uint64_t ns);
 void sleep(env_t env, uint64_t ns);
 uint64_t timestamp(env_t env);
 
-#endif /* __HELPERS_H */

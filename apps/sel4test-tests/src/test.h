@@ -10,8 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 /* this file is shared between sel4test-driver an sel4test-tests */
-#ifndef __TEST_H
-#define __TEST_H
+#pragma once
 
 #include <autoconf.h>
 #include <allocman/allocman.h>
@@ -34,4 +33,3 @@ void plat_init_env(env_t env, test_init_data_t *data);
 seL4_Error plat_get_frame_cap(void *data, void *paddr, int size_bits, cspacepath_t *path);
 seL4_Error plat_get_irq(void *data, int irq, seL4_CNode root, seL4_Word index, uint8_t depth);
 
-#endif /* __TEST_H */
