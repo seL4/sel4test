@@ -12,7 +12,7 @@
 
 exit_code=0
 
-for config in `/bin/ls -H -I "bamboo*" configs`
+for config in `/bin/ls -H -I "bamboo*" master-configs`
 do
     echo $config
     make clean > /dev/null
