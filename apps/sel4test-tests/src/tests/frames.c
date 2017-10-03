@@ -24,7 +24,7 @@
 #include "../helpers.h"
 #include "frame_type.h"
 
-int touch_data(void *vaddr, char old_data, char new_data, size_t size_bits) {
+void touch_data(void *vaddr, char old_data, char new_data, size_t size_bits) {
     char *data = (char*)vaddr;
     /* we walk backwards testing each byte of the frame to ensure a couple of things
      1. a frame of the correct size is mapped in
@@ -33,11 +33,10 @@ int touch_data(void *vaddr, char old_data, char new_data, size_t size_bits) {
         16 entries in a paging structure, and not just a single entry in a higher level structure
      */
     for (size_t i = BIT(size_bits) - 1; i > 1; i--) {
-        test_assert(data[i] == old_data);
+        test_eq(data[i], old_data);
         data[i] = new_data;
-        test_assert(data[i] == new_data);
+        test_eq(data[i], new_data);
     }
-    return sel4test_get_result();
 }
 
 static int
@@ -71,7 +70,7 @@ test_frame_exported(env_t env)
 
             /* Touch the memory */
             char *data = (char*)vaddr;
-            test_assert(touch_data(data, 0, 'U', frame_types[i].size_bits));
+            touch_data(data, 0, 'U', frame_types[i].size_bits);
 
             err = seL4_ARCH_Page_Remap(frame,
                                        env->page_directory,
@@ -79,7 +78,7 @@ test_frame_exported(env_t env)
                                        seL4_ARCH_Default_VMAttributes);
             test_assert(!err);
             /* ensure the memory is what it was before and touch it again */
-            test_assert(touch_data(vaddr, 'U', 'V', frame_types[i].size_bits));
+            touch_data(vaddr, 'U', 'V', frame_types[i].size_bits);
 
             vspace_unmap_pages(&env->vspace, (void*)vaddr, 1, frame_types[i].size_bits, VSPACE_PRESERVE);
             test_assert(err == seL4_NoError);
@@ -88,7 +87,7 @@ test_frame_exported(env_t env)
     }
     return sel4test_get_result();
 }
-DEFINE_TEST(FRAMEEXPORTS0001, "Test that we can access all exported frames", test_frame_exported)
+DEFINE_TEST(FRAMEEXPORTS0001, "Test that we can access all exported frames", test_frame_exported, true)
 
 /* Wait for a VM fault originating on the given EP the return the virtual
  * address it occurred at. Returns the sentinel 0xffffffff if the message
@@ -227,16 +226,15 @@ static int test_xn_small_frame(env_t env)
 {
     return test_xn(env, seL4_ARM_SmallPageObject);
 }
-DEFINE_TEST(FRAMEXN0001, "Test that we can map a small frame XN", test_xn_small_frame)
+DEFINE_TEST(FRAMEXN0001, "Test that we can map a small frame XN", test_xn_small_frame, config_set(CONFIG_ARCH_ARM))
 
 static int test_xn_large_frame(env_t env)
 {
     return test_xn(env, seL4_ARM_LargePageObject);
 }
-DEFINE_TEST(FRAMEXN0002, "Test that we can map a large frame XN", test_xn_large_frame)
+DEFINE_TEST(FRAMEXN0002, "Test that we can map a large frame XN", test_xn_large_frame, config_set(CONFIG_ARCH_ARM))
 
 #endif
-#ifdef CONFIG_HAVE_TIMER
 static int test_device_frame_ipcbuf(env_t env)
 {
     cspacepath_t path;
@@ -264,7 +262,7 @@ static int test_device_frame_ipcbuf(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(FRAMEDIPC0001, "Test that we cannot create a thread with an IPC buffer that is a frame", test_device_frame_ipcbuf)
+DEFINE_TEST(FRAMEDIPC0001, "Test that we cannot create a thread with an IPC buffer that is a frame", test_device_frame_ipcbuf, config_set(CONFIG_HAVE_TIMER))
 
 static int wait_func(seL4_Word ep)
 {
@@ -302,8 +300,7 @@ static int test_switch_device_frame_ipcbuf(env_t env)
     cleanup_helper(env, &other);
     return sel4test_get_result();
 }
-DEFINE_TEST(FRAMEDIPC0002, "Test that we cannot switch a threads IPC buffer to a device frame", test_switch_device_frame_ipcbuf)
-#endif /* CONFIG_HAVE_TIMER */
+DEFINE_TEST(FRAMEDIPC0002, "Test that we cannot switch a threads IPC buffer to a device frame", test_switch_device_frame_ipcbuf, config_set(CONFIG_HAVE_TIMER))
 
 static int touch_data_fault(seL4_Word data, seL4_Word fault_ep, seL4_Word arg3, seL4_Word arg4)
 {
@@ -374,4 +371,4 @@ static int test_unmap_on_delete(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(FRAMEDIPC0003, "Test that deleting a frame cap unmaps the frame", test_unmap_on_delete)
+DEFINE_TEST(FRAMEDIPC0003, "Test that deleting a frame cap unmaps the frame", test_unmap_on_delete, true)

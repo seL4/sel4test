@@ -136,4 +136,4 @@ test_nbwait(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(NBWAIT0001, "Test seL4_NBRecv", test_nbwait)
+DEFINE_TEST(NBWAIT0001, "Test seL4_NBRecv", test_nbwait, true)

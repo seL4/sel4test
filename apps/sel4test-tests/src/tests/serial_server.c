@@ -18,8 +18,8 @@
 #include <allocman/vka.h>
 #include <allocman/bootstrap.h>
 #include <sel4utils/thread.h>
-#include <sel4utils/serial_server/parent.h>
-#include <sel4utils/serial_server/client.h>
+#include <serial_server/parent.h>
+#include <serial_server/client.h>
 
 #include "../test.h"
 #include "../helpers.h"
@@ -34,294 +34,6 @@
 
 static const char *test_str = "Hello, world!\n";
 
-static int
-test_server_spawn(struct env *env)
-{
-    int        error;
-
-    error = serial_server_parent_spawn_thread(&env->simple,
-                                              &env->vka, &env->vspace,
-                                              SERSERV_TEST_PRIO_SERVER);
-
-    test_eq(error, 0);
-    return sel4test_get_result();
-}
-DEFINE_TEST(SERSERV_PARENT_001, "Serial server spawn test", test_server_spawn)
-
-static int
-test_parent_connect(struct env *env)
-{
-    int error;
-    serial_client_context_t conn;
-    cspacepath_t badged_server_ep_cspath;
-
-    error = serial_server_parent_spawn_thread(&env->simple,
-                                              &env->vka, &env->vspace,
-                                              SERSERV_TEST_PRIO_SERVER);
-
-    test_eq(error, 0);
-
-    error = serial_server_parent_vka_mint_endpoint(&env->vka, &badged_server_ep_cspath);
-    test_eq(error, 0);
-
-    error = serial_server_client_connect(badged_server_ep_cspath.capPtr,
-                                        &env->vka, &env->vspace, &conn);
-    test_eq(error, 0);
-
-    return  sel4test_get_result();
-}
-DEFINE_TEST(SERSERV_PARENT_002, "Test connecting to the server from a parent thread", test_parent_connect)
-
-static int
-test_parent_printf(struct env *env)
-{
-    int error;
-    serial_client_context_t conn;
-    cspacepath_t badged_server_ep_cspath;
-
-    error = serial_server_parent_spawn_thread(&env->simple,
-                                              &env->vka, &env->vspace,
-                                              SERSERV_TEST_PRIO_SERVER);
-
-    test_eq(error, 0);
-
-    error = serial_server_parent_vka_mint_endpoint(&env->vka, &badged_server_ep_cspath);
-    test_eq(error, 0);
-
-    error = serial_server_client_connect(badged_server_ep_cspath.capPtr,
-                                        &env->vka, &env->vspace, &conn);
-    test_eq(error, 0);
-
-    error = serial_server_printf(&conn, test_str);
-    test_eq(error, (int)strlen(test_str));
-    return sel4test_get_result();
-}
-DEFINE_TEST(SERSERV_PARENT_003, "Printf() from a connected parent thread", test_parent_printf)
-
-static int
-test_parent_write(struct env *env)
-{
-    int error;
-    serial_client_context_t conn;
-    cspacepath_t badged_server_ep_cspath;
-
-    error = serial_server_parent_spawn_thread(&env->simple,
-                                              &env->vka, &env->vspace,
-                                              SERSERV_TEST_PRIO_SERVER);
-
-    test_eq(error, 0);
-
-    error = serial_server_parent_vka_mint_endpoint(&env->vka, &badged_server_ep_cspath);
-    test_eq(error, 0);
-
-    error = serial_server_client_connect(badged_server_ep_cspath.capPtr,
-                                        &env->vka, &env->vspace, &conn);
-    test_eq(error, 0);
-
-    error = serial_server_write(&conn, test_str, strlen(test_str));
-    test_eq(error, (int)strlen(test_str));
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(SERSERV_PARENT_004, "Write() from a connected parent thread", test_parent_write)
-
-static int
-test_parent_disconnect_reconnect_write_and_printf(struct env *env)
-{
-    int error;
-    serial_client_context_t conn;
-    cspacepath_t badged_server_ep_cspath;
-
-    error = serial_server_parent_spawn_thread(&env->simple,
-                                              &env->vka, &env->vspace,
-                                              SERSERV_TEST_PRIO_SERVER);
-
-    test_eq(error, 0);
-
-    error = serial_server_parent_vka_mint_endpoint(&env->vka, &badged_server_ep_cspath);
-    test_eq(error, 0);
-
-    error = serial_server_client_connect(badged_server_ep_cspath.capPtr,
-                                        &env->vka, &env->vspace, &conn);
-    test_eq(error, 0);
-
-    error = serial_server_printf(&conn, test_str);
-    test_eq(error, (int)strlen(test_str));
-    error = serial_server_write(&conn, test_str, strlen(test_str));
-    test_eq(error, (int)strlen(test_str));
-
-    /* Disconnect then reconnect and attempt to print */
-    serial_server_disconnect(&conn);
-
-    /* Need to re-obtain new badge values, as the Server may not hand out the
-     * same badge values the second time. Free the previous Endpoint cap.
-     */
-    vka_cnode_delete(&badged_server_ep_cspath);
-    error = serial_server_parent_vka_mint_endpoint(&env->vka, &badged_server_ep_cspath);
-    test_eq(error, 0);
-
-    error = serial_server_client_connect(badged_server_ep_cspath.capPtr,
-                                        &env->vka, &env->vspace, &conn);
-    test_eq(error, 0);
-
-    error = serial_server_write(&conn, test_str, strlen(test_str));
-    test_eq(error, (int)strlen(test_str));
-    error = serial_server_printf(&conn, test_str);
-    test_eq(error, (int)strlen(test_str));
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(SERSERV_PARENT_005,
-            "Test printf() and write() from a parent thread when after a "
-            "connection reset (disconnect/reconnect)",
-            test_parent_disconnect_reconnect_write_and_printf)
-
-static int
-test_kill_from_parent(struct env *env)
-{
-    int error;
-    serial_client_context_t conn;
-    cspacepath_t badged_server_ep_cspath;
-
-    error = serial_server_parent_spawn_thread(&env->simple,
-                                              &env->vka, &env->vspace,
-                                              SERSERV_TEST_PRIO_SERVER);
-    test_eq(error, 0);
-
-    error = serial_server_parent_vka_mint_endpoint(&env->vka, &badged_server_ep_cspath);
-    test_eq(error, 0);
-
-    error = serial_server_client_connect(badged_server_ep_cspath.capPtr,
-                                        &env->vka, &env->vspace, &conn);
-    test_eq(error, 0);
-
-    /* Kill the Server from the parent. */
-    error = serial_server_kill(&conn);
-    test_eq(error, 0);
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(SERSERV_PARENT_006, "Kill the Server from the Parent thread",
-            test_kill_from_parent)
-
-static int
-test_spawn_thread_inputs(struct env *env)
-{
-    int error;
-
-    /* Test NULL inputs to spawn_thread(). */
-    error = serial_server_parent_spawn_thread(NULL, &env->vka,
-                                              &env->vspace,
-                                              SERSERV_TEST_PRIO_SERVER);
-    test_neq(error, 0);
-    error = serial_server_parent_spawn_thread(&env->simple, NULL,
-                                              &env->vspace,
-                                              SERSERV_TEST_PRIO_SERVER);
-    test_neq(error, 0);
-    error = serial_server_parent_spawn_thread(&env->simple, &env->vka,
-                                              NULL,
-                                              SERSERV_TEST_PRIO_SERVER);
-    test_neq(error, 0);
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(SERSERV_PARENT_007, "Test a series of unexpected input values to spawn_thread",
-            test_spawn_thread_inputs)
-
-static int
-test_connect_inputs(struct env *env)
-{
-    int error;
-    serial_client_context_t conn;
-    cspacepath_t badged_server_ep_cspath;
-
-    /* Test NULL inputs to connect(). */
-    error = serial_server_parent_spawn_thread(&env->simple, &env->vka,
-                                              &env->vspace,
-                                              SERSERV_TEST_PRIO_SERVER);
-    test_eq(error, 0);
-    error = serial_server_parent_vka_mint_endpoint(NULL, &badged_server_ep_cspath);
-    test_neq(error, 0);
-    error = serial_server_parent_vka_mint_endpoint(&env->vka, NULL);
-    test_neq(error, 0);
-    error = serial_server_parent_vka_mint_endpoint(&env->vka, &badged_server_ep_cspath);
-    test_eq(error, 0);
-
-    error = serial_server_client_connect(0,
-                                        &env->vka, &env->vspace, &conn);
-    test_neq(error, 0);
-    error = serial_server_client_connect(badged_server_ep_cspath.capPtr,
-                                        NULL, &env->vspace, &conn);
-    test_neq(error, 0);
-    error = serial_server_client_connect(badged_server_ep_cspath.capPtr,
-                                        &env->vka, NULL, &conn);
-    test_neq(error, 0);
-    error = serial_server_client_connect(badged_server_ep_cspath.capPtr,
-                                        &env->vka, &env->vspace, NULL);
-    test_neq(error, 0);
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(SERSERV_PARENT_008, "Test a series of unexpected input values to connect()",
-            test_connect_inputs)
-
-static int
-test_printf_inputs(struct env *env)
-{
-    int error;
-    serial_client_context_t conn;
-    cspacepath_t badged_server_ep_cspath;
-
-    /* Test NULL inputs to printf(). */
-    error = serial_server_parent_spawn_thread(&env->simple, &env->vka,
-                                              &env->vspace,
-                                              SERSERV_TEST_PRIO_SERVER);
-    test_eq(error, 0);
-    error = serial_server_parent_vka_mint_endpoint(&env->vka, &badged_server_ep_cspath);
-    test_eq(error, 0);
-    error = serial_server_client_connect(badged_server_ep_cspath.capPtr,
-                                        &env->vka, &env->vspace, &conn);
-    test_eq(error, 0);
-
-    error = serial_server_printf(NULL, test_str);
-    test_neq(error, (int)strlen(test_str));
-    error = serial_server_printf(&conn, NULL);
-    test_neq(error, (int)strlen(test_str));
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(SERSERV_PARENT_009, "Test a series of unexpected input values to printf()",
-            test_printf_inputs)
-
-static int
-test_write_inputs(struct env *env)
-{
-    int error;
-    serial_client_context_t conn;
-    cspacepath_t badged_server_ep_cspath;
-
-    /* Test NULL inputs to printf(). */
-    error = serial_server_parent_spawn_thread(&env->simple, &env->vka,
-                                              &env->vspace,
-                                              SERSERV_TEST_PRIO_SERVER);
-    test_eq(error, 0);
-    error = serial_server_parent_vka_mint_endpoint(&env->vka, &badged_server_ep_cspath);
-    test_eq(error, 0);
-    error = serial_server_client_connect(badged_server_ep_cspath.capPtr,
-                                        &env->vka, &env->vspace, &conn);
-    test_eq(error, 0);
-
-    error = serial_server_write(NULL, test_str, strlen(test_str));
-    test_neq(error, (int)strlen(test_str));
-    error = serial_server_write(&conn, NULL, 500);
-    test_neq(error, (int)strlen(test_str));
-    error = serial_server_write(&conn, test_str, 0);
-    test_neq(error, (int)strlen(test_str));
-
-    return sel4test_get_result();
-}
-DEFINE_TEST(SERSERV_PARENT_010, "Test a series of unexpected input values to write()",
-            test_write_inputs)
 
 /* These next few tests test the same things from client threads.
  *
@@ -603,7 +315,6 @@ setup_client_process_allocman_vka_and_vspace(seL4_CPtr ut_cap, size_t ut_size_bi
         || alloc_data == NULL || allocman_mem_size == 0) {
         return seL4_InvalidArgument;
     }
-
     *allocman = bootstrap_use_current_1level(SEL4UTILS_CNODE_SLOT,
                                              CONFIG_SEL4UTILS_CSPACE_SIZE_BITS,
                                              first_free_cptr,
@@ -959,7 +670,7 @@ static int test_client_connect(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SERSERV_CLIENT_001, "Connect from client threads",
-            test_client_connect)
+            test_client_connect, true)
 
 static int
 test_client_printf(struct env *env)
@@ -971,7 +682,7 @@ test_client_printf(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SERSERV_CLIENT_002, "Printf from client threads",
-            test_client_printf)
+            test_client_printf, true)
 
 static int
 test_client_write(struct env *env)
@@ -983,7 +694,7 @@ test_client_write(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SERSERV_CLIENT_003, "Write from client threads",
-            test_client_write)
+            test_client_write, true)
 
 static int
 test_client_disconnect_reconnect_printf_write(struct env *env)
@@ -996,7 +707,7 @@ test_client_disconnect_reconnect_printf_write(struct env *env)
 }
 DEFINE_TEST(SERSERV_CLIENT_004, "Printf, then write, then reset connection, and "
             "Printf, then write again, from client threads",
-            test_client_disconnect_reconnect_printf_write)
+            test_client_disconnect_reconnect_printf_write, true)
 
 static int
 test_client_kill(struct env *env)
@@ -1022,7 +733,7 @@ test_client_kill(struct env *env)
 }
 DEFINE_TEST(SERSERV_CLIENT_005, "Connect, then disconnect from server on all "
             "threads, then kill server from parent thread",
-            test_client_kill)
+            test_client_kill, true)
 
 static int
 test_client_process_connect(struct env *env)
@@ -1034,7 +745,7 @@ test_client_process_connect(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SERSERV_CLI_PROC_001, "Connect to server from a client in another "
-            "VSpace and CSpace", test_client_process_connect)
+            "VSpace and CSpace", test_client_process_connect, true)
 
 static int
 test_client_process_printf(struct env *env)
@@ -1045,8 +756,8 @@ test_client_process_printf(struct env *env)
     test_eq(error, 0);
     return sel4test_get_result();
 }
-DEFINE_TEST(SERSERV_CLI_PROC_002, "Connect to server and printf(), from a client "
-            "in another VSpace and CSpace", test_client_process_printf)
+DEFINE_TEST(SERSERV_CLI_PROC_002, "Connect to server and printf(, true), from a client "
+            "in another VSpace and CSpace", test_client_process_printf, true)
 
 static int
 test_client_process_write(struct env *env)
@@ -1057,8 +768,8 @@ test_client_process_write(struct env *env)
     test_eq(error, 0);
     return sel4test_get_result();
 }
-DEFINE_TEST(SERSERV_CLI_PROC_003, "Connect to server and write(), from a client "
-            "in another VSpace and CSpace", test_client_process_write)
+DEFINE_TEST(SERSERV_CLI_PROC_003, "Connect to server and write(, true), from a client "
+            "in another VSpace and CSpace", test_client_process_write, true)
 
 static int
 test_client_process_disconnect_reconnect_printf_write(struct env *env)
@@ -1071,10 +782,10 @@ test_client_process_disconnect_reconnect_printf_write(struct env *env)
     test_eq(error, 0);
     return sel4test_get_result();
 }
-DEFINE_TEST(SERSERV_CLI_PROC_004, "Connect to server, printf(), write(), then "
+DEFINE_TEST(SERSERV_CLI_PROC_004, "Connect to server, printf(), write(, true), then "
             "disconnect, then reconnect and printf() and write() again, from "
             "clients in other VSpaces and CSpaces",
-            test_client_process_disconnect_reconnect_printf_write)
+            test_client_process_disconnect_reconnect_printf_write, true)
 
 static int
 test_client_process_kill(struct env *env)
@@ -1099,4 +810,4 @@ test_client_process_kill(struct env *env)
 DEFINE_TEST(SERSERV_CLI_PROC_005, "Connect to server then disconnect on all "
             "clients (in different VSpace/CSpace containers), and finally kill "
             "the server from the parent",
-            test_client_process_kill)
+            test_client_process_kill, true)

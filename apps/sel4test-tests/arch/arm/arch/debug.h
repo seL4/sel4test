@@ -11,7 +11,16 @@
 */
 #pragma once
 
-#define TEST_SOFTWARE_BREAK_ASM() asm volatile("bkpt\n\t")
+#define TEST_SOFTWARE_BREAK_ASM() \
+    asm volatile( \
+        ".global sbreak, post_sbreak\n\t" \
+        ".type post_sbreak, function\n\t" \
+        "sbreak:\n\t" \
+        "bkpt\n\t")
+
+/* Tell C about the symbols exported by the ASM above. */
+extern char sbreak;
+#define TEST_SOFTWARE_BREAK_EXPECTED_FAULT_LABEL sbreak
 #define SINGLESTEP_EXPECTED_BP_CONSUMPTION_VALUE (true)
 #define TEST_NUM_DATA_WPS seL4_NumExclusiveWatchpoints
 #define TEST_NUM_INSTR_BPS seL4_NumExclusiveBreakpoints

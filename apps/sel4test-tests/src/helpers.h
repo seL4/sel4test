@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef __HELPERS_H
-#define __HELPERS_H
+#pragma once
 
 #include <vka/vka.h>
 #include <vspace/vspace.h>
@@ -23,6 +22,7 @@
 #include <platsupport/timer.h>
 
 #include "test.h"
+#include <sel4testsupport/testreporter.h>
 
 #define OUR_PRIO (env->priority)
 /* args provided by the user */
@@ -183,4 +183,3 @@ void wait(env_t env, uint64_t ns);
 void sleep(env_t env, uint64_t ns);
 uint64_t timestamp(env_t env);
 
-#endif /* __HELPERS_H */

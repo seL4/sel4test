@@ -33,6 +33,6 @@ HDRFILES := $(wildcard $(SOURCE_DIR)/include/*) \
     $(wildcard ${SOURCE_DIR}/sel4_arch/${SEL4_ARCH}/*)
 
 # Libraries
-LIBS := sel4 c cpio sel4muslcsys utils sel4utils sel4allocman sel4simple sel4test elf sel4platsupport platsupport sel4vspace sel4simple-default sel4debug sel4sync
+LIBS := sel4 c cpio sel4muslcsys utils sel4utils sel4allocman sel4simple sel4test sel4testsupport elf sel4platsupport platsupport sel4vspace sel4simple-default sel4debug sel4sync sel4serialserver
 
 include $(SEL4_COMMON)/common.mk

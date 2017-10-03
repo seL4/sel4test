@@ -96,7 +96,7 @@ test_notification_binding(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(BIND0001, "Test that a bound tcb waiting on a sync endpoint receives normal sync ipc and notification notifications.", test_notification_binding)
+DEFINE_TEST(BIND0001, "Test that a bound tcb waiting on a sync endpoint receives normal sync ipc and notification notifications.", test_notification_binding, true)
 
 static int
 test_notification_binding_2(env_t env)
@@ -140,7 +140,7 @@ test_notification_binding_2(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(BIND0002, "Test that a bound tcb waiting on its bound notification recieves notifications", test_notification_binding_2)
+DEFINE_TEST(BIND0002, "Test that a bound tcb waiting on its bound notification recieves notifications", test_notification_binding_2, true)
 
 /* helper thread for testing the ordering of bound notification endpoint operations */
 static int
@@ -190,8 +190,8 @@ test_notification_binding_3(env_t env)
     test_notification_binding_prio(env, 10, 9);
     return sel4test_get_result();
 }
-DEFINE_TEST(BIND0003, "Test IPC ordering 1) bound tcb waits on bound notification 2) another tcb sends a message",
-            test_notification_binding_3)
+DEFINE_TEST(BIND0003, "Test IPC ordering 1) bound tcb waits on bound notification 2, true) another tcb sends a message",
+            test_notification_binding_3, true)
 
 static int
 test_notification_binding_4(env_t env)
@@ -199,10 +199,9 @@ test_notification_binding_4(env_t env)
     test_notification_binding_prio(env, 9, 10);
     return sel4test_get_result();
 }
-DEFINE_TEST(BIND0004, "Test IPC ordering 2) bound tcb waits on bound notification 1) another tcb sends a message",
-            test_notification_binding_4)
+DEFINE_TEST(BIND0004, "Test IPC ordering 2) bound tcb waits on bound notification 1, true) another tcb sends a message",
+            test_notification_binding_4, true)
 
-#ifdef CONFIG_KERNEL_RT
 static void
 bind0005_helper(seL4_CPtr endpoint, volatile int *state)
 {
@@ -257,7 +256,7 @@ test_notification_binding_no_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(BIND005, "Test passing thread notification binding with no scheduling context", test_notification_binding_no_sc)
+DEFINE_TEST(BIND005, "Test passing thread notification binding with no scheduling context", test_notification_binding_no_sc, config_set(CONFIG_KERNEL_RT))
 
 static int
 test_notification_binding_with_sc(env_t env)
@@ -300,5 +299,4 @@ test_notification_binding_with_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(BIND006, "Test passing thread notification binding with a scheduling context", test_notification_binding_with_sc)
-#endif
+DEFINE_TEST(BIND006, "Test passing thread notification binding with a scheduling context", test_notification_binding_with_sc, config_set(CONFIG_KERNEL_RT))

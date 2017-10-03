@@ -38,7 +38,7 @@ test_interas_diffcspace(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(VSPACE0000, "Test threads in different cspace/vspace", test_interas_diffcspace)
+DEFINE_TEST(VSPACE0000, "Test threads in different cspace/vspace", test_interas_diffcspace, true)
 
 #if defined(CONFIG_ARCH_AARCH32)
 static int
@@ -74,7 +74,7 @@ test_unmap_after_delete(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(VSPACE0001, "Test unmapping a page after deleting the PD", test_unmap_after_delete)
+DEFINE_TEST(VSPACE0001, "Test unmapping a page after deleting the PD", test_unmap_after_delete, true)
 
 #elif defined(CONFIG_ARCH_AARCH64)
 static int
@@ -122,7 +122,7 @@ test_unmap_after_delete(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(VSPACE0001, "Test unmapping a page after deleting the PD", test_unmap_after_delete)
+DEFINE_TEST(VSPACE0001, "Test unmapping a page after deleting the PD", test_unmap_after_delete, true)
 #endif /* CONFIG_ARCH_AARCHxx */
 
 static int
@@ -145,7 +145,7 @@ test_asid_pool_make(env_t env)
     return sel4test_get_result();
 
 }
-DEFINE_TEST(VSPACE0002, "Test create ASID pool", test_asid_pool_make)
+DEFINE_TEST(VSPACE0002, "Test create ASID pool", test_asid_pool_make, true)
 
 #ifdef CONFIG_ARCH_IA32
 static int
@@ -197,5 +197,5 @@ test_dirty_accessed_bits(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(VSPACE0010, "Test dirty and accessed bits on mappings", test_dirty_accessed_bits)
+DEFINE_TEST(VSPACE0010, "Test dirty and accessed bits on mappings", test_dirty_accessed_bits, true)
 #endif

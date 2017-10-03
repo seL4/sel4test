@@ -34,13 +34,13 @@ static volatile int total_faults = 0;
 static void
 increment_pc(seL4_CPtr tcb, seL4_Word inc)
 {
-    int error;
     seL4_UserContext ctx;
-    error = seL4_TCB_ReadRegisters(tcb,
+    seL4_Error error = seL4_TCB_ReadRegisters(tcb,
                                    false,
                                    0,
                                    sizeof(ctx) / sizeof(seL4_Word),
                                    &ctx);
+    test_eq(error, seL4_NoError);
 #ifdef CONFIG_ARCH_X86_64
     ctx.rax = 1;
     ctx.rip += inc;
@@ -53,7 +53,7 @@ increment_pc(seL4_CPtr tcb, seL4_Word inc)
                                     0,
                                     sizeof(ctx) / sizeof(seL4_Word),
                                     &ctx);
-    test_assert_fatal(!error);
+    test_eq(error, seL4_NoError);
 }
 
 static int
@@ -136,6 +136,6 @@ test_native_ioports(env_t env)
 
     return (total_faults == EXPECTED_FAULTS) ? SUCCESS : FAILURE;
 }
-DEFINE_TEST(IOPORTS1000, "Test fault if directly using I/O ports", test_native_ioports)
+DEFINE_TEST(IOPORTS1000, "Test fault if directly using I/O ports", test_native_ioports, true)
 
 #endif

@@ -33,21 +33,11 @@ file(GLOB static
     src/arch/${KernelArch}/*.S src/plat/${KernelPlatform}/*.S
 )
 
-add_custom_command(OUTPUT test_names.c
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/scripts/extract-test-names.sh
-        ${CROSS_COMPILER_PREFIX}objdump $<TARGET_FILE:sel4test-tests> > test_names.c
-    DEPENDS $<TARGET_FILE:sel4test-tests> ${CMAKE_CURRENT_SOURCE_DIR}/scripts/extract-test-names.sh
-    VERBATIM
-    COMMENT "Extracting unit test list from sel4test-tests"
-)
-
-add_custom_target(test_names_gen DEPENDS test_names.c)
-
 MakeCPIO(archive.o "$<TARGET_FILE:sel4test-tests>")
 
-add_executable(sel4test-driver EXCLUDE_FROM_ALL ${static} test_names.c archive.o)
+add_executable(sel4test-driver EXCLUDE_FROM_ALL ${static} archive.o)
 target_include_directories(sel4test-driver PRIVATE "include")
-target_link_libraries(sel4test-driver Configuration muslc sel4 sel4allocman sel4vka sel4utils sel4test sel4platsupport sel4muslcsys)
+target_link_libraries(sel4test-driver Configuration muslc sel4 sel4allocman sel4vka sel4utils sel4test sel4platsupport sel4muslcsys sel4testsupport)
 target_compile_options(sel4test-driver PRIVATE -Werror -g)
 
 # Set this image as the rootserver

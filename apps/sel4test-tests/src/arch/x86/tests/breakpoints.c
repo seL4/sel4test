@@ -178,6 +178,6 @@ test_debug_api_single_step(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SINGLESTEP_001, "Attempt to step through a function",
-            test_debug_api_single_step);
+            test_debug_api_single_step, config_set(CONFIG_HARDWARE_DEBUG_API));
 
 #endif /* #ifdef CONFIG_HARDWARE_DEBUG_API */

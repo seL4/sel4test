@@ -10,8 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 
-#ifndef SEL4TEST_TESTS_FRAME_TYPE_H_
-#define SEL4TEST_TESTS_FRAME_TYPE_H_
+#pragma once
 
 #include <autoconf.h>
 #include <stdint.h>
@@ -33,4 +32,3 @@ typedef struct frame_type {
 #define VSPACE_RV_ALIGN_BITS (frame_types[0].size_bits)
 #define VSPACE_RV_SIZE (2 * BIT(VSPACE_RV_ALIGN_BITS))
 
-#endif /* SEL4TEST_TESTS_FRAME_TYPE_H_ */

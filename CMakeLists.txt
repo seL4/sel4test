@@ -14,5 +14,6 @@ cmake_minimum_required(VERSION 3.7.2)
 
 add_subdirectory(apps/sel4test-tests)
 add_subdirectory(apps/sel4test-driver)
+add_subdirectory(libsel4testsupport)
 
 GenerateSimulateScript()

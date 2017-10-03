@@ -18,10 +18,10 @@
 
 int test_trivial(env_t env)
 {
-    test_assert_fatal(2 > 1);
+    test_geq(2, 1);
     return sel4test_get_result();
 }
-DEFINE_TEST(TRIVIAL0000, "Ensure the test framework functions", test_trivial)
+DEFINE_TEST(TRIVIAL0000, "Ensure the test framework functions", test_trivial, true)
 
 int test_allocator(env_t env)
 {
@@ -38,5 +38,5 @@ int test_allocator(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(TRIVIAL0001, "Ensure the allocator works", test_allocator)
-DEFINE_TEST(TRIVIAL0002, "Ensure the allocator works more than once", test_allocator)
+DEFINE_TEST(TRIVIAL0001, "Ensure the allocator works", test_allocator, true)
+DEFINE_TEST(TRIVIAL0002, "Ensure the allocator works more than once", test_allocator, true)

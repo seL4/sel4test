@@ -39,4 +39,4 @@ test_stack_alignment(struct env *env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(STACK_ALIGNMENT_001, "Testing x86 Stack Alignment", test_stack_alignment);
+DEFINE_TEST(STACK_ALIGNMENT_001, "Testing x86 Stack Alignment", test_stack_alignment, true);

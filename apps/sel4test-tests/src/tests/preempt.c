@@ -74,7 +74,7 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
                         env->cspace_root, ep, seL4_WordBits,
                         seL4_AllRights);
 
-            test_assert_fatal(!error);
+            test_assert(!error);
             num_caps++;
         }
         ZF_LOGD(".");
@@ -116,5 +116,5 @@ test_preempt_revoke(env_t env)
     ZF_LOGD("Couldn't trigger preemption point with millions of caps!\n");
     test_assert(0);
 }
-DEFINE_TEST(PREEMPT_REVOKE, "Test preemption path in revoke", test_preempt_revoke)
+DEFINE_TEST(PREEMPT_REVOKE, "Test preemption path in revoke", test_preempt_revoke, true)
 #endif

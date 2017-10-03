@@ -87,7 +87,7 @@ int smp_test_tcb_resume(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(MULTICORE0001, "Test suspending and resuming a thread on different core", smp_test_tcb_resume)
+DEFINE_TEST(MULTICORE0001, "Test suspending and resuming a thread on different core", smp_test_tcb_resume, true)
 
 static void
 spin(env_t env, uint64_t ns)
@@ -133,7 +133,7 @@ int smp_test_tcb_move(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(MULTICORE0002, "Test thread is runnable on all available cores (0 + other)", smp_test_tcb_move)
+DEFINE_TEST(MULTICORE0002, "Test thread is runnable on all available cores (0 + other)", smp_test_tcb_move, true)
 
 int smp_test_tcb_delete(env_t env)
 {
@@ -180,7 +180,7 @@ int smp_test_tcb_delete(env_t env)
     return sel4test_get_result();
 }
 
-DEFINE_TEST(MULTICORE0005, "Test remote delete thread running on other cores", smp_test_tcb_delete)
+DEFINE_TEST(MULTICORE0005, "Test remote delete thread running on other cores", smp_test_tcb_delete, true)
 
 static int
 faulter_func(volatile seL4_Word *shared_mem)
@@ -265,7 +265,7 @@ int smp_test_tlb(env_t env)
     cleanup_helper(env, &handler_thread);
     return sel4test_get_result();
 }
-DEFINE_TEST(MULTICORE0003, "Test TLB invalidated cross cores", smp_test_tlb)
+DEFINE_TEST(MULTICORE0003, "Test TLB invalidated cross cores", smp_test_tlb, true)
 #endif /* CONFIG_HAVE_TIMER */
 
 static int
@@ -316,5 +316,5 @@ int smp_test_tcb_clh(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(MULTICORE0004, "Test core stalling is behaving properly (flaky)", smp_test_tcb_clh)
+DEFINE_TEST(MULTICORE0004, "Test core stalling is behaving properly (flaky)", smp_test_tcb_clh, true)
 #endif /* CONFIG_MAX_NUM_NODES */

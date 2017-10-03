@@ -17,6 +17,7 @@
 #include <vka/capops.h>
 
 #include "test.h"
+#include <sel4testsupport/testreporter.h>
 
 /* Bootstrap test type. */
 static inline void bootstrap_set_up_test_type(env_t e)
@@ -35,7 +36,7 @@ static inline void bootstrap_tear_down(env_t e)
 {
     ZF_LOGD("tear down bootstrap test\n");
 }
-static inline int bootstrap_run_test(struct testcase* test, env_t e)
+static inline test_result_t bootstrap_run_test(struct testcase* test, env_t e)
 {
     return test->function(e);
 }
@@ -100,6 +101,10 @@ void basic_set_up(env_t env)
 #ifdef CONFIG_ARM_SMMU
     env->init->io_space_caps = arch_copy_iospace_caps_to_process(&(env->test_process), &env);
 #endif
+#ifdef CONFIG_ARCH_X86
+    /* pass the entire io port range for the timer io port for simplicity */
+    env->init->timer_io_port_cap = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple, seL4_CapIOPort));
+#endif
     env->init->cores = simple_get_core_count(&env->simple);
     /* copy the sched ctrl caps to the remote process */
     if (config_set(CONFIG_KERNEL_RT)) {
@@ -132,13 +137,13 @@ void basic_set_up(env_t env)
     assert(env->init->free_slots.start < env->init->free_slots.end);
 }
 
-int
+test_result_t
 basic_run_test(struct testcase *test, env_t env)
 {
     int error;
 
     /* copy test name */
-    strncpy(env->init->name, test->name + strlen("TEST_"), TEST_NAME_MAX);
+    strncpy(env->init->name, test->name, TEST_NAME_MAX);
     /* ensure string is null terminated */
     env->init->name[TEST_NAME_MAX - 1] = '\0';
 #ifdef CONFIG_DEBUG_BUILD
@@ -154,12 +159,12 @@ basic_run_test(struct testcase *test, env_t env)
     /* spawn the process */
     error = sel4utils_spawn_process_v(&(env->test_process), &env->vka, &env->vspace,
                                       argc, argv, 1);
-    assert(error == 0);
+    ZF_LOGF_IF(error != 0, "Failed to start test process!");
 
     /* wait on it to finish or fault, report result */
     seL4_MessageInfo_t info = api_wait(env->test_process.fault_endpoint.cptr, NULL);
 
-    int result = seL4_GetMR(0);
+    test_result_t result = seL4_GetMR(0);
     if (seL4_MessageInfo_get_label(info) != seL4_Fault_NullFault) {
         sel4utils_print_fault_message(info, test->name);
         printf("Register of root thread in test (may not be the thread that faulted)\n");
@@ -167,7 +172,6 @@ basic_run_test(struct testcase *test, env_t env)
         result = FAILURE;
     }
 
-    test_assert(result == SUCCESS);
     return result;
 }
 

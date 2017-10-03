@@ -13,6 +13,7 @@
 /* Include Kconfig variables. */
 #include <autoconf.h>
 
+#include <regex.h>
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
@@ -31,6 +32,7 @@
 #include <sel4utils/vspace.h>
 #include <sel4utils/stack.h>
 #include <sel4utils/process.h>
+#include <sel4test/test.h>
 
 #include <simple/simple.h>
 #include <simple-default/simple-default.h>
@@ -162,6 +164,202 @@ populate_untypeds(vka_object_t *untypeds)
     return num_untypeds;
 }
 
+void sel4test_start_suite(const char *name)
+{
+    if (config_set(CONFIG_PRINT_XML)) {
+        printf("<testsuite>\n");
+    } else {
+        printf("Starting test suite %s\n", name);
+    }
+}
+
+void sel4test_start_test(const char *name, int n)
+{
+    if (config_set(CONFIG_PRINT_XML)) {
+        printf("\t<testcase classname=\"%s\" name=\"%s\">\n", "sel4test", name);
+    } else {
+        printf("Starting test %d: %s\n", n, name);
+    }
+    sel4test_reset();
+    sel4test_start_printf_buffer();
+}
+
+void sel4test_end_test(test_result_t result)
+{
+    sel4test_end_printf_buffer();
+    test_check(result == SUCCESS);
+
+    if (config_set(CONFIG_PRINT_XML)) {
+        printf("\t</testcase>\n");
+    }
+}
+
+void sel4test_end_suite(int num_tests, int num_tests_passed)
+{
+    if (config_set(CONFIG_PRINT_XML)) {
+        printf("</testsuite>\n");
+    } else {
+        if (num_tests_passed != num_tests) {
+            printf("Test suite failed. %d/%d tests passed.\n", num_tests_passed, num_tests);
+        } else {
+            printf("Test suite passed. %d tests passed.\n", num_tests);
+        }
+    }
+}
+
+void sel4test_stop_tests(test_result_t result, int tests_done, int tests_failed, int num_tests)
+{
+    /* if its a special abort case, output why we are aborting */
+    switch (result) {
+    case ABORT:
+        printf("Halting on fatal assertion...\n");
+        break;
+    case FAILURE:
+        assert(config_set(CONFIG_TESTPRINTER_HALT_ON_TEST_FAILURE));
+        printf("Halting on first test failure");
+        break;
+    default:
+        /* nothing to output if its successful */
+        break;
+    }
+
+    /* last test - test all tests ran */
+    sel4test_start_test("Test all tests ran", num_tests + 1);
+    test_eq(tests_done, num_tests);
+    if (sel4test_get_result() != SUCCESS) {
+        tests_failed++;
+    }
+    tests_done++;
+    num_tests++;
+    sel4test_end_test(sel4test_get_result());
+
+    sel4test_end_suite(tests_done, tests_done - tests_failed);
+
+    if (tests_failed > 0) {
+        printf("*** FAILURES DETECTED ***\n");
+    } else if (tests_done < num_tests) {
+        printf("*** ALL tests not run ***\n");
+    } else {
+        printf("All is well in the universe\n");
+    }
+    printf("\n\n");
+}
+
+static int collate_tests(testcase_t *tests_in, int n, testcase_t *tests_out[], int out_index,
+                                  regex_t *reg)
+{
+    for (int i = 0; i < n; i++) {
+        /* make sure the string is null terminated */
+        tests_in[i].name[TEST_NAME_MAX - 1] = '\0';
+        if (tests_in[i].enabled && regexec(reg, tests_in[i].name, 0, NULL, 0) == 0) {
+            tests_out[out_index] = &tests_in[i];
+            out_index++;
+        }
+    }
+
+    return out_index;
+}
+
+void sel4test_run_tests(struct env* e)
+{
+    /* Iterate through test types. */
+    int max_test_types = (int) (__stop__test_type - __start__test_type);
+    struct test_type *test_types[max_test_types];
+    int num_test_types = 0;
+    for (struct test_type *i = __start__test_type; i < __stop__test_type; i++) {
+        test_types[num_test_types] = i;
+        num_test_types++;
+    }
+
+    /* Ensure we iterate through test types in order of ID. */
+    qsort(test_types, num_test_types, sizeof(struct test_type*), test_type_comparator);
+
+    /* Count how many tests actually exist and allocate space for them */
+    int driver_tests = (int)(__stop__test_case - __start__test_case);
+    uint64_t tc_size;
+    testcase_t *sel4test_tests = (testcase_t *) sel4utils_elf_get_section("sel4test-tests", "_test_case", &tc_size);
+    int tc_tests = tc_size / sizeof(testcase_t);
+    int all_tests = driver_tests + tc_tests;
+    testcase_t *tests[all_tests];
+
+    /* Extract and filter the tests based on the regex */
+    regex_t reg;
+    int error = regcomp(&reg, CONFIG_TESTPRINTER_REGEX, REG_EXTENDED | REG_NOSUB);
+    ZF_LOGF_IF(error, "Error compiling regex \"%s\"\n", CONFIG_TESTPRINTER_REGEX);
+
+    /* get all the tests in the test case section in the driver */
+    int num_tests = collate_tests(__start__test_case, driver_tests, tests, 0, &reg);
+    /* get all the tests in the sel4test_tests app */
+    num_tests = collate_tests(sel4test_tests, tc_tests, tests, num_tests, &reg);
+
+    /* finished with regex */
+    regfree(&reg);
+
+    /* Sort the tests to remove any non determinism in test ordering */
+    qsort(tests, num_tests, sizeof(testcase_t*), test_comparator);
+
+    /* Now that they are sorted we can easily ensure there are no duplicate tests.
+     * this just ensures some sanity as if there are duplicates, they could have some
+     * arbitrary ordering, which might result in difficulty reproducing test failures */
+    for (int i = 1; i < num_tests; i++) {
+        ZF_LOGF_IF(strcmp(tests[i]->name, tests[i - 1]->name) == 0, "tests have no strict order! %s %s",
+                   tests[i]->name, tests[i - 1]->name);
+    }
+
+    /* Check that we don't miss any tests because of an undeclared test type */
+    int tests_done = 0;
+    int tests_failed = 0;
+
+    sel4test_start_suite("sel4test");
+    /* First: test that there are tests to run */
+    sel4test_start_test("Test that there are tests", tests_done);
+    test_geq(num_tests, 0);
+    sel4test_end_test(sel4test_get_result());
+    tests_done++;
+
+    /* Iterate through test types so that we run them in order of test type, then name.
+       * Test types are ordered by ID in test.h. */
+    for (int tt = 0; tt < num_test_types; tt++) {
+        /* set up */
+        if (test_types[tt]->set_up_test_type != NULL) {
+            test_types[tt]->set_up_test_type(e);
+        }
+
+        for (int i = 0; i < num_tests; i++) {
+            if (tests[i]->test_type == test_types[tt]->id) {
+                sel4test_start_test(tests[i]->name, tests_done);
+                if (test_types[tt]->set_up != NULL) {
+                    test_types[tt]->set_up(e);
+                }
+
+                test_result_t result = test_types[tt]->run_test(tests[i], e);
+
+                if (test_types[tt]->tear_down != NULL) {
+                    test_types[tt]->tear_down(e);
+                }
+                sel4test_end_test(result);
+
+                if (result != SUCCESS) {
+                    tests_failed++;
+                    if (config_set(CONFIG_TESTPRINTER_HALT_ON_TEST_FAILURE) || result == ABORT) {
+                        sel4test_stop_tests(result, tests_done, tests_failed, num_tests + 1);
+                        return;
+                    }
+                }
+                tests_done++;
+            }
+        }
+
+        /* tear down */
+        if (test_types[tt]->tear_down_test_type != NULL) {
+            test_types[tt]->tear_down_test_type(e);
+        }
+    }
+
+    /* and we're done */
+    sel4test_stop_tests(SUCCESS, tests_done, tests_failed, num_tests + 1);
+}
+
 void *main_continued(void *arg UNUSED)
 {
 
@@ -201,7 +399,7 @@ void *main_continued(void *arg UNUSED)
     plat_init(&env);
 
     /* now run the tests */
-    sel4test_run_tests("sel4test", &env);
+    sel4test_run_tests(&env);
 
     return NULL;
 }

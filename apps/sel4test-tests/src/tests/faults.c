@@ -375,21 +375,21 @@ set_good_magic_and_set_pc(seL4_CPtr tcb, seL4_Word new_pc)
                                    0,
                                    sizeof(ctx) / sizeof(seL4_Word),
                                    &ctx);
-    test_assert_fatal(!error);
+    test_check(!error);
 #if defined(CONFIG_ARCH_AARCH32)
-    test_assert_fatal(ctx.r0 == BAD_MAGIC);
+    test_check(ctx.r0 == BAD_MAGIC);
     ctx.r0 = GOOD_MAGIC;
     ctx.pc = new_pc;
 #elif defined(CONFIG_ARCH_AARCH64)
-    test_assert_fatal((int)ctx.x0 == BAD_MAGIC);
+    test_check((int)ctx.x0 == BAD_MAGIC);
     ctx.x0 = GOOD_MAGIC;
     ctx.pc = new_pc;
 #elif defined(CONFIG_ARCH_X86_64)
-    test_assert_fatal((int)ctx.rax == BAD_MAGIC);
+    test_check((int)ctx.rax == BAD_MAGIC);
     ctx.rax = GOOD_MAGIC;
     ctx.rip = new_pc;
 #elif defined(CONFIG_ARCH_IA32)
-    test_assert_fatal(ctx.eax == BAD_MAGIC);
+    test_check(ctx.eax == BAD_MAGIC);
     ctx.eax = GOOD_MAGIC;
     ctx.eip = new_pc;
 #else
@@ -400,7 +400,7 @@ set_good_magic_and_set_pc(seL4_CPtr tcb, seL4_Word new_pc)
                                     0,
                                     sizeof(ctx) / sizeof(seL4_Word),
                                     &ctx);
-    test_assert_fatal(!error);
+    test_check(!error);
 }
 
 static int
@@ -555,7 +555,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
 
     default:
         /* What? Why are we here? What just happened? */
-        test_assert_fatal(0);
+        test_assert(0);
         break;
     }
 
@@ -685,19 +685,19 @@ static int test_read_fault(env_t env)
 {
     return test_fault(env, FAULT_DATA_READ_PAGEFAULT, false);
 }
-DEFINE_TEST(PAGEFAULT0001, "Test read page fault", test_read_fault)
+DEFINE_TEST(PAGEFAULT0001, "Test read page fault", test_read_fault, true)
 
 static int test_write_fault(env_t env)
 {
     return test_fault(env, FAULT_DATA_WRITE_PAGEFAULT, false);
 }
-DEFINE_TEST(PAGEFAULT0002, "Test write page fault", test_write_fault)
+DEFINE_TEST(PAGEFAULT0002, "Test write page fault", test_write_fault, true)
 
 static int test_execute_fault(env_t env)
 {
     return test_fault(env,  FAULT_INSTRUCTION_PAGEFAULT, false);
 }
-DEFINE_TEST(PAGEFAULT0003, "Test execute page fault", test_execute_fault)
+DEFINE_TEST(PAGEFAULT0003, "Test execute page fault", test_execute_fault, true)
 
 #endif
 
@@ -705,37 +705,37 @@ static int test_bad_syscall(env_t env)
 {
     return test_fault(env, FAULT_BAD_SYSCALL, false);
 }
-DEFINE_TEST(PAGEFAULT0004, "Test unknown system call", test_bad_syscall)
+DEFINE_TEST(PAGEFAULT0004, "Test unknown system call", test_bad_syscall, true)
 
 static int test_bad_instruction(env_t env)
 {
     return test_fault(env, FAULT_BAD_INSTRUCTION, false);
 }
-DEFINE_TEST(PAGEFAULT0005, "Test undefined instruction", test_bad_instruction)
+DEFINE_TEST(PAGEFAULT0005, "Test undefined instruction", test_bad_instruction, true)
 
 static int test_read_fault_interas(env_t env)
 {
     return test_fault(env, FAULT_DATA_READ_PAGEFAULT, true);
 }
-DEFINE_TEST(PAGEFAULT1001, "Test read page fault (inter-AS)", test_read_fault_interas)
+DEFINE_TEST(PAGEFAULT1001, "Test read page fault (inter-AS)", test_read_fault_interas, true)
 
 static int test_write_fault_interas(env_t env)
 {
     return test_fault(env, FAULT_DATA_WRITE_PAGEFAULT, true);
 }
-DEFINE_TEST(PAGEFAULT1002, "Test write page fault (inter-AS)", test_write_fault_interas)
+DEFINE_TEST(PAGEFAULT1002, "Test write page fault (inter-AS)", test_write_fault_interas, true)
 
 static int test_execute_fault_interas(env_t env)
 {
     return test_fault(env, FAULT_INSTRUCTION_PAGEFAULT, true);
 }
-DEFINE_TEST(PAGEFAULT1003, "Test execute page fault (inter-AS)", test_execute_fault_interas)
+DEFINE_TEST(PAGEFAULT1003, "Test execute page fault (inter-AS)", test_execute_fault_interas, true)
 
 static int test_bad_syscall_interas(env_t env)
 {
     return test_fault(env, FAULT_BAD_SYSCALL, true);
 }
-DEFINE_TEST(PAGEFAULT1004, "Test unknown system call (inter-AS)", test_bad_syscall_interas)
+DEFINE_TEST(PAGEFAULT1004, "Test unknown system call (inter-AS)", test_bad_syscall_interas, true)
 
 #if 0
 /* This test needs some work. */
@@ -743,7 +743,7 @@ static int test_bad_instruction_interas(env_t env)
 {
     return test_fault(&env->vka, FAULT_BAD_INSTRUCTION, true);
 }
-DEFINE_TEST(PAGEFAULT1005, "Test undefined instruction (inter-AS)", test_bad_instruction_interas)
+DEFINE_TEST(PAGEFAULT1005, "Test undefined instruction (inter-AS)", test_bad_instruction_interas, true)
 #endif
 
 #ifdef CONFIG_KERNEL_RT
@@ -779,7 +779,7 @@ test_timeout_fault(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(TIMEOUTFAULT0001, "Test timeout fault", test_timeout_fault)
+DEFINE_TEST(TIMEOUTFAULT0001, "Test timeout fault", test_timeout_fault, true)
 
 void
 timeout_fault_server_fn(seL4_CPtr ep, ltimer_t *timer, seL4_CPtr ro)
@@ -908,7 +908,7 @@ test_timeout_fault_in_server(env_t env)
 
 }
 DEFINE_TEST(TIMEOUTFAULT0002, "Handle a timeout fault in a server",
-            test_timeout_fault_in_server)
+            test_timeout_fault_in_server, true)
 
 static void
 timeout_fault_proxy_fn(seL4_CPtr in, seL4_CPtr out, seL4_CPtr ro)
@@ -971,5 +971,5 @@ test_timeout_fault_nested_servers(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(TIMEOUTFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers)
+DEFINE_TEST(TIMEOUTFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers, true)
 #endif /* CONFIG_KERNEL_RT */
