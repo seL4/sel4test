@@ -795,7 +795,7 @@ int test_change_prio_on_endpoint(env_t env)
         create_helper_thread(env, &clients[i]);
         set_helper_priority(env, &clients[i], prio);
         badged_endpoints[i] = get_free_slot(env);
-        error = cnode_mint(env, endpoint, badged_endpoints[i], seL4_AllRights, seL4_CapData_Badge_new(i));
+        error = cnode_mint(env, endpoint, badged_endpoints[i], seL4_AllRights, i);
         test_eq(error, seL4_NoError);
         replies[i] = clients[i].thread.reply.cptr;
         ZF_LOGD("Client %d, prio %d\n", i, prio);
@@ -969,7 +969,7 @@ test_resume_empty_or_no_sched_context(env_t env)
      * but the thread cannot run until it receives a scheduling context */
 
     sel4utils_thread_t thread;
-    seL4_CapData_t data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits);
+    seL4_Word data = api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits);
     sel4utils_thread_config_t config = thread_config_default(&env->simple, env->cspace_root,
             data, 0, OUR_PRIO - 1);
 

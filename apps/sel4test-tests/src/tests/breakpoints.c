@@ -53,7 +53,7 @@ setup_caps_for_test(struct env *env)
         return -1;
     }
     error = vka_cnode_mint(&badged_fault_ep_cspath, &fault_ep_cspath, seL4_AllRights,
-                           seL4_CapData_Badge_new(FAULT_EP_KERNEL_BADGE_VALUE));
+                           FAULT_EP_KERNEL_BADGE_VALUE);
     if (error != seL4_NoError) {
         ZF_LOGE("Failed to mint fault EP cap.");
         return -1;
@@ -76,7 +76,7 @@ setup_faulter_thread_for_test(struct env *env, helper_thread_t *faulter_thread)
                 badged_fault_ep_cspath.capPtr,
                 seL4_CapNull,
                 env->cspace_root,
-                seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                 env->page_directory, seL4_NilData);
     if (error != 0) {
         ZF_LOGE("Failed to set fault EP for helper thread.");

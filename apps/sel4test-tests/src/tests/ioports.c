@@ -113,7 +113,7 @@ test_native_ioports(env_t env)
                                seL4_PrioProps_new(100, 100),
                                get_helper_sched_context(&faulter_thread),
                                faulter_cspace,
-                               seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                               api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                                faulter_vspace, seL4_NilData,
                                faulter_thread.thread.ipc_buffer_addr,
                                faulter_thread.thread.ipc_buffer);

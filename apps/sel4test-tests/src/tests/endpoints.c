@@ -81,9 +81,7 @@ test_ep_cancelBadgedSends(env_t env)
         senders[i].derived_badged_ep = get_free_slot(env);
         assert(senders[i].derived_badged_ep != 0);
 
-        seL4_CapData_t cap_data;
-        cap_data = seL4_CapData_Badge_new (i + 200);
-        error = cnode_mint(env, ep, senders[i].badged_ep, seL4_AllRights, cap_data);
+        error = cnode_mint(env, ep, senders[i].badged_ep, seL4_AllRights, i + 200);
         assert(!error);
 
         error = cnode_copy(env, senders[i].badged_ep, senders[i].derived_badged_ep, seL4_AllRights);
@@ -206,9 +204,7 @@ test_ep_cancelBadgedSends2(env_t env)
 
         helpers[i].sync_ep = vka_alloc_endpoint_leaky(&env->vka);
 
-        seL4_CapData_t cap_data;
-        cap_data = seL4_CapData_Badge_new (i + 200);
-        error = cnode_mint(env, ep, helpers[i].badged_ep, seL4_AllRights, cap_data);
+        error = cnode_mint(env, ep, helpers[i].badged_ep, seL4_AllRights, i + 200);
         assert(!error);
 
         error = cnode_copy(env, helpers[i].badged_ep, helpers[i].derived_badged_ep, seL4_AllRights);

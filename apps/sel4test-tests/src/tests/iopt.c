@@ -78,9 +78,7 @@ map_iopt_set(env_t env, seL4_CPtr *iospace, iopt_cptrs_t *pts, seL4_CPtr *frame)
     test_assert(!error);
     vka_cspace_make_path(&env->vka, *iospace, &iospace_path);
     vka_cspace_make_path(&env->vka, env->io_space, &master_path);
-    error = vka_cnode_mint(&iospace_path, &master_path, seL4_AllRights, (seL4_CapData_t) {
-        .words = { (DOMAIN_ID << 16) | FAKE_PCI_DEVICE }
-    });
+    error = vka_cnode_mint(&iospace_path, &master_path, seL4_AllRights,(DOMAIN_ID << 16) | FAKE_PCI_DEVICE);
     test_eq(error, seL4_NoError);
 
     error = map_iopt_from_iospace(env, *iospace, pts, frame);

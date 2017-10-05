@@ -69,10 +69,10 @@ test_nbwait(env_t env)
     vka_cspace_alloc_path(&env->vka, &badged_endpoint);
     test_eq(error, 0);
 
-    error = vka_cnode_mint(&badged_endpoint, &endpoint_path, seL4_AllRights, seL4_CapData_Badge_new(1));
+    error = vka_cnode_mint(&badged_endpoint, &endpoint_path, seL4_AllRights, 1);
     test_eq(error, 0);
 
-    error = vka_cnode_mint(&badged_notification, &notification_path, seL4_AllRights, seL4_CapData_Badge_new(2));
+    error = vka_cnode_mint(&badged_notification, &notification_path, seL4_AllRights, 2);
     test_eq(error, 0);
 
     /* NBRecv on endpoint with no messages should return 0 immediately */

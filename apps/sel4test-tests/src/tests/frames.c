@@ -160,7 +160,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     err = api_tcb_set_space(get_helper_tcb(&faulter),
                              fault_ep, seL4_CapNull,
                              env->cspace_root,
-                             seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                             api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                              env->page_directory, seL4_NilData);
     start_helper(env, &faulter, dest, 0, 0, 0 ,0);
 
@@ -201,7 +201,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
                              fault_ep, seL4_CapNull,
                              seL4_PrioProps_new(100, 100), get_helper_sched_context(&faulter),
                              env->cspace_root,
-                             seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                             api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                              env->page_directory, seL4_NilData,
                              faulter.thread.ipc_buffer_addr,
                              faulter.thread.ipc_buffer);
@@ -254,7 +254,7 @@ static int test_device_frame_ipcbuf(env_t env)
                                seL4_PrioProps_new(100, 100),
                                get_helper_sched_context(&other),
                                env->cspace_root,
-                               seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                               api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                                env->page_directory, seL4_NilData,
                                get_helper_ipc_buffer_addr(&other),
                                path.capPtr);
@@ -351,7 +351,7 @@ static int test_unmap_on_delete(env_t env)
     err = api_tcb_set_space(get_helper_tcb(&faulter),
                              fault_ep, seL4_CapNull,
                              env->cspace_root,
-                             seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                             api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                              env->page_directory, seL4_NilData);
     start_helper(env, &faulter, touch_data_fault, (seL4_Word)dest, 0, 0 ,0);
 

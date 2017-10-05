@@ -973,10 +973,9 @@ static int test_fault_handler_donated_sc(env_t env)
     test_eq(error, seL4_NoError);
 
     /* set fault handler */
-    seL4_CapData_t data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits);
-    seL4_CapData_t null = {{0}};
+    seL4_Word data = api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits);
     error = api_tcb_set_space(faulter.thread.tcb.cptr, endpoint, seL4_CapNull,
-                                env->cspace_root, data, env->page_directory, null);
+                                env->cspace_root, data, env->page_directory, seL4_NilData);
     test_eq(error, seL4_NoError);
 
     /* start the fault handler */

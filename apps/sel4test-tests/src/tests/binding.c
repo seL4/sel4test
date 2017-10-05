@@ -25,9 +25,8 @@ static seL4_CPtr
 badge_endpoint(env_t env, seL4_Word badge, seL4_CPtr ep)
 {
 
-    seL4_CapData_t cap_data = seL4_CapData_Badge_new(badge);
     seL4_CPtr slot = get_free_slot(env);
-    int error = cnode_mint(env, ep, slot, seL4_AllRights, cap_data);
+    int error = cnode_mint(env, ep, slot, seL4_AllRights, badge);
     test_assert(!error);
     return slot;
 }

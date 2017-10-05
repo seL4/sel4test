@@ -85,7 +85,7 @@ cnode_delete(env_t env, seL4_CPtr slot)
 }
 
 int
-cnode_mint(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights, seL4_CapData_t badge)
+cnode_mint(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights, seL4_Word badge)
 {
     cspacepath_t src_path, dest_path;
 
@@ -319,7 +319,7 @@ create_helper_thread(env_t env, helper_thread_t *thread)
 
     thread->is_process = false;
     thread->fault_endpoint = env->endpoint;
-    seL4_CapData_t data = seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits);
+    seL4_Word data = api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits);
     sel4utils_thread_config_t config = thread_config_default(&env->simple, env->cspace_root, data, env->endpoint, OUR_PRIO - 1);
 
     error = sel4utils_configure_thread_config(&env->vka, &env->vspace, &env->vspace,
@@ -541,16 +541,16 @@ set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep)
 {
     ZF_LOGF_IF(!config_set(CONFIG_KERNEL_RT), "Unsupported on non MCS kernel");
     int error;
-    seL4_CapData_t null = {{0}};
+    seL4_Word null = seL4_NilData;
     if (thread->is_process) {
         error = api_tcb_set_space(thread->thread.tcb.cptr,
                       thread->fault_endpoint, tfep, thread->process.cspace.cptr,
-                      seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                      api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                       thread->process.pd.cptr, null);
     } else {
         error = api_tcb_set_space(thread->thread.tcb.cptr, thread->fault_endpoint, tfep,
                                   env->cspace_root,
-                                  seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                                  api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                                   vspace_get_root(&env->vspace), null);
     }
     if (error != seL4_NoError) {

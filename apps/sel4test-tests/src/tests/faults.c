@@ -609,9 +609,7 @@ test_fault(env_t env, int fault_type, bool inter_as)
                 seL4_CPtr fault_ep = vka_alloc_endpoint_leaky(&env->vka);
                 if (badged) {
                     seL4_CPtr badged_fault_ep = get_free_slot(env);
-                    seL4_CapData_t cap_data;
-                    cap_data = seL4_CapData_Badge_new(EXPECTED_BADGE);
-                    cnode_mint(env, fault_ep, badged_fault_ep, seL4_AllRights, cap_data);
+                    cnode_mint(env, fault_ep, badged_fault_ep, seL4_AllRights, EXPECTED_BADGE);
 
                     fault_ep = badged_fault_ep;
                 }
@@ -659,7 +657,7 @@ test_fault(env_t env, int fault_type, bool inter_as)
                 error = api_tcb_set_space(get_helper_tcb(&faulter_thread),
                                            fault_ep, seL4_CapNull,
                                            faulter_cspace,
-                                           seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                                           api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                                            faulter_vspace, seL4_NilData);
                 test_assert(!error);
                 set_helper_priority(env, &faulter_thread, prio);
@@ -814,7 +812,7 @@ create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CPtr t
                                 seL4_Word arg2, seL4_Word arg3, sel4utils_checkpoint_t *cp)
 {
     seL4_CPtr minted_tfep = get_free_slot(env);
-    int error = cnode_mint(env, tfep, minted_tfep, seL4_AllRights, seL4_CapData_Badge_new(badge));
+    int error = cnode_mint(env, tfep, minted_tfep, seL4_AllRights, badge);
     test_eq(error, seL4_NoError);
 
     error = create_passive_thread(env, passive, fn, ep, arg1, arg2, arg3);

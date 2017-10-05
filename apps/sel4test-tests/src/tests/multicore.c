@@ -226,7 +226,7 @@ int smp_test_tlb(env_t env)
     error = api_tcb_set_space(get_helper_tcb(&faulter_thread),
                               fault_ep, seL4_CapNull,
                               env->cspace_root,
-                              seL4_CapData_Guard_new(0, seL4_WordBits - env->cspace_size_bits),
+                              api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                               env->page_directory, seL4_NilData);
     test_assert(!error);
 
