@@ -354,31 +354,31 @@ test_pagetable_tlbflush_on_vaddr_reuse(env_t env)
     /* supersection */
     cap1 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SuperSectionObject, 0);
     cap2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SuperSectionObject, 0);
-    if (do_test_pagetable_tlbflush_on_vaddr_reuse(env, cap1, cap2, vstart, SUPSECT_SIZE) == FAILURE) {
+    if (do_test_pagetable_tlbflush_on_vaddr_reuse(env, cap1, cap2, (uintptr_t)vstart, SUPSECT_SIZE) == FAILURE) {
         result = FAILURE;
     }
     /* section */
     cap1 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SectionObject, 0);
     cap2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SectionObject, 0);
-    if (do_test_pagetable_tlbflush_on_vaddr_reuse(env, cap1, cap2, vstart, SUPSECT_SIZE) == FAILURE) {
+    if (do_test_pagetable_tlbflush_on_vaddr_reuse(env, cap1, cap2, (uintptr_t)vstart, SUPSECT_SIZE) == FAILURE) {
         result = FAILURE;
     }
 
     /* map a PT for smaller page objects */
     error = seL4_ARM_PageTable_Map(pt, env->page_directory,
-                                   vstart, seL4_ARM_Default_VMAttributes);
+                                   (seL4_Word)vstart, seL4_ARM_Default_VMAttributes);
     test_assert(error == 0);
 
     /* Large page */
     cap1 = vka_alloc_object_leaky(&env->vka, seL4_ARM_LargePageObject, 0);
     cap2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_LargePageObject, 0);
-    if (do_test_pagetable_tlbflush_on_vaddr_reuse(env, cap1, cap2, vstart, LPAGE_SIZE) == FAILURE) {
+    if (do_test_pagetable_tlbflush_on_vaddr_reuse(env, cap1, cap2, (uintptr_t)vstart, LPAGE_SIZE) == FAILURE) {
         result = FAILURE;
     }
     /* small page */
     cap1 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
     cap2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
-    if (do_test_pagetable_tlbflush_on_vaddr_reuse(env, cap1, cap2, vstart, PAGE_SIZE_4K) == FAILURE) {
+    if (do_test_pagetable_tlbflush_on_vaddr_reuse(env, cap1, cap2, (uintptr_t)vstart, PAGE_SIZE_4K) == FAILURE) {
         result = FAILURE;
     }
 
