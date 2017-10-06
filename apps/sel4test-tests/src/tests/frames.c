@@ -26,16 +26,17 @@
 
 void touch_data(void *vaddr, char old_data, char new_data, size_t size_bits) {
     char *data = (char*)vaddr;
-    /* we walk backwards testing each byte of the frame to ensure a couple of things
+    /* we test a sample of the bytes in the frame to ensure a couple of things
      1. a frame of the correct size is mapped in
      2. for larger frames that no part of the large frame shares a region with another part.
         this could happen with ARM large pages and super sections as they are comprised of
         16 entries in a paging structure, and not just a single entry in a higher level structure
      */
-    for (size_t i = BIT(size_bits) - 1; i > 1; i--) {
-        test_eq(data[i], old_data);
-        data[i] = new_data;
-        test_eq(data[i], new_data);
+    for (size_t i = 0; i < 16; i++) {
+        size_t offset = BIT(size_bits) / 16 * i;
+        test_eq(data[offset], old_data);
+        data[offset] = new_data;
+        test_eq(data[offset], new_data);
     }
 }
 
