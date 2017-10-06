@@ -12,8 +12,14 @@
 
 cmake_minimum_required(VERSION 3.7.2)
 
+include(${KERNEL_HELPERS_PATH})
+
 add_subdirectory(apps/sel4test-tests)
 add_subdirectory(apps/sel4test-driver)
 add_subdirectory(libsel4testsupport)
+
+# Set our custom domain schedule
+RequireFile(SEL4TEST_DOMAIN_SCHEDULE domain_schedule.c CMAKE_FIND_ROOT_PATH_BOTH)
+set(KernelDomainSchedule "${SEL4TEST_DOMAIN_SCHEDULE}" CACHE INTERNAL "")
 
 GenerateSimulateScript()
