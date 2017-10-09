@@ -10,6 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 
+#include <autoconf.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
