@@ -38,7 +38,14 @@ enum {
  PROCESS
 };
 
+/* Use a different test virtual address on 32 and 64-bit systems so that we can exercise
+   the full address space to make sure fault messages are not truncating fault information. */
+#if CONFIG_WORD_SIZE == 32
 #define BAD_VADDR 0xf123456C
+#elif CONFIG_WORD_SIZE == 64
+/* virtual address we test is in the valid 48-bit portion of the virtual address space */
+#define BAD_VADDR 0x7EDCBA987650
+#endif
 #define GOOD_MAGIC 0x15831851
 #define BAD_MAGIC ~GOOD_MAGIC
 #define BAD_SYSCALL_NUMBER 0xc1
