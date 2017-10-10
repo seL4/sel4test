@@ -402,7 +402,9 @@ wait_for_timer_interrupt(env_t env)
 {
     seL4_Word sender_badge;
     seL4_Wait(env->timer_notification.cptr, &sender_badge);
+    sync_mutex_lock(&env->timer_mutex);
     sel4platsupport_handle_timer_irq(&env->timer, sender_badge);
+    sync_mutex_unlock(&env->timer_mutex);
 }
 
 void
@@ -412,6 +414,8 @@ sleep(env_t env, uint64_t ns)
     uint64_t end;
     uint64_t next;
 
+    /* grab the timer lock */
+    sync_mutex_lock(&env->timer_mutex);
 
     UNUSED int error = ltimer_get_time(&env->timer.ltimer, &current);
     ZF_LOGF_IF(error, "failed to get time");
@@ -428,13 +432,17 @@ sleep(env_t env, uint64_t ns)
         }
         current = next;
     }
+    /* release the timer lock */
+    sync_mutex_unlock(&env->timer_mutex);
 }
 
 uint64_t
 timestamp(env_t env)
 {
     uint64_t time = 0;
+    sync_mutex_lock(&env->timer_mutex);
     UNUSED int error = ltimer_get_time(&env->timer.ltimer, &time);
+    sync_mutex_unlock(&env->timer_mutex);
     ZF_LOGF_IF(error, "failed to get time");
     return time;
 }

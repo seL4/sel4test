@@ -218,6 +218,7 @@ void init_timer(env_t env, test_init_data_t *init_data)
     env->simple.cnode_size = cnode_size_bits;
     env->simple.sched_ctrl = sched_ctrl;
     env->simple.core_count = core_count;
+    sync_mutex_new(&env->vka, &env->timer_mutex);
 
     arch_init_simple(&env->simple);
 

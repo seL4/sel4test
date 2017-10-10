@@ -23,6 +23,7 @@
 
 #include "test.h"
 #include <sel4testsupport/testreporter.h>
+#include <sync/mutex.h>
 
 #define OUR_PRIO (env->priority)
 /* args provided by the user */
@@ -39,6 +40,9 @@ struct env {
     vspace_t vspace;
     /* initialised timer */
     seL4_timer_t timer;
+    /* lock for controlling access the timer. Necessary if we create a thread for
+     * handling interrupts */
+    sync_mutex_t timer_mutex;
     /* abstract interface over application init */
     simple_t simple;
     /* notification for timer */
