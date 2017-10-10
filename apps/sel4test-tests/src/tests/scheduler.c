@@ -1174,16 +1174,14 @@ test_ordering_periodic_threads(env_t env)
 DEFINE_TEST(SCHED0014, "Test periodic thread ordering", test_ordering_periodic_threads, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER))
 
 static void
-sched0015_helper(int id, ltimer_t *timer, volatile unsigned long long *counters)
+sched0015_helper(int id, env_t env, volatile unsigned long long *counters)
 {
     counters[id] = 0;
 
     uint64_t prev = 0;
-    int error = ltimer_get_time(timer, &prev);
-    test_eq(error, 0);
+    prev = timestamp(env);
     while (1) {
-        uint64_t now = 0;
-        error = ltimer_get_time(timer, &now);
+        uint64_t now = timestamp(env);
         uint64_t diff = now - prev;
         if (diff < 10 * NS_IN_US) {
             counters[id]++;
@@ -1220,9 +1218,9 @@ test_budget_overrun(env_t env)
     set_helper_sched_params(env, &fifty, 0.1 * US_IN_S, 0.2 * US_IN_S, 0);
     set_helper_sched_params(env, &thirty, 0.1 * US_IN_S, 0.3 * US_IN_S, 0);
 
-    start_helper(env, &fifty,  (helper_fn_t) sched0015_helper, 1, (seL4_Word) &env->timer.ltimer,
+    start_helper(env, &fifty,  (helper_fn_t) sched0015_helper, 1, (seL4_Word)env,
                  (seL4_Word) counters, 0);
-    start_helper(env, &thirty, (helper_fn_t) sched0015_helper, 0, (seL4_Word) &env->timer.ltimer,
+    start_helper(env, &thirty, (helper_fn_t) sched0015_helper, 0, (seL4_Word)env,
                   (seL4_Word) counters, 0);
 
     uint64_t ticks = 0;
