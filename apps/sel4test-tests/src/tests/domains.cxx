@@ -101,7 +101,7 @@ test_domains(struct env *env, F func)
     }
 
     if (CONFIG_NUM_DOMAINS > 1 && shift) {
-        wait(env, POLL_DELAY_NS * 2);
+        sleep(env, POLL_DELAY_NS * 2);
         error = seL4_DomainSet_Set(env->domain, CONFIG_NUM_DOMAINS - 1, get_helper_tcb(&thread[0]));
         assert(error == seL4_NoError);
     }

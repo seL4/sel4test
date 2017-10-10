@@ -177,8 +177,6 @@ seL4_Word get_free_slot(env_t env);
 
 /* timer */
 void wait_for_timer_interrupt(env_t env);
-/* set a timeout for ns, wait for it */
-void wait(env_t env, uint64_t ns);
 /* sleep for an exact time: check the time when the timeout comes in and set the timeout for further if needed */
 void sleep(env_t env, uint64_t ns);
 uint64_t timestamp(env_t env);

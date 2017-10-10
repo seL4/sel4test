@@ -406,13 +406,6 @@ wait_for_timer_interrupt(env_t env)
 }
 
 void
-wait(env_t env, uint64_t ns)
-{
-    ltimer_set_timeout(&env->timer.ltimer, ns, TIMEOUT_RELATIVE);
-    wait_for_timer_interrupt(env);
-}
-
-void
 sleep(env_t env, uint64_t ns)
 {
     uint64_t start = 0;
