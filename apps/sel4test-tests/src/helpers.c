@@ -439,6 +439,23 @@ timestamp(env_t env)
     return time;
 }
 
+void sleep_busy(env_t env, uint64_t ns) {
+    uint64_t start = timestamp(env);
+    uint64_t now = timestamp(env);
+    int same = 0;
+    while (now < start + ns) {
+        if (now == start) {
+            same++;
+            if (same == 10000) {
+                ZF_LOGE("Timer hasn't moved in 10000 iterations, are you handling interrupts?");
+            }
+        } else {
+            same = 0;
+        }
+        now = timestamp(env);
+    }
+}
+
 int
 set_helper_sched_params(UNUSED env_t env, UNUSED helper_thread_t *thread, UNUSED uint64_t budget,
         UNUSED uint64_t period, UNUSED seL4_Word badge)
