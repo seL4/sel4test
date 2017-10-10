@@ -408,33 +408,26 @@ wait_for_timer_interrupt(env_t env)
 void
 sleep(env_t env, uint64_t ns)
 {
-    uint64_t start = 0;
-    uint64_t end = 0;
-    uint64_t new_end = 0;
+    uint64_t current;
+    uint64_t end;
+    uint64_t next;
 
-    UNUSED int error = ltimer_get_time(&env->timer.ltimer, &start);
-    end = start;
-    do {
-        int error = ltimer_set_timeout(&env->timer.ltimer, ns - (end - start), TIMEOUT_RELATIVE);
-        ZF_LOGF_IF(error, "failed to get time");
 
+    UNUSED int error = ltimer_get_time(&env->timer.ltimer, &current);
+    ZF_LOGF_IF(error, "failed to get time");
+    end = current + ns;
+    while (current < end) {
+        int error = ltimer_set_timeout(&env->timer.ltimer, end, TIMEOUT_ABSOLUTE);
+        ZF_LOGF_IF(error, "failed to set timeout");
         ZF_LOGV("Waiting for timer irq");
         wait_for_timer_interrupt(env);
-        error = ltimer_get_time(&env->timer.ltimer, &new_end);
+        error = ltimer_get_time(&env->timer.ltimer, &next);
         ZF_LOGF_IF(error, "failed to get time");
-
-        if (end == new_end) {
-            ZF_LOGE("Time doesn't appear to be changing");
+        if (next == current) {
+            ZF_LOGE("Looks like time is not progressing %"PRIu64" -> %"PRIu64" since last interrupt", current, next);
         }
-        end = new_end;
-
-
-        ZF_LOGV("Got it");
-        if (end - start < ns) {
-            ZF_LOGE("Wanted to wait: %"PRIu64", actually %"PRIu64"\n", ns, end - start);
-        }
-
-    } while (end - start < ns);
+        current = next;
+    }
 }
 
 uint64_t
