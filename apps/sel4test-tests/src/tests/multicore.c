@@ -87,13 +87,6 @@ int smp_test_tcb_resume(env_t env)
 }
 DEFINE_TEST(MULTICORE0001, "Test suspending and resuming a thread on different core", smp_test_tcb_resume, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_MAX_NUM_NODES) && CONFIG_MAX_NUM_NODES > 1)
 
-static void
-spin(env_t env, uint64_t ns)
-{
-    uint64_t start = timestamp(env);
-    while(timestamp(env) - start < ns);
-}
-
 int smp_test_tcb_move(env_t env)
 {
     helper_thread_t t1;
@@ -109,7 +102,7 @@ int smp_test_tcb_move(env_t env)
     old_counter = counter;
 
     /* Let it run on the current core. */
-    spin(env, 10 * NS_IN_MS);
+    sleep_busy(env, 10 * NS_IN_MS);
 
     /* Now, counter should not have moved. */
     test_check(counter == old_counter);
@@ -120,7 +113,7 @@ int smp_test_tcb_move(env_t env)
         old_counter = counter;
 
         /* Check if the thread is running. */
-        spin(env, 10 * NS_IN_MS);
+        sleep_busy(env, 10 * NS_IN_MS);
 
         /* Counter should have moved. */
         test_check(counter != old_counter);
@@ -148,7 +141,7 @@ int smp_test_tcb_delete(env_t env)
     old_counter = counter;
 
     /* Let it run on the current core. */
-    spin(env, 10 * NS_IN_MS);
+    sleep_busy(env, 10 * NS_IN_MS);
 
     /* Now, counter should not have moved. */
     test_check(counter == old_counter);
@@ -158,7 +151,7 @@ int smp_test_tcb_delete(env_t env)
     old_counter = counter;
 
     /* Check if the thread is running. */
-    spin(env, 10 * NS_IN_MS);
+    sleep_busy(env, 10 * NS_IN_MS);
 
     /* Counter should have moved. */
     test_check(counter != old_counter);
@@ -169,7 +162,7 @@ int smp_test_tcb_delete(env_t env)
     old_counter = counter;
 
     /* Check if the thread is running. */
-    spin(env, 10 * NS_IN_MS);
+    sleep_busy(env, 10 * NS_IN_MS);
 
     /* Now, counter should not have moved. */
     test_check(counter == old_counter);

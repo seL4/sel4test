@@ -783,21 +783,14 @@ test_timeout_fault(env_t env)
 DEFINE_TEST(TIMEOUTFAULT0001, "Test timeout fault", test_timeout_fault, config_set(CONFIG_KERNEL_RT))
 
 void
-timeout_fault_server_fn(seL4_CPtr ep, ltimer_t *timer, seL4_CPtr ro)
+timeout_fault_server_fn(seL4_CPtr ep, env_t env, seL4_CPtr ro)
 {
     /* signal to initialiser that we are done, and wait for a message from
      * the client */
     ZF_LOGD("Server signal recv");
     api_nbsend_recv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL, ro);
-    uint64_t start, end;
-    int error = ltimer_get_time(timer, &start);
-    test_eq(error, 0);
-    end = start;
     /* spin, this will use up all of the clients budget */
-    while (end - start < (NS_IN_S / 2)) {
-        error = ltimer_get_time(timer, &end);
-        test_eq(error, 0);
-    }
+    sleep_busy(env, NS_IN_S / 2);
     /* we should not get here, as a timeout fault should have been raised
      * and the handler will reset us */
     ZF_LOGF("Should not get here");
@@ -889,7 +882,7 @@ test_timeout_fault_in_server(env_t env)
     /* create the server */
     int error = create_passive_thread_with_tfep(env, &server, tfep, server_badge,
                                             (helper_fn_t) timeout_fault_server_fn, ep,
-                                            (seL4_Word) &env->timer.ltimer, ro, 0, &cp);
+                                            (seL4_Word)env, ro, 0, &cp);
     test_eq(error, 0);
 
     /* create the client */
@@ -941,7 +934,7 @@ test_timeout_fault_nested_servers(env_t env)
     /* create server */
     int error = create_passive_thread_with_tfep(env, &server, tfep, server_badge,
                                             (helper_fn_t) timeout_fault_server_fn, proxy_server_ep,
-                                            (seL4_Word) &env->timer.ltimer, server_ro, 0, &server_cp);
+                                            (seL4_Word)env, server_ro, 0, &server_cp);
     test_eq(error, 0);
 
     /* create proxy */

@@ -59,19 +59,12 @@ own_domain_badcap(struct env *env)
     return (error == seL4_IllegalOperation) ? SUCCESS : FAILURE;
 }
 
-/* wait by spinning on the time. we need this as multiple threads
- * cannot wait for a single timer irq (or program the timer) */
-static void busy_wait(env_t env, uint64_t ns) {
-    uint64_t now = timestamp(env);
-    while (timestamp(env) < now + ns);
-}
-
 int fdom1(seL4_Word id, env_t env)
 {
     int countdown = 50;
 
     while (countdown > 0) {
-        busy_wait(env, POLL_DELAY_NS);
+        sleep_busy(env, POLL_DELAY_NS);
         --countdown;
         ZF_LOGD("%2d, ", (int)id);
     }
