@@ -871,6 +871,7 @@ static int
 test_timeout_fault_in_server(env_t env)
 {
     helper_thread_t client, server;
+    helper_thread_t timer_thread;
     seL4_Word client_data = 1;
     seL4_Word server_badge = 2;
     sel4utils_checkpoint_t cp;
@@ -878,6 +879,8 @@ test_timeout_fault_in_server(env_t env)
     seL4_CPtr tfep = vka_alloc_endpoint_leaky(&env->vka);
     seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
     seL4_CPtr ro = vka_alloc_reply_leaky(&env->vka);
+
+    create_timer_interrupt_thread(env, &timer_thread);
 
     /* create the server */
     int error = create_passive_thread_with_tfep(env, &server, tfep, server_badge,
@@ -918,7 +921,7 @@ timeout_fault_proxy_fn(seL4_CPtr in, seL4_CPtr out, seL4_CPtr ro)
 static int
 test_timeout_fault_nested_servers(env_t env)
 {
-    helper_thread_t client, server, proxy;
+    helper_thread_t client, server, proxy, timer_interrupt;
     sel4utils_checkpoint_t proxy_cp, server_cp;
 
     seL4_Word client_data = 1;
@@ -930,6 +933,8 @@ test_timeout_fault_nested_servers(env_t env)
     seL4_CPtr tfep = vka_alloc_endpoint_leaky(&env->vka);
     seL4_CPtr proxy_ro = vka_alloc_reply_leaky(&env->vka);
     seL4_CPtr server_ro = vka_alloc_reply_leaky(&env->vka);
+
+    create_timer_interrupt_thread(env, &timer_interrupt);
 
     /* create server */
     int error = create_passive_thread_with_tfep(env, &server, tfep, server_badge,

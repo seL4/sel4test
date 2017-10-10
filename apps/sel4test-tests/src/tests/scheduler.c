@@ -1021,9 +1021,10 @@ test_scheduler_accuracy(env_t env)
      * Start a thread with a 1s timeslice at our priority, and make sure it
      * runs for that long
      */
-    helper_thread_t helper;
+    helper_thread_t helper, timer_interrupt;
 
     create_helper_thread(env, &helper);
+    create_timer_interrupt_thread(env, &timer_interrupt);
     uint64_t period = 100 * US_IN_MS;
     set_helper_sched_params(env, &helper, period, period, 0);
     start_helper(env, &helper, (helper_fn_t) sched0011_helper, 0, 0, 0, 0);
@@ -1203,6 +1204,7 @@ test_budget_overrun(env_t env)
      */
     volatile unsigned long long counters[2];
     helper_thread_t thirty, fifty;
+    helper_thread_t timer_interrupt;
     int error;
 
     /* set priority down so we can run the helper(s) at a higher prio */
@@ -1217,6 +1219,8 @@ test_budget_overrun(env_t env)
 
     set_helper_sched_params(env, &fifty, 0.1 * US_IN_S, 0.2 * US_IN_S, 0);
     set_helper_sched_params(env, &thirty, 0.1 * US_IN_S, 0.3 * US_IN_S, 0);
+
+    create_timer_interrupt_thread(env, &timer_interrupt);
 
     start_helper(env, &fifty,  (helper_fn_t) sched0015_helper, 1, (seL4_Word)env,
                  (seL4_Word) counters, 0);

@@ -89,10 +89,12 @@ DEFINE_TEST(MULTICORE0001, "Test suspending and resuming a thread on different c
 
 int smp_test_tcb_move(env_t env)
 {
-    helper_thread_t t1;
+    helper_thread_t t1, timer_interrupt;
     volatile seL4_Word counter;
     ZF_LOGD("smp_test_tcb_move\n");
     create_helper_thread(env, &t1);
+
+    create_timer_interrupt_thread(env, &timer_interrupt);
 
     set_helper_priority(env, &t1, 100);
     start_helper(env, &t1, (helper_fn_t) counter_func, (seL4_Word) &counter, 0, 0, 0);
@@ -128,10 +130,12 @@ DEFINE_TEST(MULTICORE0002, "Test thread is runnable on all available cores (0 + 
 
 int smp_test_tcb_delete(env_t env)
 {
-    helper_thread_t t1;
+    helper_thread_t t1, timer_interrupt;
     volatile seL4_Word counter;
     ZF_LOGD("smp_test_tcb_delete\n");
     create_helper_thread(env, &t1);
+
+    create_timer_interrupt_thread(env, &timer_interrupt);
 
     set_helper_priority(env, &t1, 100);
     start_helper(env, &t1, (helper_fn_t) counter_func, (seL4_Word) &counter, 0, 0, 0);

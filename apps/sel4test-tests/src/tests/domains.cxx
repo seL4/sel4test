@@ -81,6 +81,8 @@ test_domains(struct env *env, F func)
 
     UNUSED int error;
     helper_thread_t thread[CONFIG_NUM_DOMAINS];
+    helper_thread_t timer_thread;
+    create_timer_interrupt_thread(env, &timer_thread);
 
     for (int i = 0; i < CONFIG_NUM_DOMAINS; ++i) {
         create_helper_thread(env, &thread[i]);
