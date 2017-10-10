@@ -464,6 +464,24 @@ void sleep_busy(env_t env, uint64_t ns) {
     }
 }
 
+static int
+timer_interrupt_loop(seL4_Word arg0, seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
+{
+    env_t env = (env_t)arg0;
+    while (1) {
+        wait_for_timer_interrupt(env);
+    }
+}
+
+int
+create_timer_interrupt_thread(env_t env, helper_thread_t *thread)
+{
+    assert(thread);
+    create_helper_thread(env, thread);
+    start_helper(env, thread, timer_interrupt_loop, (seL4_Word)env, 0, 0, 0);
+    return 0;
+}
+
 int
 set_helper_sched_params(UNUSED env_t env, UNUSED helper_thread_t *thread, UNUSED uint64_t budget,
         UNUSED uint64_t period, UNUSED seL4_Word badge)

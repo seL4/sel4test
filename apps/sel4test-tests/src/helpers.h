@@ -181,11 +181,18 @@ seL4_Word get_free_slot(env_t env);
 
 /* timer */
 void wait_for_timer_interrupt(env_t env);
-/* sleep for an exact time: check the time when the timeout comes in and set the timeout for further if needed */
+/* sleep for an exact time: check the time when the timeout comes in and set the timeout for further if needed.
+ * Due to race conditions on waiting for interrupts sleep may *not* be used if you have started
+ * created_timer_interrupt_thread. As it uses a single underlying timer and callback this cannot be used
+ * by more than one thread */
 void sleep(env_t env, uint64_t ns);
 /* busy wait for a period of time. This assumes that you have some thread (such as create_timer_interrupt_thread)
  * handling the timer interrupts. This can be used instead of sleep in circumstances where you want multiple
  * threads performing waits */
 void sleep_busy(env_t env, uint64_t ns);
+/* helper for retrieving the timestamp from the timer. you must either be handling timer interrupts yourself
+ * or have started create_timer_interrupt_thread */\
 uint64_t timestamp(env_t env);
 
+/* helper for creating a thread to handle timer interrupts */
+int create_timer_interrupt_thread(env_t env, helper_thread_t *thread);
