@@ -17,10 +17,6 @@
 #include <sel4test/test.h>
 #include <sel4utils/elf.h>
 
-/* Increase if the sel4test-tests binary
- * has new loadable sections added */
-#define MAX_REGIONS 4
-
 /* Init data shared between sel4test-driver and the sel4test-tests app -- the
  * sel4test-driver creates a shmem page to be shared between the driver and the
  * test child processes, and uses this struct to pass the data in the shmem

@@ -33,45 +33,6 @@
 /* total args (user + meta) */
 #define HELPER_THREAD_TOTAL_ARGS (HELPER_THREAD_MAX_ARGS + HELPER_THREAD_META)
 
-struct env {
-    /* An initialised vka that may be used by the test. */
-    vka_t vka;
-    /* virtual memory management interface */
-    vspace_t vspace;
-    /* initialised timer */
-    seL4_timer_t timer;
-    /* lock for controlling access the timer. Necessary if we create a thread for
-     * handling interrupts */
-    sync_mutex_t timer_mutex;
-    /* abstract interface over application init */
-    simple_t simple;
-    /* notification for timer */
-    vka_object_t timer_notification;
-
-    /* caps for the current process */
-    seL4_CPtr cspace_root;
-    seL4_CPtr page_directory;
-    seL4_CPtr endpoint;
-    seL4_CPtr tcb;
-    seL4_CPtr timer_untyped;
-    seL4_CPtr asid_pool;
-    seL4_CPtr asid_ctrl;
-    seL4_CPtr sched_ctrl;
-#ifdef CONFIG_IOMMU
-    seL4_CPtr io_space;
-#endif /* CONFIG_IOMMU */
-#ifdef CONFIG_ARM_SMMU
-    seL4_SlotRegion io_space_caps;
-#endif
-    seL4_Word cores;
-    seL4_CPtr domain;
-
-    int priority;
-    int cspace_size_bits;
-    int num_regions;
-    sel4utils_elf_region_t regions[MAX_REGIONS];
-};
-
 #include <sel4test/test.h>
 
 typedef int (*helper_fn_t)(seL4_Word, seL4_Word, seL4_Word, seL4_Word);
