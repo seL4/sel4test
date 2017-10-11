@@ -424,7 +424,11 @@ sleep(env_t env, uint64_t ns)
         int error = ltimer_set_timeout(&env->timer.ltimer, end, TIMEOUT_ABSOLUTE);
         ZF_LOGF_IF(error, "failed to set timeout");
         ZF_LOGV("Waiting for timer irq");
+        /* release the lock whilst we wait for the interrupt */
+        sync_mutex_unlock(&env->timer_mutex);
         wait_for_timer_interrupt(env);
+        /* reacquire the lock */
+        sync_mutex_lock(&env->timer_mutex);
         error = ltimer_get_time(&env->timer.ltimer, &next);
         ZF_LOGF_IF(error, "failed to get time");
         if (next == current) {
