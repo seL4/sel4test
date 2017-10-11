@@ -26,21 +26,25 @@ arch_copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_proces
                "Failed to copy PS default serial Frame cap to sel4test-test process");
 }
 
-extern driver_env_t env;
+/* global used for storing the environment as we are going to be overriding one function
+ * of a vka interface, but we do not bother to create an entire interface wrapper with
+ * a new 'data' cookie */
+static driver_env_t alloc_at_env;
 int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,
                                uintptr_t paddr, seL4_Word *cookie)
 {
-    if (paddr == env->serial_objects.arch_serial_objects.serial_frame_paddr) {
+    ZF_LOGF_IF(!alloc_at_env, "%s called before arch_get_serial_utspace_alloc_at", __FUNCTION__);
+    if (paddr == alloc_at_env->serial_objects.arch_serial_objects.serial_frame_paddr) {
         cspacepath_t tmp_frame_path;
 
-        vka_cspace_make_path(&env->vka,
-                             env->serial_objects.arch_serial_objects.serial_frame_obj.cptr,
+        vka_cspace_make_path(&alloc_at_env->vka,
+                             alloc_at_env->serial_objects.arch_serial_objects.serial_frame_obj.cptr,
                              &tmp_frame_path);
         return vka_cnode_copy(dest, &tmp_frame_path, seL4_AllRights);
     }
 
-    assert(env->vka.utspace_alloc_at);
-    return env->vka.utspace_alloc_at(data, dest, type, size_bits, paddr, cookie);
+    assert(alloc_at_env->vka.utspace_alloc_at);
+    return alloc_at_env->vka.utspace_alloc_at(data, dest, type, size_bits, paddr, cookie);
 }
 
 vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(driver_env_t _env)
@@ -50,7 +54,7 @@ vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(driver_env_t _env)
         ZF_LOGF("This function can only be called once.");
     }
     call_once = true;
-    env = _env;
+    alloc_at_env = _env;
     return serial_utspace_alloc_at_fn;
 }
 
