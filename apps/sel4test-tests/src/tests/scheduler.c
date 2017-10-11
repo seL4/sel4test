@@ -653,7 +653,7 @@ test_ipc_prios(struct env* env)
     return sel4test_get_result();
 }
 /* this test does not work on the RT kernel as it relies on FIFO IPC */
-DEFINE_TEST(SCHED0006, "Test IPC priorities for Send", test_ipc_prios, !config_set(CONFIG_RT_KERNEL))
+DEFINE_TEST(SCHED0006, "Test IPC priorities for Send", test_ipc_prios, !config_set(CONFIG_KERNEL_RT))
 
 #define SCHED0007_NUM_CLIENTS 5
 #define SCHED0007_PRIO(x) ((seL4_Word)(seL4_MaxPrio - 1 - SCHED0007_NUM_CLIENTS + (x)))
