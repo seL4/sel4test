@@ -15,7 +15,7 @@
 #include <sel4platsupport/bootinfo.h>
 
 void
-plat_init(env_t env)
+plat_init(driver_env_t env)
 {
     env->init->tsc_freq = platsupport_get_bootinfo()->archInfo;
 }

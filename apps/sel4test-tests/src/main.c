@@ -282,7 +282,7 @@ main(int argc, char **argv)
     test_result_t result = SUCCESS;
     if (test) {
         printf("Running test %s (%s)\n", test->name, test->description);
-        result = test->function(&env);
+        result = test->function((uintptr_t)&env);
     } else {
         result = FAILURE;
         ZF_LOGF("Cannot find test %s\n", init_data->name);

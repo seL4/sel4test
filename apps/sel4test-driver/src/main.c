@@ -62,7 +62,7 @@ static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 static sel4utils_alloc_data_t data;
 
 /* environment encapsulating allocation interfaces etc */
-static struct env env;
+struct driver_env env;
 /* list of untypeds to give out to test processes */
 static vka_object_t untypeds[CONFIG_MAX_NUM_BOOTINFO_UNTYPED_CAPS];
 /* list of sizes (in bits) corresponding to untyped */
@@ -70,7 +70,7 @@ static uint8_t untyped_size_bits_list[CONFIG_MAX_NUM_BOOTINFO_UNTYPED_CAPS];
 
 /* initialise our runtime environment */
 static void
-init_env(env_t env)
+init_env(driver_env_t env)
 {
     allocman_t *allocman;
     reservation_t virtual_reservation;
@@ -264,7 +264,7 @@ static int collate_tests(testcase_t *tests_in, int n, testcase_t *tests_out[], i
     return out_index;
 }
 
-void sel4test_run_tests(struct env* e)
+void sel4test_run_tests(struct driver_env* e)
 {
     /* Iterate through test types. */
     int max_test_types = (int) (__stop__test_type - __start__test_type);
@@ -327,20 +327,20 @@ void sel4test_run_tests(struct env* e)
     for (int tt = 0; tt < num_test_types; tt++) {
         /* set up */
         if (test_types[tt]->set_up_test_type != NULL) {
-            test_types[tt]->set_up_test_type(e);
+            test_types[tt]->set_up_test_type((uintptr_t)e);
         }
 
         for (int i = 0; i < num_tests; i++) {
             if (tests[i]->test_type == test_types[tt]->id) {
                 sel4test_start_test(tests[i]->name, tests_done);
                 if (test_types[tt]->set_up != NULL) {
-                    test_types[tt]->set_up(e);
+                    test_types[tt]->set_up((uintptr_t)e);
                 }
 
-                test_result_t result = test_types[tt]->run_test(tests[i], e);
+                test_result_t result = test_types[tt]->run_test(tests[i], (uintptr_t)e);
 
                 if (test_types[tt]->tear_down != NULL) {
-                    test_types[tt]->tear_down(e);
+                    test_types[tt]->tear_down((uintptr_t)e);
                 }
                 sel4test_end_test(result);
 
@@ -357,7 +357,7 @@ void sel4test_run_tests(struct env* e)
 
         /* tear down */
         if (test_types[tt]->tear_down_test_type != NULL) {
-            test_types[tt]->tear_down_test_type(e);
+            test_types[tt]->tear_down_test_type((uintptr_t)e);
         }
     }
 

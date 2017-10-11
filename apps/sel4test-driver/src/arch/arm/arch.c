@@ -18,7 +18,7 @@
 #include <sel4utils/process.h>
 
 void
-arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
+arch_copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process)
 {
     init->serial_paddr = env->serial_objects.arch_serial_objects.serial_frame_paddr;
     init->serial_frame_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, env->serial_objects.arch_serial_objects.serial_frame_obj.cptr);
@@ -26,7 +26,7 @@ arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *te
                "Failed to copy PS default serial Frame cap to sel4test-test process");
 }
 
-env_t env;
+extern driver_env_t env;
 int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,
                                uintptr_t paddr, seL4_Word *cookie)
 {
@@ -43,7 +43,7 @@ int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word t
     return env->vka.utspace_alloc_at(data, dest, type, size_bits, paddr, cookie);
 }
 
-vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(env_t _env)
+vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(driver_env_t _env)
 {
     static bool call_once = false;
     if (call_once) {
@@ -56,7 +56,7 @@ vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(env_t _env)
 
 #ifdef CONFIG_ARM_SMMU
 seL4_SlotRegion
-arch_copy_iospace_caps_to_process(sel4utils_process_t *process, env_t env)
+arch_copy_iospace_caps_to_process(sel4utils_process_t *process, driver_env_t env)
 {
     seL4_SlotRegion ret = {0, 0};
     int num_iospace_caps = 0;

@@ -185,7 +185,7 @@
 
 /* Generate a stub that tests the code "_code" with TEST_REGISTERS. */
 #define GENERATE_SYSCALL_TEST_MAYBE(_test, _syscall, _code, _enabled) \
-    static int test_ ## _syscall(env_t env) { \
+    static int test_ ## _syscall(driver_env_t env) { \
         for (int i = 0; i < 10; i++) \
             TEST_REGISTERS(_code); \
         return sel4test_get_result(); \
@@ -217,7 +217,7 @@ GENERATE_SYSCALL_TEST(SYSCALL0005, seL4_Call,
                       seL4_Call(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0)))
 
 static int
-test_debug_put_char(env_t env)
+test_debug_put_char(driver_env_t env)
 {
     for (int i = 0; i < 10; i++) {
 #ifdef CONFIG_PRINTING
@@ -231,7 +231,7 @@ DEFINE_TEST_BOOTSTRAP(SYSCALL0006, "Basic seL4_DebugPutChar() testing", test_deb
 /* Slightly more complex tests for waiting, because we actually have
  * to wait on something real. */
 static int
-test_recv(env_t env)
+test_recv(driver_env_t env)
 {
     /* Allocate an notification. */
     seL4_CPtr notification;
@@ -250,7 +250,7 @@ test_recv(env_t env)
 DEFINE_TEST_BOOTSTRAP(SYSCALL0010, "Basic seL4_Recv() testing", test_recv, true)
 
 static int
-test_reply_recv(env_t env)
+test_reply_recv(driver_env_t env)
 {
     /* Allocate an notification. */
     seL4_CPtr notification;
@@ -269,7 +269,7 @@ test_reply_recv(env_t env)
 DEFINE_TEST_BOOTSTRAP(SYSCALL0011, "Basic seL4_ReplyRecv() testing", test_reply_recv, true)
 
 static int
-test_nb_recv(env_t env)
+test_nb_recv(driver_env_t env)
 {
     /* Allocate an notification. */
     seL4_CPtr notification;
@@ -288,7 +288,7 @@ test_nb_recv(env_t env)
 DEFINE_TEST_BOOTSTRAP(SYSCALL0012, "Basic seL4_NBRecv() testing", test_nb_recv, true)
 
 static int
-test_wait(env_t env)
+test_wait(driver_env_t env)
 {
     /* Allocate an notification. */
     seL4_CPtr notification;
@@ -323,7 +323,7 @@ GENERATE_SYSCALL_TEST(SYSCALL0017, seL4_CallWithMRs,
 
 #ifdef CONFIG_KERNEL_RT
 static int
-test_nbsend_recv(env_t env)
+test_nbsend_recv(driver_env_t env)
 {
     seL4_CPtr ntfn = vka_alloc_notification_leaky(&env->vka);
 

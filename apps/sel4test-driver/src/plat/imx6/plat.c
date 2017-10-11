@@ -16,7 +16,7 @@
 #include <utils/zf_log.h>
 
 void
-plat_init(env_t env)
+plat_init(driver_env_t env)
 {
     int error;
     ps_io_ops_t io_ops = {};

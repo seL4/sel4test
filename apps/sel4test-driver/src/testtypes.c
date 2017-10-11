@@ -20,23 +20,23 @@
 #include <sel4testsupport/testreporter.h>
 
 /* Bootstrap test type. */
-static inline void bootstrap_set_up_test_type(env_t e)
+static inline void bootstrap_set_up_test_type(uintptr_t e)
 {
     ZF_LOGD("setting up bootstrap test type\n");
 }
-static inline void bootstrap_tear_down_test_type(env_t e)
+static inline void bootstrap_tear_down_test_type(uintptr_t e)
 {
     ZF_LOGD("tearing down bootstrap test type\n");
 }
-static inline void bootstrap_set_up(env_t e)
+static inline void bootstrap_set_up(uintptr_t e)
 {
     ZF_LOGD("set up bootstrap test\n");
 }
-static inline void bootstrap_tear_down(env_t e)
+static inline void bootstrap_tear_down(uintptr_t e)
 {
     ZF_LOGD("tear down bootstrap test\n");
 }
-static inline test_result_t bootstrap_run_test(struct testcase* test, env_t e)
+static inline test_result_t bootstrap_run_test(struct testcase* test, uintptr_t e)
 {
     return test->function(e);
 }
@@ -48,7 +48,7 @@ static DEFINE_TEST_TYPE(BOOTSTRAP, BOOTSTRAP,
 /* Basic test type. Each test is launched as its own process. */
 /* copy untyped caps into a processes cspace, return the cap range they can be found in */
 static seL4_SlotRegion
-copy_untypeds_to_process(sel4utils_process_t *process, vka_object_t *untypeds, int num_untypeds, env_t env)
+copy_untypeds_to_process(sel4utils_process_t *process, vka_object_t *untypeds, int num_untypeds, driver_env_t env)
 {
     seL4_SlotRegion range = {0};
 
@@ -66,7 +66,7 @@ copy_untypeds_to_process(sel4utils_process_t *process, vka_object_t *untypeds, i
 }
 
 static void
-copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
+copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process)
 {
     init->serial_irq_cap = sel4utils_copy_cap_to_process(test_process, &env->vka,
                                                          env->serial_objects.serial_irq_path.capPtr);
@@ -77,9 +77,10 @@ copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_pr
     arch_copy_serial_caps(init, env, test_process);
 }
 
-void basic_set_up(env_t env)
+void basic_set_up(uintptr_t e)
 {
     int error;
+    driver_env_t env = (driver_env_t)e;
 
     sel4utils_process_config_t config = process_config_default_simple(&env->simple, TESTS_APP, env->init->priority);
     config = process_config_mcp(config, seL4_MaxPrio);
@@ -138,9 +139,10 @@ void basic_set_up(env_t env)
 }
 
 test_result_t
-basic_run_test(struct testcase *test, env_t env)
+basic_run_test(struct testcase *test, uintptr_t e)
 {
     int error;
+    driver_env_t env = (driver_env_t)e;
 
     /* copy test name */
     strncpy(env->init->name, test->name, TEST_NAME_MAX);
@@ -175,8 +177,9 @@ basic_run_test(struct testcase *test, env_t env)
     return result;
 }
 
-void basic_tear_down(env_t env)
+void basic_tear_down(uintptr_t e)
 {
+    driver_env_t env = (driver_env_t)e;
     /* unmap the env->init data frame */
     vspace_unmap_pages(&(env->test_process).vspace, env->remote_vaddr, 1, PAGE_BITS_4K, NULL);
 
