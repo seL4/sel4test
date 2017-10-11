@@ -207,8 +207,8 @@ GENERATE_SYSCALL_TEST(SYSCALL0001, seL4_Send,
 GENERATE_SYSCALL_TEST(SYSCALL0002, seL4_NBSend,
                       seL4_NBSend(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0)))
 
-GENERATE_SYSCALL_TEST_MAYBE(SYSCALL0003, seL4_Reply,
-                      seL4_Reply(seL4_MessageInfo_new(0, 0, 0, 0)), !config_set(CONFIG_KERNEL_RT))
+GENERATE_SYSCALL_TEST_MAYBE(SYSCALL0003, api_reply,
+                      api_reply(0, seL4_MessageInfo_new(0, 0, 0, 0)), !config_set(CONFIG_KERNEL_RT))
 
 GENERATE_SYSCALL_TEST(SYSCALL0004, seL4_Signal,
                       seL4_Signal(simple_get_cnode(&env->simple)))
@@ -316,8 +316,11 @@ GENERATE_SYSCALL_TEST(SYSCALL0014, seL4_SendWithMRs,
 GENERATE_SYSCALL_TEST(SYSCALL0015, seL4_NBSendWithMRs,
                       seL4_NBSendWithMRs(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
 
+#ifndef CONFIG_KERNEL_RT
+/* the seL4_ReplyWithMRs symbol is not defined in non RT builds and so we must #ifdef out */
 GENERATE_SYSCALL_TEST_MAYBE(SYSCALL0016, seL4_ReplyWithMRs,
                       seL4_ReplyWithMRs(seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS), !config_set(CONFIG_KERNEL_RT))
+#endif
 GENERATE_SYSCALL_TEST(SYSCALL0017, seL4_CallWithMRs,
                       seL4_CallWithMRs(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
 

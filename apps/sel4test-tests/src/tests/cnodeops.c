@@ -285,12 +285,19 @@ test_cnode_rotate(env_t env)
 }
 DEFINE_TEST(CNODEOP0008, "Basic seL4_CNode_Rotate() testing", test_cnode_rotate, true)
 
+/* This tests relies on the vka_cnode_saveCaller symbol that does not exist
+ * on non RT builds and so we must #ifdef */
 static int
 cnode_savecaller(env_t env, seL4_CPtr cap)
 {
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, cap, &path);
+#ifndef CONFIG_KERNEL_RT
     return vka_cnode_saveCaller(&path);
+#else
+    ZF_LOGF("Should not be called");
+    return 0;
+#endif
 }
 
 static int
