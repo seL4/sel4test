@@ -19,7 +19,7 @@
 #include <sel4/sel4.h>
 #include <vka/object.h>
 
-#include "test.h"
+#include "../test.h"
 
 /*
  * Perform the codeblock given in "code", testing registers before and after to
