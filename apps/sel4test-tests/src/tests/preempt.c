@@ -80,7 +80,7 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
     test_check(num_caps > 0);
     test_check((num_caps == (1 << (num_cnode_bits + CNODE_SIZE_BITS))));
 
-    ltimer_set_timeout(&env->timer.ltimer, 10 * NS_IN_MS, TIMEOUT_PERIODIC);
+    ltimer_set_timeout(&env->timer.ltimer, NS_IN_MS, TIMEOUT_PERIODIC);
     wait_for_timer_interrupt(env);
 
     /* Last thread to start runs first. */
