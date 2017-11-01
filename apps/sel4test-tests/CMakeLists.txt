@@ -27,5 +27,5 @@ file(GLOB deps
 )
 
 add_executable(sel4test-tests EXCLUDE_FROM_ALL ${deps})
-target_include_directories(sel4test-tests PRIVATE include arch/${KernelArch} sel4_arch/${KernelSel4Arch} src)
+target_include_directories(sel4test-tests PRIVATE include arch/${KernelArch} sel4_arch/${KernelSel4Arch})
 target_link_libraries(sel4test-tests Configuration muslc sel4 sel4allocman sel4vka sel4utils sel4test sel4sync sel4muslcsys sel4testsupport)
