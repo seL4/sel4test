@@ -29,6 +29,10 @@ Add a call to any function in your test file to `testreporter.c` in [`dummy_func
 
 For an example, take a look at [`libsel4serialserver/src/test.c`](https://github.com/seL4/seL4_libs/blob/master/libsel4serialserver/src/test.c) in `sel4_libs`.
 
+### Assumptions
+Currently unit tests are assumed to be running sequentially, standalone (i.e. not multi-threaded).
+Some tests rely on being the highest priority running thread in the system.
+
 ### Other tests
 To define a larger test in `sel4test-tests`:
 1. Place your test in `apps/sel4test-tests/src/tests`.
