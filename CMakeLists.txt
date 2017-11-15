@@ -36,7 +36,7 @@ set(Sel4testAllowSettingsOverride OFF CACHE BOOL "Allow user to override configu
 # mkdir build_sabre
 # cd build_sabre
 # ../init-build.sh -DARM=TRUE -DPLATFORM=sabre -DSIMULATION=TRUE
-set(SIMULATION OFF CACHE BOOLL "Include only simulation compatible tests")
+set(SIMULATION OFF CACHE BOOL "Include only simulation compatible tests")
 set(RELEASE OFF CACHE BOOL "Performance optimized build")
 set(VERIFICATION OFF CACHE BOOL "Only verification friendly kernel features")
 set(BAMBOO OFF CACHE BOOL "Enable machine parseable output")
