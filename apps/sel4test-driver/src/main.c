@@ -232,7 +232,9 @@ void sel4test_end_test(test_result_t result)
         printf("\t</testcase>\n");
     }
 
-    timer_reset(&env);
+    if (config_set(CONFIG_HAVE_TIMER)) {
+        timer_reset(&env);
+    }
 }
 
 void sel4test_end_suite(int num_tests, int num_tests_passed, int skipped_tests)
