@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-
+#include <arch_stdio.h>
 #include <allocman/vka.h>
 #include <allocman/bootstrap.h>
 
@@ -68,10 +68,14 @@ abort(void)
 }
 
 void __plat_putchar(int c);
-void
-__arch_putchar(int c)
+static size_t
+write_buf(void *data, size_t count)
 {
-    __plat_putchar(c);
+    char* buf = data;
+    for (int i = 0; i < count; i++) {
+        __plat_putchar(buf[i]);
+    }
+    return count;
 }
 
 static testcase_t *
@@ -183,6 +187,7 @@ void init_simple(env_t env, test_init_data_t *init_data)
 int
 main(int argc, char **argv)
 {
+    sel4muslcsys_register_stdio_write_fn(write_buf);
 
     test_init_data_t *init_data;
     struct env env;
