@@ -13,7 +13,7 @@
 //#include <sel4platsupport/device.h>
 
 
-seL4_timer_t *
+void
 arch_init_timer(env_t env, test_init_data_t *data)
 {
     return NULL;

@@ -25,7 +25,6 @@ plat_add_uts(env_t env, allocman_t *alloc, test_init_data_t *data)
 void
 plat_init_env(env_t env, test_init_data_t *data)
 {
-    env->clock_timer = NULL;
 }
 
 seL4_Error

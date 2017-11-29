@@ -18,12 +18,12 @@
 #include <sel4platsupport/plat/timer.h>
 
 void
-plat_init_timer_caps(env_t env)
+plat_init_timer_caps(driver_env_t env)
 {
 }
 
 void
-plat_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
+plat_copy_timer_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process)
 {
 }
 
@@ -34,13 +34,13 @@ plat_init_serial_caps(env_t env)
 }
 
 void
-plat_copy_serial_caps(test_init_data_t *init, env_t env,
+plat_copy_serial_caps(test_init_data_t *init, driver_env_t env,
                        sel4utils_process_t *test_process)
 {
 }
 
 void
-plat_init(env_t env)
+plat_init(driver_env_t env)
 {
     ZF_LOGD("Spike: plat_init: Done.");
 }

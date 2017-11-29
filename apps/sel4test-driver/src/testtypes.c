@@ -66,7 +66,7 @@ copy_untypeds_to_process(sel4utils_process_t *process, vka_object_t *untypeds, i
     return range;
 }
 
-static void
+UNUSED static void
 copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process)
 {
     init->serial_irq_cap = sel4utils_copy_cap_to_process(test_process, &env->vka,
@@ -75,7 +75,7 @@ copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *
                "Failed to copy PS default serial IRQ cap to test child "
                "process.");
 
-    arch_copy_serial_caps(init, env, test_process);
+    // arch_copy_serial_caps(init, env, test_process);
 }
 
 static void handle_timer_requests(driver_env_t env, sel4test_output_t test_output) {
@@ -231,7 +231,7 @@ void basic_set_up(uintptr_t e)
     }
     /* setup data about untypeds */
     env->init->untypeds = copy_untypeds_to_process(&(env->test_process), env->untypeds, env->num_untypeds, env);
-    copy_serial_caps(env->init, env, &(env->test_process));
+    //copy_serial_caps(env->init, env, &(env->test_process));
     /* copy the fault endpoint - we wait on the endpoint for a message
      * or a fault to see when the test finishes */
     env->endpoint = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, env->test_process.fault_endpoint.cptr);

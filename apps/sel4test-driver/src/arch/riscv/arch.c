@@ -21,7 +21,7 @@ arch_init_timer_caps(env_t env)
 }
 
 void
-arch_copy_timer_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
+arch_copy_timer_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process)
 {
 }
 
@@ -32,7 +32,7 @@ arch_init_serial_caps(env_t env)
 }
 
 void
-arch_copy_serial_caps(test_init_data_t *init, env_t env, sel4utils_process_t *test_process)
+arch_copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process)
 {
 }
 
@@ -43,7 +43,7 @@ int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word t
     return -1;
 }
 
-vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(env_t _env) {
+vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(driver_env_t _env) {
     static bool call_once = false;
     if (call_once) {
         ZF_LOGF("This function can only be called once.");
