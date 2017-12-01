@@ -1366,9 +1366,9 @@ test_yieldTo_cleanup(env_t env)
 
     set_helper_mcp(env, &to, seL4_MaxPrio);
     set_helper_mcp(env, &from, seL4_MaxPrio);
-    error = set_helper_sched_params(env, &to, 10 * US_IN_S, 10 * US_IN_S, 0);
+    error = set_helper_sched_params(env, &to, 500 * US_IN_MS, 500 * US_IN_MS, 0);
     test_eq(error, seL4_NoError);
-    error = set_helper_sched_params(env, &from, 10 * US_IN_S, 10 * US_IN_S, 0);
+    error = set_helper_sched_params(env, &from, 500 * US_IN_MS, 500 * US_IN_MS, 0);
     test_eq(error, seL4_NoError);
 
     /* wait for them to execute */
@@ -1383,7 +1383,7 @@ test_yieldTo_cleanup(env_t env)
     ZF_LOGD("Wait for from\n");
     wait_for_helper(&from);
     test_eq(ret.error, seL4_NoError);
-    test_ge(ret.consumed, 0llu);
+    test_eq(ret.consumed, 0llu);
 
     /* restart threads */
     cleanup_helper(env, &from);
@@ -1408,7 +1408,7 @@ test_yieldTo_cleanup(env_t env)
     ZF_LOGD("Wait for from\n");
     wait_for_helper(&from);
     test_eq(ret.error, seL4_NoError);
-    test_ge(ret.consumed, 0llu);
+    test_eq(ret.consumed, 0llu);
 
     /* restart threads */
     cleanup_helper(env, &from);
@@ -1418,7 +1418,8 @@ test_yieldTo_cleanup(env_t env)
     start_helper(env, &to, (helper_fn_t) sched0018_to_fn, 0, 0, 0, 0);
     start_helper(env, &from, (helper_fn_t) sched0017_helper_fn, to.thread.sched_context.cptr,
                  (seL4_Word) &ret, 0, 0);
-
+    set_helper_mcp(env, &to, seL4_MaxPrio);
+    set_helper_mcp(env, &from, seL4_MaxPrio);
     /* wait for them to execute */
     ZF_LOGD("sleep\n");
     sel4test_sleep(env, NS_IN_S);
