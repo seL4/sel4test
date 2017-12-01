@@ -214,9 +214,9 @@ signal_helper_finished(seL4_CPtr local_endpoint, int val)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
     seL4_SetMR(0, val);
-    seL4_Call(local_endpoint, info);
-    assert(0);
-    while (1);
+    while (true) {
+        seL4_Call(local_endpoint, info);
+    }
 }
 
 NORETURN static void
