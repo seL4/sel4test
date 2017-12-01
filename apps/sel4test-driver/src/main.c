@@ -259,7 +259,7 @@ void sel4test_stop_tests(test_result_t result, int tests_done, int tests_failed,
         break;
     case FAILURE:
         assert(config_set(CONFIG_TESTPRINTER_HALT_ON_TEST_FAILURE));
-        printf("Halting on first test failure");
+        printf("Halting on first test failure\n");
         break;
     default:
         /* nothing to output if its successful */
