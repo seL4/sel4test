@@ -1246,7 +1246,10 @@ test_sched_donation_low_prio_server(env_t env)
     seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
 
     create_helper_thread(env, &client);
-    int error = create_passive_thread(env, &server, (helper_fn_t) replywait_func, ep, 0, client.thread.reply.cptr, 0);
+    create_helper_thread(env, &server);
+    create_helper_thread(env, &server2);
+
+    int error = create_passive_thread(env, &server, (helper_fn_t) replywait_func, ep, 0, server.thread.reply.cptr, 0);
     test_eq(error, seL4_NoError);
 
     /* make client higher prio than server */
@@ -1268,7 +1271,7 @@ test_sched_donation_low_prio_server(env_t env)
     /* now try again, but start the client first */
     start_helper(env, &client, (helper_fn_t) call_func, ep, 0, 0, 0);
     error = create_passive_thread(env, &server2, (helper_fn_t) replywait_func, ep, 0,
-                                  client.thread.reply.cptr, 0);
+                                  server2.thread.reply.cptr, 0);
 
     test_eq(error, seL4_NoError);
 

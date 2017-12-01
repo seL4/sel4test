@@ -62,9 +62,12 @@ void create_helper_thread(env_t env, helper_thread_t *thread);
 /* create a helper with a clone of the current vspace loadable elf segments,
  * and a new cspace */
 void create_helper_process(env_t env, helper_thread_t *thread);
+/* create and start a passive thread */
 int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
                           seL4_Word arg1, seL4_Word arg2, seL4_Word arg3);
-
+/* start an existing (created but not running ) passive thread */
+int start_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
+                          seL4_Word arg1, seL4_Word arg2, seL4_Word arg3);
 /* set a helper threads priority */
 void set_helper_priority(env_t env, helper_thread_t *thread, seL4_Word prio);
 

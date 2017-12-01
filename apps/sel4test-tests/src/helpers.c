@@ -511,6 +511,12 @@ int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, s
                           seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
 {
     create_helper_thread(env, passive);
+    return start_passive_thread(env, passive, fn, ep, arg1, arg2, arg3);
+}
+
+int start_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
+                          seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
+{
     start_helper(env, passive, fn, ep, arg1, arg2, arg3);
 
     /* Wait for helper to signal it has initialised */
