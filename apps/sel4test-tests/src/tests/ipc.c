@@ -1010,7 +1010,7 @@ ipc22_server_fn(seL4_CPtr init_ep, seL4_CPtr reply_cap)
      * we have to block here to wait for all the clients to
      * start and queue up - otherwise they will all be served
      * by the same server and the point is to test stack spawning  */
-    api_nbsend_recv(init_ep, info, init_ep, NULL, reply_cap);
+    api_nbsend_wait(init_ep, info, init_ep, NULL);
 
     ZF_LOGD("Server reply to fwded cap\n");
     seL4_Send(reply_cap, info);
@@ -1050,7 +1050,7 @@ ipc22_stack_spawner_fn(env_t env, seL4_CPtr endpoint, int server_prio, seL4_Word
     }
 
     /* signal the last client */
-    api_nbsend_recv(first_ep, seL4_MessageInfo_new(0, 0, 0, 0), endpoint, NULL, servers[RUNS - 1].thread.reply.cptr);
+    api_nbsend_wait(first_ep, seL4_MessageInfo_new(0, 0, 0, 0), endpoint, NULL);
 }
 
 static int test_stack_spawning_server(env_t env)
