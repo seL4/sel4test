@@ -236,8 +236,6 @@ static int sel4test_driver_wait(driver_env_t env, struct testcase *test)
             printf("Register of root thread in test (may not be the thread that faulted)\n");
             sel4debug_dump_registers(env->test_process.thread.tcb.cptr);
             result = FAILURE;
-        } else {
-            result = SUCCESS;
         }
 
         timer_cleanup();
