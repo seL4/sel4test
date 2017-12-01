@@ -390,7 +390,7 @@ void sel4test_run_tests(struct driver_env* e)
                 if (result != SUCCESS) {
                     tests_failed++;
                     if (config_set(CONFIG_TESTPRINTER_HALT_ON_TEST_FAILURE) || result == ABORT) {
-                        sel4test_stop_tests(result, tests_done, tests_failed, num_tests + 1, skipped_tests);
+                        sel4test_stop_tests(result, tests_done + 1, tests_failed, num_tests + 1, skipped_tests);
                         return;
                     }
                 }
