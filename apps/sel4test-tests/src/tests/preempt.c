@@ -102,7 +102,7 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
 static int
 test_preempt_revoke(env_t env)
 {
-    for (int num_cnode_bits = 1; num_cnode_bits < 8; num_cnode_bits++) {
+    for (int num_cnode_bits = 1; num_cnode_bits < 32; num_cnode_bits++) {
         if (test_preempt_revoke_actual(env, num_cnode_bits) > 1) {
             return sel4test_get_result();
         }
