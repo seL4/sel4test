@@ -30,7 +30,7 @@ wait_for_timer_interrupt(driver_env_t env)
 void timeout(driver_env_t env, uint64_t ns, timeout_type_t timeout_type) {
     if (config_set(CONFIG_HAVE_TIMER)) {
         int error = ltimer_set_timeout(&env->timer.ltimer, ns, timeout_type);
-        test_eq(error, 0);
+        ZF_LOGF_IF(error, "ltimer_set_timeout failed");
     } else {
         ZF_LOGF("There is no timer configured for this target");
     }
@@ -39,7 +39,7 @@ void timeout(driver_env_t env, uint64_t ns, timeout_type_t timeout_type) {
 void timer_reset(driver_env_t env) {
     if (config_set(CONFIG_HAVE_TIMER)) {
         int error = ltimer_reset(&env->timer.ltimer);
-        test_eq(error, 0);
+        ZF_LOGF_IF(error, "ltimer_rest failed");
     } else {
         ZF_LOGF("There is no timer configured for this target");
     }
