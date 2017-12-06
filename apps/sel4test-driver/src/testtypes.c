@@ -78,53 +78,13 @@ copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *
     arch_copy_serial_caps(init, env, test_process);
 }
 
-/* A pending timeout requests from tests */
-static bool timeServer_timeoutPending = false;
-/* timeServer_ns holds the previously requested timeout time. The meaning of
- * the value depends on the timeout type i.e. it can be a relative or absolute
- */
-static uint64_t timeServer_ns;
-/* The absolute time a request is supposed to expire */
-static uint64_t timeServer_Expire;
 static seL4_CPtr reply_cap;
-static timeout_type_t timeServer_timeoutType;
-
-static inline void timer_cleanup(void) {
-    timeServer_timeoutPending = false;
-    timeServer_ns = timeServer_Expire = 0;
-}
-
-static void handle_timer_interrupt(driver_env_t env) {
-    uint64_t timeServer_now;
-
-    /* Check that this interrupt is coming from a previous timeout request */
-    if (timeServer_timeoutPending) {
-
-        timeServer_now = timestamp(env);
-
-        /* If timer interrupt came earlier than requested ns, reprogram the timer */
-        if (timeServer_now < timeServer_Expire) {
-            if (timeServer_timeoutType == TIMEOUT_ABSOLUTE) {
-                timeout(env, timeServer_Expire, timeServer_timeoutType);
-            } else {
-                timeout(env, timeServer_Expire - timeServer_now, timeServer_timeoutType);
-            }
-        } else { /* Slept succesfully for at least ns */
-            if (timeServer_timeoutType == TIMEOUT_PERIODIC) {
-                timeServer_Expire += timeServer_ns;
-            } else {
-                timer_cleanup();
-            }
-
-            /* Signal tests that might be waiting for timer signals */
-            seL4_Signal(env->timer_notify_test.cptr);
-        }
-    }
-}
 
 static void handle_timer_requests(driver_env_t env, sel4test_output_t test_output) {
 
     seL4_MessageInfo_t info;
+    uint64_t timeServer_ns;
+    seL4_Word timeServer_timeoutType;
 
     switch (test_output) {
 
@@ -132,18 +92,6 @@ static void handle_timer_requests(driver_env_t env, sel4test_output_t test_outpu
 
             timeServer_timeoutType = seL4_GetMR(1);
             timeServer_ns = sel4utils_64_get_mr(2);
-
-            if (timeServer_timeoutPending) {
-                ZF_LOGD("Overwriting a previous timeout request\n");
-            } else {
-                timeServer_timeoutPending = true;
-            }
-
-            if (timeServer_timeoutType == TIMEOUT_ABSOLUTE) {
-                timeServer_Expire = timeServer_ns;
-            } else {
-                timeServer_Expire = timestamp(env) + timeServer_ns;
-            }
 
             timeout(env, timeServer_ns, timeServer_timeoutType);
 
@@ -165,7 +113,6 @@ static void handle_timer_requests(driver_env_t env, sel4test_output_t test_outpu
             timer_reset(env);
             info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
             seL4_SetMR(0, 0);
-            timer_cleanup();
             api_reply(reply_cap, info);
             break;
 
@@ -215,7 +162,8 @@ static int sel4test_driver_wait(driver_env_t env, struct testcase *test)
             /* Driver does extra work to check whether timeout succeeded and signals
              * clients/tests
              */
-            handle_timer_interrupt(env);
+            int error = tm_update(&env->tm);
+            ZF_LOGF_IF(error, "Failed to update time manager");
             continue;
         }
 
@@ -238,7 +186,7 @@ static int sel4test_driver_wait(driver_env_t env, struct testcase *test)
             result = FAILURE;
         }
 
-        timer_cleanup();
+        timer_cleanup(env);
 
         return result;
     }
@@ -326,6 +274,9 @@ basic_run_test(struct testcase *test, uintptr_t e)
     error = sel4utils_spawn_process_v(&(env->test_process), &env->vka, &env->vspace,
                                       argc, argv, 1);
     ZF_LOGF_IF(error != 0, "Failed to start test process!");
+
+    error = tm_alloc_id_at(&env->tm, TIMER_ID);
+    ZF_LOGF_IF(error != 0, "Failed to alloc time id %d", TIMER_ID);
 
     /* wait on it to finish or fault, report result */
     int result = sel4test_driver_wait(env, test);

@@ -15,6 +15,19 @@
 #include <utils/util.h>
 #include <sel4testsupport/testreporter.h>
 
+/* A pending timeout requests from tests */
+static bool timeServer_timeoutPending = false;
+static timeout_type_t timeServer_timeoutType;
+
+static int timeout_cb(uintptr_t token) {
+    seL4_Signal((seL4_CPtr) token);
+
+    if (timeServer_timeoutType != TIMEOUT_PERIODIC) {
+        timeServer_timeoutPending = false;
+    }
+    return 0;
+}
+
 void
 wait_for_timer_interrupt(driver_env_t env)
 {
@@ -29,8 +42,16 @@ wait_for_timer_interrupt(driver_env_t env)
 
 void timeout(driver_env_t env, uint64_t ns, timeout_type_t timeout_type) {
     if (config_set(CONFIG_HAVE_TIMER)) {
-        int error = ltimer_set_timeout(&env->timer.ltimer, ns, timeout_type);
-        ZF_LOGF_IF(error, "ltimer_set_timeout failed");
+        ZF_LOGD_IF(timeServer_timeoutPending, "Overwriting a previous timeout request\n");
+        timeServer_timeoutType = timeout_type;
+        int error = tm_register_cb(&env->tm, timeout_type, ns, 0,
+                                  TIMER_ID, timeout_cb, env->timer_notify_test.cptr);
+        if (error == ETIME) {
+            error = timeout_cb(env->timer_notify_test.cptr);
+        } else {
+            timeServer_timeoutPending = true;
+        }
+        ZF_LOGF_IF(error != 0, "register_cb failed");
     } else {
         ZF_LOGF("There is no timer configured for this target");
     }
@@ -38,8 +59,9 @@ void timeout(driver_env_t env, uint64_t ns, timeout_type_t timeout_type) {
 
 void timer_reset(driver_env_t env) {
     if (config_set(CONFIG_HAVE_TIMER)) {
-        int error = ltimer_reset(&env->timer.ltimer);
+        int error = tm_deregister_cb(&env->tm, TIMER_ID);
         ZF_LOGF_IF(error, "ltimer_rest failed");
+        timeServer_timeoutPending = false;
     } else {
         ZF_LOGF("There is no timer configured for this target");
     }
@@ -57,4 +79,9 @@ timestamp(driver_env_t env)
         ZF_LOGF("There is no timer configured for this target");
     }
     return time;
+}
+
+void timer_cleanup(driver_env_t env) {
+    tm_free_id(&env->tm, TIMER_ID);
+    timeServer_timeoutPending = false;
 }

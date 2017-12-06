@@ -23,6 +23,8 @@
 #include <allocman/bootstrap.h>
 #include <allocman/vka.h>
 
+#include <platsupport/local_time_manager.h>
+
 #include <sel4platsupport/timer.h>
 #include <sel4platsupport/plat/serial.h>
 
@@ -199,6 +201,8 @@ static void init_timer(void)
             error = vka_alloc_reply(&env.vka, &env.reply);
             ZF_LOGF_IF(error, "Failed to allocate reply");
         }
+        /* set up the timer manager */
+        tm_init(&env.tm, &env.timer.ltimer, &env.ops, 1);
     }
 
 }

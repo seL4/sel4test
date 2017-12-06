@@ -15,6 +15,7 @@
 #include <autoconf.h>
 #include <sel4/bootinfo.h>
 
+#include <platsupport/time_manager.h>
 #include <vka/vka.h>
 #include <vka/object.h>
 #include <sel4test/test.h>
@@ -69,6 +70,9 @@ struct driver_env {
 
     int num_untypeds;
     vka_object_t* untypeds;
+
+    /* time server for managing timeouts */
+    time_manager_t tm;
 };
 typedef struct driver_env *driver_env_t;
 
