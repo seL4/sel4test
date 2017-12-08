@@ -194,13 +194,6 @@ static void init_timer(void)
         error = seL4_TCB_BindNotification(simple_get_tcb(&env.simple), env.timer_notification.cptr);
         ZF_LOGF_IF(error, "Failed to bind timer notification to sel4test-driver\n");
 
-        /* If we use the timer RPC on RT kernel, we need to allocate a reply cap for
-         * timer RPC requests
-         */
-        if (config_set(CONFIG_KERNEL_RT)) {
-            error = vka_alloc_reply(&env.vka, &env.reply);
-            ZF_LOGF_IF(error, "Failed to allocate reply");
-        }
         /* set up the timer manager */
         tm_init(&env.tm, &env.timer.ltimer, &env.ops, 1);
     }
@@ -449,6 +442,12 @@ void *main_continued(void *arg UNUSED)
     /* setup init data that won't change test-to-test */
     env.init->priority = seL4_MaxPrio - 1;
     plat_init(&env);
+
+    /* Allocate a reply object for the RT kernel. */
+    if (config_set(CONFIG_KERNEL_RT)) {
+        int error = vka_alloc_reply(&env.vka, &env.reply);
+        ZF_LOGF_IF(error, "Failed to allocate reply");
+    }
 
     /* now run the tests */
     sel4test_run_tests(&env);
