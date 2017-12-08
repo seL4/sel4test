@@ -78,8 +78,6 @@ copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *
     arch_copy_serial_caps(init, env, test_process);
 }
 
-static seL4_CPtr reply_cap;
-
 static void handle_timer_requests(driver_env_t env, sel4test_output_t test_output) {
 
     seL4_MessageInfo_t info;
@@ -98,7 +96,7 @@ static void handle_timer_requests(driver_env_t env, sel4test_output_t test_outpu
             info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
 
             seL4_SetMR(0, 0);
-            api_reply(reply_cap, info);
+            api_reply(env->reply.cptr, info);
             break;
 
         case SEL4TEST_TIME_TIMESTAMP:
@@ -106,14 +104,14 @@ static void handle_timer_requests(driver_env_t env, sel4test_output_t test_outpu
             sel4utils_64_set_mr(1, timeServer_ns);
             info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, SEL4UTILS_64_WORDS + 1);
             seL4_SetMR(0, 0);
-            api_reply(reply_cap, info);
+            api_reply(env->reply.cptr, info);
             break;
 
         case SEL4TEST_TIME_RESET:
             timer_reset(env);
             info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
             seL4_SetMR(0, 0);
-            api_reply(reply_cap, info);
+            api_reply(env->reply.cptr, info);
             break;
 
         default:
@@ -135,11 +133,9 @@ static int sel4test_driver_wait(driver_env_t env, struct testcase *test)
     int result = SUCCESS;
     seL4_Word badge = 0;
 
-    reply_cap = env->reply.cptr;
-
     while(1) {
         /* wait for tests to finish or fault, receive test request or report result */
-        info = api_recv(env->test_process.fault_endpoint.cptr, &badge, reply_cap);
+        info = api_recv(env->test_process.fault_endpoint.cptr, &badge, env->reply.cptr);
         test_output = seL4_GetMR(0);
 
         /* FIXME: Assumptions made at the time of writing this code:
