@@ -82,6 +82,7 @@ timestamp(driver_env_t env)
 }
 
 void timer_cleanup(driver_env_t env) {
+    ZF_LOGF_IF(!config_set(CONFIG_HAVE_TIMER), "There is no timer configured for this target");
     tm_free_id(&env->tm, TIMER_ID);
     timeServer_timeoutPending = false;
 }

@@ -186,7 +186,9 @@ static int sel4test_driver_wait(driver_env_t env, struct testcase *test)
             result = FAILURE;
         }
 
-        timer_cleanup(env);
+        if (config_set(CONFIG_HAVE_TIMER)) {
+            timer_cleanup(env);
+        }
 
         return result;
     }
@@ -275,8 +277,10 @@ basic_run_test(struct testcase *test, uintptr_t e)
                                       argc, argv, 1);
     ZF_LOGF_IF(error != 0, "Failed to start test process!");
 
-    error = tm_alloc_id_at(&env->tm, TIMER_ID);
-    ZF_LOGF_IF(error != 0, "Failed to alloc time id %d", TIMER_ID);
+    if (config_set(CONFIG_HAVE_TIMER)) {
+        error = tm_alloc_id_at(&env->tm, TIMER_ID);
+        ZF_LOGF_IF(error != 0, "Failed to alloc time id %d", TIMER_ID);
+    }
 
     /* wait on it to finish or fault, report result */
     int result = sel4test_driver_wait(env, test);
