@@ -877,7 +877,7 @@ int test_change_prio_on_endpoint(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0008, "Test changing prio while in endpoint queues results in correct message order",
-        test_change_prio_on_endpoint, config_set(CONFIG_KERNEL_RT))
+        test_change_prio_on_endpoint, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER))
 
 #define SCHED0009_SERVERS 5
 
@@ -950,7 +950,7 @@ test_ordered_ipc_fastpath(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0009, "Test ordered ipc on reply wait fastpath", test_ordered_ipc_fastpath, config_set(CONFIG_KERNEL_RT))
+DEFINE_TEST(SCHED0009, "Test ordered ipc on reply wait fastpath", test_ordered_ipc_fastpath, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER))
 
 int
 sched0010_fn(volatile int *state)
@@ -1003,7 +1003,7 @@ test_resume_empty_or_no_sched_context(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0010, "Test resuming a thread with empty or missing scheduling context",
-            test_resume_empty_or_no_sched_context, config_set(CONFIG_KERNEL_RT))
+            test_resume_empty_or_no_sched_context, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER))
 
 void
 sched0011_helper(void)
@@ -1431,7 +1431,7 @@ test_yieldTo_cleanup(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0018, "Test clean up cases after seL4_SchedContext_YieldTo", test_yieldTo_cleanup, config_set(CONFIG_KERNEL_RT));
+DEFINE_TEST(SCHED0018, "Test clean up cases after seL4_SchedContext_YieldTo", test_yieldTo_cleanup, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER));
 
 
 int test_yieldTo(env_t env)
