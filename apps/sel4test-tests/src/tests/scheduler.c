@@ -1340,9 +1340,7 @@ test_yieldTo_errors(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0017, "Test seL4_SchedContext_YieldTo errors", test_yieldTo_errors, config_set(CONFIG_KERNEL_RT));
-#endif /* CONFIG_KERNEL_RT */
 
-#ifdef CONFIG_KERNEL_RT
 int
 sched0018_to_fn(void)
 {
