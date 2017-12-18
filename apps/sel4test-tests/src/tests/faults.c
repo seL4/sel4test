@@ -555,8 +555,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
     case FAULT_BAD_SYSCALL:
         test_eq(seL4_MessageInfo_get_label(tag), (seL4_Word) seL4_Fault_UnknownSyscall);
         test_eq(seL4_MessageInfo_get_length(tag), (seL4_Word) seL4_UnknownSyscall_Length);
-        /* FIXME */
-        test_eq(seL4_GetMR(seL4_UnknownSyscall_FaultIP) - 4, (seL4_Word) bad_syscall_address);
+        test_eq(seL4_GetMR(seL4_UnknownSyscall_FaultIP), (seL4_Word) bad_syscall_address);
         test_eq((int)seL4_GetMR(seL4_UnknownSyscall_Syscall), BAD_SYSCALL_NUMBER);
         seL4_SetMR(seL4_UnknownSyscall_FaultIP, (seL4_Word)bad_syscall_restart_address);
 #if defined(CONFIG_ARCH_AARCH32)
@@ -573,7 +572,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         test_eq((int)seL4_GetMR(seL4_UnknownSyscall_A0), BAD_MAGIC);
         test_eq(seL4_GetMR(seL4_UnknownSyscall_FaultIP), (seL4_Word) bad_syscall_restart_address);
         seL4_SetMR(seL4_UnknownSyscall_A0, GOOD_MAGIC);
-        seL4_SetMR(seL4_UnknownSyscall_FaultIP, (seL4_Word)bad_syscall_restart_address + 4);
+        seL4_SetMR(seL4_UnknownSyscall_FaultIP, (seL4_Word)bad_syscall_restart_address);
 #elif defined(CONFIG_ARCH_IA32)
         test_eq(seL4_GetMR(seL4_UnknownSyscall_EBX), BAD_MAGIC);
         seL4_SetMR(seL4_UnknownSyscall_EBX, GOOD_MAGIC);
