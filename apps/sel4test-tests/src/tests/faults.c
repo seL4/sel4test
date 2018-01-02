@@ -386,7 +386,6 @@ do_bad_instruction(void)
         "bad_instruction_restart_address:\n\t"
         :
         : [sp] "r" (&bad_instruction_sp),
-        [cpsr] "r" (&bad_instruction_cpsr),
         [valptr] "r" (&val)
         : "a0", "memory"
     );
@@ -607,7 +606,6 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         test_check(seL4_GetMR(3) == 0);
         test_check(seL4_GetMR(4) == 0);
 #elif defined(CONFIG_ARCH_RISCV)
-        test_check(seL4_GetMR(2) == bad_instruction_cpsr);
         test_check(seL4_GetMR(3) == 0);
         test_check(seL4_GetMR(4) == 0);
 #elif defined(CONFIG_ARCH_X86)
