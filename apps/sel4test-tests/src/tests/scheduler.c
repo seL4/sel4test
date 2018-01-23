@@ -335,7 +335,7 @@ set_priority_helper_1(seL4_CPtr t1, seL4_CPtr t2)
     /*
      * Down our priority. This should force a reschedule and make thread 2 run.
      */
-    int error = seL4_TCB_SetPriority(t1, SCHED0005_HIGHEST_PRIO - 4 );
+    int error = seL4_TCB_SetPriority(t1, t1, SCHED0005_HIGHEST_PRIO - 4 );
     test_check(!error);
 
     test_check(set_priority_step == 2);
@@ -343,19 +343,19 @@ set_priority_helper_1(seL4_CPtr t1, seL4_CPtr t2)
     set_priority_step = 3;
 
     /* set our priority back up - this should work as we did not down our max priority */
-    error = seL4_TCB_SetPriority(t1, SCHED0005_HIGHEST_PRIO);
+    error = seL4_TCB_SetPriority(t1, t1, SCHED0005_HIGHEST_PRIO);
     test_check(error == seL4_NoError);
 
     /* now down our max_priority */
-    error = seL4_TCB_SetMCPriority(t1, SCHED0005_HIGHEST_PRIO - 4);
+    error = seL4_TCB_SetMCPriority(t1, t1, SCHED0005_HIGHEST_PRIO - 4);
     test_check(error == seL4_NoError);
 
     /* try to set our prio higher than our max prio, but lower than our prio */
-    error = seL4_TCB_SetPriority(t1, SCHED0005_HIGHEST_PRIO - 3);
+    error = seL4_TCB_SetPriority(t1, t1, SCHED0005_HIGHEST_PRIO - 3);
     test_check(error == seL4_RangeError);
 
     /* try to set our max prio back up */
-    error = seL4_TCB_SetMCPriority(t1, SCHED0005_HIGHEST_PRIO);
+    error = seL4_TCB_SetMCPriority(t1, t1, SCHED0005_HIGHEST_PRIO);
     test_check(error == seL4_RangeError);
 
     return sel4test_get_result();
@@ -368,16 +368,16 @@ set_priority_helper_2(seL4_CPtr t1, seL4_CPtr t2)
     ZF_LOGD("1...");
 
     /* Raise thread 1 to equal to ours, which should fail. */
-    int error = seL4_TCB_SetPriority(t1, SCHED0005_HIGHEST_PRIO - 1 + PRIORITY_FUDGE);
+    int error = seL4_TCB_SetPriority(t1, t2, SCHED0005_HIGHEST_PRIO - 1 + PRIORITY_FUDGE);
     test_check(error == seL4_RangeError);
 
     /* Raise thread 1 to just below us. */
-    error = seL4_TCB_SetPriority(t1, SCHED0005_HIGHEST_PRIO - 2);
+    error = seL4_TCB_SetPriority(t1, t2, SCHED0005_HIGHEST_PRIO - 2);
     test_check(!error);
 
     /* Drop ours to below thread 1. Thread 1 should run. */
     set_priority_step = 2;
-    error = seL4_TCB_SetPriority(t2, SCHED0005_HIGHEST_PRIO -3 );
+    error = seL4_TCB_SetPriority(t2, t2, SCHED0005_HIGHEST_PRIO -3 );
     test_check(!error);
 
     /* Once thread 1 exits, we should run. */
@@ -1070,7 +1070,7 @@ test_one_periodic_thread(env_t env)
     int error;
 
     /* set priority down so we can run the helper(s) at a higher prio */
-    error = seL4_TCB_SetPriority(env->tcb, env->priority - 1);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, env->priority - 1);
     test_eq(error, seL4_NoError);
 
     create_helper_thread(env, &helper);
@@ -1097,7 +1097,7 @@ test_two_periodic_threads(env_t env)
     volatile unsigned long counters[num_threads];
 
     /* set priority down so we can run the helper(s) at a higher prio */
-    int error = seL4_TCB_SetPriority(env->tcb, env->priority - 1);
+    int error = seL4_TCB_SetPriority(env->tcb, env->tcb, env->priority - 1);
     test_eq(error, seL4_NoError);
 
     for (int i = 0; i < num_threads; i++) {
@@ -1134,7 +1134,7 @@ test_ordering_periodic_threads(env_t env)
     volatile unsigned long counters[num_threads];
 
     /* set priority down so we can run the helper(s) at a higher prio */
-    int error = seL4_TCB_SetPriority(env->tcb, env->priority - 1);
+    int error = seL4_TCB_SetPriority(env->tcb, env->tcb, env->priority - 1);
     test_eq(error, seL4_NoError);
 
     /* sleep for a bit first - collect any waiting timer irqs */
@@ -1203,7 +1203,7 @@ test_budget_overrun(env_t env)
     int error;
 
     /* set priority down so we can run the helper(s) at a higher prio */
-    error = seL4_TCB_SetPriority(env->tcb, env->priority - 1);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, env->priority - 1);
     test_eq(error, seL4_NoError);
 
     create_helper_thread(env, &thirty);
@@ -1266,7 +1266,7 @@ test_resume_no_overflow(env_t env)
     int error = 0;
 
     /* set priority down so we can run the helper(s) at a higher prio */
-    error = seL4_TCB_SetPriority(env->tcb, env->priority);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, env->priority);
     test_eq(error, seL4_NoError);
 
     create_helper_thread(env, &helper);
@@ -1477,7 +1477,7 @@ test_set_higher_prio(struct env* env)
     helper_thread_t thread;
 
     /* set our priority down */
-    int error = seL4_TCB_SetPriority(env->tcb, OUR_PRIO - 1);
+    int error = seL4_TCB_SetPriority(env->tcb, env->tcb, OUR_PRIO - 1);
     test_eq(error, seL4_NoError);
 
     /* start helper at highest prio */

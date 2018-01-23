@@ -46,7 +46,7 @@ test_interrupt_notification_sc(env_t env)
     start_helper(env, &helper, (helper_fn_t) interrupt_helper, (seL4_Word) env, (seL4_Word) &state,
                  runs, endpoint);
     set_helper_priority(env, &helper, 10);
-    error = seL4_TCB_SetPriority(env->tcb, 9);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
     test_eq(error, seL4_NoError);
 
     /* helper should not have finished */
@@ -96,7 +96,7 @@ test_interrupt_notification_and_tcb_sc(env_t env)
     set_helper_priority(env, &helper_with_sc, 10);
 
     /* helper_with_sc will run first */
-    error = seL4_TCB_SetPriority(env->tcb, 9);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
     test_eq(error, seL4_NoError);
 
     /* both helpers should run and wait for irq */
@@ -141,7 +141,7 @@ test_interrupt_no_sc(env_t env)
     start_helper(env, &helper, (helper_fn_t) interrupt_helper, (seL4_Word) env, (seL4_Word) &state,
                  runs, endpoint);
     set_helper_priority(env, &helper, 10);
-    error = seL4_TCB_SetPriority(env->tcb, 9);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
     test_eq(error, seL4_NoError);
 
     /* helper should run and wait for irq */
@@ -185,7 +185,7 @@ test_interrupt_notification_sc_two_clients(env_t env)
     set_helper_priority(env, &helper_first, 10);
 
     /* helper_with_sc will run first */
-    error = seL4_TCB_SetPriority(env->tcb, 9);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
     test_eq(error, seL4_NoError);
 
     /* both helpers should run and wait for irq */
@@ -234,7 +234,7 @@ test_interrupt_delete_sc(env_t env)
     start_helper(env, &helper, (helper_fn_t) interrupt_helper, (seL4_Word) env, (seL4_Word) &state,
                  runs, endpoint);
     set_helper_priority(env, &helper, 10);
-    error = seL4_TCB_SetPriority(env->tcb, 9);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
     test_eq(error, seL4_NoError);
 
     /* helper should run and wait for irq */

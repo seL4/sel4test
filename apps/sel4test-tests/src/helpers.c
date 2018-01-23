@@ -340,7 +340,7 @@ void
 set_helper_priority(env_t env, helper_thread_t *thread, seL4_Word prio)
 {
     UNUSED int error;
-    error = seL4_TCB_SetPriority(thread->thread.tcb.cptr, prio);
+    error = seL4_TCB_SetPriority(thread->thread.tcb.cptr, env->tcb, prio);
     assert(error == seL4_NoError);
 }
 
@@ -348,7 +348,7 @@ void
 set_helper_mcp(env_t env, helper_thread_t *thread, seL4_Word mcp)
 {
     UNUSED int error;
-    error = seL4_TCB_SetMCPriority(thread->thread.tcb.cptr, mcp);
+    error = seL4_TCB_SetMCPriority(thread->thread.tcb.cptr, env->tcb, mcp);
     assert(error == seL4_NoError);
 }
 

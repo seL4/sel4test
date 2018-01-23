@@ -111,7 +111,7 @@ test_nbwait(env_t env)
     start_helper(env, &thread, send_func, badged_endpoint.capPtr, 0xdeadbeef, 0, 0);
     set_helper_priority(env, &thread, env->priority);
     /* let helper run */
-    seL4_TCB_SetPriority(env->tcb, env->priority - 1);
+    seL4_TCB_SetPriority(env->tcb, env->tcb, env->priority - 1);
 
     /* NBRecving should return helpers message */
     info = api_nbrecv(endpoint.cptr, &badge, reply.cptr);

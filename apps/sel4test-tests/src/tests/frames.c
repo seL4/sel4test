@@ -251,7 +251,6 @@ static int test_device_frame_ipcbuf(env_t env)
     /* Try and create a thread with a device frame as its IPC buffer */
     error = api_tcb_configure(get_helper_tcb(&other),
                                0, seL4_CapNull,
-                               seL4_PrioProps_new(100, 100),
                                get_helper_sched_context(&other),
                                env->cspace_root,
                                api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),

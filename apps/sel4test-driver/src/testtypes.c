@@ -197,6 +197,7 @@ void basic_set_up(uintptr_t e)
 
     sel4utils_process_config_t config = process_config_default_simple(&env->simple, TESTS_APP, env->init->priority);
     config = process_config_mcp(config, seL4_MaxPrio);
+    config = process_config_auth(config, simple_get_tcb(&env->simple));
     error = sel4utils_configure_process_custom(&(env->test_process), &env->vka, &env->vspace, config);
     assert(error == 0);
 

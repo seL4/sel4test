@@ -224,7 +224,7 @@ test_notification_binding_no_sc(env_t env)
 
     /* set our prio lower so the helper thread runs when we start it */
     set_helper_priority(env, &helper, 10);
-    error = seL4_TCB_SetPriority(env->tcb, 9);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
     test_eq(error, seL4_NoError);
 
     error = seL4_TCB_BindNotification(helper.thread.tcb.cptr, notification);
@@ -272,7 +272,7 @@ test_notification_binding_with_sc(env_t env)
 
     /* set our prio lower so the helper thread runs when we start it */
     set_helper_priority(env, &helper, 10);
-    error = seL4_TCB_SetPriority(env->tcb, 9);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
     test_eq(error, seL4_NoError);
 
     error = seL4_TCB_BindNotification(helper.thread.tcb.cptr, notification);
