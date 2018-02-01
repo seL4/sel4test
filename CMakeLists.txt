@@ -70,17 +70,11 @@ if (NOT Sel4testAllowSettingsOverride)
         endif()
     endif()
 
-    if (KernelArchX86)
-        # Generally we cannot simulate some more recent features
-        if (SIMULATION)
-            set(KernelSupportPCID OFF CACHE BOOL "" FORCE)
-            set(KernelFSGSBase msr CACHE STRING "" FORCE)
-            set(KernelIOMMU OFF CACHE BOOL "" FORCE)
-            set(KernelFPU FXSAVE CACHE STRING "" FORCE)
-        else()
+    if(SIMULATION)
+        ApplyCommonSimulationSettings()
+    else()
+        if(KernelArchX86)
             set(KernelIOMMU ON CACHE BOOL "" FORCE)
-            # If we switch from simulation to non simulation builds we don't really care about
-            # the other options we changed as they do not change what tests are run
         endif()
     endif()
 
@@ -118,25 +112,7 @@ if (NOT Sel4testAllowSettingsOverride)
         set(HardwareDebugAPI OFF CACHE BOOL "" FORCE)
     endif()
 
-    # Setup flags for different combinations of RELEASE (performance optimized builds) and
-    # VERIFICATION (verification friendly features) builds
-    if (RELEASE)
-        set(CMAKE_BUILD_TYPE "Release" CACHE STRING "" FORCE)
-    else()
-        set(CMAKE_BUILD_TYPE "Debug" CACHE STRING "" FORCE)
-    endif()
-    if (VERIFICATION)
-        set(KernelVerificationBuild ON CACHE BOOL "" FORCE)
-    else()
-        set(KernelVerificationBuild OFF CACHE BOOL "" FORCE)
-        set(KernelPrinting ON CACHE BOOL "" FORCE)
-    endif()
-    # If neither release nor verification then enable debug facilities, otherwise turn them off
-    if ((NOT RELEASE) AND (NOT VERIFICATION))
-        set(KernelDebugBuild ON CACHE BOOL "" FORCE)
-    else()
-        set(KernelDebugBuild OFF CACHE BOOL "" FORCE)
-    endif()
+    ApplyCommonReleaseVerificationSettings(${RELEASE} ${VERIFICATION})
 
     if (BAMBOO)
         set(LibSel4TestPrintXML ON CACHE BOOL "" FORCE)
