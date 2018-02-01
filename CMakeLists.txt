@@ -49,9 +49,6 @@ set(ARM_HYP OFF CACHE BOOL "Hyp mode for aarch32")
 # We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
 # in the cmake-gui to prevent excessively confusing users
 if (NOT Sel4testAllowSettingsOverride)
-    # sel4test creates processes from libsel4utils that require relatively large cspaces
-    set(LibSel4UtilsCSpaceSizeBits 17 CACHE STRING "" FORCE)
-
     # Determine the platform/architecture
     if (${PLATFORM} IN_LIST KernelX86Sel4Arch_all_strings)
         set(KernelArch x86 CACHE STRING "" FORCE)
@@ -100,6 +97,10 @@ if (NOT Sel4testAllowSettingsOverride)
     endif()
 
     # sel4test specific config settings.
+
+    # sel4test creates processes from libsel4utils that require relatively large cspaces
+    set(LibSel4UtilsCSpaceSizeBits 17 CACHE STRING "" FORCE)
+
     if (SIMULATION)
         set(Sel4testHaveCache OFF CACHE BOOL "" FORCE)
     else()
