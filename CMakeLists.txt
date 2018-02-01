@@ -44,7 +44,6 @@ set(DOMAINS OFF CACHE BOOL "Test multiple domains")
 set(SMP OFF CACHE BOOL "(if supported) Test SMP kernel")
 set(PLATFORM "x86_64" CACHE STRING "Platform to test")
 set_property(CACHE PLATFORM PROPERTY STRINGS "x86_64;ia32;sabre;tk1;tk1_hyp;arndale;bbone;bbone_black;beagle;hikey;hikey64;inforce;kzm;odroidx;odroidxu;odroidxu3;rpi3;wandq;zynq")
-mark_as_advanced(SIMULATION RELEASE VERIFICAITON BAMBOO DOMAINS SMP PLATFORM)
 
 # We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
 # in the cmake-gui to prevent excessively confusing users
