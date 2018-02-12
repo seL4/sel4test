@@ -114,6 +114,9 @@ if (NOT Sel4testAllowSettingsOverride)
 
     ApplyCommonReleaseVerificationSettings(${RELEASE} ${VERIFICATION})
 
+    # Need to disable GC sections as it causes our tests to be stripped sometimes
+    set(UserLinkerGCSections OFF CACHE BOOL "" FORCE)
+
     if (BAMBOO)
         set(LibSel4TestPrintXML ON CACHE BOOL "" FORCE)
         set(LibSel4BufferOutput ON CACHE BOOL "" FORCE)
