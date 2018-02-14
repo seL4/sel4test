@@ -10,6 +10,9 @@
  * @TAG(DATA61_BSD)
  */
 
+#include <autoconf.h>
+
+#ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
 #include <sel4/sel4.h>
 #include <vka/object.h>
 
@@ -55,5 +58,5 @@ test_benchmark_utilisation(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(BENCHMARK_0001, "Test seL4 Benchmarking API - Utilisation", test_benchmark_utilisation,
-        config_set(CONFIG_BENCHMARK_TRACK_UTILISATION) && config_set(CONFIG_HAVE_TIMER));
+DEFINE_TEST(BENCHMARK_0001, "Test seL4 Benchmarking API - Utilisation", test_benchmark_utilisation, config_set(CONFIG_HAVE_TIMER));
+#endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */
