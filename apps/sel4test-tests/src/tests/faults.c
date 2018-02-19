@@ -52,6 +52,22 @@ enum {
 
 #define EXPECTED_BADGE 0xabababa
 
+#ifdef CONFIG_ARCH_RISCV
+#if __riscv_xlen == 32
+#define LOAD  lw
+#define STORE sw
+#else /* __riscv_xlen == 64 */
+#define LOAD  ld
+#define STORE sd
+#endif
+
+#define _STRINGIFY(a) #a
+#define STRINGIFY(a) _STRINGIFY(a)
+
+#define LOAD_S STRINGIFY(LOAD)
+#define STORE_S STRINGIFY(STORE)
+#endif
+
 extern char read_fault_address[];
 extern char read_fault_restart_address[];
 static void __attribute__((noinline))
@@ -86,7 +102,7 @@ do_read_fault(void)
     asm volatile (
         "mv a0, %[val]\n\t"
         "read_fault_address:\n\t"
-        "ld a0, 0(%[addrreg])\n\t"
+        LOAD_S " a0, 0(%[addrreg])\n\t"
         "read_fault_restart_address:\n\t"
         "mv %[val], a0\n\t"
         : [val] "+r" (val)
@@ -144,7 +160,7 @@ do_write_fault(void)
     asm volatile (
         "mv a0, %[val]\n\t"
         "write_fault_address:\n\t"
-        "sd a0, 0(%[addrreg])\n\t"
+        STORE_S " a0, 0(%[addrreg])\n\t"
         "write_fault_restart_address:\n\t"
         "mv %[val], a0\n\t"
         : [val] "+r" (val)
@@ -376,7 +392,7 @@ do_bad_instruction(void)
     asm volatile (
         /* Save SP */
         "mv  a0, sp\n\t"
-        "sd a0, 0(%[sp])\n\t"
+        STORE_S " a0, 0(%[sp])\n\t"
 
         /* Set SP to val. */
         "mv sp, %[valptr]\n\t"
@@ -457,7 +473,7 @@ set_good_magic_and_set_pc(seL4_CPtr tcb, seL4_Word new_pc)
 #elif defined(CONFIG_ARCH_RISCV)
     test_assert_fatal((int)ctx.a0 == BAD_MAGIC);
     ctx.a0 = GOOD_MAGIC;
-    ctx.sepc = new_pc;
+    ctx.pc = new_pc;
 #elif defined(CONFIG_ARCH_X86_64)
     test_check((int)ctx.rax == BAD_MAGIC);
     ctx.rax = GOOD_MAGIC;

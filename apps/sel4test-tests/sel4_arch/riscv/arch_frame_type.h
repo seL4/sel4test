@@ -19,9 +19,7 @@
 /* This list must be ordered by size - highest first */
 static const frame_type_t frame_types[] = {
     //{ seL4_RISCV_1G_Page, 0, seL4_HugePageBits, },
-    { seL4_RISCV_2M_Page, 0, seL4_LargePageBits, },
-    //{ seL4_RISCV_2M_Page, BIT(seL4_LargePageBits), seL4_LargePageBits, },
-    //{ seL4_RISCV_2M_Page, BIT(30), seL4_LargePageBits, },
+    { seL4_RISCV_Mega_Page, 0, seL4_LargePageBits, },
     { seL4_RISCV_4K_Page, BIT(seL4_LargePageBits), seL4_PageBits, },
 };
 
