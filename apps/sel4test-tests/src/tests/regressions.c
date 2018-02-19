@@ -472,7 +472,7 @@ int test_write_registers(env_t env)
     context.ebp = 0x00000003;
     context.eflags = 0x00000001; /* Set the CF bit */
 #elif defined(CONFIG_ARCH_RISCV)
-    context.sepc = (seL4_Word)&test_registers;
+    context.pc = (seL4_Word)&test_registers;
     context.a2 = 2;
     context.a3 = 3;
     context.a4 = 4;
