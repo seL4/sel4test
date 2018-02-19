@@ -21,6 +21,11 @@
 
 #include "../test.h"
 
+#if CONFIG_SIZE_BITS == 64
+#define MAGIC_WORD 0xdeadbeefdead0000
+#else
+#define MAGIC_WORD 0x7ead0000u
+#endif
 /*
  * Perform the codeblock given in "code", testing registers before and after to
  * ensure that cloberring does not occur.
@@ -183,44 +188,44 @@
 #define TEST_MRS 0, 0, 0, 0
 #define TEST_REGISTERS(code)                    \
     do {                                        \
-        register long a00 = 0xdeadbeefdead0000; \
-        register long a01 = 0xdeadbeefdead0001; \
-        register long a02 = 0xdeadbeefdead0002; \
-        register long a03 = 0xdeadbeefdead0003; \
-        register long a04 = 0xdeadbeefdead0004; \
-        register long a05 = 0xdeadbeefdead0005; \
-        register long a06 = 0xdeadbeefdead0006; \
-        register long a07 = 0xdeadbeefdead0007; \
-        register long a08 = 0xdeadbeefdead0008; \
-        register long a09 = 0xdeadbeefdead0009; \
-        register long a10 = 0xdeadbeefdead000a; \
-        register long a11 = 0xdeadbeefdead000b; \
-        register long a12 = 0xdeadbeefdead000c; \
-        register long a13 = 0xdeadbeefdead000d; \
-        register long a14 = 0xdeadbeefdead000e; \
-        register long a15 = 0xdeadbeefdead000f; \
+        register unsigned long a00 = MAGIC_WORD + 0; \
+        register unsigned long a01 = MAGIC_WORD + 1; \
+        register unsigned long a02 = MAGIC_WORD + 2; \
+        register unsigned long a03 = MAGIC_WORD + 3; \
+        register unsigned long a04 = MAGIC_WORD + 4; \
+        register unsigned long a05 = MAGIC_WORD + 5; \
+        register unsigned long a06 = MAGIC_WORD + 6; \
+        register unsigned long a07 = MAGIC_WORD + 7; \
+        register unsigned long a08 = MAGIC_WORD + 8; \
+        register unsigned long a09 = MAGIC_WORD + 9; \
+        register unsigned long a10 = MAGIC_WORD + 10; \
+        register unsigned long a11 = MAGIC_WORD + 11; \
+        register unsigned long a12 = MAGIC_WORD + 12; \
+        register unsigned long a13 = MAGIC_WORD + 13; \
+        register unsigned long a14 = MAGIC_WORD + 14; \
+        register unsigned long a15 = MAGIC_WORD + 15; \
         code ;                                  \
         __asm__ __volatile__ (""                \
                 : "+r"(a00), "+r"(a01), "+r"(a02), "+r"(a03), \
                   "+r"(a04), "+r"(a05), "+r"(a06), "+r"(a07), \
                   "+r"(a08), "+r"(a10), "+r"(a11), "+r"(a12), \
                   "+r"(a13));                   \
-        test_assert(a00 == 0xdeadbeefdead0000); \
-        test_assert(a01 == 0xdeadbeefdead0001); \
-        test_assert(a02 == 0xdeadbeefdead0002); \
-        test_assert(a03 == 0xdeadbeefdead0003); \
-        test_assert(a04 == 0xdeadbeefdead0004); \
-        test_assert(a05 == 0xdeadbeefdead0005); \
-        test_assert(a06 == 0xdeadbeefdead0006); \
-        test_assert(a07 == 0xdeadbeefdead0007); \
-        test_assert(a08 == 0xdeadbeefdead0008); \
-        test_assert(a09 == 0xdeadbeefdead0009); \
-        test_assert(a10 == 0xdeadbeefdead000a); \
-        test_assert(a11 == 0xdeadbeefdead000b); \
-        test_assert(a12 == 0xdeadbeefdead000c); \
-        test_assert(a13 == 0xdeadbeefdead000d); \
-        test_assert(a14 == 0xdeadbeefdead000e); \
-        test_assert(a15 == 0xdeadbeefdead000f); \
+        test_assert(a00 == MAGIC_WORD + 0); \
+        test_assert(a01 == MAGIC_WORD + 1); \
+        test_assert(a02 == MAGIC_WORD + 2); \
+        test_assert(a03 == MAGIC_WORD + 3); \
+        test_assert(a04 == MAGIC_WORD + 4); \
+        test_assert(a05 == MAGIC_WORD + 5); \
+        test_assert(a06 == MAGIC_WORD + 6); \
+        test_assert(a07 == MAGIC_WORD + 7); \
+        test_assert(a08 == MAGIC_WORD + 8); \
+        test_assert(a09 == MAGIC_WORD + 9); \
+        test_assert(a10 == MAGIC_WORD + 10); \
+        test_assert(a11 == MAGIC_WORD + 11); \
+        test_assert(a12 == MAGIC_WORD + 12); \
+        test_assert(a13 == MAGIC_WORD + 13); \
+        test_assert(a14 == MAGIC_WORD + 14); \
+        test_assert(a15 == MAGIC_WORD + 15); \
     } while (0)
 #else
 #error "Unknown architecture."
