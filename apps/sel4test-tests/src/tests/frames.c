@@ -199,7 +199,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     set_helper_priority(env, &faulter, 100);
     err = api_tcb_configure(get_helper_tcb(&faulter),
                              fault_ep, seL4_CapNull,
-                             seL4_PrioProps_new(100, 100), get_helper_sched_context(&faulter),
+                             get_helper_sched_context(&faulter),
                              env->cspace_root,
                              api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                              env->page_directory, seL4_NilData,
