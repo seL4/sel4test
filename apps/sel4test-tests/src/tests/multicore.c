@@ -220,7 +220,7 @@ int smp_test_tlb(env_t env)
     set_helper_priority(env, &handler_thread, 100);
 
     error = api_tcb_set_space(get_helper_tcb(&faulter_thread),
-                              fault_ep, seL4_CapNull,
+                              fault_ep,
                               env->cspace_root,
                               api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                               env->page_directory, seL4_NilData);

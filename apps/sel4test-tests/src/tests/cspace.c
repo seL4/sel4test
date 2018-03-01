@@ -104,7 +104,7 @@ test_full_cspace(env_t env)
     test_assert(seL4_GetMR(0) == READY_MAGIC);
 
     /* Now switch its cspace. */
-    error = api_tcb_set_space(get_helper_tcb(&t), t.fault_endpoint, seL4_CapNull,
+    error = api_tcb_set_space(get_helper_tcb(&t), t.fault_endpoint,
                               cnode[0], seL4_NilData, env->page_directory,
                               seL4_NilData);
 

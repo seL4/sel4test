@@ -655,7 +655,7 @@ test_fault(env_t env, int fault_type, bool inter_as)
 
                 set_helper_priority(env, &handler_thread, 101);
                 error = api_tcb_set_space(get_helper_tcb(&faulter_thread),
-                                           fault_ep, seL4_CapNull,
+                                           fault_ep,
                                            faulter_cspace,
                                            api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                                            faulter_vspace, seL4_NilData);

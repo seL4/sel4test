@@ -74,7 +74,6 @@ setup_faulter_thread_for_test(struct env *env, helper_thread_t *faulter_thread)
     error = api_tcb_set_space(
                 get_helper_tcb(faulter_thread),
                 badged_fault_ep_cspath.capPtr,
-                seL4_CapNull,
                 env->cspace_root,
                 api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                 env->page_directory, seL4_NilData);

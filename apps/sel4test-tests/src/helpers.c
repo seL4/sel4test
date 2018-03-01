@@ -552,20 +552,10 @@ void
 set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep)
 {
     ZF_LOGF_IF(!config_set(CONFIG_KERNEL_RT), "Unsupported on non MCS kernel");
-    int error;
-    seL4_Word null = seL4_NilData;
-    if (thread->is_process) {
-        error = api_tcb_set_space(thread->thread.tcb.cptr,
-                      thread->fault_endpoint, tfep, thread->process.cspace.cptr,
-                      api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
-                      thread->process.pd.cptr, null);
-    } else {
-        error = api_tcb_set_space(thread->thread.tcb.cptr, thread->fault_endpoint, tfep,
-                                  env->cspace_root,
-                                  api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
-                                  vspace_get_root(&env->vspace), null);
-    }
+#ifdef CONFIG_KERNEL_RT
+    int error = seL4_TCB_SetTimeoutEndpoint(thread->thread.tcb.cptr, tfep);
     if (error != seL4_NoError) {
         ZF_LOGF("Failed to set tfep\n");
     }
+#endif
 }
