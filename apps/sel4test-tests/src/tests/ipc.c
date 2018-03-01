@@ -752,7 +752,7 @@ test_send_to_no_sc(env_t env)
 
     /* set our prio down, both clients should block as the server cannot
      * run without a schedluing context */
-    error = seL4_TCB_SetPriority(env->tcb, 8);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, 8);
     test_eq(error, seL4_NoError);
     test_eq(state1, 1);
     test_eq(state2, 1);
@@ -798,7 +798,7 @@ test_receive_no_sc(env_t env)
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
     create_helper_thread(env, &client);
     set_helper_priority(env, &client, 10);
-    int error = seL4_TCB_SetPriority(env->tcb, 9);
+    int error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
     test_eq(error, seL4_NoError);
 
       /* start the client, it will increment state and send a message */
@@ -852,7 +852,7 @@ delete_sc_client_sending_on_endpoint(env_t env)
     set_helper_priority(env, &client, 10);
 
     /* set our prio below the helper */
-    int error = seL4_TCB_SetPriority(env->tcb, 9);
+    int error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
     test_eq(error, seL4_NoError);
 
     start_helper(env, &client, (helper_fn_t) sender, endpoint, (seL4_Word) &state, 0, 0);
@@ -894,7 +894,7 @@ delete_sc_client_waiting_on_endpoint(env_t env)
 
     create_helper_thread(env, &waiter);
     set_helper_priority(env, &waiter, 10);
-    int error = seL4_TCB_SetPriority(env->tcb, 9);
+    int error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
     start_helper(env, &waiter, (helper_fn_t) ipc0020_helper, endpoint, (seL4_Word) &state, 0, 0);
 
     /* helper should run and block receiving on endpoint */
@@ -1077,7 +1077,7 @@ static int test_stack_spawning_server(env_t env)
 
     set_helper_priority(env, &stack_spawner, our_prio + 2);
 
-    error = seL4_TCB_SetPriority(env->tcb, our_prio);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, our_prio);
     test_eq(error, seL4_NoError);
 
     set_helper_priority(env, &stack_spawner, our_prio + 2);
@@ -1092,7 +1092,7 @@ static int test_stack_spawning_server(env_t env)
     }
 
     /* set our priority down so servers can run */
-    error = seL4_TCB_SetPriority(env->tcb, our_prio - 2);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, our_prio - 2);
     test_eq(error, seL4_NoError);
 
     for (int i = 0; i < RUNS; i++) {
@@ -1154,7 +1154,7 @@ static int test_delete_reply_cap_sc(env_t env)
     test_eq(error, seL4_NoError);
 
     /* set the client and server prio higher than ours so they can run */
-    error = seL4_TCB_SetPriority(env->tcb, 10);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, 10);
     test_eq(error, seL4_NoError);
 
     set_helper_priority(env, &client, 11);
@@ -1197,7 +1197,7 @@ static int test_delete_reply_cap_then_sc(env_t env)
     seL4_Wait(server_ep, NULL);
 
     /* set our prio down so client can run */
-    int error = seL4_TCB_SetPriority(env->tcb, 10);
+    int error = seL4_TCB_SetPriority(env->tcb, env->tcb, 10);
     test_eq(error, 0);
 
     ZF_LOGD("Removed sc\n");
