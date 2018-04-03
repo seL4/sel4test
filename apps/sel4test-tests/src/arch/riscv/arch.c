@@ -12,13 +12,6 @@
 //#include <platsupport/plat/serial.h>
 //#include <sel4platsupport/device.h>
 
-
-void
-arch_init_timer(env_t env, test_init_data_t *data)
-{
-    return NULL;
-}
-
 void
 arch_init_allocator(env_t env, test_init_data_t *data)
 {

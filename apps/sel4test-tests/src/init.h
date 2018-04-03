@@ -16,6 +16,5 @@
 #include "helpers.h"
 
 void arch_init_allocator(env_t env, test_init_data_t *data);
-void arch_init_timer(env_t env, test_init_data_t *data);
 void arch_init_simple(simple_t *simple);
 seL4_CPtr get_irq_cap(void *data, int id, irq_type_t irq);
