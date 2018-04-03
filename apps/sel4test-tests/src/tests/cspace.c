@@ -118,4 +118,4 @@ test_full_cspace(env_t env)
     cleanup_helper(env, &t);
     return sel4test_get_result();
 }
-//DEFINE_TEST(CSPACE0001, "Test full cspace resolution", test_full_cspace, true)
+DEFINE_TEST(CSPACE0001, "Test full cspace resolution", test_full_cspace, true)
