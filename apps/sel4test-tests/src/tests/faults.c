@@ -518,7 +518,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         test_check(seL4_MessageInfo_get_length(tag) == seL4_VMFault_Length);
         test_check(seL4_GetMR(seL4_VMFault_IP) == (seL4_Word)read_fault_address);
         test_check(seL4_GetMR(seL4_VMFault_Addr) == BAD_VADDR);
-        //test_check(seL4_GetMR(seL4_VMFault_PrefetchFault) == 0);
+        test_check(seL4_GetMR(seL4_VMFault_PrefetchFault) == 0);
         test_check(sel4utils_is_read_fault());
 
         /* Clear MRs to ensure they get repopulated. */
@@ -535,7 +535,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         test_check(seL4_MessageInfo_get_length(tag) == seL4_VMFault_Length);
         test_check(seL4_GetMR(seL4_VMFault_IP) == (seL4_Word)write_fault_address);
         test_check(seL4_GetMR(seL4_VMFault_Addr) == BAD_VADDR);
-        //test_check(seL4_GetMR(seL4_VMFault_PrefetchFault) == 0);
+        test_check(seL4_GetMR(seL4_VMFault_PrefetchFault) == 0);
         test_check(!sel4utils_is_read_fault());
 
         /* Clear MRs to ensure they get repopulated. */
@@ -552,8 +552,8 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         test_check(seL4_MessageInfo_get_length(tag) == seL4_VMFault_Length);
         test_check(seL4_GetMR(seL4_VMFault_IP) == BAD_VADDR);
         test_check(seL4_GetMR(seL4_VMFault_Addr) == BAD_VADDR);
-#if defined(CONFIG_ARCH_ARM)
-        /* Prefetch fault is only set on ARM. */
+#if defined(CONFIG_ARCH_ARM) || defined(CONFIG_ARCH_RISCV)
+        /* Prefetch fault is only set on ARM and RISCV. */
         test_check(seL4_GetMR(seL4_VMFault_PrefetchFault) == 1);
 #endif
         test_check(sel4utils_is_read_fault());
