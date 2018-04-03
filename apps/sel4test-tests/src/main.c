@@ -181,7 +181,7 @@ void init_simple(env_t env, test_init_data_t *init_data)
     env->simple.sched_ctrl = sched_ctrl;
     env->simple.core_count = core_count;
 
-    //arch_init_simple(&env->simple);
+    arch_init_simple(&env->simple);
 }
 
 int
