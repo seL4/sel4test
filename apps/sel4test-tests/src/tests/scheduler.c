@@ -22,12 +22,7 @@
 #define PRIORITY_FUDGE 1
 
 #define MIN_PRIO seL4_MinPrio
-
-#ifdef CONFIG_ARCH_RISCV
-#define MAX_PRIO (OUR_PRIO - 210)
-#else
 #define MAX_PRIO (OUR_PRIO - 1)
-#endif
 #define NUM_PRIOS (MAX_PRIO - MIN_PRIO + 1)
 
 #define CHECK_STEP(var, x) do { \
