@@ -342,8 +342,7 @@ void sel4test_run_tests(struct driver_env* e)
     regfree(&reg);
 
     /* Sort the tests to remove any non determinism in test ordering */
-    /* FIXME: qsort is broken on RISC-V */
-    //qsort(tests, num_tests, sizeof(testcase_t*), test_comparator);
+    qsort(tests, num_tests, sizeof(testcase_t*), test_comparator);
 
 
     /* Now that they are sorted we can easily ensure there are no duplicate tests.
