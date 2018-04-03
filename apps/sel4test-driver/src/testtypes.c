@@ -71,9 +71,9 @@ copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *
 {
     init->serial_irq_cap = sel4utils_copy_cap_to_process(test_process, &env->vka,
                                                          env->serial_objects.serial_irq_path.capPtr);
-    ZF_LOGF_IF(init->serial_irq_cap == 0,
+    ZF_LOGW_IF(init->serial_irq_cap == 0,
                "Failed to copy PS default serial IRQ cap to test child "
-               "process.");
+               "process. Serial server tests will fail.");
 
     // arch_copy_serial_caps(init, env, test_process);
 }
