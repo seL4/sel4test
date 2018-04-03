@@ -471,7 +471,7 @@ set_good_magic_and_set_pc(seL4_CPtr tcb, seL4_Word new_pc)
     ctx.x0 = GOOD_MAGIC;
     ctx.pc = new_pc;
 #elif defined(CONFIG_ARCH_RISCV)
-    test_assert_fatal((int)ctx.a0 == BAD_MAGIC);
+    test_check((int)ctx.a0 == BAD_MAGIC);
     ctx.a0 = GOOD_MAGIC;
     ctx.pc = new_pc;
 #elif defined(CONFIG_ARCH_X86_64)
