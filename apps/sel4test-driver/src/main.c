@@ -331,7 +331,6 @@ void sel4test_run_tests(struct driver_env* e)
     int error = regcomp(&reg, CONFIG_TESTPRINTER_REGEX, REG_EXTENDED | REG_NOSUB);
     ZF_LOGF_IF(error, "Error compiling regex \"%s\"\n", CONFIG_TESTPRINTER_REGEX);
 
-
     int skipped_tests = 0;
     /* get all the tests in the test case section in the driver */
     int num_tests = collate_tests(__start__test_case, driver_tests, tests, 0, &reg, &skipped_tests);
@@ -343,7 +342,6 @@ void sel4test_run_tests(struct driver_env* e)
 
     /* Sort the tests to remove any non determinism in test ordering */
     qsort(tests, num_tests, sizeof(testcase_t*), test_comparator);
-
 
     /* Now that they are sorted we can easily ensure there are no duplicate tests.
      * this just ensures some sanity as if there are duplicates, they could have some
