@@ -336,7 +336,6 @@ asm ("\n"
      "\tjmp reply_trampoline      \n"
     );
 #elif defined(CONFIG_ARCH_RISCV)
-    #warning "TODO test_registers\n"
 asm (
      /* Trampoline for providing the thread a valid stack before entering
       * reply_to_parent. No jal required because reply_to_parent does not
@@ -348,16 +347,37 @@ asm (
      "j reply_to_parent           \n"
 
      "test_registers:             \n"
+
+     "li a0, 1                  \n"
+     "bne ra, a0, test_registers_fail     \n"
      "li a0, 2                  \n"
-     "bne a2, a0, test_registers_fail     \n"
-     "li a0, 3                  \n"
-     "bne a0, a3, test_registers_fail     \n"
+     "bne sp, a0, test_registers_fail     \n"
      "li a0, 4                  \n"
-     "bne a0, a4, test_registers_fail     \n"
+     "bne t0, a0, test_registers_fail     \n"
      "li a0, 5                  \n"
-     "bne a0, a5, test_registers_fail     \n"
+     "bne t1, a0, test_registers_fail     \n"
      "li a0, 6                  \n"
+     "bne t2, a0, test_registers_fail     \n"
+     "li a0, 7                  \n"
+     "bne s0, a0, test_registers_fail     \n"
+     "li a0, 8                  \n"
+     "bne s1, a0, test_registers_fail     \n"
+     "li a0, 10                  \n"
+     "bne a1, a0, test_registers_fail     \n"
+     "li a0, 11                  \n"
+     "bne a2, a0, test_registers_fail     \n"
+     "li a0, 12                  \n"
+     "bne a0, a3, test_registers_fail     \n"
+     "li a0, 13                  \n"
+     "bne a0, a4, test_registers_fail     \n"
+     "li a0, 14                  \n"
+     "bne a0, a5, test_registers_fail     \n"
+     "li a0, 15                  \n"
      "bne a0, a6, test_registers_fail     \n"
+#if 0
+    /* skip x3, see below */
+    context.x4 = 3;
+#endif
 
      /* Return success. Note that we don't bother saving registers or bl because
       * we're not planning to return here and we don't have a valid stack.
@@ -473,15 +493,25 @@ int test_write_registers(env_t env)
     context.eflags = 0x00000001; /* Set the CF bit */
 #elif defined(CONFIG_ARCH_RISCV)
     context.pc = (seL4_Word)&test_registers;
-    context.a2 = 2;
-    context.a3 = 3;
-    context.a4 = 4;
-    context.a5 = 5;
-    context.a6 = 6;
+    context.ra = 1;
+    context.sp = 2;
+    /* skip gp and tp, they are 'unallocatable' */
+    context.t0 = 4;
+    context.t1 = 5;
+    context.t2 = 6;
+    context.s0 = 7;
+    context.s1 = 8;
+    /* skip a0, we use it to load the immediate values to and compare the rest */
+    context.a1 = 10;
+    context.a2 = 11;
+    context.a3 = 12;
+    context.a4 = 13;
+    context.a5 = 14;
+    context.a6 = 15;
 
    /* This is an ABI requirment */
    extern char __global_pointer$[];
-   context.x3 = (seL4_Word) __global_pointer$;
+   context.gp = (seL4_Word) __global_pointer$;
 #else
 #error "Unsupported architecture"
 #endif
