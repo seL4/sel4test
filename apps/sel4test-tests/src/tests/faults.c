@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <sel4/sel4.h>
 #include <sel4utils/arch/util.h>
+#include <utils/util.h>
 
 #include <vka/object.h>
 
@@ -60,9 +61,6 @@ enum {
 #define LOAD  ld
 #define STORE sd
 #endif
-
-#define _STRINGIFY(a) #a
-#define STRINGIFY(a) _STRINGIFY(a)
 
 #define LOAD_S STRINGIFY(LOAD)
 #define STORE_S STRINGIFY(STORE)
