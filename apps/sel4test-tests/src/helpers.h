@@ -59,7 +59,7 @@ typedef struct helper_thread {
 /* create a helper in the current vspace and current cspace */
 void create_helper_thread(env_t env, helper_thread_t *thread);
 /* create a helper with a custom stack size, useful when creating a lot of threads*/
-void create_helped_thread_custom_stack(env_t env, helper_thread_t *thread, size_t stack_pages);
+void create_helper_thread_custom_stack(env_t env, helper_thread_t *thread, size_t stack_pages);
 
 /* create a helper with a clone of the current vspace loadable elf segments,
  * and a new cspace */
