@@ -66,7 +66,7 @@ copy_untypeds_to_process(sel4utils_process_t *process, vka_object_t *untypeds, i
     return range;
 }
 
-UNUSED static void
+static void
 copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process)
 {
     init->serial_irq_cap = sel4utils_copy_cap_to_process(test_process, &env->vka,
