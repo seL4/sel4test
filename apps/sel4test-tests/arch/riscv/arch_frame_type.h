@@ -9,8 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifndef SEL4TEST_TESTS_ARCH_FRAME_TYPE_H_
-#define SEL4TEST_TESTS_ARCH_FRAME_TYPE_H_
+#pragma once
 
 #include <autoconf.h>
 #include <stdint.h>
@@ -24,4 +23,3 @@ static const frame_type_t frame_types[] = {
     { seL4_RISCV_4K_Page, BIT(seL4_LargePageBits), seL4_PageBits, },
 };
 
-#endif /* SEL4TEST_TESTS_ARCH_FRAME_TYPE_H_ */
