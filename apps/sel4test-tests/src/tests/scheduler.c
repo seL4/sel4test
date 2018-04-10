@@ -295,7 +295,7 @@ test_all_priorities(struct env* env)
     for (int prio = MIN_PRIO; prio <= MAX_PRIO; prio++) {
         int idx = prio - MIN_PRIO;
         test_check(idx >= 0 && idx < NUM_PRIOS);
-        create_helper_thread_custom_stack(env, threads[idx], 1);
+        create_helper_thread(env, threads[idx]);
         set_helper_priority(env, threads[idx], prio);
 
         start_helper(env, threads[idx], (helper_fn_t) prio_test_func,
