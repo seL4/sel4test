@@ -788,7 +788,7 @@ timeout_fault_server_fn(seL4_CPtr ep, env_t env, seL4_CPtr ro)
     ZF_LOGD("Server signal recv");
     api_nbsend_recv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL, ro);
     /* spin, this will use up all of the clients budget */
-    sleep_busy(env, NS_IN_S / 2);
+    while (true);
     /* we should not get here, as a timeout fault should have been raised
      * and the handler will reset us */
     ZF_LOGF("Should not get here");
@@ -894,19 +894,13 @@ test_timeout_fault_in_server(env_t env)
         error = handle_timeout_fault(tfep, server_badge, &server.thread, ro, &cp, ep,
                                       client_data, env);
         test_eq(error, 0);
-        /* at this point we potentially need to release the timer lock if it was held
-         * by the client, but we have no way of know this. Importantly we cannot just
-         * blindly release and recreate the lock as the timer_interrupt_thread might
-         * be holding/using it. For this reason this test is currently disabled */
     }
 
     return sel4test_get_result();
 
 }
-/* this test is disabled due to an inability to resolve the cleanup of resources when
- * a timeout fault happens. See the comment in the loop just above for an explanation */
 DEFINE_TEST(TIMEOUTFAULT0002, "Handle a timeout fault in a server",
-            test_timeout_fault_in_server, false && config_set(CONFIG_KERNEL_RT))
+            test_timeout_fault_in_server, config_set(CONFIG_KERNEL_RT))
 
 static void
 timeout_fault_proxy_fn(seL4_CPtr in, seL4_CPtr out, seL4_CPtr ro)
@@ -970,4 +964,4 @@ test_timeout_fault_nested_servers(env_t env)
     return sel4test_get_result();
 }
 /* this test is disabled for the same reason as TIMEOUTFAULT0002 */
-DEFINE_TEST(TIMEOUTFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers, false && config_set(CONFIG_KERNEL_RT))
+DEFINE_TEST(TIMEOUTFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers, config_set(CONFIG_KERNEL_RT))
