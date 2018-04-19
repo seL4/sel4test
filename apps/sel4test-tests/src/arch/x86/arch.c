@@ -18,17 +18,17 @@
 #include <sel4platsupport/arch/io.h>
 #include <sel4utils/sel4_zf_logif.h>
 
-static seL4_CPtr
-get_IOPort_cap(void *data, uint16_t start_port, uint16_t end_port)
+static seL4_Error
+get_IOPort_cap(void *data, uint16_t start_port, uint16_t end_port, seL4_Word root, seL4_Word dest, seL4_Word depth)
 {
     test_init_data_t *init = (test_init_data_t *) data;
 
     if (start_port >= SERIAL_CONSOLE_COM1_PORT &&
            start_port <= SERIAL_CONSOLE_COM1_PORT_END) {
-        return init->serial_io_port_cap;
+        return seL4_CNode_Copy(root, dest, depth, init->root_cnode, init->serial_io_port_cap, CONFIG_WORD_SIZE, seL4_AllRights);
     }
 
-    return seL4_CapNull;
+    return seL4_RangeError;
 }
 
 static seL4_Error
