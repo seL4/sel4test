@@ -78,6 +78,10 @@ typedef struct driver_env *driver_env_t;
 
 vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(driver_env_t env);
 
+#ifdef CONFIG_ARCH_X86
+arch_simple_get_IOPort_cap_fn arch_get_serial_ioport_cap(driver_env_t env);
+#endif
+
 void plat_init(driver_env_t env);
 void arch_copy_timer_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process);
 void plat_copy_timer_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process);
