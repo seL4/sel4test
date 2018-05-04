@@ -98,7 +98,7 @@ simulate-spike64:
 
 simulate-spike32:
 	qemu-system-riscv32 \
-		-nographic -m size=4095M \
+		-nographic -m size=2000M \
 		-machine spike_v1.10 \
 		-kernel images/${apps}-image-riscv-spike
 
