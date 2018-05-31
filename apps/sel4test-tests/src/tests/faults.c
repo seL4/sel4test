@@ -48,8 +48,13 @@ enum {
 #define BAD_VADDR 0xf123456C
 #endif
 #elif CONFIG_WORD_SIZE == 64
+#ifdef CONFIG_ARCH_RISCV_RV64
+/* Sv39: virtual address we test is in the valid 39-bit portion of the virtual address space */
+#define BAD_VADDR 0x5CBA987650
+#else
 /* virtual address we test is in the valid 48-bit portion of the virtual address space */
 #define BAD_VADDR 0x7EDCBA987650
+#endif
 #endif
 #define GOOD_MAGIC 0x15831851
 #define BAD_MAGIC ~GOOD_MAGIC
@@ -554,6 +559,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         test_check(seL4_MessageInfo_get_length(tag) == seL4_VMFault_Length);
         test_check(seL4_GetMR(seL4_VMFault_IP) == BAD_VADDR);
         test_check(seL4_GetMR(seL4_VMFault_Addr) == BAD_VADDR);
+
 #if defined(CONFIG_ARCH_ARM) || defined(CONFIG_ARCH_RISCV)
         /* Prefetch fault is only set on ARM and RISCV. */
         test_check(seL4_GetMR(seL4_VMFault_PrefetchFault) == 1);
