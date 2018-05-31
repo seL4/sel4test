@@ -22,6 +22,10 @@ add_subdirectory(libsel4testsupport)
 RequireFile(SEL4TEST_DOMAIN_SCHEDULE domain_schedule.c CMAKE_FIND_ROOT_PATH_BOTH)
 set(KernelDomainSchedule "${SEL4TEST_DOMAIN_SCHEDULE}" CACHE INTERNAL "")
 
+if(KernelSel4ArchX86_64)
+    SetSimulationScriptProperty(MEM_SIZE "3G")
+endif()
+
 GenerateSimulateScript()
 
 # Declare a cache variable that enables/disablings the forcing of cache variables to
