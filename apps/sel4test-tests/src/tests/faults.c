@@ -23,8 +23,6 @@
 #include "../test.h"
 #include "../helpers.h"
 
-static seL4_CPtr global_reply;
-
 enum {
     FAULT_DATA_READ_PAGEFAULT = 1,
     FAULT_DATA_WRITE_PAGEFAULT = 2,
@@ -34,9 +32,8 @@ enum {
 };
 
 enum {
- BADGED,
- RESTART,
- PROCESS
+ BADGED = seL4_WordBits - 1,
+ RESTART = seL4_WordBits - 2,
 };
 
 /* Use a different test virtual address on 32 and 64-bit systems so that we can exercise
@@ -501,14 +498,13 @@ set_good_magic_and_set_pc(seL4_CPtr tcb, seL4_Word new_pc)
 
 static int
 handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
-             int flags)
+             seL4_Word flags_and_reply)
 {
     seL4_MessageInfo_t tag;
     seL4_Word sender_badge = 0;
-    bool badged = flags & BIT(BADGED);
-    bool restart = flags & BIT(RESTART);
-    bool is_process = flags & BIT(PROCESS);
-    seL4_CPtr reply = is_process ? SEL4UTILS_REPLY_SLOT : global_reply;
+    seL4_CPtr reply = flags_and_reply & MASK(RESTART);
+    bool badged = flags_and_reply & BIT(BADGED);
+    bool restart = flags_and_reply & BIT(RESTART);
 
     tag = api_recv(fault_ep, &sender_badge, reply);
 
@@ -697,6 +693,10 @@ test_fault(env_t env, int fault_type, bool inter_as)
     helper_thread_t faulter_thread;
     int error;
 
+    vka_object_t reply;
+    error = vka_alloc_reply(&env->vka, &reply);
+    test_eq(error, 0);
+
     for (int restart = 0; restart <= 1; restart++) {
         for (int prio = 100; prio <= 102; prio++) {
             for (int badged = 0; badged <= 1; badged++) {
@@ -710,7 +710,7 @@ test_fault(env_t env, int fault_type, bool inter_as)
                     fault_ep = badged_fault_ep;
                 }
 
-                seL4_CPtr faulter_vspace, faulter_cspace;
+                seL4_CPtr faulter_vspace, faulter_cspace, reply_cptr;
 
                 if (inter_as) {
                     create_helper_process(env, &faulter_thread);
@@ -735,8 +735,9 @@ test_fault(env_t env, int fault_type, bool inter_as)
                     handler_arg1 = sel4utils_copy_path_to_process(&handler_thread.process, path);
                     assert(handler_arg1 != -1);
 
-                    global_reply = sel4utils_copy_cap_to_process(&handler_thread.process, &env->vka,
-                                                                 get_helper_reply(&handler_thread));
+                    reply_cptr = sel4utils_copy_cap_to_process(&handler_thread.process, &env->vka,
+                                                               reply.cptr);
+                    test_neq(reply_cptr, seL4_CapNull);
                     faulter_cspace = faulter_thread.process.cspace.cptr;
                     faulter_vspace = faulter_thread.process.pd.cptr;
                 } else {
@@ -746,7 +747,7 @@ test_fault(env_t env, int fault_type, bool inter_as)
                     faulter_vspace = env->page_directory;
                     handler_arg0 = fault_ep;
                     handler_arg1 = get_helper_tcb(&faulter_thread);
-                    global_reply = get_helper_reply(&handler_thread);
+                    reply_cptr = reply.cptr;
                 }
 
                 set_helper_priority(env, &handler_thread, 101);
@@ -758,12 +759,13 @@ test_fault(env_t env, int fault_type, bool inter_as)
                 test_assert(!error);
                 set_helper_priority(env, &faulter_thread, prio);
 
-                seL4_Word flags = (inter_as ? BIT(PROCESS) : 0) |
-                                  (badged ? BIT(BADGED) : 0)    |
+                test_leq(reply_cptr, BIT(BADGED));
+                seL4_Word flags_and_reply = reply_cptr |
+                                  (badged ? BIT(BADGED) : 0) |
                                   (restart ? BIT(RESTART) : 0);
 
                 start_helper(env, &handler_thread, (helper_fn_t) handle_fault,
-                             handler_arg0, handler_arg1, fault_type, flags);
+                             handler_arg0, handler_arg1, fault_type, flags_and_reply);
                 start_helper(env, &faulter_thread, (helper_fn_t) cause_fault,
                              fault_type, 0, 0, 0);
                 wait_for_helper(&handler_thread);

@@ -168,7 +168,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     helper_thread_t handler;
     create_helper_thread(env, &handler);
     set_helper_priority(env, &handler, 100);
-    start_helper(env, &handler, handle, fault_ep, get_helper_reply(&handler), 0, 0);
+    start_helper(env, &handler, handle, fault_ep, get_helper_reply(&faulter), 0, 0);
 
     /* Wait for the fault to happen */
     void *res = (void*)(seL4_Word)wait_for_helper(&handler);
@@ -208,7 +208,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     start_helper(env, &faulter, dest, 0, 0, 0 ,0);
     create_helper_thread(env, &handler);
     set_helper_priority(env, &handler, 100);
-    start_helper(env, &handler, handle, fault_ep, get_helper_reply(&handler), 0, 0);
+    start_helper(env, &handler, handle, fault_ep, get_helper_reply(&faulter), 0, 0);
 
     /* Wait for the fault to happen */
     res = (void*)(seL4_Word)wait_for_helper(&handler);
@@ -358,7 +358,7 @@ static int test_unmap_on_delete(env_t env)
     helper_thread_t handler;
     create_helper_thread(env, &handler);
     set_helper_priority(env, &handler, 100);
-    start_helper(env, &handler, handle, fault_ep, get_helper_reply(&handler), 0, 0);
+    start_helper(env, &handler, handle, fault_ep, get_helper_reply(&faulter), 0, 0);
 
     /* Wait for the fault to happen */
     void *res = (void*)(seL4_Word)wait_for_helper(&handler);

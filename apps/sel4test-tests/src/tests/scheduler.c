@@ -719,7 +719,7 @@ test_ipc_ordered(env_t env)
     sched0007_start_client(env, clients, endpoint, 3);
 
     /* start the server */
-    start_helper(env, &server, (helper_fn_t) sched0007_server, endpoint, server.thread.reply.cptr, 0, 0);
+    start_helper(env, &server, (helper_fn_t) sched0007_server, endpoint, clients[0].thread.reply.cptr, 0, 0);
 
     /* server returns success if all requests are processed in order */
     return wait_for_helper(&server);
@@ -1003,7 +1003,8 @@ test_resume_empty_or_no_sched_context(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0010, "Test resuming a thread with empty or missing scheduling context",
-            test_resume_empty_or_no_sched_context, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER))
+            test_resume_empty_or_no_sched_context,
+            (config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER)))
 
 void
 sched0011_helper(void)

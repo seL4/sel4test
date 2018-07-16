@@ -271,6 +271,11 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);
     seL4_Word start_number = 0xabbacafe;
 
+    seL4_CPtr a_reply = vka_alloc_reply_leaky(vka);
+    test_neq(a_reply, seL4_CapNull);
+    seL4_CPtr b_reply = vka_alloc_reply_leaky(vka);
+    test_neq(b_reply, seL4_CapNull);
+
     /* Test sending messages of varying lengths. */
     /* Please excuse the awful indending here. */
     for (int core_a = 0; core_a < nr_cores; core_a++) {
@@ -295,16 +300,18 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
                             thread_b_arg0 = sel4utils_copy_path_to_process(&thread_b.process, path);
                             assert(thread_b_arg0 != -1);
 
-                            thread_a_reply = SEL4UTILS_REPLY_SLOT;
-                            thread_b_reply = SEL4UTILS_REPLY_SLOT;
+                            thread_a_reply = sel4utils_copy_cap_to_process(&thread_a.process, vka, a_reply);
+                            test_neq(thread_a_reply, seL4_CapNull);
+                            thread_b_reply = sel4utils_copy_cap_to_process(&thread_b.process, vka, b_reply);
+                            test_neq(thread_b_reply, seL4_CapNull);
 
                         } else {
                             create_helper_thread(env, &thread_a);
                             create_helper_thread(env, &thread_b);
                             thread_a_arg0 = ep;
                             thread_b_arg0 = ep;
-                            thread_a_reply = get_helper_reply(&thread_a);
-                            thread_b_reply = get_helper_reply(&thread_b);
+                            thread_a_reply = a_reply;
+                            thread_b_reply = b_reply;
                         }
 
                         set_helper_priority(env, &thread_a, sender_prio);
