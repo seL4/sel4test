@@ -48,8 +48,12 @@ enum {
 #define BAD_VADDR 0xf123456C
 #endif
 #elif CONFIG_WORD_SIZE == 64
+#ifdef CONFIG_ARCH_RISCV64
+#define BAD_VADDR 0x3CBA987650  /* Valid Sv39 Virtual Address */
+#else
 /* virtual address we test is in the valid 48-bit portion of the virtual address space */
 #define BAD_VADDR 0x7EDCBA987650
+#endif
 #endif
 #define GOOD_MAGIC 0x15831851
 #define BAD_MAGIC ~GOOD_MAGIC
