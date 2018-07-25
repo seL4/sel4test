@@ -42,7 +42,7 @@ enum {
 /* Use a different test virtual address on 32 and 64-bit systems so that we can exercise
    the full address space to make sure fault messages are not truncating fault information. */
 #if CONFIG_WORD_SIZE == 32
-#ifdef CONFIG_ARCH_RISCV_RV32
+#ifdef CONFIG_ARCH_RISCV32
 #define BAD_VADDR 0x7ffedcba    /* 32-bit RISCV userspace */
 #else
 #define BAD_VADDR 0xf123456C
