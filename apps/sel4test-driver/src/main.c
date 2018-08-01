@@ -432,7 +432,7 @@ void *main_continued(void *arg UNUSED)
 
     /* parse elf region data about the test image to pass to the tests app */
     num_elf_regions = sel4utils_elf_num_regions(TESTS_APP);
-    assert(num_elf_regions < MAX_REGIONS);
+    assert(num_elf_regions <= MAX_REGIONS);
     sel4utils_elf_reserve(NULL, TESTS_APP, elf_regions);
 
     /* copy the region list for the process to clone itself */
