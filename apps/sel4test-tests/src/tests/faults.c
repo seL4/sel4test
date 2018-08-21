@@ -695,7 +695,6 @@ test_fault(env_t env, int fault_type, bool inter_as)
 
     vka_object_t reply;
     error = vka_alloc_reply(&env->vka, &reply);
-    test_eq(error, 0);
 
     for (int restart = 0; restart <= 1; restart++) {
         for (int prio = 100; prio <= 102; prio++) {
@@ -737,7 +736,6 @@ test_fault(env_t env, int fault_type, bool inter_as)
 
                     reply_cptr = sel4utils_copy_cap_to_process(&handler_thread.process, &env->vka,
                                                                reply.cptr);
-                    test_neq(reply_cptr, seL4_CapNull);
                     faulter_cspace = faulter_thread.process.cspace.cptr;
                     faulter_vspace = faulter_thread.process.pd.cptr;
                 } else {

@@ -272,9 +272,7 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
     seL4_Word start_number = 0xabbacafe;
 
     seL4_CPtr a_reply = vka_alloc_reply_leaky(vka);
-    test_neq(a_reply, seL4_CapNull);
     seL4_CPtr b_reply = vka_alloc_reply_leaky(vka);
-    test_neq(b_reply, seL4_CapNull);
 
     /* Test sending messages of varying lengths. */
     /* Please excuse the awful indending here. */
@@ -301,9 +299,7 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
                             assert(thread_b_arg0 != -1);
 
                             thread_a_reply = sel4utils_copy_cap_to_process(&thread_a.process, vka, a_reply);
-                            test_neq(thread_a_reply, seL4_CapNull);
                             thread_b_reply = sel4utils_copy_cap_to_process(&thread_b.process, vka, b_reply);
-                            test_neq(thread_b_reply, seL4_CapNull);
 
                         } else {
                             create_helper_thread(env, &thread_a);
