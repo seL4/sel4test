@@ -940,8 +940,8 @@ handle_timeout_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread_
     seL4_SetMR(0, -1);
     seL4_Send(reply, info);
 
-    size_t stack_size = (uintptr_t) cp->thread->stack_top - (uintptr_t) sel4utils_get_sp(cp->regs);
-    memcpy((void *) sel4utils_get_sp(cp->regs), cp->stack, stack_size);
+    size_t stack_size = (uintptr_t) cp->thread->stack_top - cp->sp;
+    memcpy((void *) cp->sp, cp->stack, stack_size);
 
     /* restore server */
     ZF_LOGD("Restoring server");
