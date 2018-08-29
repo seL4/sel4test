@@ -48,7 +48,7 @@ set(DOMAINS OFF CACHE BOOL "Test multiple domains")
 set(SMP OFF CACHE BOOL "(if supported) Test SMP kernel")
 set(PLATFORM "x86_64" CACHE STRING "Platform to test")
 set_property(CACHE PLATFORM PROPERTY STRINGS ${KernelX86Sel4Arch_all_strings} ${KernelARMPlatform_all_strings} ${KernelRiscVPlatform_all_strings})
-set(ARM_HYP OFF CACHE BOOL "Hyp mode for aarch32")
+set(ARM_HYP OFF CACHE BOOL "Hyp mode for ARM platforms")
 
 # We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
 # in the cmake-gui to prevent excessively confusing users
@@ -72,13 +72,17 @@ if (NOT Sel4testAllowSettingsOverride)
         set(KernelArch arm CACHE STRING "" FORCE)
         set(KernelARMPlatform ${PLATFORM} CACHE STRING "" FORCE)
 
+        if(ARM_HYP)
+            set(KernelArmHypervisorSupport ON CACHE BOOL "" FORCE)
+        endif()
+
         if(AARCH64)
             set(KernelArmSel4Arch "aarch64" CACHE STRING "" FORCE)
-        elseif(ARM_HYP)
-            set(KernelArmSel4Arch "arm_hyp" CACHE STRING "" FORCE)
-            set(KernelArmHypervisorSupport ON CACHE BOOL "" FORCE)
-        else()
+        elseif(AARCH32)
             set(KernelArmSel4Arch "aarch32" CACHE STRING "" FORCE)
+            if(ARM_HYP)
+                set(KernelArmSel4Arch "arm_hyp" CACHE STRING "" FORCE)
+            endif()
         endif()
     endif()
 
