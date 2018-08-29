@@ -292,7 +292,7 @@ start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
 void
 cleanup_helper(env_t env, helper_thread_t *thread)
 {
-
+    seL4_TCB_Suspend(thread->thread.tcb.cptr);
     vka_free_object(&env->vka, &thread->local_endpoint);
 
     if (thread->is_process) {
