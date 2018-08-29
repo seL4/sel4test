@@ -46,14 +46,14 @@ test_benchmark_utilisation(env_t env)
     test_neq(ipcbuffer[BENCHMARK_TOTAL_UTILISATION], (uint64_t) 0);
 
     /* Idle thread should be less than the overall utilisation */
-    test_le(ipcbuffer[BENCHMARK_IDLE_LOCALCPU_UTILISATION], ipcbuffer[BENCHMARK_TOTAL_UTILISATION]);
+    test_lt(ipcbuffer[BENCHMARK_IDLE_LOCALCPU_UTILISATION], ipcbuffer[BENCHMARK_TOTAL_UTILISATION]);
 
     /*
      * We slept/blocked for 1 second, so idle thread should get scheduled at least 75% of this time.
      * It's assumed (and how sel4test works currently) that THIS thread is the highest
      * priority running thread, and all other threads are blocked, in order for the idle thread to run.
      */
-    test_ge(((ipcbuffer[BENCHMARK_IDLE_LOCALCPU_UTILISATION] * 100) /
+    test_gt(((ipcbuffer[BENCHMARK_IDLE_LOCALCPU_UTILISATION] * 100) /
                 ipcbuffer[BENCHMARK_TOTAL_UTILISATION]), (uint64_t) 50);
 
     return sel4test_get_result();

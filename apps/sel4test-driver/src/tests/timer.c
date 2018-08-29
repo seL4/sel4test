@@ -52,7 +52,7 @@ test_gettime_timeout(driver_env_t env)
 
     end = timestamp(env);
 
-    test_ge(end, start);
+    test_gt(end, start);
 
     error = ltimer_reset(&env->timer.ltimer);
     test_assert_fatal(!error);

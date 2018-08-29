@@ -358,7 +358,7 @@ void sel4test_run_tests(struct driver_env* e)
     sel4test_start_suite("sel4test");
     /* First: test that there are tests to run */
     sel4test_start_test("Test that there are tests", tests_done);
-    test_ge(num_tests, 0);
+    test_gt(num_tests, 0);
     sel4test_end_test(sel4test_get_result());
     tests_done++;
 

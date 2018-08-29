@@ -449,7 +449,7 @@ test_sched_context_goes_to_to_caller_on_reply_cap_delete(env_t env)
 
     /* wait a bit, client should have called server */
     sel4test_sleep(env, 0.2 * NS_IN_S);
-    test_ge(state, prev_state);
+    test_gt(state, prev_state);
     prev_state = state;
 
     /* delete reply cap */
@@ -501,7 +501,7 @@ test_sched_context_unbind_server(env_t env)
 
     /* wait a bit, client should have called server */
     sel4test_sleep(env, 0.2 * NS_IN_S);
-    test_ge(state, prev_state);
+    test_gt(state, prev_state);
     prev_state = state;
 
     /* unbind scheduling context */
@@ -560,7 +560,7 @@ test_revoke_reply_on_call_chain_returns_sc(env_t env)
 
     /* let a call b which calls the server, let the server run a bit */
     sel4test_sleep(env, 0.2 * NS_IN_S);
-    test_ge(state, 0);
+    test_gt(state, 0);
 
     /* kill the servers reply cap */
     error = cnode_delete(env, server_reply);
@@ -608,7 +608,7 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
 
     /* let a call b which calls the server, let the server run a bit */
     sel4test_sleep(env, 0.2 * NS_IN_S);
-    test_ge(state, 0);
+    test_gt(state, 0);
 
     /* kill the proxies reply cap */
     ZF_LOGD("Nuke proxy reply cap");
@@ -658,7 +658,7 @@ test_revoke_sched_context_on_call_chain(env_t env)
 
     /* let client call proxy which calls the server, let the server run a bit */
     sel4test_sleep(env, 0.2 * NS_IN_S);
-    test_ge(state, 0);
+    test_gt(state, 0);
 
     /* nuke the scheduling context */
     vka_free_object(&env->vka, &client.thread.sched_context);
