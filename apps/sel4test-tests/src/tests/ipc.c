@@ -39,7 +39,7 @@ send_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
         seL4_Send(endpoint, tag);
     }
 
-    return sel4test_get_result();
+    return SUCCESS;
 }
 
 static int
@@ -54,12 +54,13 @@ nbsend_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra
         seL4_NBSend(endpoint, tag);
     }
 
-    return sel4test_get_result();
+    return SUCCESS;
 }
 
 static int
 call_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
 {
+    test_result_t result = SUCCESS;
     FOR_EACH_LENGTH(length) {
         seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length);
 
@@ -74,24 +75,29 @@ call_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
         seL4_Word actual_len = length;
         /* Sanity check the received message. */
         if (actual_len <= seL4_MsgMaxLength) {
-            test_assert(seL4_MessageInfo_get_length(tag) == actual_len);
+            if (actual_len != seL4_MessageInfo_get_length(tag)) {
+                result = FAILURE;
+            }
         } else {
             actual_len = seL4_MsgMaxLength;
         }
 
         for (int i = 0; i < actual_len; i++) {
             seL4_Word mr = seL4_GetMR(i);
-            test_check(mr == seed);
+            if (mr != seed) {
+                result = FAILURE;
+            }
             seed++;
         }
     }
 
-    return sel4test_get_result();
+    return result;
 }
 
 static int
 wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
 {
+    test_result_t result = SUCCESS;
     FOR_EACH_LENGTH(length) {
         seL4_MessageInfo_t tag;
         seL4_Word sender_badge = 0;
@@ -99,28 +105,33 @@ wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
         tag = api_recv(endpoint, &sender_badge, reply);
         seL4_Word actual_len = length;
         if (actual_len <= seL4_MsgMaxLength) {
-            test_assert(seL4_MessageInfo_get_length(tag) == actual_len);
+            if (actual_len != seL4_MessageInfo_get_length(tag)) {
+                result = FAILURE;
+            }
         } else {
             actual_len = seL4_MsgMaxLength;
         }
 
         for (int i = 0; i < actual_len; i++) {
             seL4_Word mr = seL4_GetMR(i);
-            test_check(mr == seed);
+            if (mr != seed) {
+                result = FAILURE;
+            }
             seed++;
         }
     }
 
-    return sel4test_get_result();
+    return result;
 }
 
 static int
 nbwait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word nbwait_should_wait)
 {
     if (!nbwait_should_wait) {
-        return sel4test_get_result();
+        return SUCCESS;
     }
 
+    test_result_t result = SUCCESS;
     FOR_EACH_LENGTH(length) {
         seL4_MessageInfo_t tag;
         seL4_Word sender_badge = 0;
@@ -128,19 +139,23 @@ nbwait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word nbwai
         tag = api_recv(endpoint, &sender_badge, reply);
         seL4_Word actual_len = length;
         if (actual_len <= seL4_MsgMaxLength) {
-            test_assert(seL4_MessageInfo_get_length(tag) == actual_len);
+            if (actual_len != seL4_MessageInfo_get_length(tag)) {
+                result = FAILURE;
+            }
         } else {
             actual_len = seL4_MsgMaxLength;
         }
 
         for (int i = 0; i < actual_len; i++) {
             seL4_Word mr = seL4_GetMR(i);
-            test_check(mr == seed);
+            if (mr != seed) {
+                result = FAILURE;
+            }
             seed++;
         }
     }
 
-    return sel4test_get_result();
+    return result;
 }
 
 static int
@@ -149,6 +164,7 @@ replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Word ex
     int first = 1;
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
 
+    test_result_t result = SUCCESS;
     FOR_EACH_LENGTH(length) {
         seL4_Word sender_badge = 0;
 
@@ -167,14 +183,18 @@ replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Word ex
         seL4_Word actual_len = length;
         /* Sanity check the received message. */
         if (actual_len <= seL4_MsgMaxLength) {
-            test_assert(seL4_MessageInfo_get_length(tag) == actual_len);
+            if (actual_len != seL4_MessageInfo_get_length(tag)) {
+                result = FAILURE;
+            }
         } else {
             actual_len = seL4_MsgMaxLength;
         }
 
         for (int i = 0; i < actual_len; i++) {
             seL4_Word mr = seL4_GetMR(i);
-            test_check(mr == seed);
+            if (mr != seed) {
+                result = FAILURE;
+            }
             seed++;
         }
         /* Seed will have changed more if the message was truncated. */
@@ -192,7 +212,7 @@ replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Word ex
     /* Need to do one last reply to match call. */
     api_reply(reply, tag);
 
-    return sel4test_get_result();
+    return result;
 }
 
 static int
@@ -200,6 +220,7 @@ reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Wo
 {
     int first = 1;
 
+    test_result_t result = SUCCESS;
     seL4_MessageInfo_t tag;
     FOR_EACH_LENGTH(length) {
         seL4_Word sender_badge = 0;
@@ -216,14 +237,18 @@ reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Wo
         seL4_Word actual_len = length;
         /* Sanity check the received message. */
         if (actual_len <= seL4_MsgMaxLength) {
-            test_assert(seL4_MessageInfo_get_length(tag) == actual_len);
+            if (actual_len != seL4_MessageInfo_get_length(tag)) {
+                result = FAILURE;
+            }
         } else {
             actual_len = seL4_MsgMaxLength;
         }
 
         for (int i = 0; i < actual_len; i++) {
             seL4_Word mr = seL4_GetMR(i);
-            test_check(mr == seed);
+            if (mr != seed) {
+                result = FAILURE;
+            }
             seed++;
         }
         /* Seed will have changed more if the message was truncated. */
@@ -241,7 +266,7 @@ reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Wo
     /* Need to do one last reply to match call. */
     api_reply(reply, tag);
 
-    return sel4test_get_result();
+    return result;
 }
 
 #ifdef CONFIG_KERNEL_RT
@@ -257,7 +282,7 @@ nbsendrecv_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word u
     /* signal we're done to hanging second thread */
     seL4_NBSend(endpoint, seL4_MessageInfo_new(0, 0, 0, MAX_LENGTH));
 
-    return sel4test_get_result();
+    return SUCCESS;
 }
 #endif /* CONFIG_KERNEL_RT */
 
@@ -336,8 +361,10 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
                                          thread_b_reply, nbwait_should_wait);
                         }
 
-                        wait_for_helper(&thread_a);
-                        wait_for_helper(&thread_b);
+                        test_result_t res = wait_for_helper(&thread_a);
+                        test_eq(res, SUCCESS);
+                        res = wait_for_helper(&thread_b);
+                        test_eq(res, SUCCESS);
 
                         cleanup_helper(env, &thread_a);
                         cleanup_helper(env, &thread_b);
