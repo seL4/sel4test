@@ -323,9 +323,10 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
                             thread_b_arg0 = sel4utils_copy_path_to_process(&thread_b.process, path);
                             assert(thread_b_arg0 != -1);
 
-                            thread_a_reply = sel4utils_copy_cap_to_process(&thread_a.process, vka, a_reply);
-                            thread_b_reply = sel4utils_copy_cap_to_process(&thread_b.process, vka, b_reply);
-
+                            if (config_set(CONFIG_KERNEL_RT)) {
+                                thread_a_reply = sel4utils_copy_cap_to_process(&thread_a.process, vka, a_reply);
+                                thread_b_reply = sel4utils_copy_cap_to_process(&thread_b.process, vka, b_reply);
+                            }
                         } else {
                             create_helper_thread(env, &thread_a);
                             create_helper_thread(env, &thread_b);
