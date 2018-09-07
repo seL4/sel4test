@@ -1039,7 +1039,12 @@ test_timeout_fault_nested_servers(env_t env)
 
     /* create client */
     create_helper_thread(env, &client);
-    set_helper_sched_params(env, &client, 0.1 * US_IN_S, US_IN_S, client_data);
+
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0),
+                                     client.thread.sched_context.cptr,
+                                     0.1 * US_IN_S, 0.5 * US_IN_S, 0, client_data);
+    test_eq(error, 0);
+
     start_helper(env, &client, (helper_fn_t) timeout_fault_client_fn, client_proxy_ep, 0, 0, 0);
 
     /* handle some faults */
