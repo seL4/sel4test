@@ -84,18 +84,19 @@ if (NOT Sel4testAllowSettingsOverride)
                 set(KernelArmSel4Arch "arm_hyp" CACHE STRING "" FORCE)
             endif()
         endif()
+
+        # Elfloader settings that correspond to how Data61 sets its boards up.
+        ApplyData61ElfLoaderSettings(${KernelARMPlatform} ${KernelArmSel4Arch})
     endif()
 
     if(SIMULATION)
-        ApplyCommonSimulationSettings()
+        ApplyCommonSimulationSettings(${KernelArch})
     else()
         if(KernelArchX86)
             set(KernelIOMMU ON CACHE BOOL "" FORCE)
         endif()
     endif()
 
-    # Elfloader settings that correspond to how Data61 sets its boards up.
-    ApplyData61ElfLoaderSettings()
 
     # sel4test specific config settings.
 
