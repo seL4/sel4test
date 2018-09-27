@@ -41,8 +41,13 @@ void reply_to_parent(seL4_Word result)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(result, 0, 0, 0);
     seL4_Word badge = 0; /* ignored */
+    seL4_Word empty = 0; /* ignored */
 
-    seL4_Send(shared_endpoint, info);
+#if defined(CONFIG_ARCH_IA32)
+    seL4_SendWithMRs(shared_endpoint, info, &empty, &empty);
+#else
+    seL4_SendWithMRs(shared_endpoint, info, &empty, &empty, &empty, &empty);
+#endif
 
     /* Block to avoid returning and assume our parent will kill us. */
     seL4_Wait(shared_endpoint, &badge);
