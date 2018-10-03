@@ -44,10 +44,14 @@ void reply_to_parent(seL4_Word result)
     seL4_Word empty = 0; /* ignored */
 
 #if defined(CONFIG_ARCH_IA32)
+#if defined(CONFIG_KERNEL_RT)
+    seL4_SendWithMRs(shared_endpoint, info, &empty);
+#else
     seL4_SendWithMRs(shared_endpoint, info, &empty, &empty);
+#endif /* CONFIG_KERNEL_RT */
 #else
     seL4_SendWithMRs(shared_endpoint, info, &empty, &empty, &empty, &empty);
-#endif
+#endif /* CONFIG_ARCH_IA32 */
 
     /* Block to avoid returning and assume our parent will kill us. */
     seL4_Wait(shared_endpoint, &badge);
