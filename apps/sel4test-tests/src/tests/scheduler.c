@@ -1382,7 +1382,9 @@ test_yieldTo_cleanup(env_t env)
     ZF_LOGD("Wait for from\n");
     wait_for_helper(&from);
     test_eq(ret.error, seL4_NoError);
-    test_eq(ret.consumed, 0llu);
+    test_gt(ret.consumed, 0llu);
+
+    ret.consumed = 0;
 
     /* restart threads */
     cleanup_helper(env, &from);
@@ -1407,7 +1409,7 @@ test_yieldTo_cleanup(env_t env)
     ZF_LOGD("Wait for from\n");
     wait_for_helper(&from);
     test_eq(ret.error, seL4_NoError);
-    test_eq(ret.consumed, 0llu);
+    test_gt(ret.consumed, 0llu);
 
     /* restart threads */
     cleanup_helper(env, &from);

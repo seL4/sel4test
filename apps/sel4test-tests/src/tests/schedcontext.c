@@ -456,6 +456,7 @@ test_sched_context_goes_to_to_caller_on_reply_cap_delete(env_t env)
     error = cnode_delete(env, reply);
     test_eq(error, seL4_NoError);
 
+    prev_state = state;
     /* wait a bit, check server not running anymore */
     sel4test_sleep(env, 0.2 * NS_IN_S);
     test_eq(state, prev_state);
