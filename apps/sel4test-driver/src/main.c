@@ -441,7 +441,9 @@ void *main_continued(void *arg UNUSED)
 
     /* setup init data that won't change test-to-test */
     env.init->priority = seL4_MaxPrio - 1;
-    plat_init(&env);
+    if (plat_init) {
+        plat_init(&env);
+    }
 
     /* Allocate a reply object for the RT kernel. */
     if (config_set(CONFIG_KERNEL_RT)) {

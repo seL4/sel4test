@@ -82,7 +82,7 @@ vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(driver_env_t env);
 arch_simple_get_IOPort_cap_fn arch_get_serial_ioport_cap(driver_env_t env);
 #endif
 
-void plat_init(driver_env_t env);
+void plat_init(driver_env_t env) WEAK;
 void arch_copy_timer_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process);
 void plat_copy_timer_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process);
 void arch_copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process);
