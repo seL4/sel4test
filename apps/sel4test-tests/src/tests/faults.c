@@ -757,7 +757,9 @@ test_fault(env_t env, int fault_type, bool inter_as)
                 test_assert(!error);
                 set_helper_priority(env, &faulter_thread, prio);
 
-                test_leq(reply_cptr, BIT(BADGED));
+                // Ensure that the BADGED and RESTART bits are not
+                // already set on the cptr.
+                test_assert(!(reply_cptr & (BIT(RESTART) | BIT(BADGED))));
                 seL4_Word flags_and_reply = reply_cptr |
                                   (badged ? BIT(BADGED) : 0) |
                                   (restart ? BIT(RESTART) : 0);
