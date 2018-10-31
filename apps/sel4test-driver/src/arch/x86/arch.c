@@ -13,7 +13,7 @@
 #include <autoconf.h>
 #include "../../test.h"
 #include <simple/simple.h>
-#include <sel4platsupport/plat/serial.h>
+#include <platsupport/serial.h>
 #include <sel4platsupport/device.h>
 #include <platsupport/plat/hpet.h>
 #include <vka/capops.h>

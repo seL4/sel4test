@@ -13,7 +13,7 @@
 #include "../../test.h"
 
 #include <sel4platsupport/device.h>
-#include <sel4platsupport/plat/serial.h>
+#include <platsupport/plat/serial.h>
 #include <vka/capops.h>
 #include <sel4utils/process.h>
 

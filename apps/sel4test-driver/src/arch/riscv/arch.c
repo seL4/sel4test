@@ -11,11 +11,6 @@
  */
 #include "../../test.h"
 
-#include <sel4platsupport/device.h>
-#include <sel4platsupport/timer.h>
-#include <sel4platsupport/plat/timer.h>
-#include <sel4platsupport/plat/serial.h>
-
 void
 arch_init_timer_caps(env_t env)
 {

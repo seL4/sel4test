@@ -26,7 +26,7 @@
 #include <platsupport/local_time_manager.h>
 
 #include <sel4platsupport/timer.h>
-#include <sel4platsupport/plat/serial.h>
+#include <sel4platsupport/serial.h>
 
 #include <sel4debug/register_dump.h>
 #include <sel4platsupport/device.h>

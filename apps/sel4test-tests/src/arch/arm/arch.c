@@ -11,7 +11,7 @@
  */
 
 #include "../../init.h"
-#include <sel4platsupport/plat/serial.h>
+#include <platsupport/plat/serial.h>
 #include <sel4platsupport/io.h>
 #include <sel4platsupport/timer.h>
 #include <vka/capops.h>
