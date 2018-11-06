@@ -111,3 +111,88 @@ DEFINE_TEST(
     test_threads_tls,
     !config_set(CONFIG_ARCH_RISCV)
 )
+
+// Thread local storage value.
+#define INITIAL_TLS_VALUE 42
+#define TLS_INCREMENT_ITERATIONS 10000
+#define NUM_PARALLEL_THREADS 8
+
+static __thread int tls_value = INITIAL_TLS_VALUE;
+
+// Thread that competes.
+static int simple_tls_test_thread(
+	UNUSED seL4_Word arg1,
+	UNUSED seL4_Word arg2,
+	UNUSED seL4_Word arg3,
+	UNUSED seL4_Word arg4
+) {
+    // Each thread should start with the same value.
+    if (tls_value != INITIAL_TLS_VALUE) {
+        sel4test_failure("TLS started with incorrect value");
+        return -1;
+    }
+
+    // First try increment atomically.
+    int initial = tls_value;
+    int last = initial;
+    for (int i = 0; i < TLS_INCREMENT_ITERATIONS; i++) {
+        int next = __sync_add_and_fetch(&tls_value, 1);
+        if (next != last + 1) {
+            sel4test_failure("TLS did not increment atomically");
+            return -1;
+        }
+        last = next;
+    }
+
+    if (tls_value != initial + TLS_INCREMENT_ITERATIONS) {
+        sel4test_failure("TLS did not increment atomically");
+        return -1;
+    }
+
+    // Then try non-atomic.
+    // First try increment atomically.
+    initial = tls_value;
+    last = initial;
+    for (int i = 0; i < TLS_INCREMENT_ITERATIONS; i++) {
+        int next = ++tls_value;
+        if (next != last + 1) {
+            sel4test_failure("TLS did not increment correctly.");
+            return -1;
+        }
+        last = next;
+    }
+
+    if (tls_value != initial + TLS_INCREMENT_ITERATIONS) {
+        sel4test_failure("TLS did not increment correctly");
+        return -1;
+    }
+
+    return 0;
+}
+
+int test_sel4utils_thread_tls(env_t env)
+{
+    helper_thread_t threads[NUM_PARALLEL_THREADS];
+
+    for (int t = 0; t < NUM_PARALLEL_THREADS; t++) {
+        create_helper_thread(env, &threads[t]);
+        start_helper(
+            env, &threads[t],
+            simple_tls_test_thread,
+            0, 0, 0, 0
+        );
+    }
+
+    for (int t = 0; t < NUM_PARALLEL_THREADS; t++) {
+        wait_for_helper(&threads[t]);
+        cleanup_helper(env, &threads[t]);
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(
+    TLS0006,
+    "sel4utils_thread with distinct TLS should not interfere",
+    test_sel4utils_thread_tls,
+    !config_set(CONFIG_ARCH_RISCV)
+)
