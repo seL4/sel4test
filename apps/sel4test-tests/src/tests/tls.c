@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <vka/object.h>
+#include <sel4test/macros.h>
 
 #include "../helpers.h"
 
