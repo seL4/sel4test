@@ -21,15 +21,15 @@
 #include "../helpers.h"
 
 /* declare some per thread variables for our tests. both bss and data */
-static __thread int bss_array[6] = {0};
-static __thread int data_array[6] = {1, 2, 3, 4, 5, 6};
+static __thread seL4_Word bss_array[6] = {0};
+static __thread seL4_Word data_array[6] = {1, 2, 3, 4, 5, 6};
 
 static int
 test_root_tls(env_t env)
 {
-    int i;
+    seL4_Word i;
     for (i = 0; i < ARRAY_SIZE(bss_array); i++) {
-        test_eq(bss_array[i], 0);
+        test_eq(bss_array[i], (seL4_Word)0);
     }
 
     for (i = 0; i < ARRAY_SIZE(data_array); i++) {
@@ -48,10 +48,10 @@ DEFINE_TEST(
 static int
 tls_helper(seL4_Word helper, seL4_Word done_ep, seL4_Word start_ep, seL4_Word arg4)
 {
-    int i;
+    seL4_Word i;
     /* first verify all our initial data */
     for (i = 0; i < ARRAY_SIZE(bss_array); i++) {
-        test_eq(bss_array[i], 0);
+        test_eq(bss_array[i], (seL4_Word)0);
     }
 
     for (i = 0; i < ARRAY_SIZE(data_array); i++) {
