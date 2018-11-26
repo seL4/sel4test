@@ -23,21 +23,22 @@
 #define MAGIC2 0xDEADBEEF
 #define MAGIC3 666
 
-/* FIXME: only on non-RT kernel for now */
-#ifndef CONFIG_KERNEL_RT
-static int check_recv(seL4_CPtr ep, seL4_Word val)
+static int
+check_recv(seL4_CPtr ep, seL4_Word val, seL4_CPtr reply)
 {
-    seL4_Recv(ep, NULL);
+    api_recv(ep, NULL, reply);
     test_check(val == seL4_GetMR(0));
     // This one is just for Rendez-vous
-    seL4_Recv(ep, NULL);
+    api_recv(ep, NULL, reply);
     return sel4test_get_result();
 }
 
-int test_send_needs_write(env_t env)
+static int
+test_send_needs_write(env_t env)
 {
     vka_t *vka = &env->vka;
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);
+    seL4_CPtr reply = vka_alloc_reply_leaky(vka);
     seL4_CPtr epMint;
     vka_cspace_alloc(vka, &epMint);
     helper_thread_t t;
@@ -45,7 +46,7 @@ int test_send_needs_write(env_t env)
     for (seL4_Word i = 0 ; i < BIT(seL4_MsgExtraCapBits) ; i++) {
         rights.words[0] = i;
         create_helper_thread(env, &t);
-        start_helper(env, &t, (helper_fn_t)check_recv, ep, MAGIC1, 0, 0);
+        start_helper(env, &t, (helper_fn_t)check_recv, ep, MAGIC1, reply, 0);
         cnode_mint(env, ep, epMint, rights, 0);
 
         seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 1);
@@ -67,11 +68,14 @@ int test_send_needs_write(env_t env)
 DEFINE_TEST(IPCRIGHTS0001, "seL4_Send needs write", test_send_needs_write, true)
 
 
-int test_recv_needs_read(env_t env)
+static int
+test_recv_needs_read(env_t env)
 {
     vka_t *vka = &env->vka;
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);
+    seL4_CPtr reply = vka_alloc_reply_leaky(vka);
     seL4_CPtr fault_ep = vka_alloc_endpoint_leaky(vka);
+    seL4_CPtr fault_reply = vka_alloc_reply_leaky(vka);
     seL4_CPtr epMint;
     vka_cspace_alloc(vka, &epMint);
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 1);
@@ -88,26 +92,26 @@ int test_recv_needs_read(env_t env)
                                   seL4_NilData,
                                   env->page_directory, seL4_NilData);
         test_assert(!error);
-        start_helper(env, &t, (helper_fn_t)check_recv, epMint, MAGIC1, 0, 0);
+        start_helper(env, &t, (helper_fn_t)check_recv, epMint, MAGIC1, reply, 0);
 
         if (seL4_CapRights_get_capAllowRead(rights)) {
             seL4_SetMR(0, MAGIC1);
             seL4_Send(ep, tag);
             seL4_Send(ep, tag);
         } else {
-            seL4_Recv(fault_ep, NULL);
+            api_recv(fault_ep, NULL,fault_reply);
         }
         cleanup_helper(env, &t);
         cnode_delete(env, epMint);
     }
 
-    /* test_check(seL4_GetMR(0) == 42); */
     return sel4test_get_result();
 }
 
 DEFINE_TEST(IPCRIGHTS0002, "seL4_Recv needs read", test_recv_needs_read, true)
 
-static int check_recv_cap(env_t env, seL4_CPtr ep, bool should_recv_cap)
+static int
+check_recv_cap(env_t env, seL4_CPtr ep, bool should_recv_cap, seL4_CPtr reply)
 {
     vka_t *vka = &env->vka;
 
@@ -115,7 +119,7 @@ static int check_recv_cap(env_t env, seL4_CPtr ep, bool should_recv_cap)
     int vka_error = vka_cspace_alloc(vka, &recvSlot);
     test_assert(!vka_error);
     set_cap_receive_path(env, recvSlot);
-    seL4_Recv(ep, NULL);
+    api_recv(ep, NULL, reply);
 
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 1);
 
@@ -136,11 +140,14 @@ static int check_recv_cap(env_t env, seL4_CPtr ep, bool should_recv_cap)
     return sel4test_get_result();
 }
 
-int test_send_cap_needs_grant(env_t env)
+static int
+test_send_cap_needs_grant(env_t env)
 {
     vka_t *vka = &env->vka;
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);
+    seL4_CPtr reply = vka_alloc_reply_leaky(vka);
     seL4_CPtr return_ep = vka_alloc_endpoint_leaky(vka);
+    seL4_CPtr return_reply = vka_alloc_reply_leaky(vka);
     seL4_CPtr epMint;
     vka_cspace_alloc(vka, &epMint);
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 1, 1);
@@ -157,17 +164,17 @@ int test_send_cap_needs_grant(env_t env)
 
         helper_thread_t t;
         create_helper_thread(env, &t);
-        start_helper(env, &t, (helper_fn_t)check_recv_cap, (seL4_Word)env, ep, grant, 0);
+        start_helper(env, &t, (helper_fn_t)check_recv_cap, (seL4_Word)env, ep, grant, reply);
 
         seL4_SetMR(0, MAGIC1);
         seL4_SetCap(0, return_ep);
         seL4_Send(epMint, tag);
 
         if (grant) {
-            seL4_Recv(return_ep, NULL);
+            api_recv(return_ep, NULL, return_reply);
             test_check(seL4_GetMR(0) == MAGIC2);
         }
-        seL4_Recv(ep, NULL);
+        api_recv(ep, NULL, reply);
         test_check(seL4_GetMR(0) == MAGIC3);
         cleanup_helper(env, &t);
         cnode_delete(env, epMint);
@@ -179,7 +186,10 @@ int test_send_cap_needs_grant(env_t env)
 
 DEFINE_TEST(IPCRIGHTS0003, "seL4_Send with caps needs grant", test_send_cap_needs_grant, true)
 
-static int check_call(env_t env, seL4_CPtr ep, bool should_call, bool reply_recv)
+#ifndef CONFIG_KERNEL_RT
+
+static int
+check_call(env_t env, seL4_CPtr ep, bool should_call, bool reply_recv)
 {
     vka_t *vka = &env->vka;
 
@@ -202,7 +212,8 @@ static int check_call(env_t env, seL4_CPtr ep, bool should_call, bool reply_recv
 
 
 
-int test_call_needs_grant_or_grant_reply(env_t env)
+static int
+test_call_needs_grant_or_grant_reply(env_t env)
 {
     vka_t *vka = &env->vka;
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);
@@ -285,8 +296,9 @@ int test_call_needs_grant_or_grant_reply(env_t env)
 DEFINE_TEST(IPCRIGHTS0004, "seL4_Call needs grant or grant-reply",
             test_call_needs_grant_or_grant_reply, true)
 
-static int check_call_return_cap(env_t env, seL4_CPtr ep,
-                                 bool should_recv_cap, bool reply_recv)
+static int
+check_call_return_cap(env_t env, seL4_CPtr ep,
+                      bool should_recv_cap, bool reply_recv)
 {
     vka_t *vka = &env->vka;
 
@@ -315,7 +327,8 @@ static int check_call_return_cap(env_t env, seL4_CPtr ep,
     return sel4test_get_result();
 }
 
-int test_reply_grant_receiver(env_t env)
+static int
+test_reply_grant_receiver(env_t env)
 {
     vka_t *vka = &env->vka;
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);
