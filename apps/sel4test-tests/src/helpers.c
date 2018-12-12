@@ -20,6 +20,7 @@
 
 #include <utils/util.h>
 #include <vka/capops.h>
+#include <vka/ipcbuffer.h>
 
 #include <sel4platsupport/timer.h>
 
@@ -143,6 +144,13 @@ cnode_rotate(env_t env, seL4_CPtr src, seL4_CPtr pivot, seL4_CPtr dest)
     vka_cspace_make_path(&env->vka, dest, &dest_path);
     vka_cspace_make_path(&env->vka, pivot, &pivot_path);
     return vka_cnode_rotate(&dest_path, seL4_NilData, &pivot_path, seL4_NilData, &src_path);
+}
+
+void set_cap_receive_path(env_t env, seL4_CPtr slot)
+{
+    cspacepath_t path;
+    vka_cspace_make_path(&env->vka, slot, &path);
+    return vka_set_cap_receive_path(&path);
 }
 
 int
