@@ -146,6 +146,18 @@ cnode_rotate(env_t env, seL4_CPtr src, seL4_CPtr pivot, seL4_CPtr dest)
     return vka_cnode_rotate(&dest_path, seL4_NilData, &pivot_path, seL4_NilData, &src_path);
 }
 
+int cnode_savecaller(env_t env, seL4_CPtr cap)
+{
+    cspacepath_t path;
+    vka_cspace_make_path(&env->vka, cap, &path);
+#ifndef CONFIG_KERNEL_RT
+    return vka_cnode_saveCaller(&path);
+#else
+    ZF_LOGF("Should not be called");
+    return 0;
+#endif
+}
+
 void set_cap_receive_path(env_t env, seL4_CPtr slot)
 {
     cspacepath_t path;

@@ -134,6 +134,8 @@ int cnode_mutate(env_t env, seL4_CPtr src, seL4_CPtr dest);
 int cnode_cancelBadgedSends(env_t env, seL4_CPtr cap);
 int cnode_revoke(env_t env, seL4_CPtr cap);
 int cnode_rotate(env_t env, seL4_CPtr src, seL4_CPtr pivot, seL4_CPtr dest);
+/* non-RT only */ int cnode_savecaller(env_t env, seL4_CPtr cap);
+
 /* IPC buffer operation wrapper */
 /* Set up the IPC Buffer to receive IPC caps in the already allocated slot slot */
 void set_cap_receive_path(env_t env, seL4_CPtr slot);
