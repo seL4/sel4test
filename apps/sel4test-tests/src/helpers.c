@@ -54,6 +54,10 @@ is_slot_empty(env_t env, seL4_Word slot)
 
     error = cnode_move(env, slot, slot);
 
+    /* cnode_move first check if the destination is empty and raise
+     * seL4_DeleteFirst is it is not
+     * The is check if the source is empty and raise seL4_FailedLookup if it is
+     */
     assert(error == seL4_DeleteFirst || error == seL4_FailedLookup);
     return (error == seL4_FailedLookup);
 }
