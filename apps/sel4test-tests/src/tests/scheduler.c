@@ -1031,15 +1031,16 @@ test_scheduler_accuracy(env_t env)
         uint64_t start = sel4test_timestamp(env);
         seL4_Yield();
         uint64_t end = sel4test_timestamp(env);
-        /* calculate diff in ms */
-        uint64_t diff = (end - start) / NS_IN_US;
+        /* calculate diff in ns */
+        uint64_t diff = (end - start);
+        uint64_t period_ns = period * NS_IN_US;
         if (i > 0) {
-            test_geq(diff, period - 2 * US_IN_MS);
-            test_leq(diff, period + 2 * US_IN_MS);
-            if (diff > US_IN_S) {
-                ZF_LOGD("Too late: by %llu us", diff - US_IN_S);
-            } else {
-                ZF_LOGD("Too soon: by %llu us", US_IN_S - diff);
+            test_geq(diff, period_ns - 2 * NS_IN_MS);
+            test_leq(diff, period_ns + 2 * NS_IN_MS);
+            if (diff > period_ns) {
+                ZF_LOGD("Too late: by %llu us", diff - period_ns);
+            } else if (diff < period_ns) {
+                ZF_LOGD("Too soon: by %llu us", period_ns - diff);
             }
         }
     }
