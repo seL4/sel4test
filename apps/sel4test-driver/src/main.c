@@ -23,6 +23,8 @@
 #include <allocman/bootstrap.h>
 #include <allocman/vka.h>
 
+#include <cpio/cpio.h>
+
 #include <platsupport/local_time_manager.h>
 
 #include <sel4platsupport/timer.h>
@@ -72,6 +74,10 @@ struct driver_env env;
 static vka_object_t untypeds[CONFIG_MAX_NUM_BOOTINFO_UNTYPED_CAPS];
 /* list of sizes (in bits) corresponding to untyped */
 static uint8_t untyped_size_bits_list[CONFIG_MAX_NUM_BOOTINFO_UNTYPED_CAPS];
+
+extern char _cpio_archive[];
+
+static elf_t tests_elf;
 
 /* initialise our runtime environment */
 static void
@@ -321,7 +327,7 @@ void sel4test_run_tests(struct driver_env* e)
     /* Count how many tests actually exist and allocate space for them */
     int driver_tests = (int)(__stop__test_case - __start__test_case);
     uint64_t tc_size;
-    testcase_t *sel4test_tests = (testcase_t *) sel4utils_elf_get_section("sel4test-tests", "_test_case", &tc_size);
+    testcase_t *sel4test_tests = (testcase_t *) sel4utils_elf_get_section(&tests_elf, "_test_case", &tc_size);
     int tc_tests = tc_size / sizeof(testcase_t);
     int all_tests = driver_tests + tc_tests;
     testcase_t *tests[all_tests];
@@ -412,6 +418,12 @@ void *main_continued(void *arg UNUSED)
     int num_elf_regions;
     sel4utils_elf_region_t elf_regions[MAX_REGIONS];
 
+    unsigned long elf_size;
+    char *elf_file = cpio_get_file(_cpio_archive, TESTS_APP, &elf_size);
+    ZF_LOGF_IF(elf_file == NULL, "Error: failed to lookup ELF file");
+    int status = elf_newFile(elf_file, elf_size, &tests_elf);
+    ZF_LOGF_IF(status, "Error: invalid ELF file");
+
     /* Print welcome banner. */
     printf("\n");
     printf("seL4 Test\n");
@@ -431,9 +443,9 @@ void *main_continued(void *arg UNUSED)
     memcpy(env.init->untyped_size_bits_list, untyped_size_bits_list, sizeof(uint8_t) * env.num_untypeds);
 
     /* parse elf region data about the test image to pass to the tests app */
-    num_elf_regions = sel4utils_elf_num_regions(TESTS_APP);
+    num_elf_regions = sel4utils_elf_num_regions(&tests_elf);
     assert(num_elf_regions <= MAX_REGIONS);
-    sel4utils_elf_reserve(NULL, TESTS_APP, elf_regions);
+    sel4utils_elf_reserve(NULL, &tests_elf, elf_regions);
 
     /* copy the region list for the process to clone itself */
     memcpy(env.init->elf_regions, elf_regions, sizeof(sel4utils_elf_region_t) * num_elf_regions);
