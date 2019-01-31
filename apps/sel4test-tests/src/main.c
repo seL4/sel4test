@@ -39,6 +39,7 @@
 
 /* dummy global for libsel4muslcsys */
 char _cpio_archive[1];
+char _cpio_archive_end[1];
 
 /* endpoint to call back to the test driver on */
 static seL4_CPtr endpoint;

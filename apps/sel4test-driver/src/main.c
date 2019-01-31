@@ -76,6 +76,7 @@ static vka_object_t untypeds[CONFIG_MAX_NUM_BOOTINFO_UNTYPED_CAPS];
 static uint8_t untyped_size_bits_list[CONFIG_MAX_NUM_BOOTINFO_UNTYPED_CAPS];
 
 extern char _cpio_archive[];
+extern char _cpio_archive_end[];
 
 static elf_t tests_elf;
 
@@ -419,7 +420,8 @@ void *main_continued(void *arg UNUSED)
     sel4utils_elf_region_t elf_regions[MAX_REGIONS];
 
     unsigned long elf_size;
-    char *elf_file = cpio_get_file(_cpio_archive, TESTS_APP, &elf_size);
+    unsigned long cpio_len = _cpio_archive_end - _cpio_archive;
+    char *elf_file = cpio_get_file(_cpio_archive, cpio_len, TESTS_APP, &elf_size);
     ZF_LOGF_IF(elf_file == NULL, "Error: failed to lookup ELF file");
     int status = elf_newFile(elf_file, elf_size, &tests_elf);
     ZF_LOGF_IF(status, "Error: invalid ELF file");
