@@ -245,7 +245,9 @@ test_ept_no_overlapping_4k(env_t env)
 
     frame = vka_alloc_frame_leaky(&env->vka, seL4_PageBits);
     test_assert(frame);
+#ifdef CONFIG_VTX
     error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
+#endif /* CONFIG_VTX */
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
 }
@@ -262,7 +264,9 @@ test_ept_no_overlapping_large(env_t env)
 
     frame = vka_alloc_frame_leaky(&env->vka, seL4_LargePageBits);
     test_assert(frame);
+#ifdef CONFIG_VTX
     error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
+#endif /* CONFIG_VTX */
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
 }
@@ -279,6 +283,7 @@ test_ept_aligned_4m(env_t env)
     frame2 = vka_alloc_frame_leaky(&env->vka, PAGE_BITS_4M);
     test_assert(frame2);
     /* Try and map a page at +2m */
+#ifdef CONFIG_VTX
     error = seL4_X86_Page_MapEPT(frame2, pml4, EPT_MAP_BASE + OFFSET_2MB, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
     /* But we should be able to map it at +4m */
@@ -293,6 +298,7 @@ test_ept_aligned_4m(env_t env)
 
     /* Now map the first one at +2m, which should just flat out fail */
     error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE + OFFSET_2MB, seL4_AllRights, seL4_X86_Default_VMAttributes);
+#endif /* CONFIG_VTX */
     test_assert(error != seL4_NoError);
 
     return sel4test_get_result();
@@ -307,6 +313,7 @@ test_ept_no_overlapping_pt_4m(env_t env)
     error = map_ept_set_large(env, &pml4, &pdpt, &pd, &frame);
     test_assert(error == seL4_NoError);
 
+#ifdef CONFIG_VTX
     pt = vka_alloc_ept_page_table_leaky(&env->vka);
     test_assert(pt);
     /* now try and map a PT at both 2m entries */
@@ -337,7 +344,7 @@ test_ept_no_overlapping_pt_4m(env_t env)
     test_assert(error == seL4_NoError);
     error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error != seL4_NoError);
-
+#endif
     return sel4test_get_result();
 }
 DEFINE_TEST(EPT0007, "Test EPT 4m frame and PT cannot overlap", test_ept_no_overlapping_pt_4m,
@@ -351,6 +358,7 @@ test_ept_map_remap_pd(env_t env)
     error = map_ept_set(env, &pml4, &pdpt, &pd, &pt, &frame);
     test_assert(error == seL4_NoError);
 
+#ifdef CONFIG_VTX
     /* unmap the pd */
     error = seL4_X86_EPTPD_Unmap(pd);
     test_assert(error == seL4_NoError);
@@ -363,6 +371,7 @@ test_ept_map_remap_pd(env_t env)
     pt = vka_alloc_ept_page_table_leaky(&env->vka);
     test_assert(pt);
     error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
+#endif /* CONFIG_VTX */
     test_assert(error == seL4_NoError);
     return sel4test_get_result();
 }
@@ -377,9 +386,11 @@ test_ept_no_overlapping_pt(env_t env)
     test_assert(error == seL4_NoError);
 
     /* Mapping in a new PT should fail */
+#ifdef CONFIG_VTX
     pt = vka_alloc_ept_page_table_leaky(&env->vka);
     test_assert(pt);
     error = seL4_X86_EPTPT_Map(pt, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
+#endif
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
 
@@ -395,9 +406,11 @@ test_ept_no_overlapping_pd(env_t env)
     test_assert(error == seL4_NoError);
 
     /* Mapping in a new PT should fail */
+#ifdef CONFIG_VTX
     pd = vka_alloc_ept_page_directory_leaky(&env->vka);
     test_assert(pd);
     error = seL4_X86_EPTPD_Map(pd, pml4, EPT_MAP_BASE, seL4_X86_Default_VMAttributes);
+#endif
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
 
@@ -412,6 +425,7 @@ test_ept_map_remap_pt(env_t env)
     error = map_ept_set(env, &pml4, &pdpt, &pd, &pt, &frame);
     test_assert(error == seL4_NoError);
 
+#ifdef CONFIG_VTX
     /* unmap the pt */
     error = seL4_X86_EPTPT_Unmap(pt);
     test_assert(error == seL4_NoError);
@@ -424,6 +438,7 @@ test_ept_map_remap_pt(env_t env)
     frame = vka_alloc_frame_leaky(&env->vka, seL4_PageBits);
     test_assert(frame);
     error = seL4_X86_Page_MapEPT(frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
+#endif
     test_assert(error == seL4_NoError);
     return sel4test_get_result();
 }
