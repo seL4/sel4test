@@ -33,8 +33,8 @@
 static int
 map_ept_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr *pt, seL4_CPtr *frame)
 {
-    int error;
-
+    int error = 0;
+#ifdef CONFIG_VTX
     *pd = vka_alloc_ept_page_directory_leaky(&env->vka);
     test_assert(*pd);
     *pt = vka_alloc_ept_page_table_leaky(&env->vka);
@@ -48,6 +48,7 @@ map_ept_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr *pd, seL4
     test_assert(error == seL4_NoError);
     error = seL4_X86_Page_MapEPT(*frame, pml4, EPT_MAP_BASE, seL4_AllRights, seL4_X86_Default_VMAttributes);
     test_assert(error == seL4_NoError);
+#endif /* CONFIG_VTX */
 
     return error;
 }
@@ -55,8 +56,8 @@ map_ept_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr *pd, seL4
 static int
 map_ept_set(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPtr *pt, seL4_CPtr *frame)
 {
-    int error;
-
+    int error = 0;
+#ifdef CONFIG_VTX
     *pml4 = vka_alloc_ept_pml4_leaky(&env->vka);
     test_assert(*pml4);
     *pdpt = vka_alloc_ept_page_directory_pointer_table_leaky(&env->vka);
@@ -69,15 +70,15 @@ map_ept_set(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPt
     test_assert(error == seL4_NoError);
 
     error = map_ept_from_pdpt(env, *pml4, *pdpt, pd, pt, frame);
-
+#endif /* CONFIG_VTX */
     return error;
 }
 
 static int
 map_ept_set_large_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr *frame)
 {
-    int error;
-
+    int error = 0;
+#ifdef CONFIG_VTX
     *pd = vka_alloc_ept_page_directory_leaky(&env->vka);
     test_assert(*pd);
     *frame = vka_alloc_frame_leaky(&env->vka, seL4_LargePageBits);
@@ -91,15 +92,15 @@ map_ept_set_large_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr
     if (error != seL4_NoError) {
         return error;
     }
-
+#endif /* CONFIG_VTX */
     return error;
 }
 
 static int
 map_ept_set_large(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPtr *frame)
 {
-    int error;
-
+    int error = 0;
+#ifdef CONFIG_VTX
     *pml4 = vka_alloc_ept_pml4_leaky(&env->vka);
     test_assert(*pml4);
     *pdpt = vka_alloc_ept_page_directory_pointer_table_leaky(&env->vka);
@@ -114,7 +115,7 @@ map_ept_set_large(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, se
     }
 
     error = map_ept_set_large_from_pdpt(env, *pml4, *pdpt, pd, frame);
-
+#endif /* CONFIG_VTX */
     return error;
 }
 
@@ -128,6 +129,11 @@ test_ept_basic_ept(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(EPT0001, "Testing basic EPT mapping", test_ept_basic_ept, config_set(CONFIG_VTX))
+
+#ifndef CONFIG_VTX
+#define seL4_X86_EPTPT_Unmap(x) 0
+#define seL4_X86_EPTPD_Unmap(x) 0
+#endif /* CONFIG_VTX */
 
 static int
 test_ept_basic_map_unmap(env_t env)
