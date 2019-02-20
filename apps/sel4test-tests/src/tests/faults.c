@@ -1068,3 +1068,32 @@ test_timeout_fault_nested_servers(env_t env)
 }
 /* this test is disabled for the same reason as TIMEOUTFAULT0002 */
 DEFINE_TEST(TIMEOUTFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers, config_set(CONFIG_KERNEL_RT))
+
+static void vm_enter(void)
+{
+#ifdef CONFIG_VTX
+    seL4_VMEnter(NULL);
+#endif
+}
+
+static int test_vm_enter_non_vm(env_t env)
+{
+    seL4_Error err;
+    helper_thread_t helper;
+    seL4_CPtr fault_ep = vka_alloc_endpoint_leaky(&env->vka);
+    create_helper_thread(env, &helper);
+
+    seL4_Word guard = seL4_WordBits - env->cspace_size_bits;
+    err = api_tcb_set_space(get_helper_tcb(&helper), fault_ep, env->cspace_root,
+                            api_make_guard_skip_word(guard),
+                            env->page_directory, seL4_NilData);
+    test_eq(err, 0);
+
+    seL4_CPtr reply = vka_alloc_reply_leaky(&env->vka);
+    start_helper(env, &helper, (helper_fn_t) vm_enter, 0, 0, 0, 0);
+    seL4_MessageInfo_t tag = api_recv(fault_ep, NULL, reply);
+    test_eq(seL4_MessageInfo_get_label(tag), (seL4_Word) seL4_Fault_UnknownSyscall);
+    return sel4test_get_result();
+}
+DEFINE_TEST(UNKNOWN_SYSCALL_001, "Test seL4_VMEnter in a non-vm thread",
+            test_vm_enter_non_vm, config_set(CONFIG_VTX));
