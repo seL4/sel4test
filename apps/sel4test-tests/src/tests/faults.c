@@ -624,7 +624,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         test_check(seL4_GetMR(3) == 0);
         test_check(seL4_GetMR(4) == 0);
 #elif defined(CONFIG_ARCH_RISCV)
-        test_check(seL4_GetMR(3) == 0);
+        test_check(seL4_GetMR(3) == 2);
         test_check(seL4_GetMR(4) == 0);
 #elif defined(CONFIG_ARCH_X86)
         /*
