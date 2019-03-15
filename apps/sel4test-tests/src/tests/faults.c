@@ -621,7 +621,8 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
         /* We only can access PSTATE.nzcv flags in EL0 in aarch64
          * so, just make sure ther are preserved ... */
         test_check((seL4_GetMR(2) & ~MASK(27)) == bad_instruction_cpsr);
-        test_check(seL4_GetMR(3) == 0);
+        /* instruction fault on a 32 bit instruction with ISS = 0 */
+        test_check(seL4_GetMR(3) == 0x02000000);
         test_check(seL4_GetMR(4) == 0);
 #elif defined(CONFIG_ARCH_RISCV)
         test_check(seL4_GetMR(3) == 2);
