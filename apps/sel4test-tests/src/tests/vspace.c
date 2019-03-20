@@ -16,6 +16,9 @@
 #include <platsupport/arch/tsc.h>
 #endif
 
+#define N_ASID_POOLS (BIT(seL4_NumASIDPoolsBits))
+#define ASID_POOL_SIZE (BIT(seL4_ASIDPoolIndexBits))
+
 #include "../helpers.h"
 
 static int
@@ -146,6 +149,113 @@ test_asid_pool_make(env_t env)
 
 }
 DEFINE_TEST(VSPACE0002, "Test create ASID pool", test_asid_pool_make, true)
+
+static int
+test_alloc_multi_asid_pools(env_t env)
+{
+    vka_t *vka = &env->vka;
+    seL4_CPtr pool;
+    cspacepath_t path;
+    int i, ret;
+
+    for (i = 0; i < N_ASID_POOLS - 1; i++) {    /* Obviously there is already one ASID allocated */
+        pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
+        test_assert(pool);
+        ret = vka_cspace_alloc_path(vka, &path);
+        ret = seL4_ARCH_ASIDControl_MakePool(env->asid_ctrl, pool, env->cspace_root, path.capPtr, path.capDepth);
+        test_eq(ret, seL4_NoError);
+    }
+    return sel4test_get_result();
+}
+DEFINE_TEST(VSPACE0003, "Test create multiple ASID pools", test_alloc_multi_asid_pools, true)
+
+static int
+test_run_out_asid_pools(env_t env)
+{
+    vka_t *vka = &env->vka;
+    seL4_CPtr pool;
+    cspacepath_t path;
+    int i, ret;
+
+    for (i = 0; i < N_ASID_POOLS - 1; i++) {
+        pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
+        test_assert(pool);
+        ret = vka_cspace_alloc_path(vka, &path);
+        ret = seL4_ARCH_ASIDControl_MakePool(env->asid_ctrl, pool, env->cspace_root, path.capPtr, path.capDepth);
+        test_eq(ret, seL4_NoError);
+    }
+    /* We do one more pool allocation that is supposed to fail (at this point there shouldn't be any more available) */
+    ret = seL4_ARCH_ASIDControl_MakePool(env->asid_ctrl, pool, env->cspace_root, path.capPtr, path.capDepth);
+    test_eq(ret, seL4_DeleteFirst);
+    return sel4test_get_result();
+}
+DEFINE_TEST(VSPACE0004, "Test running out of ASID pools", test_run_out_asid_pools, true)
+
+static int
+test_overassign_asid_pool(env_t env)
+{
+    vka_t *vka = &env->vka;
+    seL4_CPtr pool;
+    cspacepath_t path;
+    vka_object_t vspaceroot;
+    int i, ret;
+
+    pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
+    test_assert(pool);
+    ret = vka_cspace_alloc_path(vka, &path);
+    ret = seL4_ARCH_ASIDControl_MakePool(env->asid_ctrl, pool, env->cspace_root, path.capPtr, path.capDepth);
+    test_eq(ret, seL4_NoError);
+    for (i = 0; i < ASID_POOL_SIZE; i++) {
+        ret = vka_alloc_vspace_root(vka, &vspaceroot);
+        test_assert(!ret);
+        ret = seL4_ARCH_ASIDPool_Assign(path.capPtr, vspaceroot.cptr);
+        test_eq(ret, seL4_NoError);
+        if (ret != seL4_NoError)
+            break;
+    }
+    test_eq(i, ASID_POOL_SIZE);
+    ret = vka_alloc_vspace_root(vka, &vspaceroot);
+    test_assert(!ret);
+    ret = seL4_ARCH_ASIDPool_Assign(path.capPtr, vspaceroot.cptr);
+    test_eq(ret, seL4_DeleteFirst);
+    return sel4test_get_result();
+}
+DEFINE_TEST(VSPACE0005, "Test overassigning ASID pool", test_overassign_asid_pool, true)
+
+static char
+incr_mem(seL4_Word tag)
+{
+    unsigned int* test = (void*)0x10000000;
+
+    *test = tag;
+    return *test;
+}
+
+static int
+test_create_asid_pools_and_touch(env_t env)
+{
+    vka_t *vka = &env->vka;
+    seL4_CPtr pool;
+    cspacepath_t poolCap;
+    helper_thread_t t;
+    int i, ret;
+
+    for (i = 0; i < N_ASID_POOLS - 1; i++) {
+        pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
+        test_assert(pool);
+        ret = vka_cspace_alloc_path(vka, &poolCap);
+        ret = seL4_ARCH_ASIDControl_MakePool(env->asid_ctrl, pool, env->cspace_root, poolCap.capPtr, poolCap.capDepth);
+        test_eq(ret, seL4_NoError);
+
+        create_helper_process_custom_asid(env, &t, poolCap.capPtr);
+        start_helper(env, &t, (helper_fn_t) incr_mem, i, 0, 0, 0);
+        ret = wait_for_helper(&t);
+        test_eq(ret, i);
+        cleanup_helper(env, &t);
+    }
+    return sel4test_get_result();
+}
+DEFINE_TEST(VSPACE0006, "Test touching all available ASID pools", test_create_asid_pools_and_touch, true)
 
 #ifdef CONFIG_ARCH_IA32
 static int

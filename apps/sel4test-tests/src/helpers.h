@@ -64,6 +64,7 @@ void create_helper_thread_custom_stack(env_t env, helper_thread_t *thread, size_
 /* create a helper with a clone of the current vspace loadable elf segments,
  * and a new cspace */
 void create_helper_process(env_t env, helper_thread_t *thread);
+void create_helper_process_custom_asid(env_t env, helper_thread_t *thread, seL4_CPtr asid);
 /* create and start a passive thread */
 int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
                           seL4_Word arg1, seL4_Word arg2, seL4_Word arg3);

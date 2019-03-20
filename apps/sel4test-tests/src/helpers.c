@@ -200,7 +200,7 @@ are_tcbs_distinct(seL4_CPtr tcb1, seL4_CPtr tcb2)
 }
 
 void
-create_helper_process(env_t env, helper_thread_t *thread)
+create_helper_process_custom_asid(env_t env, helper_thread_t *thread, seL4_CPtr asid)
 {
     UNUSED int error;
 
@@ -210,7 +210,7 @@ create_helper_process(env_t env, helper_thread_t *thread)
     thread->is_process = true;
 
     sel4utils_process_config_t config = process_config_default_simple(&env->simple, "", OUR_PRIO - 1);
-    config = process_config_asid_pool(config, env->asid_pool);
+    config = process_config_asid_pool(config, asid);
     config = process_config_noelf(config, NULL, 0);
     config = process_config_create_vspace(config, env->regions, env->num_regions);
     vka_object_t fault_endpoint = { .cptr = env->endpoint };
@@ -231,6 +231,12 @@ create_helper_process(env_t env, helper_thread_t *thread)
 
     thread->thread = thread->process.thread;
     assert(error == 0);
+}
+
+void
+create_helper_process(env_t env, helper_thread_t *thread)
+{
+    create_helper_process_custom_asid(env, thread, env->asid_pool);
 }
 
 NORETURN static void
