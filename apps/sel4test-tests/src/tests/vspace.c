@@ -16,8 +16,8 @@
 #include <platsupport/arch/tsc.h>
 #endif
 
-#define N_ASID_POOLS (BIT(seL4_NumASIDPoolsBits))
-#define ASID_POOL_SIZE (BIT(seL4_ASIDPoolIndexBits))
+#define N_ASID_POOLS ((int)BIT(seL4_NumASIDPoolsBits))
+#define ASID_POOL_SIZE ((int)BIT(seL4_ASIDPoolIndexBits))
 
 #include "../helpers.h"
 
