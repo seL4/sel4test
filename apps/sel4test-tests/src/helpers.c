@@ -13,10 +13,12 @@
 #include <sel4/sel4.h>
 #include <sel4utils/arch/util.h>
 #include <sel4utils/helpers.h>
+#include <sel4runtime.h>
 
 #include <sel4test/test.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include <utils/util.h>
 #include <vka/capops.h>
@@ -26,6 +28,8 @@
 
 #include "helpers.h"
 #include "test.h"
+
+char __attribute__((aligned (16))) process_tls[1024 * 16];
 
 int
 check_zeroes(seL4_Word addr, seL4_Word size_bytes)
@@ -268,6 +272,15 @@ helper_thread(int argc, char **argv)
     /* does not return */
 }
 
+NORETURN static void
+helper_process(int argc, char **argv)
+{
+    uintptr_t new_tp = sel4runtime_move_initial_tls(process_tls);
+    assert(new_tp != (uintptr_t)NULL);
+
+    helper_thread(argc, argv);
+}
+
 extern uintptr_t sel4_vsyscall[];
 
 void
@@ -306,7 +319,7 @@ start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
         seL4_UserContext context = {};
         uintptr_t argv_base = (uintptr_t)thread->process.thread.initial_stack_pointer + sizeof(long);
         uintptr_t aligned_stack_pointer = ALIGN_DOWN((uintptr_t)thread->process.thread.initial_stack_pointer, STACK_CALL_ALIGNMENT);
-        error = sel4utils_arch_init_context_with_args((sel4utils_thread_entry_fn)helper_thread, (void*)HELPER_THREAD_TOTAL_ARGS,
+        error = sel4utils_arch_init_context_with_args((sel4utils_thread_entry_fn)helper_process, (void*)HELPER_THREAD_TOTAL_ARGS,
                                               (void*)argv_base, NULL, false, (void*)aligned_stack_pointer,
                                               &context, &env->vka, &env->vspace, &thread->process.vspace);
         assert(error == 0);
