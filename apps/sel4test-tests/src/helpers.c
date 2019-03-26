@@ -303,7 +303,7 @@ start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
            a second time. As we know the argument count and where argv will start we can
            construct a register (or stack) layout that will allow us to pretend to be doing
            a function call to helper_thread. */
-        seL4_UserContext context;
+        seL4_UserContext context = {};
         uintptr_t argv_base = (uintptr_t)thread->process.thread.initial_stack_pointer + sizeof(long);
         uintptr_t aligned_stack_pointer = ALIGN_DOWN((uintptr_t)thread->process.thread.initial_stack_pointer, STACK_CALL_ALIGNMENT);
         error = sel4utils_arch_init_context_with_args((sel4utils_thread_entry_fn)helper_thread, (void*)HELPER_THREAD_TOTAL_ARGS,
