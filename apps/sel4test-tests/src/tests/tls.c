@@ -42,7 +42,7 @@ DEFINE_TEST(
     TLS0001,
     "Test root thread accessing __thread variables",
     test_root_tls,
-    !config_set(CONFIG_ARCH_RISCV)
+    true
 )
 
 static int
@@ -110,7 +110,7 @@ DEFINE_TEST(
     TLS0002,
     "Test multiple threads using __thread variables",
     test_threads_tls,
-    !config_set(CONFIG_ARCH_RISCV)
+    true
 )
 
 // Thread local storage value.
@@ -195,5 +195,5 @@ DEFINE_TEST(
     TLS0006,
     "sel4utils_thread with distinct TLS should not interfere",
     test_sel4utils_thread_tls,
-    !config_set(CONFIG_ARCH_RISCV)
+    true
 )
