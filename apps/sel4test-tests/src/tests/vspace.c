@@ -220,7 +220,7 @@ test_overassign_asid_pool(env_t env)
     test_eq(ret, seL4_DeleteFirst);
     return sel4test_get_result();
 }
-DEFINE_TEST(VSPACE0005, "Test overassigning ASID pool", test_overassign_asid_pool, !config_set(CONFIG_ARCH_RISCV64))
+DEFINE_TEST(VSPACE0005, "Test overassigning ASID pool", test_overassign_asid_pool, true)
 
 static char
 incr_mem(seL4_Word tag)
