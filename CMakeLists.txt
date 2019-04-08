@@ -1,5 +1,5 @@
 #
-# Copyright 2017, Data61
+# Copyright 2019, Data61
 # Commonwealth Scientific and Industrial Research Organisation (CSIRO)
 # ABN 41 687 119 230.
 #
@@ -32,23 +32,10 @@ GenerateSimulateScript()
 # the specific test values. By default it is disabled
 set(Sel4testAllowSettingsOverride OFF CACHE BOOL "Allow user to override configuration settings")
 
-# Define our top level settings. Whilst they have doc strings for readability here
-# they are hiddein the cmake-gui as they cannot be reliably changed after the initial
-# configuration, but enterprising users can still change them if they know what they
-# are doing through advanced mode
-# Users should initialize a build directory by doing something like
-# mkdir build_sabre
-# cd build_sabre
-# ../init-build.sh -DARM=TRUE -DPLATFORM=sabre -DSIMULATION=TRUE
-set(SIMULATION OFF CACHE BOOL "Include only simulation compatible tests")
-set(RELEASE OFF CACHE BOOL "Performance optimized build")
-set(VERIFICATION OFF CACHE BOOL "Only verification friendly kernel features")
-set(BAMBOO OFF CACHE BOOL "Enable machine parseable output")
-set(DOMAINS OFF CACHE BOOL "Test multiple domains")
-set(SMP OFF CACHE BOOL "(if supported) Test SMP kernel")
-set(PLATFORM "x86_64" CACHE STRING "Platform to test")
+include(easy-settings.cmake)
+
 set_property(CACHE PLATFORM PROPERTY STRINGS ${KernelX86Sel4Arch_all_strings} ${KernelARMPlatform_all_strings} ${KernelRiscVPlatform_all_strings})
-set(ARM_HYP OFF CACHE BOOL "Hyp mode for ARM platforms")
+
 
 # We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
 # in the cmake-gui to prevent excessively confusing users
