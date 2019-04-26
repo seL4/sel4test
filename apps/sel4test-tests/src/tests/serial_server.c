@@ -46,8 +46,7 @@ static const char *test_str = "Hello, world!\n";
  * which one it is, we pass the clients a numeric ID invented by the test
  * to identify that client.
  */
-typedef struct _client_test_data
-{
+typedef struct _client_test_data {
     helper_thread_t thread;
     /* "badged_server_ep_cspath2" is used in the disconnect/reconnect tests:
      * the client can't reconnect using the same badged ep as the first
@@ -66,8 +65,7 @@ typedef struct _client_test_data
 
 typedef int (client_test_fn)(client_test_data_t *, vka_t *, vspace_t *);
 
-struct
-{
+struct {
     vka_t *vka;
     vspace_t *vspace;
     simple_t *simple;
@@ -82,8 +80,7 @@ struct
 /** This function will guide a client thread to connect to the server and return the
  * result.
  */
-static int
-client_connect_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
+static int client_connect_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
 {
     int error = 0;
     serial_client_context_t conn;
@@ -97,8 +94,7 @@ client_connect_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
 /** This function will guide a client thread to connect to the server, send a
  * printf() request, and return the result.
  */
-static int
-client_printf_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
+static int client_printf_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
 {
     int error;
     serial_client_context_t conn;
@@ -120,8 +116,7 @@ client_printf_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
 /** This function will guide a client thread to connect to the server, send a
  * write() request, and return the result.
  */
-static int
-client_write_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
+static int client_write_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
 {
     int error;
     serial_client_context_t conn;
@@ -135,7 +130,7 @@ client_write_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
 
     error = serial_server_write(&conn, test_str, strlen(test_str));
     if (error != strlen(test_str)) {
-            return -1;
+        return -1;
     }
     return 0;
 }
@@ -145,8 +140,7 @@ client_write_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
  * reconnect to the Server and send another printf() and another write(),
  * and return the result.
  */
-static int
-client_disconnect_reconnect_printf_write_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
+static int client_disconnect_reconnect_printf_write_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
 {
     int error;
     serial_client_context_t conn;
@@ -188,8 +182,7 @@ client_disconnect_reconnect_printf_write_main(client_test_data_t *self, vka_t *v
 /** This function will guide a client thread to connect to the server, and then
  * send a kill() request.
  */
-static int
-client_disconnect_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
+static int client_disconnect_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
 {
     int error;
     serial_client_context_t conn;
@@ -205,8 +198,7 @@ client_disconnect_main(client_test_data_t *self, vka_t *vka, vspace_t *vspace)
     return 0;
 }
 
-static void
-init_file_globals(struct env *env)
+static void init_file_globals(struct env *env)
 {
     memset(client_globals.client_test_data, 0,
            sizeof(client_globals.client_test_data));
@@ -218,8 +210,7 @@ init_file_globals(struct env *env)
     client_globals.simple = &env->simple;
 }
 
-static int
-mint_server_ep_to_clients(struct env *env, bool mint_2nd_ep)
+static int mint_server_ep_to_clients(struct env *env, bool mint_2nd_ep)
 {
     int error;
 
@@ -229,7 +220,7 @@ mint_server_ep_to_clients(struct env *env, bool mint_2nd_ep)
 
         if (curr_client->thread.is_process) {
             curr_client->badged_server_ep_cspath.capPtr = serial_server_parent_mint_endpoint_to_process(
-                                                &curr_client->thread.process);
+                                                              &curr_client->thread.process);
             if (curr_client->badged_server_ep_cspath.capPtr == 0) {
                 return -1;
             }
@@ -244,7 +235,7 @@ mint_server_ep_to_clients(struct env *env, bool mint_2nd_ep)
         if (mint_2nd_ep) {
             if (curr_client->thread.is_process) {
                 curr_client->badged_server_ep_cspath2.capPtr = serial_server_parent_mint_endpoint_to_process(
-                                                    &curr_client->thread.process);
+                                                                   &curr_client->thread.process);
                 if (curr_client->badged_server_ep_cspath2.capPtr == 0) {
                     return -1;
                 }
@@ -260,8 +251,7 @@ mint_server_ep_to_clients(struct env *env, bool mint_2nd_ep)
     return 0;
 }
 
-static void
-create_clients(struct env *env, bool is_process)
+static void create_clients(struct env *env, bool is_process)
 {
     for (int i = 0; i < SERSERV_TEST_N_CLIENTS; i++) {
         client_test_data_t *curr_client = &client_globals.client_test_data[i];
@@ -297,14 +287,13 @@ create_clients(struct env *env, bool is_process)
  * @param alloc_data[out] Pointer to an uninitialized alloc data structure.
  * @return 0 on success; non-zero on error.
  */
-static int
-setup_client_process_allocman_vka_and_vspace(seL4_CPtr ut_cap, size_t ut_size_bits,
-                                             seL4_CPtr first_free_cptr,
-                                             volatile void **used_pages_list,
-                                             uint8_t *allocman_mem, size_t allocman_mem_size,
-                                             allocman_t **allocman,
-                                             vka_t *vka, vspace_t *vspace,
-                                             sel4utils_alloc_data_t *alloc_data)
+static int setup_client_process_allocman_vka_and_vspace(seL4_CPtr ut_cap, size_t ut_size_bits,
+                                                        seL4_CPtr first_free_cptr,
+                                                        volatile void **used_pages_list,
+                                                        uint8_t *allocman_mem, size_t allocman_mem_size,
+                                                        allocman_t **allocman,
+                                                        vka_t *vka, vspace_t *vspace,
+                                                        sel4utils_alloc_data_t *alloc_data)
 {
     cspacepath_t ut_cspath;
     uintptr_t paddr;
@@ -338,8 +327,8 @@ setup_client_process_allocman_vka_and_vspace(seL4_CPtr ut_cap, size_t ut_size_bi
      * the vspace bootstrap.
      */
     return sel4utils_bootstrap_vspace_leaky(vspace, alloc_data,
-                                      SEL4UTILS_PD_SLOT, vka,
-                                      (void **)used_pages_list);
+                                            SEL4UTILS_PD_SLOT, vka,
+                                            (void **)used_pages_list);
 }
 
 /** Common entry point for all client thread and processes alike.
@@ -360,7 +349,7 @@ setup_client_process_allocman_vka_and_vspace(seL4_CPtr ut_cap, size_t ut_size_bi
  * @return 0 on success; non-zero on error.
  */
 static int client_common_entry_point(seL4_Word _test_fn, seL4_Word _used_pages_list,
-                                  seL4_Word n_used_pages, seL4_Word thread_num)
+                                     seL4_Word n_used_pages, seL4_Word thread_num)
 {
     bool is_process;
     client_test_data_t *client_data;
@@ -399,8 +388,7 @@ static int client_common_entry_point(seL4_Word _test_fn, seL4_Word _used_pages_l
     return test_fn(client_data, vka, vspace);
 }
 
-static void
-start_clients(struct env *env, client_test_fn *test_fn)
+static void start_clients(struct env *env, client_test_fn *test_fn)
 {
     bool is_process = client_globals.client_test_data[0].thread.is_process;
 
@@ -411,8 +399,8 @@ start_clients(struct env *env, client_test_fn *test_fn)
          * spawned client assumes it's a thread and not a process.
          */
         volatile void **used_pages_list = ((is_process)
-                        ? (volatile void **)curr_client->client_used_pages_list
-                        : NULL);
+                                           ? (volatile void **)curr_client->client_used_pages_list
+                                           : NULL);
 
         set_helper_priority(env, &curr_client->thread, SERSERV_TEST_PRIO_CLIENT);
         start_helper(env, &curr_client->thread, &client_common_entry_point,
@@ -423,8 +411,7 @@ start_clients(struct env *env, client_test_fn *test_fn)
     }
 }
 
-static void
-cleanup_clients(struct env *env)
+static void cleanup_clients(struct env *env)
 {
     for (int i = 0; i < SERSERV_TEST_N_CLIENTS; i++) {
         helper_thread_t *curr_client = &client_globals.client_test_data[i].thread;
@@ -448,8 +435,7 @@ cleanup_clients(struct env *env)
  * @return 0 on success; Positive integer count of the number of used pages
  *         whose vaddrs were filled into the page_list on success.
  */
-static int
-fill_sel4utils_used_pages_list(volatile void **page_list, sel4utils_process_t *p)
+static int fill_sel4utils_used_pages_list(volatile void **page_list, sel4utils_process_t *p)
 {
     seL4_Word sel4utils_stack_n_pages, sel4utils_stack_base_vaddr;
 
@@ -516,8 +502,8 @@ static int share_sel4utils_used_pages_list(volatile void **page_list, size_t n_e
     /* Don't forget to add the offset back if the page_list vaddr was not
      * page aligned
      */
-    *target_vaddr = (void *)((uintptr_t)*target_vaddr
-                    + ((uintptr_t)page_list & (BIT(seL4_PageBits) - 1)));
+    *target_vaddr = (void *)((uintptr_t) * target_vaddr
+                             + ((uintptr_t)page_list & (BIT(seL4_PageBits) - 1)));
     /* Next, take care of the shmem page we ourselves created in this
      * function
      */
@@ -532,8 +518,7 @@ static int share_sel4utils_used_pages_list(volatile void **page_list, size_t n_e
  * called in the Parent, before the clients are allowed to execute.
  * @return 0 on success; non-zero on error.
  */
-static int
-setup_pclient_used_pages_lists(struct env *env)
+static int setup_pclient_used_pages_lists(struct env *env)
 {
     int error;
 
@@ -542,9 +527,9 @@ setup_pclient_used_pages_lists(struct env *env)
 
         /* Allocate the page in our VSpace */
         curr_client->parent_used_pages_list = (volatile void **)vspace_new_pages(
-                                                            &env->vspace,
-                                                            seL4_AllRights,
-                                                            1, seL4_PageBits);
+                                                  &env->vspace,
+                                                  seL4_AllRights,
+                                                  1, seL4_PageBits);
         if (curr_client->parent_used_pages_list == NULL) {
             return -1;
         }
@@ -553,8 +538,8 @@ setup_pclient_used_pages_lists(struct env *env)
          * pages it used in the new process' VSpace.
          */
         curr_client->n_used_pages = fill_sel4utils_used_pages_list(
-                                               curr_client->parent_used_pages_list,
-                                               &curr_client->thread.process);
+                                        curr_client->parent_used_pages_list,
+                                        &curr_client->thread.process);
         if (curr_client->n_used_pages < 0) {
             return -1;
         }
@@ -583,8 +568,7 @@ setup_pclient_used_pages_lists(struct env *env)
  * clients are allowed to execute.
  * @return 0 on success; Non-zero on error.
  */
-static int
-alloc_untypeds_for_clients(struct env *env)
+static int alloc_untypeds_for_clients(struct env *env)
 {
     int error;
 
@@ -599,9 +583,9 @@ alloc_untypeds_for_clients(struct env *env)
 
         vka_cspace_make_path(&env->vka, tmp.cptr, &curr_client->ut_512k_cspath);
         curr_client->ut_512k_cspath.capPtr = sel4utils_move_cap_to_process(
-                                                &curr_client->thread.process,
-                                                curr_client->ut_512k_cspath,
-                                                &env->vka);
+                                                 &curr_client->thread.process,
+                                                 curr_client->ut_512k_cspath,
+                                                 &env->vka);
         if (curr_client->ut_512k_cspath.capPtr == 0) {
             return -1;
         }
@@ -609,8 +593,7 @@ alloc_untypeds_for_clients(struct env *env)
     return 0;
 }
 
-static void
-copy_client_data_to_shmem(struct env *env)
+static void copy_client_data_to_shmem(struct env *env)
 {
     for (int i = 0; i < SERSERV_TEST_N_CLIENTS; i++) {
         client_test_data_t *curr_client = &client_globals.client_test_data[i];
@@ -618,14 +601,13 @@ copy_client_data_to_shmem(struct env *env)
          * end of the list.
          */
         void *client_data_copy = &curr_client->parent_used_pages_list[
-                                    curr_client->n_used_pages + 1];
+                              curr_client->n_used_pages + 1];
 
         memcpy(client_data_copy, curr_client, sizeof(*curr_client));
     }
 }
 
-static int
-concurrency_test_common(struct env *env, bool is_process, client_test_fn *test_fn, bool mint_2nd_ep_cap)
+static int concurrency_test_common(struct env *env, bool is_process, client_test_fn *test_fn, bool mint_2nd_ep_cap)
 {
     int error;
 
