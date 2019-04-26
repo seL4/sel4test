@@ -20,8 +20,7 @@
 static volatile int revoking = 0;
 static volatile int preempt_count = 0;
 
-static int
-revoke_func(seL4_CNode service, seL4_Word index, seL4_Word depth)
+static int revoke_func(seL4_CNode service, seL4_Word index, seL4_Word depth)
 {
     revoking = 1;
     seL4_CNode_Revoke(service, index, depth);
@@ -29,8 +28,7 @@ revoke_func(seL4_CNode service, seL4_Word index, seL4_Word depth)
     return 0;
 }
 
-static int
-preempt_count_func(env_t env)
+static int preempt_count_func(env_t env)
 {
     while (revoking < 2) {
         sel4test_ntfn_timer_wait(env);
@@ -41,8 +39,8 @@ preempt_count_func(env_t env)
     return 0;
 }
 
-static int
-create_cnode_table(env_t env, int num_cnode_bits, seL4_CPtr ep) {
+static int create_cnode_table(env_t env, int num_cnode_bits, seL4_CPtr ep)
+{
     /* Create as many cnodes as possible. We will copy the cap into all
      * those cnodes. */
 #define CNODE_SIZE_BITS 12
@@ -70,16 +68,15 @@ create_cnode_table(env_t env, int num_cnode_bits, seL4_CPtr ep) {
 
     if (num_caps != BIT(num_cnode_bits + CNODE_SIZE_BITS)) {
         ZF_LOGD("Created %d caps. Couldn't create the required number of caps %d",
-           num_caps,
-           BIT(num_cnode_bits + CNODE_SIZE_BITS));
+                num_caps,
+                BIT(num_cnode_bits + CNODE_SIZE_BITS));
         return -1;
     }
 
     return error;
 }
 
-static int
-test_preempt_revoke_actual(env_t env, int num_cnode_bits)
+static int test_preempt_revoke_actual(env_t env, int num_cnode_bits)
 {
     helper_thread_t revoke_thread, preempt_thread;
     int error;
@@ -144,8 +141,7 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
     return preempt_count;
 }
 
-static int
-test_preempt_revoke(env_t env)
+static int test_preempt_revoke(env_t env)
 {
     for (int num_cnode_bits = 1; num_cnode_bits < 32; num_cnode_bits++) {
         int result = test_preempt_revoke_actual(env, num_cnode_bits);
