@@ -52,6 +52,9 @@ create_cnode_table(env_t env, int num_cnode_bits, seL4_CPtr ep) {
     ZF_LOGD("    Creating %d caps .", BIT((num_cnode_bits + CNODE_SIZE_BITS)));
     for (int i = 0; i < (1 << num_cnode_bits); i++) {
         seL4_CPtr ctable = vka_alloc_cnode_object_leaky(&env->vka, CNODE_SIZE_BITS);
+        if (ctable == seL4_CapNull) {
+            return -1;
+        }
 
         for (int j = 0; j < BIT(CNODE_SIZE_BITS); j++) {
             error = seL4_CNode_Copy(
@@ -112,10 +115,10 @@ test_preempt_revoke_actual(env_t env, int num_cnode_bits)
 
     diff = end - start;
 
-    /* Set a timeout value to half of the revoke operation time to allow
-     * preemption in the middle, as the test expects.
+    /* Set a timeout value to a third of the revoke operation time,
+     * to allow preemption to occur at least twice, as the test expects.
      */
-    timeout_val = diff / 2;
+    timeout_val = diff / 3;
 
     /* Now, actually create a ctable that is gonna be used in the revoke
      * test.
