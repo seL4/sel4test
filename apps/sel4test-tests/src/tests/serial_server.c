@@ -670,7 +670,7 @@ static int test_client_connect(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SERSERV_CLIENT_001, "Connect from client threads",
-            test_client_connect, !config_set(CONFIG_ARCH_RISCV))
+            test_client_connect, true)
 
 static int
 test_client_printf(struct env *env)
@@ -682,7 +682,7 @@ test_client_printf(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SERSERV_CLIENT_002, "Printf from client threads",
-            test_client_printf, !config_set(CONFIG_ARCH_RISCV))
+            test_client_printf, true)
 
 static int
 test_client_write(struct env *env)
@@ -694,7 +694,7 @@ test_client_write(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SERSERV_CLIENT_003, "Write from client threads",
-            test_client_write, !config_set(CONFIG_ARCH_RISCV))
+            test_client_write, true)
 
 static int
 test_client_disconnect_reconnect_printf_write(struct env *env)
@@ -707,7 +707,7 @@ test_client_disconnect_reconnect_printf_write(struct env *env)
 }
 DEFINE_TEST(SERSERV_CLIENT_004, "Printf, then write, then reset connection, and "
             "Printf, then write again, from client threads",
-            test_client_disconnect_reconnect_printf_write, !config_set(CONFIG_ARCH_RISCV))
+            test_client_disconnect_reconnect_printf_write, true)
 
 static int
 test_client_kill(struct env *env)
@@ -733,7 +733,7 @@ test_client_kill(struct env *env)
 }
 DEFINE_TEST(SERSERV_CLIENT_005, "Connect, then disconnect from server on all "
             "threads, then kill server from parent thread",
-            test_client_kill, !config_set(CONFIG_ARCH_RISCV))
+            test_client_kill, true)
 
 static int
 test_client_process_connect(struct env *env)
@@ -745,7 +745,7 @@ test_client_process_connect(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SERSERV_CLI_PROC_001, "Connect to server from a client in another "
-            "VSpace and CSpace", test_client_process_connect, !config_set(CONFIG_ARCH_RISCV))
+            "VSpace and CSpace", test_client_process_connect, true)
 
 static int
 test_client_process_printf(struct env *env)
@@ -757,7 +757,7 @@ test_client_process_printf(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SERSERV_CLI_PROC_002, "Connect to server and printf(, true), from a client "
-            "in another VSpace and CSpace", test_client_process_printf, !config_set(CONFIG_ARCH_RISCV))
+            "in another VSpace and CSpace", test_client_process_printf, true)
 
 static int
 test_client_process_write(struct env *env)
@@ -769,7 +769,7 @@ test_client_process_write(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SERSERV_CLI_PROC_003, "Connect to server and write(, true), from a client "
-            "in another VSpace and CSpace", test_client_process_write, !config_set(CONFIG_ARCH_RISCV))
+            "in another VSpace and CSpace", test_client_process_write, true)
 
 static int
 test_client_process_disconnect_reconnect_printf_write(struct env *env)
@@ -785,7 +785,7 @@ test_client_process_disconnect_reconnect_printf_write(struct env *env)
 DEFINE_TEST(SERSERV_CLI_PROC_004, "Connect to server, printf(), write(, true), then "
             "disconnect, then reconnect and printf() and write() again, from "
             "clients in other VSpaces and CSpaces",
-            test_client_process_disconnect_reconnect_printf_write, !config_set(CONFIG_ARCH_RISCV))
+            test_client_process_disconnect_reconnect_printf_write, true)
 
 static int
 test_client_process_kill(struct env *env)
@@ -810,4 +810,4 @@ test_client_process_kill(struct env *env)
 DEFINE_TEST(SERSERV_CLI_PROC_005, "Connect to server then disconnect on all "
             "clients (in different VSpace/CSpace containers), and finally kill "
             "the server from the parent",
-            test_client_process_kill, !config_set(CONFIG_ARCH_RISCV))
+            test_client_process_kill, true)
