@@ -10,6 +10,11 @@
  * @TAG(DATA61_BSD)
  */
 
+/* FIXME: This file is symlinked to RISC-V from ARM because they use the same
+ * implementation. This was done because there is a plan to remove this functionality
+ * in favour of a vka RPC client that allows the test process to query for hardware
+ * resources instead of preallocating them.
+ */
 #include "../../init.h"
 #include <platsupport/plat/serial.h>
 #include <sel4platsupport/io.h>
