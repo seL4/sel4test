@@ -401,7 +401,7 @@ do_bad_instruction(void)
         "mv sp, %[valptr]\n\t"
 
         "bad_instruction_address:\n\t"
-        ".word 0x00000000\n\t"
+        ".word 0xffffffff\n\t"
         "bad_instruction_restart_address:\n\t"
         :
         : [sp] "r" (&bad_instruction_sp),
