@@ -20,4 +20,4 @@ list(SORT deps)
 
 add_library(sel4testsupport STATIC EXCLUDE_FROM_ALL ${deps})
 target_include_directories(sel4testsupport PUBLIC include)
-target_link_libraries(sel4testsupport Configuration muslc sel4 utils sel4test sel4serialserver)
+target_link_libraries(sel4testsupport muslc sel4 utils sel4test sel4serialserver)

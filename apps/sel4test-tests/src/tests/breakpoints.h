@@ -13,6 +13,7 @@
 
 #ifdef HAVE_AUTOCONF
 #include <autoconf.h>
+#include <sel4test/gen_config.h>
 #endif
 
 #include <vka/capops.h>

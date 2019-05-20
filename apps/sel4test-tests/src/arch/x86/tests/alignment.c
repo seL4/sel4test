@@ -11,6 +11,7 @@
  */
 #ifdef HAVE_AUTOCONF
 #include <autoconf.h>
+#include <sel4test/gen_config.h>
 #endif
 
 #include <sel4/sel4.h>
@@ -20,6 +21,7 @@
 #include "../../../test.h"
 
 #include <autoconf.h>
+#include <sel4test/gen_config.h>
 
 /* Implemented in assembly */
 void align_test_asm(void);

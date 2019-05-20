@@ -11,6 +11,7 @@
  */
 
 #include <autoconf.h>
+#include <sel4test-driver/gen_config.h>
 #include <sel4/sel4.h>
 #include <sel4/benchmark_track_types.h>
 #include <sel4utils/benchmark_track.h>

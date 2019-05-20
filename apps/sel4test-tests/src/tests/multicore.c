@@ -11,6 +11,7 @@
  */
 
 #include <autoconf.h>
+#include <sel4test/gen_config.h>
 
 /* This file contains tests related to multicore. */
 

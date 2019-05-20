@@ -12,6 +12,8 @@
 
 /* Include Kconfig variables. */
 #include <autoconf.h>
+#include <sel4test-driver/gen_config.h>
+#include <sel4test/gen_config.h>
 
 #include <regex.h>
 #include <stdio.h>

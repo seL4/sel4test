@@ -11,6 +11,7 @@
  */
 
 #include <autoconf.h>
+#include <sel4test/gen_config.h>
 
 #ifdef CONFIG_BENCHMARK_TRACK_UTILISATION
 #include <sel4/sel4.h>

@@ -12,6 +12,7 @@
 #pragma once
 
 #include <autoconf.h>
+#include <sel4test/gen_config.h>
 #include <stdint.h>
 #include <sel4/types.h>
 #include <sel4/sel4.h>

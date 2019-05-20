@@ -45,7 +45,6 @@ add_executable(sel4test-driver EXCLUDE_FROM_ALL ${static} archive.o)
 target_include_directories(sel4test-driver PRIVATE "include")
 target_link_libraries(
     sel4test-driver
-    Configuration
     muslc
     sel4
     sel4runtime
@@ -57,6 +56,7 @@ target_link_libraries(
     sel4platsupport
     sel4muslcsys
     sel4testsupport
+    sel4test-driver_Config
 )
 target_compile_options(sel4test-driver PRIVATE -Werror -g)
 

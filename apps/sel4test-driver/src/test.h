@@ -13,6 +13,8 @@
 #pragma once
 
 #include <autoconf.h>
+#include <sel4test-driver/gen_config.h>
+#include <sel4test/gen_config.h>
 #include <sel4/bootinfo.h>
 
 #include <platsupport/time_manager.h>

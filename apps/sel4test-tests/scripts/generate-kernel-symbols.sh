@@ -23,6 +23,7 @@ cat - <<EOT
 
 /* Include Kconfig variables. */
 #include <autoconf.h>
+#include <sel4test/gen_config.h>
 
 #include <string.h>
 

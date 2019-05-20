@@ -33,9 +33,10 @@ target_include_directories(
     sel4test-tests
     PRIVATE include arch/${KernelArch} sel4_arch/${KernelSel4Arch}
 )
+
 target_link_libraries(
     sel4test-tests
-    Configuration
+    sel4test-driver_Config
     muslc
     sel4
     sel4runtime
