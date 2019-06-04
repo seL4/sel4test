@@ -1,5 +1,5 @@
 /*
- * Copyright 2018, Data61
+ * Copyright 2019, Data61
  * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
  * ABN 41 687 119 230.
  *
@@ -9,15 +9,9 @@
  *
  * @TAG(DATA61_BSD)
  */
-#include "../../test.h"
+#pragma once
+#include <rpc.pb.h>
+#include <sel4rpc/server.h>
 
-#include <platsupport/io.h>
-#include <platsupport/plat/clock.h>
-#include <sel4platsupport/io.h>
-#include <sel4platsupport/device.h>
-
-void
-plat_init(driver_env_t env)
-{
-    ZF_LOGD("Spike: plat_init: Done.");
-}
+#include "test.h"
+int sel4test_rpc_recv(sel4rpc_server_env_t *env, void *data, RpcMessage *rpcMsg);

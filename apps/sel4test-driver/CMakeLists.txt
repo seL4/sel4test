@@ -37,7 +37,7 @@ MakeCPIO(archive.o "$<TARGET_FILE:sel4test-tests>")
 
 add_executable(sel4test-driver EXCLUDE_FROM_ALL ${static} archive.o)
 target_include_directories(sel4test-driver PRIVATE "include")
-target_link_libraries(sel4test-driver Configuration muslc sel4 sel4runtime sel4allocman sel4vka sel4utils sel4test sel4platsupport sel4muslcsys sel4testsupport)
+target_link_libraries(sel4test-driver Configuration muslc sel4 sel4runtime sel4allocman sel4vka sel4utils sel4rpc sel4test sel4platsupport sel4muslcsys sel4testsupport)
 target_compile_options(sel4test-driver PRIVATE -Werror -g)
 
 # Set this image as the rootserver

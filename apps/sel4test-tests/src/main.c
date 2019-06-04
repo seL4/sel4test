@@ -182,7 +182,7 @@ void init_simple(env_t env, test_init_data_t *init_data)
     env->simple.sched_ctrl = sched_ctrl;
     env->simple.core_count = core_count;
 
-    arch_init_simple(&env->simple);
+    arch_init_simple(env, &env->simple);
 }
 
 int
@@ -228,6 +228,9 @@ main(int argc, char **argv)
 
     /* initialise simple */
     init_simple(&env, init_data);
+
+    /* initialise rpc client */
+    sel4rpc_client_init(&env.rpc_client, env.endpoint, SEL4TEST_PROTOBUF_RPC);
 
     /* find the test */
     testcase_t *test = find_test(init_data->name);

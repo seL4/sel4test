@@ -18,6 +18,7 @@
 
 #include "test.h"
 #include "timer.h"
+#include "rpc.h"
 #include <sel4testsupport/testreporter.h>
 
 /* Bootstrap test type. */
@@ -64,18 +65,6 @@ copy_untypeds_to_process(sel4utils_process_t *process, vka_object_t *untypeds, i
     }
     assert((range.end - range.start) + 1 == num_untypeds);
     return range;
-}
-
-static void
-copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process)
-{
-    init->serial_irq_cap = sel4utils_copy_cap_to_process(test_process, &env->vka,
-                                                         env->serial_objects.serial_irq_path.capPtr);
-    ZF_LOGW_IF(init->serial_irq_cap == 0,
-               "Failed to copy PS default serial IRQ cap to test child "
-               "process. Serial server tests will fail.");
-
-    arch_copy_serial_caps(init, env, test_process);
 }
 
 static void handle_timer_requests(driver_env_t env, sel4test_output_t test_output) {
@@ -132,6 +121,10 @@ static int sel4test_driver_wait(driver_env_t env, struct testcase *test)
     sel4test_output_t test_output;
     int result = SUCCESS;
     seL4_Word badge = 0;
+    sel4rpc_server_env_t rpc_server;
+
+    sel4rpc_server_init(&rpc_server, &env->vka, sel4test_rpc_recv, env,
+            &env->reply, &env->simple);
 
     while(1) {
         /* wait for tests to finish or fault, receive test request or report result */
@@ -172,6 +165,9 @@ static int sel4test_driver_wait(driver_env_t env, struct testcase *test)
                 ZF_LOGF("Requesting a timer service from sel4test-driver while there is no"
                     "supported HW timer.");
             }
+        } else if (test_output == SEL4TEST_PROTOBUF_RPC) {
+            sel4rpc_server_recv(&rpc_server);
+            continue;
         }
 
         result = test_output;
@@ -232,7 +228,6 @@ void basic_set_up(uintptr_t e)
     }
     /* setup data about untypeds */
     env->init->untypeds = copy_untypeds_to_process(&(env->test_process), env->untypeds, env->num_untypeds, env);
-    copy_serial_caps(env->init, env, &(env->test_process));
     /* copy the fault endpoint - we wait on the endpoint for a message
      * or a fault to see when the test finishes */
     env->endpoint = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, env->test_process.fault_endpoint.cptr);

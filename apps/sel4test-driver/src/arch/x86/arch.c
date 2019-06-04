@@ -18,13 +18,6 @@
 #include <platsupport/plat/hpet.h>
 #include <vka/capops.h>
 
-void
-arch_copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process)
-{
-    init->serial_irq_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, env->serial_objects.serial_irq_path.capPtr);
-    init->serial_io_port_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, env->serial_objects.arch_serial_objects.serial_io_port_cap);
-}
-
 int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,
                                uintptr_t paddr, seL4_Word *cookie)
 {

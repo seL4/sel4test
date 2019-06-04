@@ -27,5 +27,5 @@
 /* This file is a symlink to the original in sel4test-driver. */
 #include <test_init_data.h>
 
-void arch_init_simple(simple_t *simple);
+void arch_init_simple(env_t env, simple_t *simple);
 

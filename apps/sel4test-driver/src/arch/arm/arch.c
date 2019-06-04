@@ -23,15 +23,6 @@
 #include <vka/capops.h>
 #include <sel4utils/process.h>
 
-void
-arch_copy_serial_caps(test_init_data_t *init, driver_env_t env, sel4utils_process_t *test_process)
-{
-    init->serial_paddr = env->serial_objects.arch_serial_objects.serial_frame_paddr;
-    init->serial_frame_cap = sel4utils_copy_cap_to_process(test_process, &env->vka, env->serial_objects.arch_serial_objects.serial_frame_obj.cptr);
-    ZF_LOGF_IF(init->serial_frame_cap == 0,
-               "Failed to copy PS default serial Frame cap to sel4test-test process");
-}
-
 /* global used for storing the environment as we are going to be overriding one function
  * of a vka interface, but we do not bother to create an entire interface wrapper with
  * a new 'data' cookie */

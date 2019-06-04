@@ -17,18 +17,33 @@
 #include <platsupport/plat/serial.h>
 #include <sel4platsupport/arch/io.h>
 #include <sel4utils/sel4_zf_logif.h>
+#include <sel4rpc/client.h>
+#include <rpc.pb.h>
 
+static sel4rpc_client_t *rpc_client;
 static seL4_Error
 get_IOPort_cap(void *data, uint16_t start_port, uint16_t end_port, seL4_Word root, seL4_Word dest, seL4_Word depth)
 {
     test_init_data_t *init = (test_init_data_t *) data;
 
-    if (start_port >= SERIAL_CONSOLE_COM1_PORT &&
-           start_port <= SERIAL_CONSOLE_COM1_PORT_END) {
-        return seL4_CNode_Copy(root, dest, depth, init->root_cnode, init->serial_io_port_cap, CONFIG_WORD_SIZE, seL4_AllRights);
+    if (start_port < SERIAL_CONSOLE_COM1_PORT ||
+           start_port > SERIAL_CONSOLE_COM1_PORT_END) {
+        return seL4_RangeError;
     }
 
-    return seL4_RangeError;
+    RpcMessage rpcMsg = {
+        .which_msg = RpcMessage_ioport_tag,
+        .msg.ioport = {
+            .start = SERIAL_CONSOLE_COM1_PORT,
+            .end = SERIAL_CONSOLE_COM1_PORT_END,
+        },
+    };
+
+    int ret = sel4rpc_call(rpc_client, &rpcMsg, root, dest, depth);
+    if (ret < 0)
+        return seL4_InvalidArgument;
+
+    return rpcMsg.msg.errorCode;
 }
 
 static seL4_Error
@@ -46,7 +61,9 @@ get_ioapic(void *data, seL4_CNode root, seL4_Word index, uint8_t depth, seL4_Wor
     return 0;
 }
 
-void arch_init_simple(simple_t *simple) {
+void arch_init_simple(env_t env, simple_t *simple)
+{
+    rpc_client = &env->rpc_client;
     simple->arch_simple.IOPort_cap = get_IOPort_cap;
     simple->arch_simple.msi = get_msi;
     simple->arch_simple.ioapic = get_ioapic;
