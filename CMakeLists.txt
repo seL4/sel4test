@@ -36,7 +36,7 @@ include(easy-settings.cmake)
 
 set_property(CACHE PLATFORM PROPERTY STRINGS ${KernelX86Sel4Arch_all_strings} ${KernelARMPlatform_all_strings} ${KernelRiscVPlatform_all_strings})
 
-
+mark_as_advanced(CLEAR LibSel4TestPrinterRegex LibSel4TestPrinterHaltOnTestFailure LibSel4TestPrintXML)
 # We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
 # in the cmake-gui to prevent excessively confusing users
 if (NOT Sel4testAllowSettingsOverride)
