@@ -12,11 +12,10 @@
 
 cmake_minimum_required(VERSION 3.7.2)
 
-include(${KERNEL_HELPERS_PATH})
+include(${CMAKE_SOURCE_DIR}/tools/seL4/cmake-tool/helpers/application_settings.cmake)
 
 # Set our custom domain schedule
-RequireFile(SEL4TEST_DOMAIN_SCHEDULE domain_schedule.c CMAKE_FIND_ROOT_PATH_BOTH)
-set(KernelDomainSchedule "${SEL4TEST_DOMAIN_SCHEDULE}" CACHE INTERNAL "")
+set(KernelDomainSchedule "${CMAKE_CURRENT_LIST_DIR}/domain_schedule.c" CACHE INTERNAL "")
 
 # Declare a cache variable that enables/disablings the forcing of cache variables to
 # the specific test values. By default it is disabled
@@ -24,14 +23,15 @@ set(Sel4testAllowSettingsOverride OFF CACHE BOOL "Allow user to override configu
 
 include(easy-settings.cmake)
 
-set_property(
-    CACHE PLATFORM
-    PROPERTY
-        STRINGS
-        ${KernelX86Sel4Arch_all_strings}
-        ${KernelARMPlatform_all_strings}
-        ${KernelRiscVPlatform_all_strings}
-)
+# We temporarily remove this circular dependency as this file will be processed before the kernel files that define _all_strings
+# set_property(
+#     CACHE PLATFORM
+#     PROPERTY
+#         STRINGS
+#         ${KernelX86Sel4Arch_all_strings}
+#         ${KernelARMPlatform_all_strings}
+#         ${KernelRiscVPlatform_all_strings}
+# )
 
 mark_as_advanced(
     CLEAR
@@ -43,10 +43,7 @@ mark_as_advanced(
 # in the cmake-gui to prevent excessively confusing users
 if(NOT Sel4testAllowSettingsOverride)
     # Determine the platform/architecture
-    if(${PLATFORM} IN_LIST KernelX86Sel4Arch_all_strings)
-        set(KernelArch x86 CACHE STRING "" FORCE)
-        set(KernelX86Sel4Arch ${PLATFORM} CACHE STRING "" FORCE)
-    elseif(${PLATFORM} IN_LIST KernelRiscVPlatform_all_strings)
+    if(RISCV64 OR RISCV32)
         set(KernelArch riscv CACHE STRING "" FORCE)
         set(KernelRiscVPlatform ${PLATFORM} CACHE STRING "" FORCE)
         if(RISCV64)
@@ -54,21 +51,16 @@ if(NOT Sel4testAllowSettingsOverride)
         else()
             set(KernelRiscVSel4Arch "riscv32" CACHE STRING "" FORCE)
         endif()
-    else()
-        if(NOT ${PLATFORM} IN_LIST KernelARMPlatform_all_strings)
-            kernel_platforms_string(plat_names_error)
-            message(FATAL_ERROR "Unknown PLATFORM. Valid platforms:\n  ${plat_names_error}")
-        endif()
+    elseif(AARCH32 OR AARCH64 OR ARM_HYP OR ARM OR AARCH32HF)
         set(KernelArch arm CACHE STRING "" FORCE)
         set(KernelARMPlatform ${PLATFORM} CACHE STRING "" FORCE)
-
         if(ARM_HYP)
             set(KernelArmHypervisorSupport ON CACHE BOOL "" FORCE)
         endif()
 
         if(AARCH64)
             set(KernelArmSel4Arch "aarch64" CACHE STRING "" FORCE)
-        elseif(AARCH32)
+        elseif(AARCH32 OR ARM OR AARCH32HF)
             set(KernelArmSel4Arch "aarch32" CACHE STRING "" FORCE)
             if(ARM_HYP)
                 set(KernelArmSel4Arch "arm_hyp" CACHE STRING "" FORCE)
@@ -77,12 +69,16 @@ if(NOT Sel4testAllowSettingsOverride)
 
         # Elfloader settings that correspond to how Data61 sets its boards up.
         ApplyData61ElfLoaderSettings(${KernelARMPlatform} ${KernelArmSel4Arch})
+
+    else()
+        set(KernelArch x86 CACHE STRING "" FORCE)
+        set(KernelX86Sel4Arch ${PLATFORM} CACHE STRING "" FORCE)
     endif()
 
     if(SIMULATION)
         ApplyCommonSimulationSettings(${KernelArch})
     else()
-        if(KernelArchX86)
+        if("${KernelArch}" STREQUAL "x86")
             set(KernelIOMMU ON CACHE BOOL "" FORCE)
         endif()
     endif()
@@ -97,7 +93,7 @@ if(NOT Sel4testAllowSettingsOverride)
     else()
         set(Sel4testHaveCache ON CACHE BOOL "" FORCE)
     endif()
-    if(KernelArchRiscV OR (SIMULATION AND KernelArchARM))
+    if(("${KernelArch}" STREQUAL "riscv") OR (SIMULATION AND ("${KernelArch}" STREQUAL "arm")))
         set(Sel4testHaveTimer OFF CACHE BOOL "" FORCE)
     else()
         set(Sel4testHaveTimer ON CACHE BOOL "" FORCE)
@@ -107,9 +103,9 @@ if(NOT Sel4testAllowSettingsOverride)
     # skipping any aarch64 platform, as this does not yet support the debug API, and a
     # few other miscelaneous platforms that do not support it
     if(
-        ((NOT SIMULATION) OR KernelSel4ArchIA32)
-        AND (NOT KernelSel4ArchAarch64)
-        AND (NOT KernelArchRiscV)
+        ((NOT SIMULATION) OR ("${KernelX86Sel4Arch}" STREQUAL "ia32"))
+        AND (NOT ("${KernelArmSel4Arch}" STREQUAL "aarch64"))
+        AND (NOT ("${KernelArch}" STREQUAL "riscv"))
         AND (NOT ("${KernelARMPlatform}" STREQUAL "exynos5250"))
         AND (NOT ("${KernelARMPlatform}" STREQUAL "am335x-boneblack"))
         AND (NOT ("${KernelARMPlatform}" STREQUAL "am335x-boneblue"))
