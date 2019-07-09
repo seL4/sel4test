@@ -64,12 +64,12 @@ struct driver_env {
     /* extra cap to the init data frame for mapping into the remote vspace */
     seL4_CPtr init_frame_cap_copy;
 
-    void* remote_vaddr;
+    void *remote_vaddr;
     sel4utils_process_t test_process;
     seL4_CPtr endpoint;
 
     int num_untypeds;
-    vka_object_t* untypeds;
+    vka_object_t *untypeds;
 
     /* time server for managing timeouts */
     time_manager_t tm;

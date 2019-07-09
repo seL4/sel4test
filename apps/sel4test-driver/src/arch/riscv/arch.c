@@ -12,13 +12,14 @@
 #include "../../test.h"
 
 int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,
-        uintptr_t paddr, seL4_Word *cookie)
+                               uintptr_t paddr, seL4_Word *cookie)
 {
     ZF_LOGF("Serial on RISC-V doesn't use utspace");
     return -1;
 }
 
-vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(driver_env_t _env) {
+vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(driver_env_t _env)
+{
     static bool call_once = false;
     if (call_once) {
         ZF_LOGF("This function can only be called once.");

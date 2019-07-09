@@ -50,8 +50,7 @@ static int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4
     return rpcMsg.msg.errorCode;
 }
 
-void
-arch_init_allocator(env_t env, test_init_data_t *data)
+void arch_init_allocator(env_t env, test_init_data_t *data)
 {
     /* Get the endpoint we use for communicating with the test driver,
      * and then set up the proxy vka_utspace_alloc_at()

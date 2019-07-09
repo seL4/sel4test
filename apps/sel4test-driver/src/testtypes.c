@@ -38,7 +38,7 @@ static inline void bootstrap_tear_down(uintptr_t e)
 {
     ZF_LOGD("tear down bootstrap test\n");
 }
-static inline test_result_t bootstrap_run_test(struct testcase* test, uintptr_t e)
+static inline test_result_t bootstrap_run_test(struct testcase *test, uintptr_t e)
 {
     return test->function(e);
 }
@@ -49,8 +49,8 @@ static DEFINE_TEST_TYPE(BOOTSTRAP, BOOTSTRAP,
 
 /* Basic test type. Each test is launched as its own process. */
 /* copy untyped caps into a processes cspace, return the cap range they can be found in */
-static seL4_SlotRegion
-copy_untypeds_to_process(sel4utils_process_t *process, vka_object_t *untypeds, int num_untypeds, driver_env_t env)
+static seL4_SlotRegion copy_untypeds_to_process(sel4utils_process_t *process, vka_object_t *untypeds, int num_untypeds,
+                                                driver_env_t env)
 {
     seL4_SlotRegion range = {0};
 
@@ -67,7 +67,8 @@ copy_untypeds_to_process(sel4utils_process_t *process, vka_object_t *untypeds, i
     return range;
 }
 
-static void handle_timer_requests(driver_env_t env, sel4test_output_t test_output) {
+static void handle_timer_requests(driver_env_t env, sel4test_output_t test_output)
+{
 
     seL4_MessageInfo_t info;
     uint64_t timeServer_ns;
@@ -75,37 +76,37 @@ static void handle_timer_requests(driver_env_t env, sel4test_output_t test_outpu
 
     switch (test_output) {
 
-        case SEL4TEST_TIME_TIMEOUT:
+    case SEL4TEST_TIME_TIMEOUT:
 
-            timeServer_timeoutType = seL4_GetMR(1);
-            timeServer_ns = sel4utils_64_get_mr(2);
+        timeServer_timeoutType = seL4_GetMR(1);
+        timeServer_ns = sel4utils_64_get_mr(2);
 
-            timeout(env, timeServer_ns, timeServer_timeoutType);
+        timeout(env, timeServer_ns, timeServer_timeoutType);
 
-            info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+        info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
 
-            seL4_SetMR(0, 0);
-            api_reply(env->reply.cptr, info);
-            break;
+        seL4_SetMR(0, 0);
+        api_reply(env->reply.cptr, info);
+        break;
 
-        case SEL4TEST_TIME_TIMESTAMP:
-            timeServer_ns = timestamp(env);
-            sel4utils_64_set_mr(1, timeServer_ns);
-            info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, SEL4UTILS_64_WORDS + 1);
-            seL4_SetMR(0, 0);
-            api_reply(env->reply.cptr, info);
-            break;
+    case SEL4TEST_TIME_TIMESTAMP:
+        timeServer_ns = timestamp(env);
+        sel4utils_64_set_mr(1, timeServer_ns);
+        info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, SEL4UTILS_64_WORDS + 1);
+        seL4_SetMR(0, 0);
+        api_reply(env->reply.cptr, info);
+        break;
 
-        case SEL4TEST_TIME_RESET:
-            timer_reset(env);
-            info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
-            seL4_SetMR(0, 0);
-            api_reply(env->reply.cptr, info);
-            break;
+    case SEL4TEST_TIME_RESET:
+        timer_reset(env);
+        info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
+        seL4_SetMR(0, 0);
+        api_reply(env->reply.cptr, info);
+        break;
 
-        default:
-            ZF_LOGF("Invalid time request");
-            break;
+    default:
+        ZF_LOGF("Invalid time request");
+        break;
     }
 
 }
@@ -124,9 +125,9 @@ static int sel4test_driver_wait(driver_env_t env, struct testcase *test)
     sel4rpc_server_env_t rpc_server;
 
     sel4rpc_server_init(&rpc_server, &env->vka, sel4test_rpc_recv, env,
-            &env->reply, &env->simple);
+                        &env->reply, &env->simple);
 
-    while(1) {
+    while (1) {
         /* wait for tests to finish or fault, receive test request or report result */
         info = api_recv(env->test_process.fault_endpoint.cptr, &badge, env->reply.cptr);
         test_output = seL4_GetMR(0);
@@ -159,11 +160,11 @@ static int sel4test_driver_wait(driver_env_t env, struct testcase *test)
         if (sel4test_isTimerRPC(test_output)) {
 
             if (config_set(CONFIG_HAVE_TIMER)) {
-               handle_timer_requests(env, test_output);
-               continue;
+                handle_timer_requests(env, test_output);
+                continue;
             } else {
                 ZF_LOGF("Requesting a timer service from sel4test-driver while there is no"
-                    "supported HW timer.");
+                        "supported HW timer.");
             }
         } else if (test_output == SEL4TEST_PROTOBUF_RPC) {
             sel4rpc_server_recv(&rpc_server);
@@ -207,11 +208,15 @@ void basic_set_up(uintptr_t e)
         env->init->timer_ntfn = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, env->timer_notify_test.cptr);
     }
 
-    env->init->domain = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple, seL4_CapDomain));
-    env->init->asid_pool = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple, seL4_CapInitThreadASIDPool));
-    env->init->asid_ctrl = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple, seL4_CapASIDControl));
+    env->init->domain = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple,
+                                                                                                           seL4_CapDomain));
+    env->init->asid_pool = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple,
+                                                                                                              seL4_CapInitThreadASIDPool));
+    env->init->asid_ctrl = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple,
+                                                                                                              seL4_CapASIDControl));
 #ifdef CONFIG_IOMMU
-    env->init->io_space = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple, seL4_CapIOSpace));
+    env->init->io_space = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple,
+                                                                                                             seL4_CapIOSpace));
 #endif /* CONFIG_IOMMU */
 #ifdef CONFIG_ARM_SMMU
     env->init->io_space_caps = arch_copy_iospace_caps_to_process(&(env->test_process), &env);
@@ -233,7 +238,8 @@ void basic_set_up(uintptr_t e)
     env->endpoint = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, env->test_process.fault_endpoint.cptr);
 
     /* map the cap into remote vspace */
-    env->remote_vaddr = vspace_share_mem(&env->vspace, &(env->test_process).vspace, env->init, 1, PAGE_BITS_4K, seL4_AllRights, 1);
+    env->remote_vaddr = vspace_share_mem(&env->vspace, &(env->test_process).vspace, env->init, 1, PAGE_BITS_4K,
+                                         seL4_AllRights, 1);
     assert(env->remote_vaddr != 0);
 
     /* WARNING: DO NOT COPY MORE CAPS TO THE PROCESS BEYOND THIS POINT,
@@ -245,8 +251,7 @@ void basic_set_up(uintptr_t e)
     assert(env->init->free_slots.start < env->init->free_slots.end);
 }
 
-test_result_t
-basic_run_test(struct testcase *test, uintptr_t e)
+test_result_t basic_run_test(struct testcase *test, uintptr_t e)
 {
     int error;
     driver_env_t env = (driver_env_t)e;

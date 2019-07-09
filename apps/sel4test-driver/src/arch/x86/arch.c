@@ -39,13 +39,14 @@ vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(driver_env_t _env)
  * of a simpleinterface, but we do not bother to create an entire interface wrapper with
  * a new 'data' cookie */
 static driver_env_t alloc_at_env;
-static seL4_Error serial_ioport_cap_fn(void *data, uint16_t start_port, uint16_t end_port, seL4_Word root, seL4_Word dest, seL4_Word depth)
+static seL4_Error serial_ioport_cap_fn(void *data, uint16_t start_port, uint16_t end_port, seL4_Word root,
+                                       seL4_Word dest, seL4_Word depth)
 {
     ZF_LOGF_IF(!alloc_at_env, "%s called before arch_get_serial_utspace_alloc_at", __FUNCTION__);
     if (start_port >= SERIAL_CONSOLE_COM1_PORT &&
-           start_port <= SERIAL_CONSOLE_COM1_PORT_END) {
+        start_port <= SERIAL_CONSOLE_COM1_PORT_END) {
         return seL4_CNode_Copy(root, dest, depth, simple_get_cnode(&alloc_at_env->simple),
-            alloc_at_env->serial_objects.arch_serial_objects.serial_io_port_cap, CONFIG_WORD_SIZE, seL4_AllRights);
+                               alloc_at_env->serial_objects.arch_serial_objects.serial_io_port_cap, CONFIG_WORD_SIZE, seL4_AllRights);
     }
 
     assert(alloc_at_env->simple.arch_simple.IOPort_cap);

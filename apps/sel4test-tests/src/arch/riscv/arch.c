@@ -11,14 +11,12 @@
  */
 #include "../../init.h"
 
-void
-arch_init_allocator(env_t env, test_init_data_t *data)
+void arch_init_allocator(env_t env, test_init_data_t *data)
 {
     /* nothing to do */
 }
 
-void
-arch_init_simple(env_t env, simple_t *simple)
+void arch_init_simple(env_t env, simple_t *simple)
 {
     /* nothing to do */
 }

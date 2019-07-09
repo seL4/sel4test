@@ -16,8 +16,7 @@
 #include <sel4platsupport/io.h>
 #include <sel4platsupport/device.h>
 
-void
-plat_init(driver_env_t env)
+void plat_init(driver_env_t env)
 {
     ZF_LOGD("Spike: plat_init: Done.");
 }

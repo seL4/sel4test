@@ -55,8 +55,7 @@ static sel4utils_alloc_data_t alloc_data;
 static char allocator_mem_pool[ALLOCATOR_STATIC_POOL_SIZE];
 
 /* override abort, called by exit (and assert fail) */
-void
-abort(void)
+void abort(void)
 {
     /* send back a failure */
     seL4_MessageInfo_t info = seL4_MessageInfo_new(seL4_Fault_NullFault, 0, 0, 1);
@@ -69,18 +68,16 @@ abort(void)
 }
 
 void __plat_putchar(int c);
-static size_t
-write_buf(void *data, size_t count)
+static size_t write_buf(void *data, size_t count)
 {
-    char* buf = data;
+    char *buf = data;
     for (int i = 0; i < count; i++) {
         __plat_putchar(buf[i]);
     }
     return count;
 }
 
-static testcase_t *
-find_test(const char *name)
+static testcase_t *find_test(const char *name)
 {
     testcase_t *test = sel4test_get_test(name);
     if (test == NULL) {
@@ -90,8 +87,7 @@ find_test(const char *name)
     return test;
 }
 
-static void
-init_allocator(env_t env, test_init_data_t *init_data)
+static void init_allocator(env_t env, test_init_data_t *init_data)
 {
     UNUSED int error;
     UNUSED reservation_t virtual_reservation;
@@ -112,8 +108,8 @@ init_allocator(env_t env, test_init_data_t *init_data)
     size_t size_bits;
     cspacepath_t path;
     for (slot = init_data->untypeds.start, size_bits_index = 0;
-            slot <= init_data->untypeds.end;
-            slot++, size_bits_index++) {
+         slot <= init_data->untypeds.end;
+         slot++, size_bits_index++) {
 
         vka_cspace_make_path(&env->vka, slot, &path);
         /* allocman doesn't require the paddr unless we need to ask for phys addresses,
@@ -138,7 +134,8 @@ init_allocator(env_t env, test_init_data_t *init_data)
         existing_frames[i + 2] = init_data->stack + (i * PAGE_SIZE_4K);
     }
 
-    error = sel4utils_bootstrap_vspace(&env->vspace, &alloc_data, init_data->page_directory, &env->vka,                 NULL, NULL, existing_frames);
+    error = sel4utils_bootstrap_vspace(&env->vspace, &alloc_data, init_data->page_directory, &env->vka,
+                                       NULL, NULL, existing_frames);
 
     /* switch the allocator to a virtual memory pool */
     void *vaddr;
@@ -153,21 +150,18 @@ init_allocator(env_t env, test_init_data_t *init_data)
 
 }
 
-static uint8_t
-cnode_size_bits(void *data)
+static uint8_t cnode_size_bits(void *data)
 {
     test_init_data_t *init = (test_init_data_t *) data;
     return init->cspace_size_bits;
 }
 
-static seL4_CPtr
-sched_ctrl(void *data, int core)
+static seL4_CPtr sched_ctrl(void *data, int core)
 {
     return ((test_init_data_t *) data)->sched_ctrl + core;
 }
 
-static int
-core_count(UNUSED void *data)
+static int core_count(UNUSED void *data)
 {
     return ((test_init_data_t *) data)->cores;
 }
@@ -185,8 +179,7 @@ void init_simple(env_t env, test_init_data_t *init_data)
     arch_init_simple(env, &env->simple);
 }
 
-int
-main(int argc, char **argv)
+int main(int argc, char **argv)
 {
     sel4muslcsys_register_stdio_write_fn(write_buf);
 
@@ -198,7 +191,7 @@ main(int argc, char **argv)
     endpoint = (seL4_CPtr) atoi(argv[0]);
 
     /* read in init data */
-    init_data = (void*) atol(argv[1]);
+    init_data = (void *) atol(argv[1]);
 
     /* configure env */
     env.cspace_root = init_data->root_cnode;
