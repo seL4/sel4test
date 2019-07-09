@@ -61,6 +61,9 @@ mark_as_advanced(
     LibSel4TestPrinterHaltOnTestFailure
     LibSel4TestPrintXML
 )
+
+set(LibNanopb ON CACHE BOOL "" FORCE)
+
 # We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
 # in the cmake-gui to prevent excessively confusing users
 if(NOT Sel4testAllowSettingsOverride)
