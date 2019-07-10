@@ -47,4 +47,5 @@ target_link_libraries(
     sel4sync
     sel4muslcsys
     sel4testsupport
+    sel4serialserver_tests
 )
