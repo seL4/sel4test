@@ -327,8 +327,11 @@ void sel4test_run_tests(struct driver_env* e)
 
     /* Count how many tests actually exist and allocate space for them */
     int driver_tests = (int)(__stop__test_case - __start__test_case);
-    uint64_t tc_size;
+    uint64_t tc_size = 0;
     testcase_t *sel4test_tests = (testcase_t *) sel4utils_elf_get_section(&tests_elf, "_test_case", &tc_size);
+    if (sel4test_tests == NULL) {
+        ZF_LOGF(TESTS_APP": Failed to find section: _test_case");
+    }
     int tc_tests = tc_size / sizeof(testcase_t);
     int all_tests = driver_tests + tc_tests;
     testcase_t *tests[all_tests];
