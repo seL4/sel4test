@@ -9,7 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-
+#include <autoconf.h>
 #include <sel4/sel4.h>
 
 #ifdef CONFIG_ARCH_X86
@@ -90,32 +90,38 @@ test_unmap_after_delete(env_t env)
     seL4_CPtr pd = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageDirectoryObject, 0);
     seL4_CPtr pt = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageTableObject, 0);
     seL4_CPtr frame = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
-    test_assert(pgd != 0);
+    /* Under an Arm Hyp configuration where the CPU only supports 40bit physical addressing, we
+     * only have 3 level page tables and no PGD.
+     */
+    test_assert((seL4_PGDBits == 0) || pgd != 0);
     test_assert(pud != 0);
     test_assert(pd != 0);
     test_assert(pt != 0);
     test_assert(frame != 0);
 
-    seL4_ARM_ASIDPool_Assign(env->asid_pool, pgd);
 
-    /* map pud into page global directory */
-    error = seL4_ARM_PageUpperDirectory_Map(pud, pgd, map_addr, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_NoError);
+    seL4_CPtr vspace = (seL4_PGDBits == 0) ? pud : pgd;
+    seL4_ARM_ASIDPool_Assign(env->asid_pool, vspace);
+    if (seL4_PGDBits) {
+        /* map pud into page global directory */
+        error = seL4_ARM_PageUpperDirectory_Map(pud, vspace, map_addr, seL4_ARM_Default_VMAttributes);
+        test_assert(error == seL4_NoError);
+    }
 
     /* map pd into page upper directory */
-    error = seL4_ARM_PageDirectory_Map(pd, pgd, map_addr, seL4_ARM_Default_VMAttributes);
+    error = seL4_ARM_PageDirectory_Map(pd, vspace, map_addr, seL4_ARM_Default_VMAttributes);
     test_assert(error == seL4_NoError);
 
     /* map page table into page directory */
-    error = seL4_ARM_PageTable_Map(pt, pgd, map_addr, seL4_ARM_Default_VMAttributes);
+    error = seL4_ARM_PageTable_Map(pt, vspace, map_addr, seL4_ARM_Default_VMAttributes);
     test_assert(error == seL4_NoError);
 
     /* map frame into the page table */
-    error = seL4_ARM_Page_Map(frame, pgd, map_addr, seL4_AllRights, seL4_ARM_Default_VMAttributes);
+    error = seL4_ARM_Page_Map(frame, vspace, map_addr, seL4_AllRights, seL4_ARM_Default_VMAttributes);
     test_assert(error == seL4_NoError);
 
     /* delete the page directory */
-    vka_cspace_make_path(&env->vka, pgd, &path);
+    vka_cspace_make_path(&env->vka, vspace, &path);
     seL4_CNode_Delete(path.root, path.capPtr, path.capDepth);
 
     /* unmap the frame */
