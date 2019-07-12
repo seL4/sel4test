@@ -22,12 +22,11 @@
 #include "frame_type.h"
 
 #if defined(CONFIG_ARCH_ARM)
-static int
-fill_memory(seL4_Word addr, seL4_Word size_bytes)
+static int fill_memory(seL4_Word addr, seL4_Word size_bytes)
 {
     test_assert(IS_ALIGNED(addr, sizeof(seL4_Word)));
     test_assert(IS_ALIGNED(size_bytes, sizeof(seL4_Word)));
-    seL4_Word *p = (void*)addr;
+    seL4_Word *p = (void *)addr;
     seL4_Word size_words = size_bytes / sizeof(seL4_Word);
     while (size_words--) {
         *p++ = size_words ^ 0xbeefcafe;
@@ -35,13 +34,12 @@ fill_memory(seL4_Word addr, seL4_Word size_bytes)
     return SUCCESS;
 }
 
-static int
-__attribute__((warn_unused_result))
+static int __attribute__((warn_unused_result))
 check_memory(seL4_Word addr, seL4_Word size_bytes)
 {
     test_assert(IS_ALIGNED(addr, sizeof(seL4_Word)));
     test_assert(IS_ALIGNED(size_bytes, sizeof(seL4_Word)));
-    seL4_Word *p = (void*)addr;
+    seL4_Word *p = (void *)addr;
     seL4_Word size_words = size_bytes / sizeof(seL4_Word);
     while (size_words--) {
         if (*p++ != (size_words ^ 0xbeefcafe)) {
@@ -57,17 +55,16 @@ check_memory(seL4_Word addr, seL4_Word size_bytes)
 #define SUPSECT_SIZE (1 << (vka_get_object_size(seL4_ARM_SuperSectionObject, 0)))
 
 /* Assumes caps can be mapped in at vaddr (= [vaddr,vaddr + 3*size) */
-static int
-do_test_pagetable_tlbflush_on_vaddr_reuse(env_t env, seL4_CPtr cap1, seL4_CPtr cap2, seL4_Word vstart,
-                                          seL4_Word size)
+static int do_test_pagetable_tlbflush_on_vaddr_reuse(env_t env, seL4_CPtr cap1, seL4_CPtr cap2, seL4_Word vstart,
+                                                     seL4_Word size)
 {
     int error;
     seL4_Word vaddr;
-    volatile seL4_Word* vptr = NULL;
+    volatile seL4_Word *vptr = NULL;
 
     /* map, touch page 1 */
     vaddr = vstart;
-    vptr = (seL4_Word*)vaddr;
+    vptr = (seL4_Word *)vaddr;
     error = seL4_ARM_Page_Map(cap1, env->page_directory,
                               vaddr, seL4_AllRights,
                               seL4_ARM_Default_VMAttributes);
@@ -78,7 +75,7 @@ do_test_pagetable_tlbflush_on_vaddr_reuse(env_t env, seL4_CPtr cap1, seL4_CPtr c
 
     /* map, touch page 2 */
     vaddr = vstart + size;
-    vptr = (seL4_Word*)vaddr;
+    vptr = (seL4_Word *)vaddr;
     error = seL4_ARM_Page_Map(cap2, env->page_directory,
                               vaddr, seL4_AllRights,
                               seL4_ARM_Default_VMAttributes);
@@ -89,7 +86,7 @@ do_test_pagetable_tlbflush_on_vaddr_reuse(env_t env, seL4_CPtr cap1, seL4_CPtr c
 
     /* Test TLB */
     vaddr = vstart + 2 * size;
-    vptr = (seL4_Word*)vaddr;
+    vptr = (seL4_Word *)vaddr;
     error = seL4_ARM_Page_Map(cap1, env->page_directory,
                               vaddr, seL4_AllRights,
                               seL4_ARM_Default_VMAttributes);
@@ -110,15 +107,14 @@ do_test_pagetable_tlbflush_on_vaddr_reuse(env_t env, seL4_CPtr cap1, seL4_CPtr c
     return sel4test_get_result();
 }
 
-static int
-test_pagetable_arm(env_t env)
+static int test_pagetable_arm(env_t env)
 {
     int error;
 
     /* Grab some free vspace big enough to hold a couple of supersections. */
     seL4_Word vstart;
     reservation_t reserve = vspace_reserve_range(&env->vspace, SUPSECT_SIZE * 4,
-                                                  seL4_AllRights, 1, (void **) &vstart);
+                                                 seL4_AllRights, 1, (void **) &vstart);
     vstart = ALIGN_UP(vstart, SUPSECT_SIZE * 2);
 
     /* Create us some frames to play with. */
@@ -343,7 +339,7 @@ test_pagetable_tlbflush_on_vaddr_reuse(env_t env)
     /* Grab some free vspace big enough to hold a couple of supersections. */
     void *vstart;
     reservation_t reserve = vspace_reserve_range_aligned(&env->vspace, VSPACE_RV_SIZE, VSPACE_RV_ALIGN_BITS,
-            seL4_AllRights, 1, &vstart);
+                                                         seL4_AllRights, 1, &vstart);
     test_assert(reserve.res);
 
     seL4_CPtr cap1, cap2;
@@ -398,7 +394,7 @@ test_pagetable_arm(env_t env)
     /* Grab some free vspace big enough to hold a couple of large pages. */
     seL4_Word vstart;
     reservation_t reserve = vspace_reserve_range(&env->vspace, LPAGE_SIZE * 4,
-                                                  seL4_AllRights, 1, (void **) &vstart);
+                                                 seL4_AllRights, 1, (void **) &vstart);
     vstart = ALIGN_UP(vstart, LPAGE_SIZE * 2);
 
     /* Create us some frames to play with. */
@@ -423,7 +419,7 @@ test_pagetable_arm(env_t env)
                               vstart + LPAGE_SIZE, seL4_AllRights, seL4_ARM_Default_VMAttributes);
     test_assert(error == 0);
 
-   /* Unmap large page and try again. */
+    /* Unmap large page and try again. */
     error = seL4_ARM_Page_Unmap(large_page);
     test_assert(error == 0);
 

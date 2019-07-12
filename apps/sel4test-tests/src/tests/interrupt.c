@@ -17,23 +17,21 @@
 
 #include <utils/util.h>
 
-static void
-interrupt_helper(env_t env, volatile int *state, int runs, seL4_CPtr endpoint)
+static void interrupt_helper(env_t env, volatile int *state, int runs, seL4_CPtr endpoint)
 {
     while (*state < runs) {
-       *state = *state + 1;
-       ZF_LOGD("Tick");
-       sel4test_ntfn_timer_wait(env);
-   }
-   ZF_LOGD("Boom");
-   sel4test_ntfn_timer_wait(env);
+        *state = *state + 1;
+        ZF_LOGD("Tick");
+        sel4test_ntfn_timer_wait(env);
+    }
+    ZF_LOGD("Boom");
+    sel4test_ntfn_timer_wait(env);
 
 }
 
 /* test an interrupt handling thread that inherits the scheduling context of the notification
  * object */
-static int
-test_interrupt_notification_sc(env_t env)
+static int test_interrupt_notification_sc(env_t env)
 {
     helper_thread_t helper;
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
@@ -57,7 +55,7 @@ test_interrupt_notification_sc(env_t env)
     test_eq(error, seL4_NoError);
 
     error = api_sc_bind(helper.thread.sched_context.cptr,
-                                               env->timer_notification.cptr);
+                        env->timer_notification.cptr);
     test_eq(error, seL4_NoError);
 
     sel4test_periodic_start(env, 10 * NS_IN_MS);
@@ -70,11 +68,11 @@ test_interrupt_notification_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(INTERRUPT0002, "Test interrupts with scheduling context donation from notification object", test_interrupt_notification_sc, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_KERNEL_RT));
+DEFINE_TEST(INTERRUPT0002, "Test interrupts with scheduling context donation from notification object",
+            test_interrupt_notification_sc, config_set(CONFIG_HAVE_TIMER) &&config_set(CONFIG_KERNEL_RT));
 
 /* test an interrupt handling thread with a scheduling context doesn't inherit the notification objects scheduling context */
-static int
-test_interrupt_notification_and_tcb_sc(env_t env)
+static int test_interrupt_notification_and_tcb_sc(env_t env)
 {
     helper_thread_t helper_with_sc, helper_without_sc;
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
@@ -110,7 +108,7 @@ test_interrupt_notification_and_tcb_sc(env_t env)
     sel4test_periodic_start(env, 10 * NS_IN_MS);
 
     error = api_sc_bind(helper_without_sc.thread.sched_context.cptr,
-                                   env->timer_notification.cptr);
+                        env->timer_notification.cptr);
     test_eq(error, seL4_NoError);
 
     /* wait for the helper */
@@ -124,11 +122,12 @@ test_interrupt_notification_and_tcb_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(INTERRUPT0003, "Test interrupts with scheduling context donation from notification object and without (two clients)", test_interrupt_notification_and_tcb_sc, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_KERNEL_RT));
+DEFINE_TEST(INTERRUPT0003,
+            "Test interrupts with scheduling context donation from notification object and without (two clients)",
+            test_interrupt_notification_and_tcb_sc, config_set(CONFIG_HAVE_TIMER) &&config_set(CONFIG_KERNEL_RT));
 
 /* test that if niether the thread or notification object have a scheduling context, nothing happens */
-static int
-test_interrupt_no_sc(env_t env)
+static int test_interrupt_no_sc(env_t env)
 {
     helper_thread_t helper;
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
@@ -160,11 +159,11 @@ test_interrupt_no_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(INTERRUPT0004, "Test interrupts with no scheduling context at all", test_interrupt_no_sc, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_KERNEL_RT));
+DEFINE_TEST(INTERRUPT0004, "Test interrupts with no scheduling context at all", test_interrupt_no_sc,
+            config_set(CONFIG_HAVE_TIMER) &&config_set(CONFIG_KERNEL_RT));
 
 /* test that a second interrupt handling thread on the same endpoint works */
-int
-test_interrupt_notification_sc_two_clients(env_t env)
+int test_interrupt_notification_sc_two_clients(env_t env)
 {
     helper_thread_t helper_first, helper_second;
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
@@ -200,7 +199,7 @@ test_interrupt_notification_sc_two_clients(env_t env)
     test_eq(error, seL4_NoError);
 
     error = api_sc_bind(helper_first.thread.sched_context.cptr,
-                                   env->timer_notification.cptr);
+                        env->timer_notification.cptr);
     test_eq(error, seL4_NoError);
 
     sel4test_periodic_start(env, 10 * NS_IN_MS);
@@ -217,11 +216,10 @@ test_interrupt_notification_sc_two_clients(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(INTERRUPT0005, "Test the same scheduling context cannot be loaned to different threads",
-            test_interrupt_notification_sc_two_clients, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_KERNEL_RT));
+            test_interrupt_notification_sc_two_clients, config_set(CONFIG_HAVE_TIMER) &&config_set(CONFIG_KERNEL_RT));
 
 /* test deleting the scheduling context stops the notification from donating it */
-static int
-test_interrupt_delete_sc(env_t env)
+static int test_interrupt_delete_sc(env_t env)
 {
     helper_thread_t helper;
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
@@ -246,7 +244,7 @@ test_interrupt_delete_sc(env_t env)
     test_eq(error, seL4_NoError);
 
     error = api_sc_bind(helper.thread.sched_context.cptr,
-                                               env->timer_notification.cptr);
+                        env->timer_notification.cptr);
     test_eq(error, seL4_NoError);
 
     /* now delete it */
@@ -259,4 +257,5 @@ test_interrupt_delete_sc(env_t env)
     sel4test_timer_reset(env);
     return sel4test_get_result();
 }
-DEFINE_TEST(INTERRUPT0006, "Test interrupts after deleting scheduling context bound to notification", test_interrupt_delete_sc, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_KERNEL_RT));
+DEFINE_TEST(INTERRUPT0006, "Test interrupts after deleting scheduling context bound to notification",
+            test_interrupt_delete_sc, config_set(CONFIG_HAVE_TIMER) &&config_set(CONFIG_KERNEL_RT));

@@ -38,8 +38,7 @@ UNUSED void dummy_func()
     get_serial_server_parent_tests();
 }
 
-testcase_t*
-sel4test_get_test(const char *name)
+testcase_t *sel4test_get_test(const char *name)
 {
 
     for (testcase_t *t = __start__test_case; t < __stop__test_case; t++) {

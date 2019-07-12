@@ -21,11 +21,10 @@
 #include <sel4/benchmark_utilisation_types.h>
 #include "../helpers.h"
 
-static int
-test_benchmark_utilisation(env_t env)
+static int test_benchmark_utilisation(env_t env)
 {
 
-    uint64_t * __attribute__((__may_alias__)) ipcbuffer = (uint64_t *) &(seL4_GetIPCBuffer()->msg[0]);
+    uint64_t *__attribute__((__may_alias__)) ipcbuffer = (uint64_t *) & (seL4_GetIPCBuffer()->msg[0]);
 
     seL4_BenchmarkResetThreadUtilisation(simple_get_tcb(&env->simple));
 
@@ -55,9 +54,10 @@ test_benchmark_utilisation(env_t env)
      * priority running thread, and all other threads are blocked, in order for the idle thread to run.
      */
     test_gt(((ipcbuffer[BENCHMARK_IDLE_LOCALCPU_UTILISATION] * 100) /
-                ipcbuffer[BENCHMARK_TOTAL_UTILISATION]), (uint64_t) 50);
+             ipcbuffer[BENCHMARK_TOTAL_UTILISATION]), (uint64_t) 50);
 
     return sel4test_get_result();
 }
-DEFINE_TEST(BENCHMARK_0001, "Test seL4 Benchmarking API - Utilisation", test_benchmark_utilisation, config_set(CONFIG_HAVE_TIMER));
+DEFINE_TEST(BENCHMARK_0001, "Test seL4 Benchmarking API - Utilisation", test_benchmark_utilisation,
+            config_set(CONFIG_HAVE_TIMER));
 #endif /* CONFIG_BENCHMARK_TRACK_UTILISATION */

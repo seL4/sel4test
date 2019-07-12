@@ -21,13 +21,11 @@
 
 /* Get a cap that we can move/copy/delete/etc and compare without causing chaos.
  */
-static seL4_CPtr
-get_cap(vka_t *vka)
+static seL4_CPtr get_cap(vka_t *vka)
 {
     return vka_alloc_tcb_leaky(vka);
 }
-static int
-test_cnode_copy(env_t env)
+static int test_cnode_copy(env_t env)
 {
     int error;
     seL4_Word src, dest;

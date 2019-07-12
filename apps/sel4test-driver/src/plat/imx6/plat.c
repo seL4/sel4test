@@ -15,8 +15,7 @@
 #include <sel4platsupport/io.h>
 #include <utils/zf_log.h>
 
-void
-plat_init(driver_env_t env)
+void plat_init(driver_env_t env)
 {
     int error;
     ps_io_ops_t io_ops = {};

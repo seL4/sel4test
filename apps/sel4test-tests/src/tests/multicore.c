@@ -20,8 +20,7 @@
 
 #include "../helpers.h"
 
-static int
-counter_func(volatile seL4_Word *counter)
+static int counter_func(volatile seL4_Word *counter)
 {
     while (1) {
         (*counter)++;
@@ -86,7 +85,8 @@ int smp_test_tcb_resume(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(MULTICORE0001, "Test suspending and resuming a thread on different core", smp_test_tcb_resume, config_set(CONFIG_HAVE_TIMER) && CONFIG_MAX_NUM_NODES > 1)
+DEFINE_TEST(MULTICORE0001, "Test suspending and resuming a thread on different core", smp_test_tcb_resume,
+            config_set(CONFIG_HAVE_TIMER) &&CONFIG_MAX_NUM_NODES > 1)
 
 int smp_test_tcb_move(env_t env)
 {
@@ -108,7 +108,7 @@ int smp_test_tcb_move(env_t env)
     /* Now, counter should not have moved. */
     test_check(counter == old_counter);
 
-    for(int i = 1; i < env->cores; i++) {
+    for (int i = 1; i < env->cores; i++) {
         set_helper_affinity(env, &t1, i);
 
         old_counter = counter;
@@ -125,7 +125,8 @@ int smp_test_tcb_move(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(MULTICORE0002, "Test thread is runnable on all available cores (0 + other)", smp_test_tcb_move, config_set(CONFIG_HAVE_TIMER) && CONFIG_MAX_NUM_NODES > 1)
+DEFINE_TEST(MULTICORE0002, "Test thread is runnable on all available cores (0 + other)", smp_test_tcb_move,
+            config_set(CONFIG_HAVE_TIMER) &&CONFIG_MAX_NUM_NODES > 1)
 
 int smp_test_tcb_delete(env_t env)
 {
@@ -172,7 +173,8 @@ int smp_test_tcb_delete(env_t env)
     return sel4test_get_result();
 }
 
-DEFINE_TEST(MULTICORE0005, "Test remote delete thread running on other cores", smp_test_tcb_delete, config_set(CONFIG_HAVE_TIMER) && CONFIG_MAX_NUM_NODES > 1)
+DEFINE_TEST(MULTICORE0005, "Test remote delete thread running on other cores", smp_test_tcb_delete,
+            config_set(CONFIG_HAVE_TIMER) &&CONFIG_MAX_NUM_NODES > 1)
 
 static int
 faulter_func(volatile seL4_Word *shared_mem)
@@ -180,19 +182,18 @@ faulter_func(volatile seL4_Word *shared_mem)
     volatile seL4_Word *page;
 
     /* Wait for new mapping */
-    while(*shared_mem == 0);
+    while (*shared_mem == 0);
     page = ((seL4_Word *) *shared_mem);
 
     /* Accessing to the new page... */
-    while(1) {
+    while (1) {
         *page = 1;
     }
 
     return 0;
 }
 
-static int
-handler_func(seL4_CPtr fault_ep, volatile seL4_Word *pf)
+static int handler_func(seL4_CPtr fault_ep, volatile seL4_Word *pf)
 {
     seL4_MessageInfo_t tag;
     seL4_Word sender_badge = 0;
@@ -257,7 +258,8 @@ int smp_test_tlb(env_t env)
     cleanup_helper(env, &handler_thread);
     return sel4test_get_result();
 }
-DEFINE_TEST(MULTICORE0003, "Test TLB invalidated cross cores", smp_test_tlb, config_set(CONFIG_HAVE_TIMER) && CONFIG_MAX_NUM_NODES > 1)
+DEFINE_TEST(MULTICORE0003, "Test TLB invalidated cross cores", smp_test_tlb,
+            config_set(CONFIG_HAVE_TIMER) &&CONFIG_MAX_NUM_NODES > 1)
 
 static int
 kernel_entry_func(seL4_Word *unused)
@@ -273,7 +275,7 @@ int smp_test_tcb_clh(env_t env)
     helper_thread_t t[env->cores];
     ZF_LOGD("smp_test_tcb_move\n");
 
-    for(int i = 1; i < env->cores; i++) {
+    for (int i = 1; i < env->cores; i++) {
         create_helper_thread(env, &t[i]);
 
         set_helper_affinity(env, &t[i], i);
@@ -288,12 +290,12 @@ int smp_test_tcb_clh(env_t env)
      * If something is worng with IPI or lock handling we would stuck or possibly crash! */
 
     /* We should be able to cleanup all threads */
-    for(int i = 1; i < env->cores; i++) {
+    for (int i = 1; i < env->cores; i++) {
         cleanup_helper(env, &t[i]);
     }
 
     /* Do this again... */
-    for(int i = 1; i < env->cores; i++) {
+    for (int i = 1; i < env->cores; i++) {
         create_helper_thread(env, &t[i]);
 
         set_helper_affinity(env, &t[i], i);
@@ -301,10 +303,11 @@ int smp_test_tcb_clh(env_t env)
     }
 
     /* We should be able to cleanup all threads */
-    for(int i = 1; i < env->cores; i++) {
+    for (int i = 1; i < env->cores; i++) {
         cleanup_helper(env, &t[i]);
     }
 
     return sel4test_get_result();
 }
-DEFINE_TEST(MULTICORE0004, "Test core stalling is behaving properly (flaky)", smp_test_tcb_clh, CONFIG_MAX_NUM_NODES > 1)
+DEFINE_TEST(MULTICORE0004, "Test core stalling is behaving properly (flaky)", smp_test_tcb_clh,
+            CONFIG_MAX_NUM_NODES > 1)

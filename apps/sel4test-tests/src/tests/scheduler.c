@@ -33,8 +33,7 @@
         var = (x) + 1; \
     } while (0)
 
-static int
-counter_func(volatile seL4_Word *counter)
+static int counter_func(volatile seL4_Word *counter)
 {
     while (1) {
         (*counter)++;
@@ -47,8 +46,7 @@ counter_func(volatile seL4_Word *counter)
  * Note: This test non-deterministically fails. If you find only this test
  * try re-running the test suite.
  */
-static int
-test_thread_suspend(env_t env)
+static int test_thread_suspend(env_t env)
 {
     helper_thread_t t1;
     volatile seL4_Word counter;
@@ -99,13 +97,14 @@ test_thread_suspend(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0000, "Test suspending and resuming a thread (flaky)", test_thread_suspend, config_set(CONFIG_HAVE_TIMER))
+DEFINE_TEST(SCHED0000, "Test suspending and resuming a thread (flaky)", test_thread_suspend,
+            config_set(CONFIG_HAVE_TIMER))
 
 /*
  * Test TCB Resume on self.
  */
 static int
-test_resume_self(struct env* env)
+test_resume_self(struct env *env)
 {
     ZF_LOGD("Starting test_resume_self\n");
     /* Ensure nothing bad happens if we resume ourselves. */
@@ -120,8 +119,7 @@ DEFINE_TEST(SCHED0002, "Test resuming ourselves", test_resume_self, true)
  * Test TCB Suspend/Resume.
  */
 static volatile int suspend_test_step;
-static int
-suspend_test_helper_2a(seL4_CPtr t1, seL4_CPtr t2a, seL4_CPtr t2b)
+static int suspend_test_helper_2a(seL4_CPtr t1, seL4_CPtr t2a, seL4_CPtr t2b)
 {
     /* Helper function that runs at a higher priority. */
 
@@ -148,8 +146,7 @@ suspend_test_helper_2a(seL4_CPtr t1, seL4_CPtr t2a, seL4_CPtr t2b)
     return sel4test_get_result();
 }
 
-static int
-suspend_test_helper_2b(seL4_CPtr t1, seL4_CPtr t2a, seL4_CPtr t2b)
+static int suspend_test_helper_2b(seL4_CPtr t1, seL4_CPtr t2a, seL4_CPtr t2b)
 {
     /* Wait for 2a to get suspend_test_step set to 1. */
     test_check(suspend_test_step == 0 || suspend_test_step == 1);
@@ -171,8 +168,7 @@ suspend_test_helper_2b(seL4_CPtr t1, seL4_CPtr t2a, seL4_CPtr t2b)
     return sel4test_get_result();
 }
 
-static int
-suspend_test_helper_1(seL4_CPtr t1, seL4_CPtr t2a, seL4_CPtr t2b)
+static int suspend_test_helper_1(seL4_CPtr t1, seL4_CPtr t2a, seL4_CPtr t2b)
 {
     CHECK_STEP(suspend_test_step, 3);
 
@@ -195,8 +191,7 @@ suspend_test_helper_1(seL4_CPtr t1, seL4_CPtr t2a, seL4_CPtr t2b)
     return sel4test_get_result();
 }
 
-static int
-test_suspend(struct env* env)
+static int test_suspend(struct env *env)
 {
     helper_thread_t thread1;
     helper_thread_t thread2a;
@@ -261,7 +256,7 @@ DEFINE_TEST(SCHED0003, "Test TCB suspend/resume", test_suspend, !config_set(CONF
  * correct order.
  */
 static int
-prio_test_func(seL4_Word my_prio, seL4_Word* last_prio, seL4_CPtr ep)
+prio_test_func(seL4_Word my_prio, seL4_Word *last_prio, seL4_CPtr ep)
 {
     test_check(*last_prio - 1 == my_prio);
 
@@ -275,16 +270,15 @@ prio_test_func(seL4_Word my_prio, seL4_Word* last_prio, seL4_CPtr ep)
     return 0;
 }
 
-static int
-test_all_priorities(struct env* env)
+static int test_all_priorities(struct env *env)
 {
     int i;
 
-    helper_thread_t **threads = (helper_thread_t **) malloc(sizeof(helper_thread_t*) * NUM_PRIOS);
+    helper_thread_t **threads = (helper_thread_t **) malloc(sizeof(helper_thread_t *) * NUM_PRIOS);
     assert(threads != NULL);
 
     for (i = 0; i < NUM_PRIOS; i++) {
-        threads[i] = (helper_thread_t*) malloc(sizeof(helper_thread_t));
+        threads[i] = (helper_thread_t *) malloc(sizeof(helper_thread_t));
         assert(threads[i]);
     }
 
@@ -327,8 +321,7 @@ DEFINE_TEST(SCHED0004, "Test threads at all priorities", test_all_priorities, tr
  * Test setting the priority of a runnable thread.
  */
 static volatile int set_priority_step;
-static int
-set_priority_helper_1(seL4_CPtr t1, seL4_CPtr t2)
+static int set_priority_helper_1(seL4_CPtr t1, seL4_CPtr t2)
 {
     test_check(set_priority_step == 0);
     ZF_LOGD("0...");
@@ -337,7 +330,7 @@ set_priority_helper_1(seL4_CPtr t1, seL4_CPtr t2)
     /*
      * Down our priority. This should force a reschedule and make thread 2 run.
      */
-    int error = seL4_TCB_SetPriority(t1, t1, SCHED0005_HIGHEST_PRIO - 4 );
+    int error = seL4_TCB_SetPriority(t1, t1, SCHED0005_HIGHEST_PRIO - 4);
     test_check(!error);
 
     test_check(set_priority_step == 2);
@@ -363,8 +356,7 @@ set_priority_helper_1(seL4_CPtr t1, seL4_CPtr t2)
     return sel4test_get_result();
 }
 
-static int
-set_priority_helper_2(seL4_CPtr t1, seL4_CPtr t2)
+static int set_priority_helper_2(seL4_CPtr t1, seL4_CPtr t2)
 {
     test_check(set_priority_step == 1);
     ZF_LOGD("1...");
@@ -379,7 +371,7 @@ set_priority_helper_2(seL4_CPtr t1, seL4_CPtr t2)
 
     /* Drop ours to below thread 1. Thread 1 should run. */
     set_priority_step = 2;
-    error = seL4_TCB_SetPriority(t2, t2, SCHED0005_HIGHEST_PRIO -3 );
+    error = seL4_TCB_SetPriority(t2, t2, SCHED0005_HIGHEST_PRIO - 3);
     test_check(!error);
 
     /* Once thread 1 exits, we should run. */
@@ -396,8 +388,7 @@ set_priority_helper_2(seL4_CPtr t1, seL4_CPtr t2)
  * this we need at least 3 priority levels, assuming that the current thread is
  * running at the highest priority.
  */
-static int
-test_set_priority(struct env* env)
+static int test_set_priority(struct env *env)
 {
     helper_thread_t thread1;
     helper_thread_t thread2;
@@ -450,8 +441,7 @@ typedef struct ipc_test_data {
     seL4_CPtr tcb0, tcb1, tcb2, tcb3;
 } ipc_test_data_t;
 
-static int
-ipc_test_helper_0(ipc_test_data_t *data)
+static int ipc_test_helper_0(ipc_test_data_t *data)
 {
     /* We are a "bouncer" thread. Each time a high priority process actually
      * wants to wait for a low priority process to execute and block, it does a
@@ -469,8 +459,7 @@ ipc_test_helper_0(ipc_test_data_t *data)
     return sel4test_get_result();
 }
 
-static int
-ipc_test_helper_1(ipc_test_data_t *data)
+static int ipc_test_helper_1(ipc_test_data_t *data)
 {
     seL4_Word sender_badge = 0;
     seL4_MessageInfo_t tag;
@@ -507,8 +496,7 @@ ipc_test_helper_1(ipc_test_data_t *data)
     return sel4test_get_result();
 }
 
-static int
-ipc_test_helper_2(ipc_test_data_t *data)
+static int ipc_test_helper_2(ipc_test_data_t *data)
 {
     /* We are a spinner thread. Our job is to do spin, and occasionally bounce
      * to thread 0 to let other code execute. */
@@ -516,7 +504,7 @@ ipc_test_helper_2(ipc_test_data_t *data)
         /* Ensure nothing happens whilst we are busy. */
         int last_step = ipc_test_step;
         for (int i = 0; i < 100000; i++) {
-            asm volatile ("");
+            asm volatile("");
         }
         test_check(last_step == ipc_test_step);
 
@@ -529,8 +517,7 @@ ipc_test_helper_2(ipc_test_data_t *data)
     return sel4test_get_result();
 }
 
-static int
-ipc_test_helper_3(ipc_test_data_t *data)
+static int ipc_test_helper_3(ipc_test_data_t *data)
 {
     seL4_MessageInfo_t tag;
     int last_spins, last_bounces;
@@ -594,8 +581,7 @@ ipc_test_helper_3(ipc_test_data_t *data)
     return sel4test_get_result();
 }
 
-static int
-test_ipc_prios(struct env* env)
+static int test_ipc_prios(struct env *env)
 {
     vka_t *vka = &env->vka;
     helper_thread_t thread0;
@@ -667,8 +653,7 @@ sched0007_client(seL4_CPtr endpoint, int order)
     info = seL4_Call(endpoint, info);
 }
 
-static int
-sched0007_server(seL4_CPtr endpoint, seL4_CPtr reply)
+static int sched0007_server(seL4_CPtr endpoint, seL4_CPtr reply)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
 
@@ -684,14 +669,12 @@ sched0007_server(seL4_CPtr endpoint, seL4_CPtr reply)
     return SUCCESS;
 }
 
-static inline void
-sched0007_start_client(env_t env, helper_thread_t clients[], seL4_CPtr endpoint, int i)
+static inline void sched0007_start_client(env_t env, helper_thread_t clients[], seL4_CPtr endpoint, int i)
 {
     start_helper(env, &clients[i], (helper_fn_t) sched0007_client, endpoint, SCHED0007_PRIO(i), 0, 0);
 }
 
-int
-test_ipc_ordered(env_t env)
+int test_ipc_ordered(env_t env)
 {
     seL4_CPtr endpoint;
     helper_thread_t server;
@@ -730,17 +713,15 @@ DEFINE_TEST(SCHED0007, "Test IPC priorities", test_ipc_ordered, config_set(CONFI
 
 #define SCHED0008_NUM_CLIENTS 5
 
-static NORETURN void
-sched0008_client(int id, seL4_CPtr endpoint)
+static NORETURN void sched0008_client(int id, seL4_CPtr endpoint)
 {
-    while(1) {
+    while (1) {
         ZF_LOGD("Client call %d\n", id);
         seL4_Call(endpoint, seL4_MessageInfo_new(0, 0, 0, 0));
     }
 }
 
-static inline int
-check_receive_ordered(env_t env, seL4_CPtr endpoint, int pos, seL4_CPtr replies[])
+static inline int check_receive_ordered(env_t env, seL4_CPtr endpoint, int pos, seL4_CPtr replies[])
 {
     seL4_Word badge;
     seL4_Word expected_badge = SCHED0008_NUM_CLIENTS - 1;
@@ -801,7 +782,7 @@ int test_change_prio_on_endpoint(env_t env)
         prio++;
     }
 
-  	seL4_Word badge;
+    seL4_Word badge;
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
 
     /* first test that changing prio while on an endpoint works */
@@ -826,7 +807,7 @@ int test_change_prio_on_endpoint(env_t env)
     seL4_Send(reply, info);
 
     /* Now test moving client 0 into all possible places in the endpoint queue */
-   /* first start the rest */
+    /* first start the rest */
     for (int i = 1; i < SCHED0008_NUM_CLIENTS; i++) {
         start_helper(env, &clients[i], (helper_fn_t) sched0008_client, i, badged_endpoints[i], 0, 0);
     }
@@ -879,7 +860,7 @@ int test_change_prio_on_endpoint(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0008, "Test changing prio while in endpoint queues results in correct message order",
-        test_change_prio_on_endpoint, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER))
+            test_change_prio_on_endpoint, config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER))
 
 #define SCHED0009_SERVERS 5
 
@@ -899,8 +880,7 @@ sched0009_server(seL4_CPtr endpoint, int id, seL4_CPtr reply)
     }
 }
 
-static int
-test_ordered_ipc_fastpath(env_t env)
+static int test_ordered_ipc_fastpath(env_t env)
 {
     helper_thread_t threads[SCHED0009_SERVERS];
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
@@ -915,7 +895,7 @@ test_ordered_ipc_fastpath(env_t env)
 
     /* start the first server */
     start_helper(env, &threads[0], (helper_fn_t) sched0009_server, endpoint, 0,
-            get_helper_reply(&threads[0]), 0);
+                 get_helper_reply(&threads[0]), 0);
 
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
     ZF_LOGD("Client Call\n");
@@ -952,7 +932,8 @@ test_ordered_ipc_fastpath(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0009, "Test ordered ipc on reply wait fastpath", test_ordered_ipc_fastpath, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER))
+DEFINE_TEST(SCHED0009, "Test ordered ipc on reply wait fastpath", test_ordered_ipc_fastpath,
+            config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER))
 
 int
 sched0010_fn(volatile int *state)
@@ -961,8 +942,7 @@ sched0010_fn(volatile int *state)
     return 0;
 }
 
-int
-test_resume_empty_or_no_sched_context(env_t env)
+int test_resume_empty_or_no_sched_context(env_t env)
 {
     /* resuming a thread with empty or no scheduling context should work (it puts the thread in a runnable state)
      * but the thread cannot run until it receives a scheduling context */
@@ -970,10 +950,10 @@ test_resume_empty_or_no_sched_context(env_t env)
     sel4utils_thread_t thread;
     seL4_Word data = api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits);
     sel4utils_thread_config_t config = thread_config_default(&env->simple, env->cspace_root,
-            data, 0, OUR_PRIO - 1);
+                                                             data, 0, OUR_PRIO - 1);
 
     int error = sel4utils_configure_thread_config(&env->vka, &env->vspace, &env->vspace,
-                                              config, &thread);
+                                                  config, &thread);
     assert(error == 0);
 
     error = api_sc_unbind(thread.sched_context.cptr);
@@ -1006,7 +986,7 @@ test_resume_empty_or_no_sched_context(env_t env)
 }
 DEFINE_TEST(SCHED0010, "Test resuming a thread with empty or missing scheduling context",
             test_resume_empty_or_no_sched_context,
-            (config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER)))
+            (config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER)))
 
 void
 sched0011_helper(void)
@@ -1014,8 +994,7 @@ sched0011_helper(void)
     while (1);
 }
 
-int
-test_scheduler_accuracy(env_t env)
+int test_scheduler_accuracy(env_t env)
 {
     /*
      * Start a thread with a 1s timeslice at our priority, and make sure it
@@ -1050,7 +1029,7 @@ test_scheduler_accuracy(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0011, "Test scheduler accuracy",
-            test_scheduler_accuracy, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER))
+            test_scheduler_accuracy, config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER))
 
 /* used by sched0012, 0013, 0014 */
 static void
@@ -1066,8 +1045,7 @@ periodic_thread(int id, volatile unsigned long *counters)
     }
 }
 
-int
-test_one_periodic_thread(env_t env)
+int test_one_periodic_thread(env_t env)
 {
     helper_thread_t helper;
     volatile unsigned long counter;
@@ -1091,7 +1069,8 @@ test_one_periodic_thread(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0012, "Test one periodic thread", test_one_periodic_thread, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER))
+DEFINE_TEST(SCHED0012, "Test one periodic thread", test_one_periodic_thread,
+            config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER))
 
 int
 test_two_periodic_threads(env_t env)
@@ -1122,10 +1101,10 @@ test_two_periodic_threads(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0013, "Test two periodic threads", test_two_periodic_threads, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER));
+DEFINE_TEST(SCHED0013, "Test two periodic threads", test_two_periodic_threads,
+            config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER));
 
-int
-test_ordering_periodic_threads(env_t env)
+int test_ordering_periodic_threads(env_t env)
 {
     /*
      * Set up 3 periodic threads with different budgets.
@@ -1172,7 +1151,8 @@ test_ordering_periodic_threads(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0014, "Test periodic thread ordering", test_ordering_periodic_threads, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER))
+DEFINE_TEST(SCHED0014, "Test periodic thread ordering", test_ordering_periodic_threads,
+            config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER))
 
 static void
 sched0015_helper(int id, env_t env, volatile unsigned long long *counters)
@@ -1191,8 +1171,7 @@ sched0015_helper(int id, env_t env, volatile unsigned long long *counters)
     }
 }
 
-int
-test_budget_overrun(env_t env)
+int test_budget_overrun(env_t env)
 {
     /* Run two periodic threads that do not yeild but count the approximate
      * amount of time that they run for in 10's of nanoseconds.
@@ -1219,16 +1198,16 @@ test_budget_overrun(env_t env)
     set_helper_sched_params(env, &fifty, 0.1 * US_IN_S, 0.2 * US_IN_S, 0);
     set_helper_sched_params(env, &thirty, 0.1 * US_IN_S, 0.3 * US_IN_S, 0);
 
-    start_helper(env, &fifty,  (helper_fn_t) sched0015_helper, 1, (seL4_Word)env,
+    start_helper(env, &fifty, (helper_fn_t) sched0015_helper, 1, (seL4_Word)env,
                  (seL4_Word) counters, 0);
     start_helper(env, &thirty, (helper_fn_t) sched0015_helper, 0, (seL4_Word)env,
-                  (seL4_Word) counters, 0);
+                 (seL4_Word) counters, 0);
 
     uint64_t ticks = 0;
     while (counters[1] < 10000000) {
-         sel4test_sleep(env, US_IN_S);
-         ticks++;
-         ZF_LOGD("Tick %llu", counters[1]);
+        sel4test_sleep(env, US_IN_S);
+        ticks++;
+        ZF_LOGD("Tick %llu", counters[1]);
     }
     error = seL4_TCB_Suspend(thirty.thread.tcb.cptr);
     test_eq(error, 0);
@@ -1249,8 +1228,7 @@ test_budget_overrun(env_t env)
     return sel4test_get_result();
 }
 
-static void
-sched0016_helper(volatile int *state)
+static void sched0016_helper(volatile int *state)
 {
     while (1) {
         printf("Hello\n");
@@ -1261,8 +1239,7 @@ sched0016_helper(volatile int *state)
     ZF_LOGF("Should not get here!");
 }
 
-int
-test_resume_no_overflow(env_t env)
+int test_resume_no_overflow(env_t env)
 {
     /* test thread cannot exceed its budget by being suspended and resumed */
     helper_thread_t helper;
@@ -1279,7 +1256,7 @@ test_resume_no_overflow(env_t env)
     /* this thread only runs for 1 second every 10 minutes */
     set_helper_sched_params(env, &helper, 1 * US_IN_S, 10 * SEC_IN_MINUTE * US_IN_S, 0);
 
-    start_helper(env, &helper,  (helper_fn_t) sched0016_helper, (seL4_Word) &state,
+    start_helper(env, &helper, (helper_fn_t) sched0016_helper, (seL4_Word) &state,
                  0, 0, 0);
     seL4_Yield();
     test_eq(state, 1);
@@ -1298,18 +1275,17 @@ test_resume_no_overflow(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0016, "Test resume cannot be used to exceed budget", test_resume_no_overflow, config_set(CONFIG_KERNEL_RT));
+DEFINE_TEST(SCHED0016, "Test resume cannot be used to exceed budget", test_resume_no_overflow,
+            config_set(CONFIG_KERNEL_RT));
 
 #ifdef CONFIG_KERNEL_RT
-void
-sched0017_helper_fn(seL4_CPtr sc, volatile seL4_SchedContext_YieldTo_t *ret)
+void sched0017_helper_fn(seL4_CPtr sc, volatile seL4_SchedContext_YieldTo_t *ret)
 {
     ZF_LOGD("Yield To");
     *ret = seL4_SchedContext_YieldTo(sc);
 }
 
-int
-test_yieldTo_errors(env_t env)
+int test_yieldTo_errors(env_t env)
 {
     volatile seL4_SchedContext_YieldTo_t ret;
 
@@ -1345,16 +1321,14 @@ test_yieldTo_errors(env_t env)
 }
 DEFINE_TEST(SCHED0017, "Test seL4_SchedContext_YieldTo errors", test_yieldTo_errors, config_set(CONFIG_KERNEL_RT));
 
-int
-sched0018_to_fn(void)
+int sched0018_to_fn(void)
 {
-    while(1) {
+    while (1) {
         ZF_LOGD("Running");
     }
 }
 
-int
-test_yieldTo_cleanup(env_t env)
+int test_yieldTo_cleanup(env_t env)
 {
     int error;
     helper_thread_t to, from;
@@ -1435,7 +1409,8 @@ test_yieldTo_cleanup(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0018, "Test clean up cases after seL4_SchedContext_YieldTo", test_yieldTo_cleanup, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_HAVE_TIMER));
+DEFINE_TEST(SCHED0018, "Test clean up cases after seL4_SchedContext_YieldTo", test_yieldTo_cleanup,
+            config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER));
 
 
 int test_yieldTo(env_t env)
@@ -1468,8 +1443,7 @@ DEFINE_TEST(SCHED0019, "Test seL4_SchedContext_YieldTo", test_yieldTo, config_se
 
 #endif /* CONFIG_KERNEL_RT */
 
-void
-set_higher_prio_helper(volatile int *state)
+void set_higher_prio_helper(volatile int *state)
 {
     /* Yield incase the scheduler picked us before the
      * test set our priority higher */
@@ -1477,8 +1451,7 @@ set_higher_prio_helper(volatile int *state)
     *state = 2;
 }
 
-static int
-test_set_higher_prio(struct env* env)
+static int test_set_higher_prio(struct env *env)
 {
     helper_thread_t thread;
 

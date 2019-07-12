@@ -70,7 +70,7 @@ int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, s
                           seL4_Word arg1, seL4_Word arg2, seL4_Word arg3);
 /* start an existing (created but not running ) passive thread */
 int start_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
-                          seL4_Word arg1, seL4_Word arg2, seL4_Word arg3);
+                         seL4_Word arg1, seL4_Word arg2, seL4_Word arg3);
 /* set a helper threads priority */
 void set_helper_priority(env_t env, helper_thread_t *thread, seL4_Word prio);
 
@@ -82,7 +82,7 @@ void set_helper_affinity(env_t env, helper_thread_t *thread, seL4_Word affinity)
 
 /* if CONFIG_KERNEL_RT is set, set the helpers scheduling parameters */
 int set_helper_sched_params(UNUSED env_t env, UNUSED helper_thread_t *thread, UNUSED uint64_t budget,
-        UNUSED uint64_t period, seL4_Word badge);
+                            UNUSED uint64_t period, seL4_Word badge);
 
 /* set a helper threads timeout fault handler */
 void set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep);

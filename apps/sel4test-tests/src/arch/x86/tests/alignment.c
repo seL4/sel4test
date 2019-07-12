@@ -26,8 +26,7 @@
 /* Implemented in assembly */
 void align_test_asm(void);
 
-static inline int
-test_stack_alignment(struct env *env)
+static inline int test_stack_alignment(struct env *env)
 {
     /* Stack should be aligned to 16-bytes, especially when SSEx is enabled
      * and movaps/movdqa instructions are emitted by the compiler.

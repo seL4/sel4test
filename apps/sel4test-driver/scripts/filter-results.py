@@ -30,13 +30,13 @@
 #  $0    $1      $2      $3       $4       $5             $6
 # (.*) ([0-9]+) (->|<-) ([0-9]+) ([0-9]+) ([A-Za-z_]+) ([A-Za-z_]+)
 #
-#$0: the name of this result (you invent it)
-#$1 The first priority
-#$2 the direction of the call
-#$3 the second priority
-#$4 the length of the message
-#$5 the name of the first priorities function
-#$6 the name of the second priorities function
+# $0: the name of this result (you invent it)
+# $1 The first priority
+# $2 the direction of the call
+# $3 the second priority
+# $4 the length of the message
+# $5 the name of the first priorities function
+# $6 the name of the second priorities function
 #
 # Format of the file-with-results
 #
@@ -59,9 +59,10 @@ import sys
 import pdb
 
 selectionsFile = open(sys.argv[1], 'r')
-results = open(sys.argv[2], 'r');
+results = open(sys.argv[2], 'r')
 
 selectionRegexp = re.compile('(.*) ([0-9]+) (->|<-) ([0-9]+) ([0-9]+) ([A-Za-z_]+) ([A-Za-z_]+)')
+
 
 class Selection:
     name = ""
@@ -80,14 +81,15 @@ class Selection:
                 self.firstFunction == other.firstFunction and
                 self.secondFunction == other.secondFunction)
 
-#this is the list of all of the results we want to select
+
+# this is the list of all of the results we want to select
 selections = []
 
-#parse the selections
+# parse the selections
 for line in selectionsFile:
     match = selectionRegexp.match(line.rstrip())
     if match is None:
-        print "Invalid selection on line {0} of file {1}".format(line, sys.argv[1]);
+        print "Invalid selection on line {0} of file {1}".format(line, sys.argv[1])
         exit
 
     selection = Selection()
@@ -122,8 +124,8 @@ while len(line) > 0 and len(selections) > 0:
         candidate.length = match.group(4)
         candidate.firstFunction = results.readline().strip().strip(':')
         count = int(results.readline().strip().split(' ')[1])
-        results.readline() #PMC0
-        results.readline() #PMC1
+        results.readline()  # PMC0
+        results.readline()  # PMC1
         candidate.secondFunction = results.readline().strip().strip(':')
         # try to match each of our selections against the one we have just parsed
         matched = None

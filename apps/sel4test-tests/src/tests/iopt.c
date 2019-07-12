@@ -43,8 +43,7 @@ typedef struct iopt_cptrs {
 
 #ifdef CONFIG_IOMMU
 
-static int
-map_iopt_from_iospace(env_t env, seL4_CPtr iospace, iopt_cptrs_t *pts, seL4_CPtr *frame)
+static int map_iopt_from_iospace(env_t env, seL4_CPtr iospace, iopt_cptrs_t *pts, seL4_CPtr *frame)
 {
     int error = seL4_NoError;
 
@@ -66,8 +65,7 @@ map_iopt_from_iospace(env_t env, seL4_CPtr iospace, iopt_cptrs_t *pts, seL4_CPtr
     return error;
 }
 
-static int
-map_iopt_set(env_t env, seL4_CPtr *iospace, iopt_cptrs_t *pts, seL4_CPtr *frame)
+static int map_iopt_set(env_t env, seL4_CPtr *iospace, iopt_cptrs_t *pts, seL4_CPtr *frame)
 {
     int error;
     cspacepath_t master_path, iospace_path;
@@ -78,7 +76,7 @@ map_iopt_set(env_t env, seL4_CPtr *iospace, iopt_cptrs_t *pts, seL4_CPtr *frame)
     test_assert(!error);
     vka_cspace_make_path(&env->vka, *iospace, &iospace_path);
     vka_cspace_make_path(&env->vka, env->io_space, &master_path);
-    error = vka_cnode_mint(&iospace_path, &master_path, seL4_AllRights,(DOMAIN_ID << 16) | FAKE_PCI_DEVICE);
+    error = vka_cnode_mint(&iospace_path, &master_path, seL4_AllRights, (DOMAIN_ID << 16) | FAKE_PCI_DEVICE);
     test_eq(error, seL4_NoError);
 
     error = map_iopt_from_iospace(env, *iospace, pts, frame);
@@ -86,16 +84,14 @@ map_iopt_set(env_t env, seL4_CPtr *iospace, iopt_cptrs_t *pts, seL4_CPtr *frame)
     return error;
 }
 
-static void
-delete_iospace(env_t env, seL4_CPtr iospace)
+static void delete_iospace(env_t env, seL4_CPtr iospace)
 {
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, iospace, &path);
     vka_cnode_delete(&path);
 }
 
-static int
-test_iopt_basic_iopt(env_t env)
+static int test_iopt_basic_iopt(env_t env)
 {
     int error;
     seL4_CPtr iospace, frame;
@@ -265,24 +261,21 @@ map_iopt_from_iospace(env_t env, seL4_CPtr iospace, seL4_CPtr *iopt, seL4_CPtr *
 
 }
 
-static int
-map_iopt_set(env_t env, seL4_CPtr iospace, seL4_CPtr *iopt_cptr, seL4_CPtr *frame)
+static int map_iopt_set(env_t env, seL4_CPtr iospace, seL4_CPtr *iopt_cptr, seL4_CPtr *frame)
 {
     int error = map_iopt_from_iospace(env, iospace, iopt_cptr, frame);
     return error;
 
 }
 
-static void
-delete_iospace(env_t env, seL4_CPtr iospace)
+static void delete_iospace(env_t env, seL4_CPtr iospace)
 {
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, iospace, &path);
     vka_cnode_delete(&path);
 }
 
-static int
-test_iopt_basic_iopt(env_t env)
+static int test_iopt_basic_iopt(env_t env)
 {
     int error;
     seL4_CPtr pt = 0;
@@ -300,8 +293,7 @@ test_iopt_basic_iopt(env_t env)
 }
 DEFINE_TEST(IOPT0001, "Testing basic ARM IOPT mapping", test_iopt_basic_iopt, true);
 
-static int
-test_iopt_basic_map_unmap(env_t env)
+static int test_iopt_basic_map_unmap(env_t env)
 {
     int error;
     int i;

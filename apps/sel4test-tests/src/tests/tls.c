@@ -25,8 +25,7 @@
 static __thread seL4_Word bss_array[6] = {0};
 static __thread seL4_Word data_array[6] = {1, 2, 3, 4, 5, 6};
 
-static int
-test_root_tls(env_t env)
+static int test_root_tls(env_t env)
 {
     seL4_Word i;
     for (i = 0; i < ARRAY_SIZE(bss_array); i++) {
@@ -79,8 +78,7 @@ tls_helper(seL4_Word helper, seL4_Word done_ep, seL4_Word start_ep, seL4_Word ar
     return sel4test_get_result();
 }
 
-static int
-test_threads_tls(env_t env)
+static int test_threads_tls(env_t env)
 {
     /* create endpoints for synchronization */
     seL4_CPtr done_ep = vka_alloc_endpoint_leaky(&env->vka);
@@ -123,11 +121,12 @@ static __thread int tls_value = INITIAL_TLS_VALUE;
 
 // Thread that competes.
 static int simple_tls_test_thread(
-	UNUSED seL4_Word arg1,
-	UNUSED seL4_Word arg2,
-	UNUSED seL4_Word arg3,
-	UNUSED seL4_Word arg4
-) {
+    UNUSED seL4_Word arg1,
+    UNUSED seL4_Word arg2,
+    UNUSED seL4_Word arg3,
+    UNUSED seL4_Word arg4
+)
+{
     // Each thread should start with the same value.
     if (tls_value != INITIAL_TLS_VALUE) {
         sel4test_failure("TLS started with incorrect value");

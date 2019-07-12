@@ -29,8 +29,7 @@ sync_cv_t consumer_cv = {{0}};
 sync_cv_t producer_cv = {{0}};
 sync_cv_t broadcaster_cv = {{0}};
 
-static int
-bin_sem_func(env_t env, int threadid)
+static int bin_sem_func(env_t env, int threadid)
 {
     /* Take the semaphore */
     sync_bin_sem_wait(&bin_sem);
@@ -51,8 +50,7 @@ bin_sem_func(env_t env, int threadid)
     return 0;
 }
 
-static int
-test_bin_sem(struct env *env)
+static int test_bin_sem(struct env *env)
 {
     int error;
     helper_thread_t thread1, thread2;
@@ -108,8 +106,7 @@ sem_func(env_t env, int threadid)
     return 0;
 }
 
-static int
-test_sem(struct env *env)
+static int test_sem(struct env *env)
 {
     int error;
     helper_thread_t thread1, thread2;
@@ -172,8 +169,7 @@ consumer_func(env_t env, int threadid)
     return 0;
 }
 
-static int
-producer_func(env_t env, int threadid)
+static int producer_func(env_t env, int threadid)
 {
     /* Take the monitor */
     sync_bin_sem_wait(&monitor_lock);
@@ -201,8 +197,7 @@ producer_func(env_t env, int threadid)
     return 0;
 }
 
-static int
-test_monitor(struct env *env)
+static int test_monitor(struct env *env)
 {
     int error;
     helper_thread_t consumer_thread1, consumer_thread2;
@@ -282,8 +277,7 @@ broadcaster_func(env_t env, int threadid)
     return 0;
 }
 
-static int
-test_monitor_broadcast(struct env *env)
+static int test_monitor_broadcast(struct env *env)
 {
     int error;
     helper_thread_t broadcaster_thread;

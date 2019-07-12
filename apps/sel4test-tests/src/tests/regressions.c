@@ -76,330 +76,330 @@ __attribute__((naked))
  * needs to call into a C function and needs a valid stack to do this. We
  * provide it a stack it can switch to here.
  */
-asm ("\n"
-     ".bss                        \n"
-     ".align  4                   \n"
-     ".space 4096                 \n"
-     "_safe_stack:                \n"
-     ".text                       \n");
+asm("\n"
+    ".bss                        \n"
+    ".align  4                   \n"
+    ".space 4096                 \n"
+    "_safe_stack:                \n"
+    ".text                       \n");
 #if defined(CONFIG_ARCH_AARCH32)
-asm ("\n"
+asm("\n"
 
-     /* Trampoline for providing the thread a valid stack before entering
-      * reply_to_parent. No blx required because reply_to_parent does not
-      * return.
-      */
-     "reply_trampoline:           \n"
-     "\tldr sp, =_safe_stack      \n"
-     "\tb reply_to_parent         \n"
+    /* Trampoline for providing the thread a valid stack before entering
+     * reply_to_parent. No blx required because reply_to_parent does not
+     * return.
+     */
+    "reply_trampoline:           \n"
+    "\tldr sp, =_safe_stack      \n"
+    "\tb reply_to_parent         \n"
 
-     "test_registers:             \n"
-     /* Assume the PC and CPSR are correct because there's no good way of
-      * testing them. Test each of the registers against the magic numbers our
-      * parent set.
-      */
-     "\tcmp sp, #13               \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r0, #15               \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r1, #1                \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r2, #2                \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r3, #3                \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r4, #4                \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r5, #5                \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r6, #6                \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r7, #7                \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r8, #8                \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r9, #9                \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r10, #10              \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r11, #11              \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r12, #12              \n"
-     "\tbne test_registers_fail   \n"
-     "\tcmp r14, #14              \n"
-     "\tbne test_registers_fail   \n"
+    "test_registers:             \n"
+    /* Assume the PC and CPSR are correct because there's no good way of
+     * testing them. Test each of the registers against the magic numbers our
+     * parent set.
+     */
+    "\tcmp sp, #13               \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r0, #15               \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r1, #1                \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r2, #2                \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r3, #3                \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r4, #4                \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r5, #5                \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r6, #6                \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r7, #7                \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r8, #8                \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r9, #9                \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r10, #10              \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r11, #11              \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r12, #12              \n"
+    "\tbne test_registers_fail   \n"
+    "\tcmp r14, #14              \n"
+    "\tbne test_registers_fail   \n"
 
-     /* Return success. Note that we don't bother saving registers or bl because
-      * we're not planning to return here and we don't have a valid stack.
-      */
-     "\tmov r0, #0                \n"
-     "\tb reply_trampoline        \n"
+    /* Return success. Note that we don't bother saving registers or bl because
+     * we're not planning to return here and we don't have a valid stack.
+     */
+    "\tmov r0, #0                \n"
+    "\tb reply_trampoline        \n"
 
-     /* Return failure. */
-     "test_registers_fail:        \n"
-     "\tmov r0, #1                \n"
-     "\tb reply_trampoline        \n"
-    );
+    /* Return failure. */
+    "test_registers_fail:        \n"
+    "\tmov r0, #1                \n"
+    "\tb reply_trampoline        \n"
+   );
 #elif defined(CONFIG_ARCH_AARCH64)
-asm (
-     /* Trampoline for providing the thread a valid stack before entering
-      * reply_to_parent. No blx required because reply_to_parent does not
-      * return.
-      */
-     "reply_trampoline:           \n"
-     "ldr x1, =_safe_stack        \n"
-     "mov sp, x1                  \n"
-     "b reply_to_parent           \n"
+asm(
+    /* Trampoline for providing the thread a valid stack before entering
+     * reply_to_parent. No blx required because reply_to_parent does not
+     * return.
+     */
+    "reply_trampoline:           \n"
+    "ldr x1, =_safe_stack        \n"
+    "mov sp, x1                  \n"
+    "b reply_to_parent           \n"
 
-     "test_registers:             \n"
-     "cmp sp, #1                  \n"
-     "bne test_registers_fail     \n"
-     "cmp x0, #2                  \n"
-     "bne test_registers_fail     \n"
-     "cmp x1, #3                  \n"
-     "bne test_registers_fail     \n"
-     "cmp x2, #4                  \n"
-     "bne test_registers_fail     \n"
-     "cmp x3, #5                  \n"
-     "bne test_registers_fail     \n"
-     "cmp x4, #6                  \n"
-     "bne test_registers_fail     \n"
-     "cmp x5, #7                  \n"
-     "bne test_registers_fail     \n"
-     "cmp x6, #8                  \n"
-     "bne test_registers_fail     \n"
-     "cmp x7, #9                  \n"
-     "bne test_registers_fail     \n"
-     "cmp x8, #10                 \n"
-     "bne test_registers_fail     \n"
-     "cmp x9, #11                 \n"
-     "bne test_registers_fail     \n"
-     "cmp x10, #12                \n"
-     "bne test_registers_fail     \n"
-     "cmp x11, #13                \n"
-     "bne test_registers_fail     \n"
-     "cmp x12, #14                \n"
-     "bne test_registers_fail     \n"
-     "cmp x13, #15                \n"
-     "bne test_registers_fail     \n"
-     "cmp x14, #16                \n"
-     "bne test_registers_fail     \n"
-     "cmp x15, #17                \n"
-     "bne test_registers_fail     \n"
-     "cmp x16, #18                \n"
-     "bne test_registers_fail     \n"
-     "cmp x17, #19                \n"
-     "bne test_registers_fail     \n"
-     "cmp x18, #20                \n"
-     "bne test_registers_fail     \n"
-     "cmp x19, #21                \n"
-     "bne test_registers_fail     \n"
-     "cmp x20, #22                \n"
-     "bne test_registers_fail     \n"
-     "cmp x21, #23                \n"
-     "bne test_registers_fail     \n"
-     "cmp x22, #24                \n"
-     "bne test_registers_fail     \n"
-     "cmp x23, #25                \n"
-     "bne test_registers_fail     \n"
-     "cmp x24, #26                \n"
-     "bne test_registers_fail     \n"
-     "cmp x25, #27                \n"
-     "bne test_registers_fail     \n"
-     "cmp x26, #28                \n"
-     "bne test_registers_fail     \n"
-     "cmp x27, #29                \n"
-     "bne test_registers_fail     \n"
-     "cmp x28, #30                \n"
-     "bne test_registers_fail     \n"
-     "cmp x29, #31                \n"
-     "bne test_registers_fail     \n"
-     "cmp x30, #32                \n"
-     "bne test_registers_fail     \n"
+    "test_registers:             \n"
+    "cmp sp, #1                  \n"
+    "bne test_registers_fail     \n"
+    "cmp x0, #2                  \n"
+    "bne test_registers_fail     \n"
+    "cmp x1, #3                  \n"
+    "bne test_registers_fail     \n"
+    "cmp x2, #4                  \n"
+    "bne test_registers_fail     \n"
+    "cmp x3, #5                  \n"
+    "bne test_registers_fail     \n"
+    "cmp x4, #6                  \n"
+    "bne test_registers_fail     \n"
+    "cmp x5, #7                  \n"
+    "bne test_registers_fail     \n"
+    "cmp x6, #8                  \n"
+    "bne test_registers_fail     \n"
+    "cmp x7, #9                  \n"
+    "bne test_registers_fail     \n"
+    "cmp x8, #10                 \n"
+    "bne test_registers_fail     \n"
+    "cmp x9, #11                 \n"
+    "bne test_registers_fail     \n"
+    "cmp x10, #12                \n"
+    "bne test_registers_fail     \n"
+    "cmp x11, #13                \n"
+    "bne test_registers_fail     \n"
+    "cmp x12, #14                \n"
+    "bne test_registers_fail     \n"
+    "cmp x13, #15                \n"
+    "bne test_registers_fail     \n"
+    "cmp x14, #16                \n"
+    "bne test_registers_fail     \n"
+    "cmp x15, #17                \n"
+    "bne test_registers_fail     \n"
+    "cmp x16, #18                \n"
+    "bne test_registers_fail     \n"
+    "cmp x17, #19                \n"
+    "bne test_registers_fail     \n"
+    "cmp x18, #20                \n"
+    "bne test_registers_fail     \n"
+    "cmp x19, #21                \n"
+    "bne test_registers_fail     \n"
+    "cmp x20, #22                \n"
+    "bne test_registers_fail     \n"
+    "cmp x21, #23                \n"
+    "bne test_registers_fail     \n"
+    "cmp x22, #24                \n"
+    "bne test_registers_fail     \n"
+    "cmp x23, #25                \n"
+    "bne test_registers_fail     \n"
+    "cmp x24, #26                \n"
+    "bne test_registers_fail     \n"
+    "cmp x25, #27                \n"
+    "bne test_registers_fail     \n"
+    "cmp x26, #28                \n"
+    "bne test_registers_fail     \n"
+    "cmp x27, #29                \n"
+    "bne test_registers_fail     \n"
+    "cmp x28, #30                \n"
+    "bne test_registers_fail     \n"
+    "cmp x29, #31                \n"
+    "bne test_registers_fail     \n"
+    "cmp x30, #32                \n"
+    "bne test_registers_fail     \n"
 
-     /* Return success. Note that we don't bother saving registers or bl because
-      * we're not planning to return here and we don't have a valid stack.
-      */
-     "mov x0, #0                \n"
-     "b reply_trampoline        \n"
+    /* Return success. Note that we don't bother saving registers or bl because
+     * we're not planning to return here and we don't have a valid stack.
+     */
+    "mov x0, #0                \n"
+    "b reply_trampoline        \n"
 
-     /* Return failure. */
-     "test_registers_fail:        \n"
-     "mov x0, #1                \n"
-     "b reply_trampoline        \n"
-    );
+    /* Return failure. */
+    "test_registers_fail:        \n"
+    "mov x0, #1                \n"
+    "b reply_trampoline        \n"
+);
 #elif defined(CONFIG_ARCH_X86_64)
-asm ("\n\t"
-     "reply_trampoline:         \n"
-     "leaq  _safe_stack, %rsp   \n"
-     "movq  %rax, %rdi          \n"
-     "call  reply_to_parent     \n"
-     "test_registers:           \n"
-     "jb    rflags_ok           \n"
-     "jmp   test_registers_fail \n"
-     "rflags_ok:                \n"
-     "cmpq  $0x0000000a, %rax   \n"
-     "jne   test_registers_fail \n"
-     "movq  $2, %rax\n"
-     "cmpq  $0x0000000b, %rbx   \n"
-     "jne   test_registers_fail \n"
-     "movq  $3, %rax\n"
-     "cmpq  $0x0000000c, %rcx   \n"
-     "jne   test_registers_fail \n"
-     "movq  $4, %rax\n"
-     "cmpq  $0x0000000d, %rdx   \n"
-     "jne   test_registers_fail \n"
-     "movq  $5, %rax\n"
-     "cmpq  $0x00000005, %rsi   \n"
-     "jne   test_registers_fail \n"
-     "movq  $6, %rax\n"
-     "cmpq  $0x00000002, %rdi   \n"
-     "jne   test_registers_fail \n"
-     "movq  $7, %rax\n"
-     "cmpq  $0x00000003, %rbp   \n"
-     "jne   test_registers_fail \n"
-     "movq  $8, %rax            \n"
-     "cmpq  $0x00000004, %rsp   \n"
-     "jne   test_registers_fail \n"
-     "movq  $9, %rax\n"
-     "cmpq  $0x00000088, %r8    \n"
-     "jne   test_registers_fail \n"
-     "movq  $100, %rax\n"
-     "cmpq  $0x00000099, %r9    \n"
-     "jne   test_registers_fail \n"
-     "movq  $11, %rax\n"
-     "cmpq  $0x00000010, %r10   \n"
-     "jne   test_registers_fail \n"
-     "movq  $12, %rax\n"
-     "cmpq  $0x00000011, %r11   \n"
-     "jne   test_registers_fail \n"
-     "movq  $13, %rax\n"
-     "cmpq  $0x00000012, %r12   \n"
-     "jne   test_registers_fail \n"
-     "movq  $14, %rax\n"
-     "cmpq  $0x00000013, %r13   \n"
-     "jne   test_registers_fail \n"
-     "movq  $15, %rax\n"
-     "cmpq  $0x00000014, %r14   \n"
-     "jne   test_registers_fail \n"
-     "movq  $16, %rax\n"
-     "cmpq  $0x00000015, %r15   \n"
-     "jne   test_registers_fail \n"
-     "movq  $0, %rax            \n"
-     "jmp   reply_trampoline    \n"
-     "test_registers_fail:      \n"
-     "movq  $1, %rax            \n"
-     "jmp   reply_trampoline    \n"
-    );
+asm("\n\t"
+    "reply_trampoline:         \n"
+    "leaq  _safe_stack, %rsp   \n"
+    "movq  %rax, %rdi          \n"
+    "call  reply_to_parent     \n"
+    "test_registers:           \n"
+    "jb    rflags_ok           \n"
+    "jmp   test_registers_fail \n"
+    "rflags_ok:                \n"
+    "cmpq  $0x0000000a, %rax   \n"
+    "jne   test_registers_fail \n"
+    "movq  $2, %rax\n"
+    "cmpq  $0x0000000b, %rbx   \n"
+    "jne   test_registers_fail \n"
+    "movq  $3, %rax\n"
+    "cmpq  $0x0000000c, %rcx   \n"
+    "jne   test_registers_fail \n"
+    "movq  $4, %rax\n"
+    "cmpq  $0x0000000d, %rdx   \n"
+    "jne   test_registers_fail \n"
+    "movq  $5, %rax\n"
+    "cmpq  $0x00000005, %rsi   \n"
+    "jne   test_registers_fail \n"
+    "movq  $6, %rax\n"
+    "cmpq  $0x00000002, %rdi   \n"
+    "jne   test_registers_fail \n"
+    "movq  $7, %rax\n"
+    "cmpq  $0x00000003, %rbp   \n"
+    "jne   test_registers_fail \n"
+    "movq  $8, %rax            \n"
+    "cmpq  $0x00000004, %rsp   \n"
+    "jne   test_registers_fail \n"
+    "movq  $9, %rax\n"
+    "cmpq  $0x00000088, %r8    \n"
+    "jne   test_registers_fail \n"
+    "movq  $100, %rax\n"
+    "cmpq  $0x00000099, %r9    \n"
+    "jne   test_registers_fail \n"
+    "movq  $11, %rax\n"
+    "cmpq  $0x00000010, %r10   \n"
+    "jne   test_registers_fail \n"
+    "movq  $12, %rax\n"
+    "cmpq  $0x00000011, %r11   \n"
+    "jne   test_registers_fail \n"
+    "movq  $13, %rax\n"
+    "cmpq  $0x00000012, %r12   \n"
+    "jne   test_registers_fail \n"
+    "movq  $14, %rax\n"
+    "cmpq  $0x00000013, %r13   \n"
+    "jne   test_registers_fail \n"
+    "movq  $15, %rax\n"
+    "cmpq  $0x00000014, %r14   \n"
+    "jne   test_registers_fail \n"
+    "movq  $16, %rax\n"
+    "cmpq  $0x00000015, %r15   \n"
+    "jne   test_registers_fail \n"
+    "movq  $0, %rax            \n"
+    "jmp   reply_trampoline    \n"
+    "test_registers_fail:      \n"
+    "movq  $1, %rax            \n"
+    "jmp   reply_trampoline    \n"
+   );
 #elif defined(CONFIG_ARCH_X86)
-asm ("\n"
+asm("\n"
 
-     /* As for the ARM implementation above, but we also need to massage the
-      * calling convention by taking the value test_registers passed us in EAX
-      * and put it on the stack where reply_to_parent expects it.
-      */
-     "reply_trampoline:           \n"
-     "\tleal _safe_stack, %esp    \n"
-     "\tpushl %eax                \n"
-     "\tcall reply_to_parent      \n"
+    /* As for the ARM implementation above, but we also need to massage the
+     * calling convention by taking the value test_registers passed us in EAX
+     * and put it on the stack where reply_to_parent expects it.
+     */
+    "reply_trampoline:           \n"
+    "\tleal _safe_stack, %esp    \n"
+    "\tpushl %eax                \n"
+    "\tcall reply_to_parent      \n"
 
-     "test_registers:             \n"
-     /* Assume EIP, GS and FS are correct. Is there a good way to
-      * test these?
-      *  EIP - If this is incorrect we'll never arrive at this function.
-      *  GS - With an incorrect GDT selector we fault and die immediately.
-      *  FS - Overwritten by the kernel before we jump here.
-      */
+    "test_registers:             \n"
+    /* Assume EIP, GS and FS are correct. Is there a good way to
+     * test these?
+     *  EIP - If this is incorrect we'll never arrive at this function.
+     *  GS - With an incorrect GDT selector we fault and die immediately.
+     *  FS - Overwritten by the kernel before we jump here.
+     */
 
-     /* We need to test EFLAGS indirectly because we can't cmp it. The jb
-      * should only be taken if CF (bit 0) is set.
-      */
-     "\tjb eflags_ok              \n"
-     "\tjmp test_registers_fail   \n"
-     "eflags_ok:                  \n"
-     "\tcmpl $0x0000000a, %eax    \n"
-     "\tjne test_registers_fail   \n"
-     "\tcmpl $0x0000000b, %ebx    \n"
-     "\tjne test_registers_fail   \n"
-     "\tcmpl $0x0000000c, %ecx    \n"
-     "\tjne test_registers_fail   \n"
-     "\tcmpl $0x0000000d, %edx    \n"
-     "\tjne test_registers_fail   \n"
-     "\tcmpl $0x00000005, %esi    \n"
-     "\tjne test_registers_fail   \n"
-     "\tcmpl $0x00000002, %edi    \n"
-     "\tjne test_registers_fail   \n"
-     "\tcmpl $0x00000003, %ebp    \n"
-     "\tjne test_registers_fail   \n"
-     "\tcmpl $0x00000004, %esp    \n"
-     "\tjne test_registers_fail   \n"
+    /* We need to test EFLAGS indirectly because we can't cmp it. The jb
+     * should only be taken if CF (bit 0) is set.
+     */
+    "\tjb eflags_ok              \n"
+    "\tjmp test_registers_fail   \n"
+    "eflags_ok:                  \n"
+    "\tcmpl $0x0000000a, %eax    \n"
+    "\tjne test_registers_fail   \n"
+    "\tcmpl $0x0000000b, %ebx    \n"
+    "\tjne test_registers_fail   \n"
+    "\tcmpl $0x0000000c, %ecx    \n"
+    "\tjne test_registers_fail   \n"
+    "\tcmpl $0x0000000d, %edx    \n"
+    "\tjne test_registers_fail   \n"
+    "\tcmpl $0x00000005, %esi    \n"
+    "\tjne test_registers_fail   \n"
+    "\tcmpl $0x00000002, %edi    \n"
+    "\tjne test_registers_fail   \n"
+    "\tcmpl $0x00000003, %ebp    \n"
+    "\tjne test_registers_fail   \n"
+    "\tcmpl $0x00000004, %esp    \n"
+    "\tjne test_registers_fail   \n"
 
-     /* Return success. Note we use a custom calling convention because we
-      * don't have a valid stack.
-      */
-     "\tmovl $0, %eax             \n"
-     "\tjmp reply_trampoline      \n"
+    /* Return success. Note we use a custom calling convention because we
+     * don't have a valid stack.
+     */
+    "\tmovl $0, %eax             \n"
+    "\tjmp reply_trampoline      \n"
 
-     /* Return failure. */
-     "test_registers_fail:        \n"
-     "\tmovl $1, %eax             \n"
-     "\tjmp reply_trampoline      \n"
-    );
+    /* Return failure. */
+    "test_registers_fail:        \n"
+    "\tmovl $1, %eax             \n"
+    "\tjmp reply_trampoline      \n"
+   );
 #elif defined(CONFIG_ARCH_RISCV)
-asm (
-     /* Trampoline for providing the thread a valid stack before entering
-      * reply_to_parent. No jal required because reply_to_parent does not
-      * return.
-      */
-     "reply_trampoline:           \n"
-     "la a1, _safe_stack          \n"
-     "mv sp, a1                   \n"
-     "j reply_to_parent           \n"
+asm(
+    /* Trampoline for providing the thread a valid stack before entering
+     * reply_to_parent. No jal required because reply_to_parent does not
+     * return.
+     */
+    "reply_trampoline:           \n"
+    "la a1, _safe_stack          \n"
+    "mv sp, a1                   \n"
+    "j reply_to_parent           \n"
 
-     "test_registers:             \n"
+    "test_registers:             \n"
 
-     "li a0, 1                  \n"
-     "bne ra, a0, test_registers_fail     \n"
-     "li a0, 2                  \n"
-     "bne sp, a0, test_registers_fail     \n"
-     "li a0, 4                  \n"
-     "bne t0, a0, test_registers_fail     \n"
-     "li a0, 5                  \n"
-     "bne t1, a0, test_registers_fail     \n"
-     "li a0, 6                  \n"
-     "bne t2, a0, test_registers_fail     \n"
-     "li a0, 7                  \n"
-     "bne s0, a0, test_registers_fail     \n"
-     "li a0, 8                  \n"
-     "bne s1, a0, test_registers_fail     \n"
-     "li a0, 10                  \n"
-     "bne a1, a0, test_registers_fail     \n"
-     "li a0, 11                  \n"
-     "bne a2, a0, test_registers_fail     \n"
-     "li a0, 12                  \n"
-     "bne a0, a3, test_registers_fail     \n"
-     "li a0, 13                  \n"
-     "bne a0, a4, test_registers_fail     \n"
-     "li a0, 14                  \n"
-     "bne a0, a5, test_registers_fail     \n"
-     "li a0, 15                  \n"
-     "bne a0, a6, test_registers_fail     \n"
+    "li a0, 1                  \n"
+    "bne ra, a0, test_registers_fail     \n"
+    "li a0, 2                  \n"
+    "bne sp, a0, test_registers_fail     \n"
+    "li a0, 4                  \n"
+    "bne t0, a0, test_registers_fail     \n"
+    "li a0, 5                  \n"
+    "bne t1, a0, test_registers_fail     \n"
+    "li a0, 6                  \n"
+    "bne t2, a0, test_registers_fail     \n"
+    "li a0, 7                  \n"
+    "bne s0, a0, test_registers_fail     \n"
+    "li a0, 8                  \n"
+    "bne s1, a0, test_registers_fail     \n"
+    "li a0, 10                  \n"
+    "bne a1, a0, test_registers_fail     \n"
+    "li a0, 11                  \n"
+    "bne a2, a0, test_registers_fail     \n"
+    "li a0, 12                  \n"
+    "bne a0, a3, test_registers_fail     \n"
+    "li a0, 13                  \n"
+    "bne a0, a4, test_registers_fail     \n"
+    "li a0, 14                  \n"
+    "bne a0, a5, test_registers_fail     \n"
+    "li a0, 15                  \n"
+    "bne a0, a6, test_registers_fail     \n"
 #if 0
     /* skip x3, see below */
     context.x4 = 3;
 #endif
 
-     /* Return success. Note that we don't bother saving registers or bl because
-      * we're not planning to return here and we don't have a valid stack.
-      */
-     "mv a0, x0                \n"
-     "j reply_trampoline        \n"
+    /* Return success. Note that we don't bother saving registers or bl because
+     * we're not planning to return here and we don't have a valid stack.
+     */
+    "mv a0, x0                \n"
+    "j reply_trampoline        \n"
 
-     /* Return failure. */
-     "test_registers_fail:        \n"
-     "li a0, 1                \n"
-     "j reply_trampoline        \n"
-    );
+    /* Return failure. */
+    "test_registers_fail:        \n"
+    "li a0, 1                \n"
+    "j reply_trampoline        \n"
+);
 #else
 #error "Unsupported architecture"
 #endif
@@ -518,9 +518,9 @@ int test_write_registers(env_t env)
     context.a5 = 14;
     context.a6 = 15;
 
-   /* This is an ABI requirment */
-   extern char __global_pointer$[];
-   context.gp = (seL4_Word) __global_pointer$;
+    /* This is an ABI requirment */
+    extern char __global_pointer$[];
+    context.gp = (seL4_Word) __global_pointer$;
 #else
 #error "Unsupported architecture"
 #endif
@@ -557,9 +557,9 @@ static int do_ldrex(void)
     /* We don't really care where we are loading from here. This is just to set
      * the exclusive access tag.
      */
-    asm volatile ("ldrex %[rt], [%[rn]]"
-                  : [rt]"=&r"(dummy1)
-                  : [rn]"r"(&dummy2));
+    asm volatile("ldrex %[rt], [%[rn]]"
+                 : [rt]"=&r"(dummy1)
+                 : [rn]"r"(&dummy2));
 
     /* Force a context switch to our parent. */
     seL4_Signal(shared_endpoint);
@@ -567,9 +567,9 @@ static int do_ldrex(void)
     /* Again, we don't care where we are storing to. This is to see whether the
      * exclusive access tag is still set.
      */
-    asm volatile ("strex %[rd], %[rt], [%[rn]]"
-                  : [rd]"=&r"(result)
-                  : [rt]"r"(dummy2), [rn]"r"(&dummy1));
+    asm volatile("strex %[rd], %[rt], [%[rn]]"
+                 : [rd]"=&r"(result)
+                 : [rt]"r"(dummy2), [rn]"r"(&dummy1));
 
     /* The strex should have failed (and returned 1) because the context switch
      * should have cleared the exclusive access tag.
@@ -584,9 +584,9 @@ static int do_ldrex(void)
     /* We don't really care where we are loading from here. This is just to set
      * the exclusive access tag.
      */
-    asm volatile ("ldxr %[rt], [%[rn]]"
-                  : [rt]"=&r"(dummy1)
-                  : [rn]"r"(&dummy2));
+    asm volatile("ldxr %[rt], [%[rn]]"
+                 : [rt]"=&r"(dummy1)
+                 : [rn]"r"(&dummy2));
 
     /* Force a context switch to our parent. */
     seL4_Signal(shared_endpoint);
@@ -594,10 +594,10 @@ static int do_ldrex(void)
     /* Again, we don't care where we are storing to. This is to see whether the
      * exclusive access tag is still set.
      */
-    asm volatile ("mov %x0, #0\t\n"
-                  "stxr %w0, %[rt], [%[rn]]"
-                  : [rd]"=&r"(result)
-                  : [rt]"r"(dummy2), [rn]"r"(&dummy1));
+    asm volatile("mov %x0, #0\t\n"
+                 "stxr %w0, %[rt], [%[rn]]"
+                 : [rd]"=&r"(result)
+                 : [rt]"r"(dummy2), [rn]"r"(&dummy1));
 
     /* The stxr should have failed (and returned 1) because the context switch
      * should have cleared the exclusive access tag.
@@ -642,7 +642,8 @@ DEFINE_TEST(REGRESSIONS0002, "Test the load-exclusive monitor is cleared on cont
 static volatile int got_cpl = 0;
 static volatile uintptr_t stack_after_cpl = 0;
 static volatile uint32_t kernel_hash;
-void VISIBLE do_after_cpl_change(void) {
+void VISIBLE do_after_cpl_change(void)
+{
     printf("XOR hash for first MB of kernel region 0x%x\n", kernel_hash);
     test_check(false);
     /* we don't have a stack to pop back up to message the test parent,
@@ -650,7 +651,8 @@ void VISIBLE do_after_cpl_change(void) {
      * will have a 'spurious' invalid instruction error, too bad */
     asm volatile("hlt");
 }
-static int do_wait_for_cpl(void) {
+static int do_wait_for_cpl(void)
+{
     /* check our current CPL */
     uint16_t cs;
     asm volatile("mov %%cs, %0" : "=r"(cs));
@@ -661,7 +663,7 @@ static int do_wait_for_cpl(void) {
         asm volatile("cli");
         /* let's hash a meg of kernel code */
         int i;
-        uint32_t *kernel = (uint32_t*)0xe0000000;
+        uint32_t *kernel = (uint32_t *)0xe0000000;
         for (i = 0; i < BIT(20) / sizeof(uint32_t); i++) {
             kernel_hash ^= kernel[i];
         }
@@ -679,8 +681,8 @@ static int do_wait_for_cpl(void) {
             "iret\n"
             :
             : [SS]"r"(0x23),
-              [CS]"r"(0x1b),
-              [STACK]"r"(stack_after_cpl));
+            [CS]"r"(0x1b),
+            [STACK]"r"(stack_after_cpl));
         /* this is unreachable */
     }
     while (1) {
@@ -711,7 +713,8 @@ int test_no_ret_with_cpl0(env_t env)
         }
         /* reset the helper threads registers */
         seL4_UserContext context;
-        error = seL4_TCB_ReadRegisters(get_helper_tcb(&thread), false, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
+        error = seL4_TCB_ReadRegisters(get_helper_tcb(&thread), false, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word),
+                                       &context);
         test_eq(error, 0);
         context.eip = (seL4_Word)do_wait_for_cpl;
         /* If all went well in the helper thread then the interrupt came in
@@ -727,7 +730,8 @@ int test_no_ret_with_cpl0(env_t env)
          * below call to WriteRegisters will overwrite the return address (which
          * was going to be sysexit) to our own function, which will then be running
          * at CPL0 */
-        error = seL4_TCB_WriteRegisters(get_helper_tcb(&thread), true, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
+        error = seL4_TCB_WriteRegisters(get_helper_tcb(&thread), true, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word),
+                                        &context);
         test_eq(error, 0);
     }
 
@@ -735,5 +739,6 @@ int test_no_ret_with_cpl0(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(REGRESSIONS0003, "Test return to user with CPL0 exploit", test_no_ret_with_cpl0, config_set(CONFIG_HAVE_TIMER))
+DEFINE_TEST(REGRESSIONS0003, "Test return to user with CPL0 exploit", test_no_ret_with_cpl0,
+            config_set(CONFIG_HAVE_TIMER))
 #endif /* defined(CONFIG_ARCH_IA32) */

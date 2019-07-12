@@ -33,8 +33,8 @@ enum {
 };
 
 enum {
- BADGED = seL4_WordBits - 1,
- RESTART = seL4_WordBits - 2,
+    BADGED = seL4_WordBits - 1,
+    RESTART = seL4_WordBits - 2,
 };
 
 /* Use a different test virtual address on 32 and 64-bit systems so that we can exercise
@@ -77,51 +77,51 @@ extern char read_fault_restart_address[];
 static void __attribute__((noinline))
 do_read_fault(void)
 {
-    int *x = (int*)BAD_VADDR;
+    int *x = (int *)BAD_VADDR;
     int val = BAD_MAGIC;
     /* Do a read fault. */
 #if defined(CONFIG_ARCH_AARCH32)
-    asm volatile (
+    asm volatile(
         "mov r0, %[val]\n\t"
         "read_fault_address:\n\t"
         "ldr r0, [%[addrreg]]\n\t"
         "read_fault_restart_address:\n\t"
         "mov %[val], r0\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x)
         : "r0"
     );
 #elif defined(CONFIG_ARCH_AARCH64)
-    asm volatile (
+    asm volatile(
         "mov x0, %[val]\n\t"
         "read_fault_address:\n\t"
         "ldr x0, [%[addrreg]]\n\t"
         "read_fault_restart_address:\n\t"
         "mov %[val], x0\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x)
         : "x0"
     );
 #elif defined(CONFIG_ARCH_RISCV)
-    asm volatile (
+    asm volatile(
         "mv a0, %[val]\n\t"
         "read_fault_address:\n\t"
         LOAD_S " a0, 0(%[addrreg])\n\t"
         "read_fault_restart_address:\n\t"
         "mv %[val], a0\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x)
         : "a0"
     );
 #elif defined(CONFIG_ARCH_X86)
-    asm volatile (
+    asm volatile(
         "mov %[val], %%eax\n\t"
         "read_fault_address:\n\t"
         "mov (%[addrreg]), %%eax\n\t"
         "read_fault_restart_address:\n\t"
         "mov %%eax, %[val]\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x)
         : "eax"
     );
 #else
@@ -135,51 +135,51 @@ extern char write_fault_restart_address[];
 static void __attribute__((noinline))
 do_write_fault(void)
 {
-    int *x = (int*)BAD_VADDR;
+    int *x = (int *)BAD_VADDR;
     int val = BAD_MAGIC;
     /* Do a write fault. */
 #if defined(CONFIG_ARCH_AARCH32)
-    asm volatile (
+    asm volatile(
         "mov r0, %[val]\n\t"
         "write_fault_address:\n\t"
         "str r0, [%[addrreg]]\n\t"
         "write_fault_restart_address:\n\t"
         "mov %[val], r0\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x)
         : "r0"
     );
 #elif defined(CONFIG_ARCH_AARCH64)
-    asm volatile (
+    asm volatile(
         "mov x0, %[val]\n\t"
         "write_fault_address:\n\t"
         "str x0, [%[addrreg]]\n\t"
         "write_fault_restart_address:\n\t"
         "mov %[val], x0\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x)
         : "x0"
     );
 #elif defined(CONFIG_ARCH_RISCV)
-    asm volatile (
+    asm volatile(
         "mv a0, %[val]\n\t"
         "write_fault_address:\n\t"
         STORE_S " a0, 0(%[addrreg])\n\t"
         "write_fault_restart_address:\n\t"
         "mv %[val], a0\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x)
         : "a0"
     );
 #elif defined(CONFIG_ARCH_X86)
-    asm volatile (
+    asm volatile(
         "mov %[val], %%eax\n\t"
         "write_fault_address:\n\t"
         "mov %%eax, (%[addrreg])\n\t"
         "write_fault_restart_address:\n\t"
         "mov %%eax, %[val]\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x)
         : "eax"
     );
 #else
@@ -192,48 +192,48 @@ extern char instruction_fault_restart_address[];
 static void __attribute__((noinline))
 do_instruction_fault(void)
 {
-    int *x = (int*)BAD_VADDR;
+    int *x = (int *)BAD_VADDR;
     int val = BAD_MAGIC;
     /* Jump to a crazy address. */
 #if defined(CONFIG_ARCH_AARCH32)
-    asm volatile (
+    asm volatile(
         "mov r0, %[val]\n\t"
         "blx %[addrreg]\n\t"
         "instruction_fault_restart_address:\n\t"
         "mov %[val], r0\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x)
         : "r0", "lr"
     );
 #elif defined(CONFIG_ARCH_AARCH64)
-    asm volatile (
+    asm volatile(
         "mov x0, %[val]\n\t"
         "blr %[addrreg]\n\t"
         "instruction_fault_restart_address:\n\t"
         "mov %[val], x0\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x)
         : "x0", "x30"
     );
 #elif defined(CONFIG_ARCH_RISCV)
-    asm volatile (
+    asm volatile(
         "mv a0, %[val]\n\t"
         "jalr %[addrreg]\n\t"
         "instruction_fault_restart_address:\n\t"
         "mv %[val], a0\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x)
         : "a0", "ra"
     );
 #elif defined(CONFIG_ARCH_X86)
-    asm volatile (
+    asm volatile(
         "mov %[val], %%eax\n\t"
         "instruction_fault_address:\n\t"
         "jmp *%[addrreg]\n\t"
         "instruction_fault_restart_address:\n\t"
         "mov %%eax, %[val]\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x)
         : "eax"
     );
 #else
@@ -247,50 +247,50 @@ extern char bad_syscall_restart_address[];
 static void __attribute__((noinline))
 do_bad_syscall(void)
 {
-    int *x = (int*)BAD_VADDR;
+    int *x = (int *)BAD_VADDR;
     int val = BAD_MAGIC;
     /* Do an undefined system call. */
 #if defined(CONFIG_ARCH_AARCH32)
-    asm volatile (
+    asm volatile(
         "mov r7, %[scno]\n\t"
         "mov r0, %[val]\n\t"
         "bad_syscall_address:\n\t"
         "svc %[scno]\n\t"
         "bad_syscall_restart_address:\n\t"
         "mov %[val], r0\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x),
-        [scno] "i" (BAD_SYSCALL_NUMBER)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x),
+        [scno] "i"(BAD_SYSCALL_NUMBER)
         : "r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "memory", "cc"
     );
 #elif defined(CONFIG_ARCH_AARCH64)
-    asm volatile (
+    asm volatile(
         "mov x7, %[scno]\n\t"
         "mov x0, %[val]\n\t"
         "bad_syscall_address:\n\t"
         "svc %[scno]\n\t"
         "bad_syscall_restart_address:\n\t"
         "mov %[val], x0\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x),
-        [scno] "i" (BAD_SYSCALL_NUMBER)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x),
+        [scno] "i"(BAD_SYSCALL_NUMBER)
         : "x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "memory", "cc"
     );
 #elif defined(CONFIG_ARCH_RISCV)
-    asm volatile (
+    asm volatile(
         "li a7, %[scno]\n\t"
         "mv a0, %[val]\n\t"
         "bad_syscall_address:\n\t"
         "ecall \n\t"
         "bad_syscall_restart_address:\n\t"
         "mv %[val], a0\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x),
-        [scno] "i" (BAD_SYSCALL_NUMBER)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x),
+        [scno] "i"(BAD_SYSCALL_NUMBER)
         : "a0", "a1", "a2", "a3", "a4", "a5", "a6", "a7", "memory", "cc"
     );
 #elif defined(CONFIG_ARCH_X86_64) && defined(CONFIG_SYSENTER)
-    asm volatile (
+    asm volatile(
         "movl   %[val], %%ebx\n\t"
         "movq   %%rsp, %%rcx\n\t"
         "leaq   1f, %%rdx\n\t"
@@ -299,13 +299,13 @@ do_bad_syscall(void)
         "sysenter\n\t"
         "bad_syscall_restart_address:\n\t"
         "movl   %%ebx, %[val]\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x),
-        [scno] "a" (BAD_SYSCALL_NUMBER)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x),
+        [scno] "a"(BAD_SYSCALL_NUMBER)
         : "rbx", "rcx", "rdx"
     );
 #elif defined(CONFIG_SYSCALL)
-    asm volatile (
+    asm volatile(
         "movl   %[val], %%ebx\n\t"
         "movq   %%rsp, %%r12\n\t"
         "bad_syscall_address:\n\t"
@@ -313,13 +313,13 @@ do_bad_syscall(void)
         "bad_syscall_restart_address:\n\t"
         "movq   %%r12, %%rsp\n"
         "movl   %%ebx, %[val]\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x),
-        [scno] "d" (BAD_SYSCALL_NUMBER)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x),
+        [scno] "d"(BAD_SYSCALL_NUMBER)
         : "rax", "rbx", "rcx", "r11", "r12"
     );
 #elif defined(CONFIG_ARCH_IA32)
-    asm volatile (
+    asm volatile(
         "mov %[scno], %%eax\n\t"
         "mov %[val], %%ebx\n\t"
         "mov %%esp, %%ecx\n\t"
@@ -329,9 +329,9 @@ do_bad_syscall(void)
         "sysenter\n\t"
         "bad_syscall_restart_address:\n\t"
         "mov %%ebx, %[val]\n\t"
-        : [val] "+r" (val)
-        : [addrreg] "r" (x),
-        [scno] "i" (BAD_SYSCALL_NUMBER)
+        : [val] "+r"(val)
+        : [addrreg] "r"(x),
+        [scno] "i"(BAD_SYSCALL_NUMBER)
         : "eax", "ebx", "ecx", "edx"
     );
 #else
@@ -350,7 +350,7 @@ do_bad_instruction(void)
     int val = BAD_MAGIC;
     /* Execute an undefined instruction. */
 #if defined(CONFIG_ARCH_AARCH32)
-    asm volatile (
+    asm volatile(
         /* Save SP */
         "str sp, [%[sp]]\n\t"
 
@@ -365,13 +365,13 @@ do_bad_instruction(void)
         ".word 0xe7f000f0\n\t" /* Guaranteed to be undefined by ARM. */
         "bad_instruction_restart_address:\n\t"
         :
-        : [sp] "r" (&bad_instruction_sp),
-        [cpsr] "r" (&bad_instruction_cpsr),
-        [valptr] "r" (&val)
+        : [sp] "r"(&bad_instruction_sp),
+        [cpsr] "r"(&bad_instruction_cpsr),
+        [valptr] "r"(&val)
         : "r0", "memory"
     );
 #elif defined(CONFIG_ARCH_AARCH64)
-    asm volatile (
+    asm volatile(
         /* Save SP */
         "mov x0, sp\n\t"
         "str x0, [%[sp]]\n\t"
@@ -387,13 +387,13 @@ do_bad_instruction(void)
         ".word 0xe7f000f0\n\t" /* Guaranteed to be undefined by ARM. */
         "bad_instruction_restart_address:\n\t"
         :
-        : [sp] "r" (&bad_instruction_sp),
-        [cpsr] "r" (&bad_instruction_cpsr),
-        [valptr] "r" (&val)
+        : [sp] "r"(&bad_instruction_sp),
+        [cpsr] "r"(&bad_instruction_cpsr),
+        [valptr] "r"(&val)
         : "x0", "memory"
     );
 #elif defined(CONFIG_ARCH_RISCV)
-    asm volatile (
+    asm volatile(
         /* Save SP */
         "mv  a0, sp\n\t"
         STORE_S " a0, 0(%[sp])\n\t"
@@ -405,12 +405,12 @@ do_bad_instruction(void)
         ".word 0xffffffff\n\t"
         "bad_instruction_restart_address:\n\t"
         :
-        : [sp] "r" (&bad_instruction_sp),
-        [valptr] "r" (&val)
+        : [sp] "r"(&bad_instruction_sp),
+        [valptr] "r"(&val)
         : "a0", "memory"
     );
 #elif defined(CONFIG_ARCH_X86_64)
-    asm volatile (
+    asm volatile(
         /* save RSP */
         "movq   %%rsp, (%[sp])\n\t"
         "pushf\n\t"
@@ -421,13 +421,13 @@ do_bad_instruction(void)
         "ud2\n\t"
         "bad_instruction_restart_address:\n\t"
         :
-        : [sp] "r" (&bad_instruction_sp),
-        [cpsr] "r" (&bad_instruction_cpsr),
-        [valptr] "r" (&val)
+        : [sp] "r"(&bad_instruction_sp),
+        [cpsr] "r"(&bad_instruction_cpsr),
+        [valptr] "r"(&val)
         : "rax", "memory"
     );
 #elif defined(CONFIG_ARCH_IA32)
-    asm volatile (
+    asm volatile(
         /* Save SP */
         "mov %%esp, (%[sp])\n\t"
 
@@ -443,9 +443,9 @@ do_bad_instruction(void)
         "ud2\n\t"
         "bad_instruction_restart_address:\n\t"
         :
-        : [sp] "r" (&bad_instruction_sp),
-        [cpsr] "r" (&bad_instruction_cpsr),
-        [valptr] "r" (&val)
+        : [sp] "r"(&bad_instruction_sp),
+        [cpsr] "r"(&bad_instruction_cpsr),
+        [valptr] "r"(&val)
         : "eax", "memory"
     );
 #else
@@ -497,9 +497,8 @@ set_good_magic_and_set_pc(seL4_CPtr tcb, seL4_Word new_pc)
     test_check(!error);
 }
 
-static int
-handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
-             seL4_Word flags_and_reply)
+static int handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
+                        seL4_Word flags_and_reply)
 {
     seL4_MessageInfo_t tag;
     seL4_Word sender_badge = 0;
@@ -664,8 +663,7 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault,
     return 0;
 }
 
-static int
-cause_fault(int fault_type)
+static int cause_fault(int fault_type)
 {
     switch (fault_type) {
     case FAULT_DATA_READ_PAGEFAULT:
@@ -688,8 +686,7 @@ cause_fault(int fault_type)
     return 0;
 }
 
-static int
-test_fault(env_t env, int fault_type, bool inter_as)
+static int test_fault(env_t env, int fault_type, bool inter_as)
 {
     helper_thread_t handler_thread;
     helper_thread_t faulter_thread;
@@ -752,10 +749,10 @@ test_fault(env_t env, int fault_type, bool inter_as)
 
                 set_helper_priority(env, &handler_thread, 101);
                 error = api_tcb_set_space(get_helper_tcb(&faulter_thread),
-                                           fault_ep,
-                                           faulter_cspace,
-                                           api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
-                                           faulter_vspace, seL4_NilData);
+                                          fault_ep,
+                                          faulter_cspace,
+                                          api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
+                                          faulter_vspace, seL4_NilData);
                 test_assert(!error);
                 set_helper_priority(env, &faulter_thread, prio);
 
@@ -763,8 +760,8 @@ test_fault(env_t env, int fault_type, bool inter_as)
                 // already set on the cptr.
                 test_assert(!(reply_cptr & (BIT(RESTART) | BIT(BADGED))));
                 seL4_Word flags_and_reply = reply_cptr |
-                                  (badged ? BIT(BADGED) : 0) |
-                                  (restart ? BIT(RESTART) : 0);
+                                            (badged ? BIT(BADGED) : 0) |
+                                            (restart ? BIT(RESTART) : 0);
 
                 start_helper(env, &handler_thread, (helper_fn_t) handle_fault,
                              handler_arg0, handler_arg1, fault_type, flags_and_reply);
@@ -852,8 +849,7 @@ timeout_fault_0001_fn(void)
     while (1);
 }
 
-int
-test_timeout_fault(env_t env)
+int test_timeout_fault(env_t env)
 {
     helper_thread_t helper;
     seL4_Word data = 1;
@@ -894,22 +890,20 @@ timeout_fault_server_fn(seL4_CPtr ep, env_t env, seL4_CPtr ro)
     ZF_LOGF("Should not get here");
 }
 
-static int
-timeout_fault_client_fn(seL4_CPtr ep)
+static int timeout_fault_client_fn(seL4_CPtr ep)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
     while (1) {
         info = seL4_Call(ep, info);
         /* call should have failed, timeout fault handler will send a -1 */
-        test_eq(seL4_GetMR(0), (seL4_Word) -1);
+        test_eq(seL4_GetMR(0), (seL4_Word) - 1);
     }
     return 0;
 }
 
-int
-create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CPtr tfep,
-                                seL4_Word badge, helper_fn_t fn, seL4_CPtr ep, seL4_Word arg1,
-                                seL4_Word arg2, seL4_Word arg3, sel4utils_checkpoint_t *cp)
+int create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CPtr tfep,
+                                    seL4_Word badge, helper_fn_t fn, seL4_CPtr ep, seL4_Word arg1,
+                                    seL4_Word arg2, seL4_Word arg3, sel4utils_checkpoint_t *cp)
 {
     seL4_CPtr minted_tfep = get_free_slot(env);
     int error = cnode_mint(env, tfep, minted_tfep, seL4_AllRights, badge);
@@ -923,10 +917,9 @@ create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CPtr t
     return sel4utils_checkpoint_thread(&passive->thread, cp, false);
 }
 
-static int
-handle_timeout_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread_t *server,
-                      seL4_CPtr reply, sel4utils_checkpoint_t *cp, seL4_CPtr ep,
-                      seL4_Word expected_data, env_t env)
+static int handle_timeout_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread_t *server,
+                                seL4_CPtr reply, sel4utils_checkpoint_t *cp, seL4_CPtr ep,
+                                seL4_Word expected_data, env_t env)
 {
     seL4_Word badge;
     seL4_CPtr server_reply = vka_alloc_reply_leaky(&env->vka);
@@ -954,7 +947,7 @@ handle_timeout_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread_
 
     ZF_LOGD("Reply to server");
 #ifdef CONFIG_KERNEL_RT
-    info = seL4_TimeoutReply_new(true, cp->regs, sizeof(seL4_UserContext)/sizeof(seL4_Word));
+    info = seL4_TimeoutReply_new(true, cp->regs, sizeof(seL4_UserContext) / sizeof(seL4_Word));
 #endif
     /* reply, restoring server state, and wait for server to init */
     api_reply_recv(ep, info, NULL, server_reply);
@@ -965,8 +958,7 @@ handle_timeout_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4utils_thread_
     return 0;
 }
 
-static int
-test_timeout_fault_in_server(env_t env)
+static int test_timeout_fault_in_server(env_t env)
 {
     helper_thread_t client, server;
     seL4_Word client_data = 1;
@@ -979,8 +971,8 @@ test_timeout_fault_in_server(env_t env)
 
     /* create the server */
     int error = create_passive_thread_with_tfep(env, &server, tfep, server_badge,
-                                            (helper_fn_t) timeout_fault_server_fn, ep,
-                                            (seL4_Word)env, ro, 0, &cp);
+                                                (helper_fn_t) timeout_fault_server_fn, ep,
+                                                (seL4_Word)env, ro, 0, &cp);
     test_eq(error, 0);
 
     /* create the client */
@@ -992,7 +984,7 @@ test_timeout_fault_in_server(env_t env)
     for (int i = 0; i < 5; i++) {
         ZF_LOGD("Handling fault");
         error = handle_timeout_fault(tfep, server_badge, &server.thread, ro, &cp, ep,
-                                      client_data, env);
+                                     client_data, env);
         test_eq(error, 0);
     }
 
@@ -1013,8 +1005,7 @@ timeout_fault_proxy_fn(seL4_CPtr in, seL4_CPtr out, seL4_CPtr ro)
     }
 }
 
-static int
-test_timeout_fault_nested_servers(env_t env)
+static int test_timeout_fault_nested_servers(env_t env)
 {
     helper_thread_t client, server, proxy;
     sel4utils_checkpoint_t proxy_cp, server_cp;
@@ -1031,8 +1022,8 @@ test_timeout_fault_nested_servers(env_t env)
 
     /* create server */
     int error = create_passive_thread_with_tfep(env, &server, tfep, server_badge,
-                                            (helper_fn_t) timeout_fault_server_fn, proxy_server_ep,
-                                            (seL4_Word)env, server_ro, 0, &server_cp);
+                                                (helper_fn_t) timeout_fault_server_fn, proxy_server_ep,
+                                                (seL4_Word)env, server_ro, 0, &server_cp);
     test_eq(error, 0);
 
     /* create proxy */
@@ -1056,13 +1047,13 @@ test_timeout_fault_nested_servers(env_t env)
         /* server fault */
         ZF_LOGD("server fault\n");
         error = handle_timeout_fault(tfep, server_badge, &server.thread, server_ro, &server_cp,
-                                      proxy_server_ep, client_data, env);
+                                     proxy_server_ep, client_data, env);
         test_eq(error, 0);
 
         /* proxy fault */
         ZF_LOGD("proxy fault\n");
         error = handle_timeout_fault(tfep, proxy_badge, &proxy.thread, proxy_ro, &proxy_cp,
-                                      client_proxy_ep, client_data, env);
+                                     client_proxy_ep, client_data, env);
         test_eq(error, 0);
     }
 

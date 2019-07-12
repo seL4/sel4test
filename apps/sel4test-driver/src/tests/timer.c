@@ -17,8 +17,7 @@
 
 #include <utils/util.h>
 
-int
-test_timer(driver_env_t env)
+int test_timer(driver_env_t env)
 {
     int error = ltimer_set_timeout(&env->timer.ltimer, 1 * NS_IN_S, TIMEOUT_PERIODIC);
     test_assert_fatal(!error);
@@ -59,4 +58,5 @@ test_gettime_timeout(driver_env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST_BOOTSTRAP(TIMER0002, "Test that the timer moves between gettime and timeout calls", test_gettime_timeout, config_set(CONFIG_HAVE_TIMER))
+DEFINE_TEST_BOOTSTRAP(TIMER0002, "Test that the timer moves between gettime and timeout calls", test_gettime_timeout,
+                      config_set(CONFIG_HAVE_TIMER))

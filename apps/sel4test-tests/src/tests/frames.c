@@ -24,8 +24,9 @@
 #include "../helpers.h"
 #include "frame_type.h"
 
-void touch_data(void *vaddr, char old_data, char new_data, size_t size_bits) {
-    char *data = (char*)vaddr;
+void touch_data(void *vaddr, char old_data, char new_data, size_t size_bits)
+{
+    char *data = (char *)vaddr;
     /* we test a sample of the bytes in the frame to ensure a couple of things
      1. a frame of the correct size is mapped in
      2. for larger frames that no part of the large frame shares a region with another part.
@@ -40,8 +41,7 @@ void touch_data(void *vaddr, char old_data, char new_data, size_t size_bits) {
     }
 }
 
-static int
-test_frame_exported(env_t env)
+static int test_frame_exported(env_t env)
 {
     /* Reserve a location that is aligned and large enough to map our
      * largest kind of frame */
@@ -66,11 +66,11 @@ test_frame_exported(env_t env)
             mem_total += BIT(frame_types[i].size_bits);
 
             uintptr_t cookie = 0;
-            err = vspace_map_pages_at_vaddr(&env->vspace, &frame, &cookie, (void*)vaddr, 1, frame_types[i].size_bits, reserve);
+            err = vspace_map_pages_at_vaddr(&env->vspace, &frame, &cookie, (void *)vaddr, 1, frame_types[i].size_bits, reserve);
             test_assert(err == seL4_NoError);
 
             /* Touch the memory */
-            char *data = (char*)vaddr;
+            char *data = (char *)vaddr;
             touch_data(data, 0, 'U', frame_types[i].size_bits);
 
             err = seL4_ARCH_Page_Remap(frame,
@@ -81,7 +81,7 @@ test_frame_exported(env_t env)
             /* ensure the memory is what it was before and touch it again */
             touch_data(vaddr, 'U', 'V', frame_types[i].size_bits);
 
-            vspace_unmap_pages(&env->vspace, (void*)vaddr, 1, frame_types[i].size_bits, VSPACE_PRESERVE);
+            vspace_unmap_pages(&env->vspace, (void *)vaddr, 1, frame_types[i].size_bits, VSPACE_PRESERVE);
             test_assert(err == seL4_NoError);
         }
         test_assert(once);
@@ -112,7 +112,7 @@ static int handle(seL4_CPtr fault_ep, seL4_CPtr reply, seL4_Word arg3, seL4_Word
  */
 static int fault(seL4_Word arg1, seL4_Word arg2, seL4_Word arg3, seL4_Word arg4)
 {
-    *(char*)0x42 = 'c';
+    *(char *)0x42 = 'c';
     return 0;
 }
 
@@ -141,7 +141,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     /* Set up a function we're going to have another thread call. Assume that
      * the function is no more than 100 bytes long.
      */
-    memcpy(dest, (void*)fault, 100);
+    memcpy(dest, (void *)fault, 100);
 
     /* Unify the instruction and data caches so our code is seen */
     seL4_ARM_Page_Unify_Instruction(frame_cap, 0, BIT(sz_bits));
@@ -158,11 +158,11 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     create_helper_thread(env, &faulter);
     set_helper_priority(env, &faulter, 100);
     err = api_tcb_set_space(get_helper_tcb(&faulter),
-                             fault_ep,
-                             env->cspace_root,
-                             api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
-                             env->page_directory, seL4_NilData);
-    start_helper(env, &faulter, dest, 0, 0, 0 ,0);
+                            fault_ep,
+                            env->cspace_root,
+                            api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
+                            env->page_directory, seL4_NilData);
+    start_helper(env, &faulter, dest, 0, 0, 0, 0);
 
     /* Now a fault handler that will catch and diagnose its fault. */
     helper_thread_t handler;
@@ -171,9 +171,9 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     start_helper(env, &handler, handle, fault_ep, get_helper_reply(&faulter), 0, 0);
 
     /* Wait for the fault to happen */
-    void *res = (void*)(seL4_Word)wait_for_helper(&handler);
+    void *res = (void *)(seL4_Word)wait_for_helper(&handler);
 
-    test_assert(res == (void*)0x42);
+    test_assert(res == (void *)0x42);
 
     cleanup_helper(env, &handler);
     cleanup_helper(env, &faulter);
@@ -186,7 +186,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     test_assert(err == 0);
 
     /* The page should still contain our code from before. */
-    test_assert(!memcmp(dest, (void*)fault, 100));
+    test_assert(!memcmp(dest, (void *)fault, 100));
 
     /* We need to reallocate a fault EP because the thread cleanup above
      * inadvertently destroys the EP we were using.
@@ -198,23 +198,23 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     create_helper_thread(env, &faulter);
     set_helper_priority(env, &faulter, 100);
     err = api_tcb_configure(get_helper_tcb(&faulter),
-                             fault_ep, seL4_CapNull,
-                             get_helper_sched_context(&faulter),
-                             env->cspace_root,
-                             api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
-                             env->page_directory, seL4_NilData,
-                             faulter.thread.ipc_buffer_addr,
-                             faulter.thread.ipc_buffer);
-    start_helper(env, &faulter, dest, 0, 0, 0 ,0);
+                            fault_ep, seL4_CapNull,
+                            get_helper_sched_context(&faulter),
+                            env->cspace_root,
+                            api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
+                            env->page_directory, seL4_NilData,
+                            faulter.thread.ipc_buffer_addr,
+                            faulter.thread.ipc_buffer);
+    start_helper(env, &faulter, dest, 0, 0, 0, 0);
     create_helper_thread(env, &handler);
     set_helper_priority(env, &handler, 100);
     start_helper(env, &handler, handle, fault_ep, get_helper_reply(&faulter), 0, 0);
 
     /* Wait for the fault to happen */
-    res = (void*)(seL4_Word)wait_for_helper(&handler);
+    res = (void *)(seL4_Word)wait_for_helper(&handler);
 
     /* Confirm that, this time, we faulted at the start of the XN-mapped page. */
-    test_assert(res == (void*)dest);
+    test_assert(res == (void *)dest);
 
     /* Resource tear down. */
     cleanup_helper(env, &handler);
@@ -250,19 +250,20 @@ static int test_device_frame_ipcbuf(env_t env)
     create_helper_thread(env, &other);
     /* Try and create a thread with a device frame as its IPC buffer */
     error = api_tcb_configure(get_helper_tcb(&other),
-                               0, seL4_CapNull,
-                               get_helper_sched_context(&other),
-                               env->cspace_root,
-                               api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
-                               env->page_directory, seL4_NilData,
-                               get_helper_ipc_buffer_addr(&other),
-                               path.capPtr);
+                              0, seL4_CapNull,
+                              get_helper_sched_context(&other),
+                              env->cspace_root,
+                              api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
+                              env->page_directory, seL4_NilData,
+                              get_helper_ipc_buffer_addr(&other),
+                              path.capPtr);
     test_neq(error, 0);
     cleanup_helper(env, &other);
 
     return sel4test_get_result();
 }
-DEFINE_TEST(FRAMEDIPC0001, "Test that we cannot create a thread with an IPC buffer that is a frame", test_device_frame_ipcbuf, config_set(CONFIG_HAVE_TIMER))
+DEFINE_TEST(FRAMEDIPC0001, "Test that we cannot create a thread with an IPC buffer that is a frame",
+            test_device_frame_ipcbuf, config_set(CONFIG_HAVE_TIMER))
 
 static int wait_func(seL4_Word ep)
 {
@@ -300,11 +301,12 @@ static int test_switch_device_frame_ipcbuf(env_t env)
     cleanup_helper(env, &other);
     return sel4test_get_result();
 }
-DEFINE_TEST(FRAMEDIPC0002, "Test that we cannot switch a threads IPC buffer to a device frame", test_switch_device_frame_ipcbuf, config_set(CONFIG_HAVE_TIMER))
+DEFINE_TEST(FRAMEDIPC0002, "Test that we cannot switch a threads IPC buffer to a device frame",
+            test_switch_device_frame_ipcbuf, config_set(CONFIG_HAVE_TIMER))
 
 static int touch_data_fault(seL4_Word data, seL4_Word fault_ep, seL4_Word arg3, seL4_Word arg4)
 {
-    *(volatile int*)data = 42;
+    *(volatile int *)data = 42;
     /* if we got here we should wake the fault handler up with an error so the test doesn't hang forever.
      * we do that by generating a different fault */
     utils_undefined_instruction();
@@ -332,7 +334,7 @@ static int test_unmap_on_delete(env_t env)
     test_assert(dest != NULL);
 
     /* verify we can access it */
-    *(volatile int*)dest = 0;
+    *(volatile int *)dest = 0;
 
     /* now delete the copy of the frame we mapped in */
     vka_cnode_delete(&frame_copy);
@@ -348,11 +350,11 @@ static int test_unmap_on_delete(env_t env)
     create_helper_thread(env, &faulter);
     set_helper_priority(env, &faulter, 100);
     err = api_tcb_set_space(get_helper_tcb(&faulter),
-                             fault_ep,
-                             env->cspace_root,
-                             api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
-                             env->page_directory, seL4_NilData);
-    start_helper(env, &faulter, touch_data_fault, (seL4_Word)dest, 0, 0 ,0);
+                            fault_ep,
+                            env->cspace_root,
+                            api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
+                            env->page_directory, seL4_NilData);
+    start_helper(env, &faulter, touch_data_fault, (seL4_Word)dest, 0, 0, 0);
 
     /* Now a fault handler that will catch and diagnose its fault. */
     helper_thread_t handler;
@@ -361,7 +363,7 @@ static int test_unmap_on_delete(env_t env)
     start_helper(env, &handler, handle, fault_ep, get_helper_reply(&faulter), 0, 0);
 
     /* Wait for the fault to happen */
-    void *res = (void*)(seL4_Word)wait_for_helper(&handler);
+    void *res = (void *)(seL4_Word)wait_for_helper(&handler);
 
     /* check that we got a fault as expected */
     test_eq((uintptr_t)res, (uintptr_t)dest);

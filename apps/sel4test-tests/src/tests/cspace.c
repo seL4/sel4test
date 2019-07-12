@@ -22,8 +22,7 @@
 #define READY_MAGIC 0x12374153
 #define SUCCESS_MAGIC 0x12374151
 
-static int
-ipc_caller(seL4_Word ep0, seL4_Word ep1, seL4_Word word_bits, seL4_Word arg4)
+static int ipc_caller(seL4_Word ep0, seL4_Word ep1, seL4_Word word_bits, seL4_Word arg4)
 {
     /* Let our parent know we are ready. */
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 1);
@@ -58,8 +57,7 @@ ipc_caller(seL4_Word ep0, seL4_Word ep1, seL4_Word word_bits, seL4_Word arg4)
     return sel4test_get_result();
 }
 
-static int
-test_full_cspace(env_t env)
+static int test_full_cspace(env_t env)
 {
     int error;
     seL4_CPtr cnode[CONFIG_WORD_SIZE];

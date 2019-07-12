@@ -19,8 +19,7 @@
 
 #define NUM_BADGED_CLIENTS 32
 
-static int
-bouncer_func(seL4_CPtr ep, seL4_CPtr reply, seL4_Word arg2, seL4_Word arg3)
+static int bouncer_func(seL4_CPtr ep, seL4_CPtr reply, seL4_Word arg2, seL4_Word arg3)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     seL4_Word sender_badge;
@@ -31,8 +30,7 @@ bouncer_func(seL4_CPtr ep, seL4_CPtr reply, seL4_Word arg2, seL4_Word arg3)
     return 0;
 }
 
-static int
-call_func(seL4_CPtr ep, seL4_Word msg, volatile seL4_Word *done, seL4_Word arg3)
+static int call_func(seL4_CPtr ep, seL4_Word msg, volatile seL4_Word *done, seL4_Word arg3)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 1);
 
@@ -55,8 +53,7 @@ call_func(seL4_CPtr ep, seL4_Word msg, volatile seL4_Word *done, seL4_Word arg3)
     return sel4test_get_result();
 }
 
-static int
-test_ep_cancelBadgedSends(env_t env)
+static int test_ep_cancelBadgedSends(env_t env)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     struct {
@@ -174,8 +171,7 @@ static int ep_test_func(seL4_CPtr sync_ep, seL4_CPtr test_ep, volatile seL4_Word
  * This means that CANCEL_BADGED_SENDS_0001 will pass even if all the derived badges
  * are deleted, since deleting them did NOT delete the final capability
  * or cause a cancelBadgedSends so outstanding IPCs were not canceled */
-static int
-test_ep_cancelBadgedSends2(env_t env)
+static int test_ep_cancelBadgedSends2(env_t env)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     struct {

@@ -23,8 +23,7 @@
 #define MAGIC2 0xDEADBEEF
 #define MAGIC3 666
 
-static int
-check_recv(seL4_CPtr ep, seL4_Word val, seL4_CPtr reply)
+static int check_recv(seL4_CPtr ep, seL4_Word val, seL4_CPtr reply)
 {
     api_recv(ep, NULL, reply);
     test_check(val == seL4_GetMR(0));
@@ -33,8 +32,7 @@ check_recv(seL4_CPtr ep, seL4_Word val, seL4_CPtr reply)
     return sel4test_get_result();
 }
 
-static int
-test_send_needs_write(env_t env)
+static int test_send_needs_write(env_t env)
 {
     vka_t *vka = &env->vka;
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);
@@ -99,7 +97,7 @@ test_recv_needs_read(env_t env)
             seL4_Send(ep, tag);
             seL4_Send(ep, tag);
         } else {
-            api_recv(fault_ep, NULL,fault_reply);
+            api_recv(fault_ep, NULL, fault_reply);
         }
         cleanup_helper(env, &t);
         cnode_delete(env, epMint);
@@ -140,8 +138,7 @@ check_recv_cap(env_t env, seL4_CPtr ep, bool should_recv_cap, seL4_CPtr reply)
     return sel4test_get_result();
 }
 
-static int
-test_send_cap_needs_grant(env_t env)
+static int test_send_cap_needs_grant(env_t env)
 {
     vka_t *vka = &env->vka;
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);
@@ -212,8 +209,7 @@ check_call(env_t env, seL4_CPtr ep, bool should_call, bool reply_recv)
 
 
 
-static int
-test_call_needs_grant_or_grant_reply(env_t env)
+static int test_call_needs_grant_or_grant_reply(env_t env)
 {
     vka_t *vka = &env->vka;
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);
@@ -327,8 +323,7 @@ check_call_return_cap(env_t env, seL4_CPtr ep,
     return sel4test_get_result();
 }
 
-static int
-test_reply_grant_receiver(env_t env)
+static int test_reply_grant_receiver(env_t env)
 {
     vka_t *vka = &env->vka;
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);

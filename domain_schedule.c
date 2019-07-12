@@ -70,7 +70,7 @@ const dschedule_t ksDomSchedule[] = {
     { .domain = 15, .length = 1 },
 #endif
 #if CONFIG_NUM_DOMAINS > 16
-    #error Unsupportd number of domains set
+#error Unsupportd number of domains set
 #endif
 };
 

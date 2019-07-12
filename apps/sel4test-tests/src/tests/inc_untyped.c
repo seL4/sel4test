@@ -15,8 +15,7 @@
 
 #include "../helpers.h"
 
-static int
-test_retype(env_t env)
+static int test_retype(env_t env)
 {
     int error;
     int i;

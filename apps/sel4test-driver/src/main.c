@@ -82,8 +82,7 @@ extern char _cpio_archive_end[];
 static elf_t tests_elf;
 
 /* initialise our runtime environment */
-static void
-init_env(driver_env_t env)
+static void init_env(driver_env_t env)
 {
     allocman_t *allocman;
     reservation_t virtual_reservation;
@@ -128,8 +127,7 @@ init_env(driver_env_t env)
 }
 
 /* Free a list of objects */
-static void
-free_objects(vka_object_t *objects, unsigned int num)
+static void free_objects(vka_object_t *objects, unsigned int num)
 {
     for (unsigned int i = 0; i < num; i++) {
         vka_free_object(&env.vka, &objects[i]);
@@ -138,8 +136,7 @@ free_objects(vka_object_t *objects, unsigned int num)
 
 /* Allocate untypeds till either a certain number of bytes is allocated
  * or a certain number of untyped objects */
-static unsigned int
-allocate_untypeds(vka_object_t *untypeds, size_t bytes, unsigned int max_untypeds)
+static unsigned int allocate_untypeds(vka_object_t *untypeds, size_t bytes, unsigned int max_untypeds)
 {
     unsigned int num_untypeds = 0;
     size_t allocated = 0;
@@ -149,8 +146,8 @@ allocate_untypeds(vka_object_t *untypeds, size_t bytes, unsigned int max_untyped
         /* keep allocating until we run out, or if allocating would
          * cause us to allocate too much memory*/
         while (num_untypeds < max_untypeds &&
-                allocated + BIT(size_bits) <= bytes &&
-                vka_alloc_untyped(&env.vka, size_bits, &untypeds[num_untypeds]) == 0) {
+               allocated + BIT(size_bits) <= bytes &&
+               vka_alloc_untyped(&env.vka, size_bits, &untypeds[num_untypeds]) == 0) {
             allocated += BIT(size_bits);
             num_untypeds++;
         }
@@ -159,8 +156,7 @@ allocate_untypeds(vka_object_t *untypeds, size_t bytes, unsigned int max_untyped
 }
 
 /* extract a large number of untypeds from the allocator */
-static unsigned int
-populate_untypeds(vka_object_t *untypeds)
+static unsigned int populate_untypeds(vka_object_t *untypeds)
 {
     /* First reserve some memory for the driver */
     vka_object_t reserve[DRIVER_NUM_UNTYPEDS];
@@ -196,7 +192,7 @@ static void init_timer(void)
         ZF_LOGF_IF(error, "Failed to allocate notification object for tests");
 
         error = sel4platsupport_init_default_timer(&env.vka, &env.vspace, &env.simple,
-                  env.timer_notification.cptr, &env.timer);
+                                                   env.timer_notification.cptr, &env.timer);
         ZF_LOGF_IF(error, "Failed to initialise default timer");
 
         error = seL4_TCB_BindNotification(simple_get_tcb(&env.simple), env.timer_notification.cptr);
@@ -294,7 +290,7 @@ void sel4test_stop_tests(test_result_t result, int tests_done, int tests_failed,
 }
 
 static int collate_tests(testcase_t *tests_in, int n, testcase_t *tests_out[], int out_index,
-                                  regex_t *reg, int* skipped_tests)
+                         regex_t *reg, int *skipped_tests)
 {
     for (int i = 0; i < n; i++) {
         /* make sure the string is null terminated */
@@ -312,10 +308,10 @@ static int collate_tests(testcase_t *tests_in, int n, testcase_t *tests_out[], i
     return out_index;
 }
 
-void sel4test_run_tests(struct driver_env* e)
+void sel4test_run_tests(struct driver_env *e)
 {
     /* Iterate through test types. */
-    int max_test_types = (int) (__stop__test_type - __start__test_type);
+    int max_test_types = (int)(__stop__test_type - __start__test_type);
     struct test_type *test_types[max_test_types];
     int num_test_types = 0;
     for (struct test_type *i = __start__test_type; i < __stop__test_type; i++) {
@@ -324,7 +320,7 @@ void sel4test_run_tests(struct driver_env* e)
     }
 
     /* Ensure we iterate through test types in order of ID. */
-    qsort(test_types, num_test_types, sizeof(struct test_type*), test_type_comparator);
+    qsort(test_types, num_test_types, sizeof(struct test_type *), test_type_comparator);
 
     /* Count how many tests actually exist and allocate space for them */
     int driver_tests = (int)(__stop__test_case - __start__test_case);
@@ -352,7 +348,7 @@ void sel4test_run_tests(struct driver_env* e)
     regfree(&reg);
 
     /* Sort the tests to remove any non determinism in test ordering */
-    qsort(tests, num_tests, sizeof(testcase_t*), test_comparator);
+    qsort(tests, num_tests, sizeof(testcase_t *), test_comparator);
 
     /* Now that they are sorted we can easily ensure there are no duplicate tests.
      * this just ensures some sanity as if there are duplicates, they could have some
@@ -502,14 +498,14 @@ typedef struct uspace_alloc_at_args {
  * vka_utspace_free and instead the caps would have to be manually deleted.
  * Freeing these objects via vka_utspace_free would require also wrapping that function.*/
 static int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,
-                               uintptr_t paddr, seL4_Word *cookie)
+                                      uintptr_t paddr, seL4_Word *cookie)
 {
     static uspace_alloc_at_args_t args_prev[NUM_ALLOC_AT_TO_TRACK] = {};
     static size_t num_alloc = 0;
 
     ZF_LOGF_IF(!vka_utspace_alloc_at_base, "vka_utspace_alloc_at_base not initialised.");
-    if(!serial_utspace_record) {
-        for(int i = 0; i < num_alloc; i++) {
+    if (!serial_utspace_record) {
+        for (int i = 0; i < num_alloc; i++) {
             if (paddr == args_prev[i].paddr &&
                 type == args_prev[i].type &&
                 size_bits == args_prev[i].size_bits) {

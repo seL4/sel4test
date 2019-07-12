@@ -15,8 +15,7 @@
 
 #include "../helpers.h"
 
-static double
-fpu_calculation(void)
+static double fpu_calculation(void)
 {
     double a = (double)3.141;
     for (int i = 0; i < 10000; i++) {
@@ -39,8 +38,7 @@ fpu_calculation(void)
  * For processors without a FPU, this tests that maths libraries link
  * correctly.
  */
-static int
-test_fpu_trivial(env_t env)
+static int test_fpu_trivial(env_t env)
 {
     int i;
     volatile double b;
@@ -93,8 +91,7 @@ fpu_worker(seL4_Word p1, seL4_Word p2, seL4_Word p3, seL4_Word p4)
  * Early versions of seL4 had a bug here because we were not context-switching
  * the FPU at all. Oops.
  */
-static int
-test_fpu_multithreaded(struct env* env)
+static int test_fpu_multithreaded(struct env *env)
 {
     const int NUM_THREADS = 4;
     helper_thread_t thread[NUM_THREADS];
@@ -134,7 +131,8 @@ test_fpu_multithreaded(struct env* env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(FPU0001, "Ensure multiple threads can use FPU simultaneously", test_fpu_multithreaded, !config_set(CONFIG_FT))
+DEFINE_TEST(FPU0001, "Ensure multiple threads can use FPU simultaneously", test_fpu_multithreaded,
+            !config_set(CONFIG_FT))
 
 static int
 smp_fpu_worker(volatile seL4_Word *ex, volatile seL4_Word *run)
@@ -164,7 +162,7 @@ int smp_test_fpu(env_t env)
     helper_thread_t t[env->cores];
     ZF_LOGD("smp_test_fpu\n");
 
-    for(int i = 0; i < env->cores; i++) {
+    for (int i = 0; i < env->cores; i++) {
         create_helper_thread(env, &t[i]);
 
         set_helper_affinity(env, &t[i], i);
@@ -175,8 +173,8 @@ int smp_test_fpu(env_t env)
     sel4test_sleep(env, 10 * NS_IN_MS);
 
     /* Do lots of migrations */
-    for(int it = 0; it < 100; it++) {
-        for(int i = 0; i < env->cores; i++) {
+    for (int it = 0; it < 100; it++) {
+        for (int i = 0; i < env->cores; i++) {
             /* Migrate threads to next core... */
             set_helper_affinity(env, &t[i], (i + 1) % env->cores);
         }
@@ -187,11 +185,12 @@ int smp_test_fpu(env_t env)
     /* Notify threads to return */
     run = 0;
 
-    for(int i = 0; i < env->cores; i++) {
+    for (int i = 0; i < env->cores; i++) {
         test_check(wait_for_helper(&t[i]) == 0);
         cleanup_helper(env, &t[i]);
     }
 
     return sel4test_get_result();
 }
-DEFINE_TEST(FPU0002, "Test FPU remain valid across core migration", smp_test_fpu, config_set(CONFIG_MAX_NUM_NODES) && config_set(CONFIG_HAVE_TIMER) && CONFIG_MAX_NUM_NODES > 1)
+DEFINE_TEST(FPU0002, "Test FPU remain valid across core migration", smp_test_fpu,
+            config_set(CONFIG_MAX_NUM_NODES) &&config_set(CONFIG_HAVE_TIMER) &&CONFIG_MAX_NUM_NODES > 1)

@@ -27,5 +27,5 @@
  * @param name the name of the test to retrieve.
  * @return the test corresponding to name, NULL if test not found.
  */
-testcase_t* sel4test_get_test(const char *name);
+testcase_t *sel4test_get_test(const char *name);
 

@@ -29,15 +29,13 @@
  */
 static volatile int counter;
 
-NO_INLINE static void
-stop_point(void)
+NO_INLINE static void stop_point(void)
 {
     /* Counter is volatile so the compiler cannot optimize this away */
     counter = counter;
 }
 
-NO_INLINE static void
-single_step_guinea_pig(void)
+NO_INLINE static void single_step_guinea_pig(void)
 {
     for (; counter < SINGLESTEP_TEST_MAX_LOOP_ITERATIONS; counter++) {
         /* This syscall is inserted here to ensure that syscalls are being
@@ -64,7 +62,7 @@ int debugger_main(seL4_Word a0, seL4_Word reply, seL4_Word a2, seL4_Word a3)
 
     if (seL4_MessageInfo_get_label(tag) != seL4_Fault_DebugException) {
         ZF_LOGE("debugger: Got unexpected fault %zd.\n",
-               seL4_MessageInfo_get_label(tag));
+                seL4_MessageInfo_get_label(tag));
         return -1;
     }
 
@@ -72,7 +70,7 @@ int debugger_main(seL4_Word a0, seL4_Word reply, seL4_Word a2, seL4_Word a3)
     fault_data.reason = seL4_GetMR(seL4_DebugException_ExceptionReason);
     fault_data.bp_num = seL4_GetMR(seL4_DebugException_BreakpointNumber);
     if (fault_data.reason != seL4_InstructionBreakpoint
-            || fault_data.vaddr != (seL4_Word)&single_step_guinea_pig) {
+        || fault_data.vaddr != (seL4_Word)&single_step_guinea_pig) {
         ZF_LOGE("debugger: debug exception not triggered by expected conditions.\n");
         return -1;
     }
@@ -108,8 +106,8 @@ int debugger_main(seL4_Word a0, seL4_Word reply, seL4_Word a2, seL4_Word a3)
         fault_data.bp_num = seL4_GetMR(seL4_DebugException_TriggerAddress);
         if (fault_data.reason != seL4_SingleStep) {
             ZF_LOGE("Debugger: while single stepping, got debug exception, but "
-                   "for the wrong reason (reason %zd).\n",
-                   fault_data.reason);
+                    "for the wrong reason (reason %zd).\n",
+                    fault_data.reason);
             return -1;
         }
 
@@ -129,7 +127,7 @@ int debugger_main(seL4_Word a0, seL4_Word reply, seL4_Word a2, seL4_Word a3)
 
     if (fault_data.vaddr != (seL4_Word)&stop_point) {
         ZF_LOGE("Exited loop, but the debuggee thread did not get where we "
-               "expected it to.\n");
+                "expected it to.\n");
         return -1;
     }
 
@@ -148,8 +146,7 @@ int debuggee_main(seL4_Word a0, seL4_Word a1, seL4_Word a2, seL4_Word a3)
     return 0;
 }
 
-static int
-test_debug_api_single_step(struct env *env)
+static int test_debug_api_single_step(struct env *env)
 {
     helper_thread_t debugger, debuggee;
     int error;

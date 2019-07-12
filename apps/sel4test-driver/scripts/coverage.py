@@ -26,6 +26,7 @@ import re
 import argparse
 from subprocess import Popen, PIPE
 
+
 class Colors(object):
     def __init__(self, use_color):
         c = {}
@@ -58,24 +59,26 @@ class Colors(object):
         else:
             return object.__getattribute__(self, name)
 
+
 def get_tool(toolname):
     default_prefix = 'arm-none-eabi-'
 
     return os.environ.get('TOOLPREFIX', default_prefix) + toolname
 
+
 def main():
     parser = argparse.ArgumentParser(
         description='Generate coverage information of a binary.')
     parser.add_argument('kernel_elf_filename', metavar='<kernel ELF>',
-        type=str, help='The kernel ELF file used for the log.')
+                        type=str, help='The kernel ELF file used for the log.')
     parser.add_argument('coverage_filename', metavar='<qemu log>',
-        type=str, help='The qemu logfile containing the instruction trace.')
+                        type=str, help='The qemu logfile containing the instruction trace.')
     parser.add_argument('--functions', action='store_true',
-        help='Produce a summary of the functions covered.')
+                        help='Produce a summary of the functions covered.')
     parser.add_argument('--objdump', action='store_true',
-        help='Produce an objdump with coverage information.')
+                        help='Produce an objdump with coverage information.')
     parser.add_argument('--no-color', action='store_true', default=False,
-        help='Produce coloured output.')
+                        help='Produce coloured output.')
 
     args = parser.parse_args()
     colors = Colors(not args.no_color)
@@ -87,7 +90,8 @@ def main():
     coverage_filename = args.coverage_filename
 
     # Run objdump on the kernel binary.
-    objdump_proc = Popen([get_tool('objdump'), '-d', '-j', '.text', kernel_elf_filename], stdout=PIPE)
+    objdump_proc = Popen([get_tool('objdump'), '-d', '-j', '.text',
+                          kernel_elf_filename], stdout=PIPE)
     objdump_lines = objdump_proc.stdout.readlines()
 
     seL4_arm_vector_table_address = None
@@ -159,20 +163,20 @@ def main():
     num_covered = len(covered_instructions)
     num_total = len(addr2lineno)
     print '%d/%d instructions covered (%.1f%%)' % (
-         num_covered, num_total,
-         100.0 * num_covered / num_total)
+        num_covered, num_total,
+        100.0 * num_covered / num_total)
 
     if args.functions:
         # For each function, calculate how many instructions were covered.
         function_coverage = {}
-        for f,instructions in function_instructions.iteritems():
+        for f, instructions in function_instructions.iteritems():
             num_instructions = len(instructions)
             if num_instructions > 0:
                 covered = len(instructions.intersection(covered_instructions))
                 function_coverage[f] = (covered, num_instructions)
 
         # Sort by coverage and print.
-        for f,x in sorted(function_coverage.items(), key=lambda (f,x): 1.0 * x[0] / x[1]):
+        for f, x in sorted(function_coverage.items(), key=lambda (f, x): 1.0 * x[0] / x[1]):
             pct = 100.0 * x[0] / x[1]
 
             if pct == 0.0:
@@ -201,6 +205,7 @@ def main():
             sys.stdout.write(colour + line + colors.NORMAL)
 
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main())

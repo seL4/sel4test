@@ -27,8 +27,7 @@
 typedef int (*test_func_t)(seL4_Word /* endpoint */, seL4_Word /* seed */, seL4_Word /* reply */,
                            seL4_CPtr /* extra */);
 
-static int
-send_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
+static int send_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
 {
     FOR_EACH_LENGTH(length) {
         seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length);
@@ -42,8 +41,7 @@ send_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
     return SUCCESS;
 }
 
-static int
-nbsend_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
+static int nbsend_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
 {
     FOR_EACH_LENGTH(length) {
         seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, length);
@@ -57,8 +55,7 @@ nbsend_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra
     return SUCCESS;
 }
 
-static int
-call_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
+static int call_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
 {
     test_result_t result = SUCCESS;
     FOR_EACH_LENGTH(length) {
@@ -94,8 +91,7 @@ call_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
     return result;
 }
 
-static int
-wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
+static int wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
 {
     test_result_t result = SUCCESS;
     FOR_EACH_LENGTH(length) {
@@ -124,8 +120,7 @@ wait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word extra)
     return result;
 }
 
-static int
-nbwait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word nbwait_should_wait)
+static int nbwait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word nbwait_should_wait)
 {
     if (!nbwait_should_wait) {
         return SUCCESS;
@@ -158,8 +153,7 @@ nbwait_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word nbwai
     return result;
 }
 
-static int
-replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Word extra)
+static int replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Word extra)
 {
     int first = 1;
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
@@ -215,8 +209,7 @@ replywait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Word ex
     return result;
 }
 
-static int
-reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Word unused)
+static int reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Word unused)
 {
     int first = 1;
 
@@ -272,8 +265,7 @@ reply_and_wait_func(seL4_Word endpoint, seL4_Word seed, seL4_CPtr reply, seL4_Wo
 #ifdef CONFIG_KERNEL_RT
 /* this function is expected to talk to another version of itself, second implies
  * that this is the second to be executed */
-static int
-nbsendrecv_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word unused)
+static int nbsendrecv_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word unused)
 {
     FOR_EACH_LENGTH(length) {
         api_nbsend_recv(endpoint, seL4_MessageInfo_new(0, 0, 0, MAX_LENGTH), endpoint, NULL, reply);
@@ -286,8 +278,7 @@ nbsendrecv_func(seL4_Word endpoint, seL4_Word seed, seL4_Word reply, seL4_Word u
 }
 #endif /* CONFIG_KERNEL_RT */
 
-static int
-test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Word nr_cores)
+static int test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Word nr_cores)
 {
     helper_thread_t thread_a, thread_b;
     vka_t *vka = &env->vka;
@@ -354,10 +345,10 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
                             start_helper(env, &thread_b, (helper_fn_t) fb, thread_b_arg0, start_number,
                                          thread_b_reply, nbwait_should_wait);
                             start_helper(env, &thread_a, (helper_fn_t) fa, thread_a_arg0, start_number,
-                                        thread_a_reply, nbwait_should_wait);
+                                         thread_a_reply, nbwait_should_wait);
                         } else {
                             start_helper(env, &thread_a, (helper_fn_t) fa, thread_a_arg0, start_number,
-                                        thread_a_reply, nbwait_should_wait);
+                                         thread_a_reply, nbwait_should_wait);
                             start_helper(env, &thread_b, (helper_fn_t) fb, thread_b_arg0, start_number,
                                          thread_b_reply, nbwait_should_wait);
                         }
@@ -382,8 +373,7 @@ test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_as, seL4_Wor
     return sel4test_get_result();
 }
 
-static int
-test_send_wait(env_t env)
+static int test_send_wait(env_t env)
 {
     return test_ipc_pair(env, send_func, wait_func, false, env->cores);
 }
@@ -442,7 +432,7 @@ static int
 test_ipc_abort_in_call(env_t env)
 {
     helper_thread_t thread_a;
-    vka_t * vka = &env->vka;
+    vka_t *vka = &env->vka;
 
     seL4_CPtr ep = vka_alloc_endpoint_leaky(vka);
     seL4_CPtr reply = vka_alloc_reply_leaky(vka);
@@ -497,13 +487,13 @@ server_fn(seL4_CPtr endpoint, seL4_CPtr reply, volatile int *state)
     }
 }
 
-static void
-proxy_fn(seL4_CPtr receive_endpoint, seL4_CPtr call_endpoint, seL4_Word reply, volatile int *state)
+static void proxy_fn(seL4_CPtr receive_endpoint, seL4_CPtr call_endpoint, seL4_Word reply, volatile int *state)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
 
     /* signal the initialiser that we are awake */
-    ZF_LOGD("Proxy nbsendrecv, sending on ep %lu, receiving on ep %lu, reply is %lu\n", call_endpoint, receive_endpoint, reply);
+    ZF_LOGD("Proxy nbsendrecv, sending on ep %lu, receiving on ep %lu, reply is %lu\n", call_endpoint, receive_endpoint,
+            reply);
     *state = *state + 1;
     info = api_nbsend_recv(call_endpoint, info, receive_endpoint, NULL, reply);
     /* when we get here we are running on a donated scheduling context,
@@ -527,8 +517,7 @@ proxy_fn(seL4_CPtr receive_endpoint, seL4_CPtr call_endpoint, seL4_Word reply, v
     }
 }
 
-static void
-client_fn(seL4_CPtr endpoint, bool fastpath, int unused, volatile int *state)
+static void client_fn(seL4_CPtr endpoint, bool fastpath, int unused, volatile int *state)
 {
 
     /* make the message greater than 4 in size if we do not want to hit the fastpath */
@@ -548,8 +537,7 @@ client_fn(seL4_CPtr endpoint, bool fastpath, int unused, volatile int *state)
     }
 }
 
-static int
-single_client_server_chain_test(env_t env, int fastpath, int prio_diff)
+static int single_client_server_chain_test(env_t env, int fastpath, int prio_diff)
 {
     const int num_proxies = 5;
     int client_prio = 10;
@@ -566,7 +554,7 @@ single_client_server_chain_test(env_t env, int fastpath, int prio_diff)
     seL4_CPtr receive_endpoint = vka_alloc_endpoint_leaky(&env->vka);
     seL4_CPtr first_endpoint = receive_endpoint;
 
-	/* create proxies */
+    /* create proxies */
     for (int i = 0; i < num_proxies; i++) {
         int prio = server_prio + (prio_diff * i);
         proxy_state[i] = 0;
@@ -592,7 +580,7 @@ single_client_server_chain_test(env_t env, int fastpath, int prio_diff)
     set_helper_priority(env, &server, server_prio);
     ZF_LOGD("Start server");
     start_helper(env, &server, (helper_fn_t) server_fn, receive_endpoint, server.thread.reply.cptr,
-                   (seL4_Word) &server_state, 0);
+                 (seL4_Word) &server_state, 0);
     /* wait for server to initialise on our time */
     ZF_LOGD("Recv for server");
     seL4_Wait(receive_endpoint, NULL);
@@ -623,7 +611,8 @@ int test_single_client_slowpath_same_prio(env_t env)
 {
     return single_client_server_chain_test(env, 0, 0);
 }
-DEFINE_TEST(IPC0011, "Client-server inheritance: slowpath, same prio", test_single_client_slowpath_same_prio, config_set(CONFIG_KERNEL_RT))
+DEFINE_TEST(IPC0011, "Client-server inheritance: slowpath, same prio", test_single_client_slowpath_same_prio,
+            config_set(CONFIG_KERNEL_RT))
 
 int test_single_client_slowpath_higher_prio(env_t env)
 {
@@ -637,20 +626,22 @@ int test_single_client_slowpath_lower_prio(env_t env)
     return single_client_server_chain_test(env, 0, -1);
 }
 DEFINE_TEST(IPC0013, "Client-server inheritance: slowpath, client lower prio",
-test_single_client_slowpath_lower_prio, config_set(CONFIG_KERNEL_RT))
+            test_single_client_slowpath_lower_prio, config_set(CONFIG_KERNEL_RT))
 
 int test_single_client_fastpath_higher_prio(env_t env)
 {
     return single_client_server_chain_test(env, 1, 1);
 }
-DEFINE_TEST(IPC0014, "Client-server inheritance: fastpath, client higher prio", test_single_client_fastpath_higher_prio, config_set(CONFIG_KERNEL_RT))
+DEFINE_TEST(IPC0014, "Client-server inheritance: fastpath, client higher prio", test_single_client_fastpath_higher_prio,
+            config_set(CONFIG_KERNEL_RT))
 
 int
 test_single_client_fastpath_same_prio(env_t env)
 {
     return single_client_server_chain_test(env, 1, 0);
 }
-DEFINE_TEST(IPC0015, "Client-server inheritance: fastpath, client same prio", test_single_client_fastpath_same_prio, config_set(CONFIG_KERNEL_RT))
+DEFINE_TEST(IPC0015, "Client-server inheritance: fastpath, client same prio", test_single_client_fastpath_same_prio,
+            config_set(CONFIG_KERNEL_RT))
 
 static void
 ipc0016_call_once_fn(seL4_CPtr endpoint, volatile int *state)
@@ -663,8 +654,7 @@ ipc0016_call_once_fn(seL4_CPtr endpoint, volatile int *state)
     *state = *state + 1;
 }
 
-static void
-ipc0016_reply_once_fn(seL4_CPtr endpoint, seL4_CPtr reply)
+static void ipc0016_reply_once_fn(seL4_CPtr endpoint, seL4_CPtr reply)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
 
@@ -721,8 +711,7 @@ DEFINE_TEST(IPC0016, "Test reply returns scheduling context",
             test_transfer_on_reply, config_set(CONFIG_KERNEL_RT));
 
 /* used by ipc0017 and ipc0019 */
-static void
-sender(seL4_CPtr endpoint, volatile int *state)
+static void sender(seL4_CPtr endpoint, volatile int *state)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
     ZF_LOGD("Client send\n");
@@ -731,8 +720,7 @@ sender(seL4_CPtr endpoint, volatile int *state)
     *state = 2;
 }
 
-static void
-wait_server(seL4_CPtr endpoint, int messages)
+static void wait_server(seL4_CPtr endpoint, int messages)
 {
     /* signal test that we are initialised */
     seL4_Send(endpoint, seL4_MessageInfo_new(0, 0, 0, 0));
@@ -744,8 +732,7 @@ wait_server(seL4_CPtr endpoint, int messages)
     }
 }
 
-static int
-test_send_to_no_sc(env_t env)
+static int test_send_to_no_sc(env_t env)
 {
     /* sends should block until the server gets a scheduling context.
      * nb sends should not block */
@@ -779,7 +766,7 @@ test_send_to_no_sc(env_t env)
     volatile int state1 = 0;
     volatile int state2 = 0;
     start_helper(env, &client1, (helper_fn_t) sender, endpoint, (seL4_Word) &state1, 0, 0);
-    start_helper(env, &client2, (helper_fn_t) sender, endpoint, (seL4_Word) &state2, 0 , 0);
+    start_helper(env, &client2, (helper_fn_t) sender, endpoint, (seL4_Word) &state2, 0, 0);
 
     /* set our prio down, both clients should block as the server cannot
      * run without a schedluing context */
@@ -807,7 +794,8 @@ test_send_to_no_sc(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0017, "Test seL4_Send/seL4_NBSend to a server with no scheduling context", test_send_to_no_sc, config_set(CONFIG_KERNEL_RT))
+DEFINE_TEST(IPC0017, "Test seL4_Send/seL4_NBSend to a server with no scheduling context", test_send_to_no_sc,
+            config_set(CONFIG_KERNEL_RT))
 
 static void
 ipc0018_helper(seL4_CPtr endpoint, volatile int *state)
@@ -821,8 +809,7 @@ ipc0018_helper(seL4_CPtr endpoint, volatile int *state)
     }
 }
 
-static int
-test_receive_no_sc(env_t env)
+static int test_receive_no_sc(env_t env)
 {
     helper_thread_t client;
     volatile int state = 0;
@@ -832,7 +819,7 @@ test_receive_no_sc(env_t env)
     int error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
     test_eq(error, seL4_NoError);
 
-      /* start the client, it will increment state and send a message */
+    /* start the client, it will increment state and send a message */
     start_helper(env, &client, (helper_fn_t) ipc0018_helper, endpoint,
                  (seL4_Word) &state, 0, 0);
 
@@ -854,7 +841,7 @@ test_receive_no_sc(env_t env)
 
     /* now set the schedluing context again */
     error = api_sc_bind(client.thread.sched_context.cptr,
-                                   client.thread.tcb.cptr);
+                        client.thread.tcb.cptr);
     test_eq(error, seL4_NoError);
     test_eq(state, 2);
 
@@ -866,13 +853,12 @@ test_receive_no_sc(env_t env)
     seL4_Wait(endpoint, NULL);
     test_eq(state, 4);
 
-     return sel4test_get_result();
+    return sel4test_get_result();
 }
 DEFINE_TEST(IPC0018, "Test receive from a client with no scheduling context",
             test_receive_no_sc, config_set(CONFIG_KERNEL_RT));
 
-static int
-delete_sc_client_sending_on_endpoint(env_t env)
+static int delete_sc_client_sending_on_endpoint(env_t env)
 {
     helper_thread_t client;
     volatile int state = 0;
@@ -903,10 +889,10 @@ delete_sc_client_sending_on_endpoint(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0019, "Test deleteing the scheduling context while a client is sending on an endpoint", delete_sc_client_sending_on_endpoint, config_set(CONFIG_KERNEL_RT));
+DEFINE_TEST(IPC0019, "Test deleteing the scheduling context while a client is sending on an endpoint",
+            delete_sc_client_sending_on_endpoint, config_set(CONFIG_KERNEL_RT));
 
-static void
-ipc0020_helper(seL4_CPtr endpoint, volatile int *state)
+static void ipc0020_helper(seL4_CPtr endpoint, volatile int *state)
 {
     *state = 1;
     while (1) {
@@ -916,8 +902,7 @@ ipc0020_helper(seL4_CPtr endpoint, volatile int *state)
     }
 }
 
-static int
-delete_sc_client_waiting_on_endpoint(env_t env)
+static int delete_sc_client_waiting_on_endpoint(env_t env)
 {
     helper_thread_t waiter;
     volatile int state = 0;
@@ -943,7 +928,7 @@ delete_sc_client_waiting_on_endpoint(env_t env)
     /* now create a new scheduling context and give it to the thread */
     seL4_CPtr sched_context = vka_alloc_sched_context_leaky(&env->vka);
     error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sched_context,
-                                        1000 * US_IN_S, 1000 * US_IN_S, 0, 0);
+                                     1000 * US_IN_S, 1000 * US_IN_S, 0, 0);
     test_eq(error, seL4_NoError);
 
     error = api_sc_bind(sched_context, waiter.thread.tcb.cptr);
@@ -955,7 +940,7 @@ delete_sc_client_waiting_on_endpoint(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(IPC0020, "test deleting a scheduling context while the client is waiting on an endpoint",
-delete_sc_client_waiting_on_endpoint, config_set(CONFIG_KERNEL_RT));
+            delete_sc_client_waiting_on_endpoint, config_set(CONFIG_KERNEL_RT));
 
 static void ipc21_faulter_fn(int *addr)
 {
@@ -1006,12 +991,12 @@ static int test_fault_handler_donated_sc(env_t env)
     /* set fault handler */
     seL4_Word data = api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits);
     error = api_tcb_set_space(faulter.thread.tcb.cptr, endpoint,
-                                env->cspace_root, data, env->page_directory, seL4_NilData);
+                              env->cspace_root, data, env->page_directory, seL4_NilData);
     test_eq(error, seL4_NoError);
 
     /* start the fault handler */
     start_helper(env, &faulter, (helper_fn_t) ipc21_faulter_fn, (seL4_Word) vaddr, 0, 0, 0);
-      /* the faulter handler will restore the faulter and we should not block here */
+    /* the faulter handler will restore the faulter and we should not block here */
     wait_for_helper(&faulter);
 
     return sel4test_get_result();
@@ -1019,8 +1004,7 @@ static int test_fault_handler_donated_sc(env_t env)
 DEFINE_TEST(IPC0021, "Test fault handler on donated scheduling context",
             test_fault_handler_donated_sc, config_set(CONFIG_KERNEL_RT));
 
-static void
-ipc22_client_fn(seL4_CPtr endpoint, volatile int *state)
+static void ipc22_client_fn(seL4_CPtr endpoint, volatile int *state)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
     ZF_LOGD("Client init");
@@ -1031,8 +1015,7 @@ ipc22_client_fn(seL4_CPtr endpoint, volatile int *state)
 
 static seL4_CPtr ipc22_go;
 
-static void
-ipc22_server_fn(seL4_CPtr init_ep, seL4_CPtr reply_cap)
+static void ipc22_server_fn(seL4_CPtr init_ep, seL4_CPtr reply_cap)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
     ZF_LOGD("Server init\n");
@@ -1047,8 +1030,7 @@ ipc22_server_fn(seL4_CPtr init_ep, seL4_CPtr reply_cap)
     seL4_Send(reply_cap, info);
 }
 
-static void
-ipc22_stack_spawner_fn(env_t env, seL4_CPtr endpoint, int server_prio, seL4_Word unused)
+static void ipc22_stack_spawner_fn(env_t env, seL4_CPtr endpoint, int server_prio, seL4_Word unused)
 {
     helper_thread_t servers[RUNS];
     seL4_CPtr init_ep = vka_alloc_endpoint_leaky(&env->vka);
@@ -1062,7 +1044,7 @@ ipc22_stack_spawner_fn(env_t env, seL4_CPtr endpoint, int server_prio, seL4_Word
         set_helper_priority(env, &servers[i], server_prio);
 
         api_nbsend_recv(first_ep, seL4_MessageInfo_new(0, 0, 0, 0), endpoint, NULL,
-                    servers[i].thread.reply.cptr);
+                        servers[i].thread.reply.cptr);
 
         /* after the first nbsend, we want to signal the clients via init_ep */
         first_ep = init_ep;
@@ -1096,7 +1078,7 @@ static int test_stack_spawning_server(env_t env)
     create_helper_thread(env, &stack_spawner);
     set_helper_mcp(env, &stack_spawner, seL4_MaxPrio);
     start_helper(env, &stack_spawner, (helper_fn_t) ipc22_stack_spawner_fn,
-                  (seL4_Word) env, endpoint, our_prio + 1, RUNS);
+                 (seL4_Word) env, endpoint, our_prio + 1, RUNS);
 
     /* wait for stack spawner to init */
     ZF_LOGD("Wait for stack spawner to init");
@@ -1138,7 +1120,7 @@ static int test_stack_spawning_server(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(IPC0022, "Test stack spawning server with scheduling context donation",
-test_stack_spawning_server, config_set(CONFIG_KERNEL_RT));
+            test_stack_spawning_server, config_set(CONFIG_KERNEL_RT));
 
 static void ipc23_client_fn(seL4_CPtr ep, volatile int *state)
 {
@@ -1195,7 +1177,7 @@ static int test_delete_reply_cap_sc(env_t env)
     test_eq(state, 1);
 
     /* delete scheduling context */
-    vka_free_object(&env->vka,& client.thread.sched_context);
+    vka_free_object(&env->vka, & client.thread.sched_context);
 
     /* try to reply, the client should not run as it has no scheduling context */
     seL4_Signal(server.thread.reply.cptr);
@@ -1219,9 +1201,9 @@ static int test_delete_reply_cap_then_sc(env_t env)
 
     set_helper_priority(env, &client, 11);
     set_helper_priority(env, &server, 11);
-     /* start server */
+    /* start server */
     start_helper(env, &server, (helper_fn_t) ipc23_server_fn, client_ep,
-                   server_ep, server.thread.reply.cptr, 0);
+                 server_ep, server.thread.reply.cptr, 0);
 
     ZF_LOGD("Waiting for server");
     /* wait for server to init */
@@ -1239,7 +1221,7 @@ static int test_delete_reply_cap_then_sc(env_t env)
     ZF_LOGD("Start client");
     /* start client */
     start_helper(env, &client, (helper_fn_t) ipc23_client_fn, client_ep,
-                   (seL4_Word) &state, 0, 0);
+                 (seL4_Word) &state, 0, 0);
     /* client should have started */
     test_eq(state, 1);
 
@@ -1268,7 +1250,8 @@ static int test_nbsendrecv_interas(env_t env)
 {
     return test_ipc_pair(env, (test_func_t) nbsendrecv_func, (test_func_t) nbsendrecv_func, false, env->cores);
 }
-DEFINE_TEST(IPC0026, "Test interas seL4_nbsendrecv + seL4_nbsendrecv", test_nbsendrecv_interas, config_set(CONFIG_KERNEL_RT))
+DEFINE_TEST(IPC0026, "Test interas seL4_nbsendrecv + seL4_nbsendrecv", test_nbsendrecv_interas,
+            config_set(CONFIG_KERNEL_RT))
 
 static int
 test_sched_donation_low_prio_server(env_t env)
@@ -1295,7 +1278,7 @@ test_sched_donation_low_prio_server(env_t env)
 
     /* give server a sc to finish on */
     error = api_sc_bind(server.thread.sched_context.cptr,
-                                        server.thread.tcb.cptr);
+                        server.thread.tcb.cptr);
     test_eq(error, 0);
     wait_for_helper(&server);
 
@@ -1309,13 +1292,14 @@ test_sched_donation_low_prio_server(env_t env)
     ZF_LOGD("Wait for helper");
     wait_for_helper(&client);
     error = api_sc_bind(server2.thread.sched_context.cptr,
-                                        server2.thread.tcb.cptr);
+                        server2.thread.tcb.cptr);
     test_eq(error, 0);
     wait_for_helper(&server2);
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0027, "Test sched donation to low prio server", test_sched_donation_low_prio_server, config_set(CONFIG_KERNEL_RT))
+DEFINE_TEST(IPC0027, "Test sched donation to low prio server", test_sched_donation_low_prio_server,
+            config_set(CONFIG_KERNEL_RT))
 
 static void
 ipc28_server_fn(seL4_CPtr ep, seL4_CPtr reply, volatile int *state)
@@ -1327,8 +1311,8 @@ ipc28_server_fn(seL4_CPtr ep, seL4_CPtr reply, volatile int *state)
     }
 }
 
-static int
-ipc28_client_fn(seL4_CPtr ep, volatile int *state) {
+static int ipc28_client_fn(seL4_CPtr ep, volatile int *state)
+{
 
     while (*state < RUNS) {
         seL4_Call(ep, seL4_MessageInfo_new(0, 0, 0, 0));
@@ -1338,8 +1322,7 @@ ipc28_client_fn(seL4_CPtr ep, volatile int *state) {
     return 0;
 }
 
-static int
-test_sched_donation_cross_core(env_t env)
+static int test_sched_donation_cross_core(env_t env)
 {
     seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
     helper_thread_t clients[env->cores - 1];
@@ -1384,5 +1367,6 @@ test_sched_donation_cross_core(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0028, "Cross core sched donation", test_sched_donation_cross_core, config_set(CONFIG_KERNEL_RT) && config_set(CONFIG_MAX_NUM_NODES) && CONFIG_MAX_NUM_NODES > 1);
+DEFINE_TEST(IPC0028, "Cross core sched donation", test_sched_donation_cross_core,
+            config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_MAX_NUM_NODES) &&CONFIG_MAX_NUM_NODES > 1);
 #endif /* CONFIG_KERNEL_RT */

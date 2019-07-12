@@ -17,8 +17,7 @@
 #include <platsupport/plat/serial.h>
 
 #if defined(CONFIG_PLAT_EXYNOS5422)
-void
-plat_init(driver_env_t env)
+void plat_init(driver_env_t env)
 {
     int error;
     ps_io_ops_t io_ops = {};

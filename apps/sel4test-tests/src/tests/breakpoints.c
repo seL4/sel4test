@@ -35,8 +35,7 @@
 cspacepath_t fault_ep_cspath = { 0 };
 static cspacepath_t badged_fault_ep_cspath = { 0 };
 
-int
-setup_caps_for_test(struct env *env)
+int setup_caps_for_test(struct env *env)
 {
     seL4_CPtr fault_ep_cap;
     int error;
@@ -62,8 +61,7 @@ setup_caps_for_test(struct env *env)
     return 0;
 }
 
-int
-setup_faulter_thread_for_test(struct env *env, helper_thread_t *faulter_thread)
+int setup_faulter_thread_for_test(struct env *env, helper_thread_t *faulter_thread)
 {
     int error;
 
@@ -97,8 +95,7 @@ setup_faulter_thread_for_test(struct env *env, helper_thread_t *faulter_thread)
  * and it's also the address of this function, then the breakpoint was triggered
  * successfully.
  */
-NO_INLINE static void
-breakpoint_code(void)
+NO_INLINE static void breakpoint_code(void)
 {
     volatile int *pi = (volatile int *)BREAKPOINT_TEST_BAD_FAULT_MAGIC_ADDR;
     *pi = 1;
@@ -118,8 +115,7 @@ static volatile uint32_t bpd;
  * event may be the triggering of an instruction breakpoint, a data watchpoint,
  * or a software break request.
  */
-static int
-breakpoint_triggerer_main(seL4_Word type, seL4_Word size, seL4_Word rw, seL4_Word arg3)
+static int breakpoint_triggerer_main(seL4_Word type, seL4_Word size, seL4_Word rw, seL4_Word arg3)
 {
 
     if (type == seL4_InstructionBreakpoint) {
@@ -153,8 +149,7 @@ breakpoint_triggerer_main(seL4_Word type, seL4_Word size, seL4_Word rw, seL4_Wor
  * error condition for us. We just store the event data in a static local
  * struct and pass it back to the parent test function.
  */
-static int
-breakpoint_handler_main(seL4_Word _fault_ep_cspath, seL4_Word a1, seL4_Word a2, seL4_Word a3)
+static int breakpoint_handler_main(seL4_Word _fault_ep_cspath, seL4_Word a1, seL4_Word a2, seL4_Word a3)
 {
     seL4_Word sender_badge;
     seL4_MessageInfo_t tag;
@@ -180,8 +175,7 @@ breakpoint_handler_main(seL4_Word _fault_ep_cspath, seL4_Word a1, seL4_Word a2, 
     }
 }
 
-static void
-setup_handler_thread_for_test(struct env *env, helper_thread_t *handler_thread)
+static void setup_handler_thread_for_test(struct env *env, helper_thread_t *handler_thread)
 {
     create_helper_thread(env, handler_thread);
     NAME_THREAD(get_helper_tcb(handler_thread), "Handler");
@@ -191,8 +185,7 @@ setup_handler_thread_for_test(struct env *env, helper_thread_t *handler_thread)
                  0, 0, 0);
 }
 
-static void
-cleanup_breakpoints_from_test(struct env *env)
+static void cleanup_breakpoints_from_test(struct env *env)
 {
     for (int i = TEST_FIRST_INSTR_BP; i < TEST_FIRST_INSTR_BP + TEST_NUM_INSTR_BPS; i++) {
         seL4_TCB_UnsetBreakpoint(env->tcb, i);
@@ -203,15 +196,13 @@ cleanup_breakpoints_from_test(struct env *env)
     }
 }
 
-static int
-test_debug_set_instruction_breakpoint(struct env *env)
+static int test_debug_set_instruction_breakpoint(struct env *env)
 {
     int error, result;
     helper_thread_t faulter_thread, handler_thread;
 
     for (seL4_Word i = TEST_FIRST_INSTR_BP; i < TEST_FIRST_INSTR_BP + TEST_NUM_INSTR_BPS;
-         i++)
-    {
+         i++) {
         test_eq(setup_caps_for_test(env),  0);
 
         setup_handler_thread_for_test(env, &handler_thread);
@@ -234,7 +225,7 @@ test_debug_set_instruction_breakpoint(struct env *env)
         cleanup_helper(env, &handler_thread);
         /* Ensure the fault address is the address of the function */
         ZF_LOGV("Instr vaddr %x, reason %d, trigger vaddr %x, bpnum %d.\n",
-               fault_data.vaddr, fault_data.reason, fault_data.vaddr2, fault_data.bp_num);
+                fault_data.vaddr, fault_data.reason, fault_data.vaddr2, fault_data.bp_num);
         test_eq(result, 0);
         test_eq(fault_data.bp_num, i);
         test_eq(fault_data.reason, (seL4_Word)seL4_InstructionBreakpoint);
@@ -253,8 +244,7 @@ test_debug_set_data_breakpoint(struct env *env)
     helper_thread_t faulter_thread, handler_thread;
 
     for (seL4_Word i = TEST_FIRST_DATA_WP; i < TEST_FIRST_DATA_WP + TEST_NUM_DATA_WPS;
-         i++)
-    {
+         i++) {
         test_eq(setup_caps_for_test(env), 0);
 
         setup_handler_thread_for_test(env, &handler_thread);
@@ -274,7 +264,7 @@ test_debug_set_data_breakpoint(struct env *env)
         cleanup_helper(env, &handler_thread);
         /* Ensure the fault address is the address of the data */
         ZF_LOGV("Instr vaddr %x, reason %d, trigger vaddr %x, bpnum %d.\n",
-               fault_data.vaddr, fault_data.reason, fault_data.vaddr2, fault_data.bp_num);
+                fault_data.vaddr, fault_data.reason, fault_data.vaddr2, fault_data.bp_num);
         test_eq(result, 0);
         test_eq(fault_data.bp_num, i);
         test_eq(fault_data.reason, (seL4_Word)seL4_DataBreakpoint);
@@ -295,8 +285,7 @@ test_debug_get_instruction_breakpoint(struct env *env)
     seL4_TCB_GetBreakpoint_t result;
 
     for (int i = TEST_FIRST_INSTR_BP; i < TEST_FIRST_INSTR_BP + TEST_NUM_INSTR_BPS;
-         i++)
-    {
+         i++) {
         error = seL4_TCB_SetBreakpoint(env->tcb, i,
                                        (seL4_Word)&breakpoint_code,
                                        type, size, access);
@@ -330,8 +319,7 @@ test_debug_get_data_breakpoint(struct env *env)
     seL4_TCB_GetBreakpoint_t result;
 
     for (int i = TEST_FIRST_DATA_WP; i < TEST_FIRST_DATA_WP + TEST_NUM_DATA_WPS;
-         i++)
-    {
+         i++) {
         error = seL4_TCB_SetBreakpoint(env->tcb, i,
                                        (seL4_Word)&bpd,
                                        type, size, access);
@@ -365,8 +353,7 @@ test_debug_unset_instruction_breakpoint(struct env *env)
     seL4_TCB_GetBreakpoint_t result;
 
     for (int i = TEST_FIRST_INSTR_BP; i < TEST_FIRST_INSTR_BP + TEST_NUM_INSTR_BPS;
-         i++)
-    {
+         i++) {
         error = seL4_TCB_SetBreakpoint(env->tcb, i,
                                        (seL4_Word)&breakpoint_code,
                                        type, size, access);
@@ -396,8 +383,7 @@ test_debug_unset_data_breakpoint(struct env *env)
     seL4_TCB_GetBreakpoint_t result;
 
     for (int i = TEST_FIRST_DATA_WP; i < TEST_FIRST_DATA_WP + TEST_NUM_DATA_WPS;
-         i++)
-    {
+         i++) {
         error = seL4_TCB_SetBreakpoint(env->tcb, i,
                                        (seL4_Word)&bpd,
                                        type, size, access);
@@ -430,7 +416,7 @@ test_debug_api_setbp_invalid_values(struct env *env)
      * work on both 32 and 64 bit, we NEG a value several mibibytes large. The
      * number 64MiB was chosen arbitrarily.
      */
-    kernel_vaddrspace_pointer = (seL4_Word) -(64 * 1024 * 1024);
+    kernel_vaddrspace_pointer = (seL4_Word) - (64 * 1024 * 1024);
     error = seL4_TCB_SetBreakpoint(env->tcb, TEST_FIRST_DATA_WP,
                                    kernel_vaddrspace_pointer,
                                    seL4_DataBreakpoint, 0, seL4_BreakOnWrite);
@@ -493,7 +479,7 @@ test_debug_api_software_break_request(struct env *env)
     test_eq(result, 0);
     test_eq(fault_data.reason, (seL4_Word)seL4_SoftwareBreakRequest);
     test_eq(fault_data.vaddr,
-            (seL4_Word)&(TEST_SOFTWARE_BREAK_EXPECTED_FAULT_LABEL));
+            (seL4_Word) & (TEST_SOFTWARE_BREAK_EXPECTED_FAULT_LABEL));
     return sel4test_get_result();
 }
 DEFINE_TEST(BREAK_REQUEST_001, "Use an INT3/BKPT instruction to trigger a "

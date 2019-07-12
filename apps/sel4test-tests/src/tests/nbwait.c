@@ -18,8 +18,7 @@
 #include "../test.h"
 #include "../helpers.h"
 
-static int
-send_func(seL4_CPtr ep, seL4_Word msg, UNUSED seL4_Word arg4, UNUSED seL4_Word arg3)
+static int send_func(seL4_CPtr ep, seL4_Word msg, UNUSED seL4_Word arg4, UNUSED seL4_Word arg3)
 {
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 1);
 
@@ -30,8 +29,7 @@ send_func(seL4_CPtr ep, seL4_Word msg, UNUSED seL4_Word arg4, UNUSED seL4_Word a
     return sel4test_get_result();
 }
 
-static int
-test_nbwait(env_t env)
+static int test_nbwait(env_t env)
 {
 
     vka_object_t notification = {0};

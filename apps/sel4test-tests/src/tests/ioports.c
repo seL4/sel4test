@@ -32,15 +32,14 @@
 
 static volatile int total_faults = 0;
 
-static void
-increment_pc(seL4_CPtr tcb, seL4_Word inc)
+static void increment_pc(seL4_CPtr tcb, seL4_Word inc)
 {
     seL4_UserContext ctx;
     seL4_Error error = seL4_TCB_ReadRegisters(tcb,
-                                   false,
-                                   0,
-                                   sizeof(ctx) / sizeof(seL4_Word),
-                                   &ctx);
+                                              false,
+                                              0,
+                                              sizeof(ctx) / sizeof(seL4_Word),
+                                              &ctx);
     test_eq(error, seL4_NoError);
 #ifdef CONFIG_ARCH_X86_64
     ctx.rax = 1;
@@ -57,13 +56,12 @@ increment_pc(seL4_CPtr tcb, seL4_Word inc)
     test_eq(error, seL4_NoError);
 }
 
-static int
-handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault, seL4_CPtr reply)
+static int handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault, seL4_CPtr reply)
 {
     seL4_MessageInfo_t tag;
     seL4_Word sender_badge = 0;
 
-    while(1) {
+    while (1) {
         tag = api_recv(fault_ep, &sender_badge, reply);
 
         test_check(seL4_MessageInfo_get_label(tag) == seL4_Fault_UserException);
@@ -75,23 +73,21 @@ handle_fault(seL4_CPtr fault_ep, seL4_CPtr tcb, seL4_Word expected_fault, seL4_C
     return 0;
 }
 
-static int
-do_ioports(int arg1, int arg2, int arg3, int arg4)
+static int do_ioports(int arg1, int arg2, int arg3, int arg4)
 {
     unsigned int i;
     for (i = START_PORT; i < END_PORT; i += PORT_STRIDE) {
         volatile unsigned char dummy = 0;
         asm volatile("inb %1,%0"
-            : "=a"(dummy)
-            : "dN"((uint16_t)i)
-        );
+                     : "=a"(dummy)
+                     : "dN"((uint16_t)i)
+                    );
         test_check(dummy == 1);
     }
     return 0;
 }
 
-static int
-test_native_ioports(env_t env)
+static int test_native_ioports(env_t env)
 {
     helper_thread_t handler_thread;
     helper_thread_t faulter_thread;
@@ -110,10 +106,10 @@ test_native_ioports(env_t env)
     set_helper_priority(env, &handler_thread, 100);
 
     error = api_tcb_set_space(get_helper_tcb(&faulter_thread),
-                               fault_ep,
-                               faulter_cspace,
-                               api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
-                               faulter_vspace, seL4_NilData);
+                              fault_ep,
+                              faulter_cspace,
+                              api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
+                              faulter_vspace, seL4_NilData);
     set_helper_priority(env, &faulter_thread, 100);
 
     test_assert(!error);

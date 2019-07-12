@@ -29,14 +29,13 @@
 #include "helpers.h"
 #include "test.h"
 
-char __attribute__((aligned (16))) process_tls[1024 * 16];
+char __attribute__((aligned(16))) process_tls[1024 * 16];
 
-int
-check_zeroes(seL4_Word addr, seL4_Word size_bytes)
+int check_zeroes(seL4_Word addr, seL4_Word size_bytes)
 {
     test_assert_fatal(IS_ALIGNED(addr, sizeof(seL4_Word)));
     test_assert_fatal(IS_ALIGNED(size_bytes, sizeof(seL4_Word)));
-    seL4_Word *p = (void*)addr;
+    seL4_Word *p = (void *)addr;
     seL4_Word size_words = size_bytes / sizeof(seL4_Word);
     while (size_words--) {
         if (*p++ != 0) {
@@ -52,8 +51,7 @@ check_zeroes(seL4_Word addr, seL4_Word size_bytes)
  *
  * Serves as == 0 comparator for caps.
  */
-int
-is_slot_empty(env_t env, seL4_Word slot)
+int is_slot_empty(env_t env, seL4_Word slot)
 {
     int error;
 
@@ -67,8 +65,7 @@ is_slot_empty(env_t env, seL4_Word slot)
     return (error == seL4_FailedLookup);
 }
 
-seL4_Word
-get_free_slot(env_t env)
+seL4_Word get_free_slot(env_t env)
 {
     seL4_CPtr slot;
     UNUSED int error = vka_cspace_alloc(&env->vka, &slot);
@@ -76,8 +73,7 @@ get_free_slot(env_t env)
     return slot;
 }
 
-int
-cnode_copy(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights)
+int cnode_copy(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights)
 {
     cspacepath_t src_path, dest_path;
     vka_cspace_make_path(&env->vka, src, &src_path);
@@ -85,16 +81,14 @@ cnode_copy(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights)
     return vka_cnode_copy(&dest_path, &src_path, rights);
 }
 
-int
-cnode_delete(env_t env, seL4_CPtr slot)
+int cnode_delete(env_t env, seL4_CPtr slot)
 {
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, slot, &path);
     return vka_cnode_delete(&path);
 }
 
-int
-cnode_mint(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights, seL4_Word badge)
+int cnode_mint(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights, seL4_Word badge)
 {
     cspacepath_t src_path, dest_path;
 
@@ -103,8 +97,7 @@ cnode_mint(env_t env, seL4_CPtr src, seL4_CPtr dest, seL4_CapRights_t rights, se
     return vka_cnode_mint(&dest_path, &src_path, rights, badge);
 }
 
-int
-cnode_move(env_t env, seL4_CPtr src, seL4_CPtr dest)
+int cnode_move(env_t env, seL4_CPtr src, seL4_CPtr dest)
 {
     cspacepath_t src_path, dest_path;
 
@@ -113,8 +106,7 @@ cnode_move(env_t env, seL4_CPtr src, seL4_CPtr dest)
     return vka_cnode_move(&dest_path, &src_path);
 }
 
-int
-cnode_mutate(env_t env, seL4_CPtr src, seL4_CPtr dest)
+int cnode_mutate(env_t env, seL4_CPtr src, seL4_CPtr dest)
 {
     cspacepath_t src_path, dest_path;
 
@@ -123,24 +115,21 @@ cnode_mutate(env_t env, seL4_CPtr src, seL4_CPtr dest)
     return vka_cnode_mutate(&dest_path, &src_path, seL4_NilData);
 }
 
-int
-cnode_cancelBadgedSends(env_t env, seL4_CPtr cap)
+int cnode_cancelBadgedSends(env_t env, seL4_CPtr cap)
 {
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, cap, &path);
     return vka_cnode_cancelBadgedSends(&path);
 }
 
-int
-cnode_revoke(env_t env, seL4_CPtr cap)
+int cnode_revoke(env_t env, seL4_CPtr cap)
 {
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, cap, &path);
     return vka_cnode_revoke(&path);
 }
 
-int
-cnode_rotate(env_t env, seL4_CPtr src, seL4_CPtr pivot, seL4_CPtr dest)
+int cnode_rotate(env_t env, seL4_CPtr src, seL4_CPtr pivot, seL4_CPtr dest)
 {
     cspacepath_t src_path, dest_path, pivot_path;
 
@@ -169,8 +158,7 @@ void set_cap_receive_path(env_t env, seL4_CPtr slot)
     return vka_set_cap_receive_path(&path);
 }
 
-int
-are_tcbs_distinct(seL4_CPtr tcb1, seL4_CPtr tcb2)
+int are_tcbs_distinct(seL4_CPtr tcb1, seL4_CPtr tcb2)
 {
     seL4_UserContext regs;
 
@@ -203,8 +191,7 @@ are_tcbs_distinct(seL4_CPtr tcb1, seL4_CPtr tcb2)
     return 0;
 }
 
-void
-create_helper_process_custom_asid(env_t env, helper_thread_t *thread, seL4_CPtr asid)
+void create_helper_process_custom_asid(env_t env, helper_thread_t *thread, seL4_CPtr asid)
 {
     UNUSED int error;
 
@@ -237,14 +224,12 @@ create_helper_process_custom_asid(env_t env, helper_thread_t *thread, seL4_CPtr 
     assert(error == 0);
 }
 
-void
-create_helper_process(env_t env, helper_thread_t *thread)
+void create_helper_process(env_t env, helper_thread_t *thread)
 {
     create_helper_process_custom_asid(env, thread, env->asid_pool);
 }
 
-NORETURN static void
-signal_helper_finished(seL4_CPtr local_endpoint, int val)
+NORETURN static void signal_helper_finished(seL4_CPtr local_endpoint, int val)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 1);
     seL4_SetMR(0, val);
@@ -253,8 +238,7 @@ signal_helper_finished(seL4_CPtr local_endpoint, int val)
     }
 }
 
-NORETURN static void
-helper_thread(int argc, char **argv)
+NORETURN static void helper_thread(int argc, char **argv)
 {
 
     helper_fn_t entry_point = (void *) atol(argv[0]);
@@ -272,8 +256,7 @@ helper_thread(int argc, char **argv)
     /* does not return */
 }
 
-NORETURN static void
-helper_process(int argc, char **argv)
+NORETURN static void helper_process(int argc, char **argv)
 {
     uintptr_t new_tp = sel4runtime_move_initial_tls(process_tls);
     assert(new_tp != (uintptr_t)NULL);
@@ -283,9 +266,8 @@ helper_process(int argc, char **argv)
 
 extern uintptr_t sel4_vsyscall[];
 
-void
-start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
-             seL4_Word arg0, seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
+void start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
+                  seL4_Word arg0, seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
 {
 
     UNUSED int error;
@@ -302,13 +284,13 @@ start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
     }
 
     sel4utils_create_word_args(thread->args_strings, thread->args, HELPER_THREAD_TOTAL_ARGS,
-        (seL4_Word) entry_point, local_endpoint,
-        arg0, arg1, arg2, arg3);
+                               (seL4_Word) entry_point, local_endpoint,
+                               arg0, arg1, arg2, arg3);
 
     if (thread->is_process) {
-        thread->process.entry_point = (void*)helper_thread;
+        thread->process.entry_point = (void *)helper_thread;
         error = sel4utils_spawn_process_v(&thread->process, &env->vka, &env->vspace,
-                                        HELPER_THREAD_TOTAL_ARGS, thread->args, 0);
+                                          HELPER_THREAD_TOTAL_ARGS, thread->args, 0);
         assert(error == 0);
         /* sel4utils_spawn_process_v has created a stack frame that contains, amongst other
            things, our arguments. Since we are going to be running a clone of this vspace
@@ -318,12 +300,15 @@ start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
            a function call to helper_thread. */
         seL4_UserContext context = {};
         uintptr_t argv_base = (uintptr_t)thread->process.thread.initial_stack_pointer + sizeof(long);
-        uintptr_t aligned_stack_pointer = ALIGN_DOWN((uintptr_t)thread->process.thread.initial_stack_pointer, STACK_CALL_ALIGNMENT);
-        error = sel4utils_arch_init_context_with_args((sel4utils_thread_entry_fn)helper_process, (void*)HELPER_THREAD_TOTAL_ARGS,
-                                              (void*)argv_base, NULL, false, (void*)aligned_stack_pointer,
-                                              &context, &env->vka, &env->vspace, &thread->process.vspace);
+        uintptr_t aligned_stack_pointer = ALIGN_DOWN((uintptr_t)thread->process.thread.initial_stack_pointer,
+                                                     STACK_CALL_ALIGNMENT);
+        error = sel4utils_arch_init_context_with_args((sel4utils_thread_entry_fn)helper_process,
+                                                      (void *)HELPER_THREAD_TOTAL_ARGS,
+                                                      (void *)argv_base, NULL, false, (void *)aligned_stack_pointer,
+                                                      &context, &env->vka, &env->vspace, &thread->process.vspace);
         assert(error == 0);
-        error = seL4_TCB_WriteRegisters(thread->process.thread.tcb.cptr, 1, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word), &context);
+        error = seL4_TCB_WriteRegisters(thread->process.thread.tcb.cptr, 1, 0, sizeof(seL4_UserContext) / sizeof(seL4_Word),
+                                        &context);
         assert(error == 0);
     } else {
         error = sel4utils_start_thread(&thread->thread, (sel4utils_thread_entry_fn)helper_thread,
@@ -332,8 +317,7 @@ start_helper(env_t env, helper_thread_t *thread, helper_fn_t entry_point,
     }
 }
 
-void
-cleanup_helper(env_t env, helper_thread_t *thread)
+void cleanup_helper(env_t env, helper_thread_t *thread)
 {
     seL4_TCB_Suspend(thread->thread.tcb.cptr);
     vka_free_object(&env->vka, &thread->local_endpoint);
@@ -352,8 +336,7 @@ cleanup_helper(env_t env, helper_thread_t *thread)
     }
 }
 
-void
-create_helper_thread(env_t env, helper_thread_t *thread)
+void create_helper_thread(env_t env, helper_thread_t *thread)
 {
     create_helper_thread_custom_stack(env, thread, BYTES_TO_4K_PAGES(CONFIG_SEL4UTILS_STACK_SIZE));
 }
@@ -368,15 +351,15 @@ void create_helper_thread_custom_stack(env_t env, helper_thread_t *thread, size_
     thread->is_process = false;
     thread->fault_endpoint = env->endpoint;
     seL4_Word data = api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits);
-    sel4utils_thread_config_t config = thread_config_default(&env->simple, env->cspace_root, data, env->endpoint, OUR_PRIO - 1);
+    sel4utils_thread_config_t config = thread_config_default(&env->simple, env->cspace_root, data, env->endpoint,
+                                                             OUR_PRIO - 1);
     config = thread_config_stack_size(config, stack_pages);
     error = sel4utils_configure_thread_config(&env->vka, &env->vspace, &env->vspace,
                                               config, &thread->thread);
     assert(error == 0);
 }
 
-int
-wait_for_helper(helper_thread_t *thread)
+int wait_for_helper(helper_thread_t *thread)
 {
     seL4_Word badge;
 
@@ -384,30 +367,27 @@ wait_for_helper(helper_thread_t *thread)
     return seL4_GetMR(0);
 }
 
-void
-set_helper_priority(env_t env, helper_thread_t *thread, seL4_Word prio)
+void set_helper_priority(env_t env, helper_thread_t *thread, seL4_Word prio)
 {
     UNUSED int error;
     error = seL4_TCB_SetPriority(thread->thread.tcb.cptr, env->tcb, prio);
     assert(error == seL4_NoError);
 }
 
-void
-set_helper_mcp(env_t env, helper_thread_t *thread, seL4_Word mcp)
+void set_helper_mcp(env_t env, helper_thread_t *thread, seL4_Word mcp)
 {
     UNUSED int error;
     error = seL4_TCB_SetMCPriority(thread->thread.tcb.cptr, env->tcb, mcp);
     assert(error == seL4_NoError);
 }
 
-void
-set_helper_affinity(UNUSED env_t env, helper_thread_t *thread, seL4_Word affinity)
+void set_helper_affinity(UNUSED env_t env, helper_thread_t *thread, seL4_Word affinity)
 {
 #ifdef CONFIG_KERNEL_RT
     seL4_Time timeslice = CONFIG_BOOT_THREAD_TIME_SLICE * US_IN_S;
     int error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, affinity),
-                                       thread->thread.sched_context.cptr,
-                                       timeslice, timeslice, 0, 0);
+                                            thread->thread.sched_context.cptr,
+                                            timeslice, timeslice, 0, 0);
     ZF_LOGF_IF(error, "Failed to configure scheduling context");
 #elif CONFIG_MAX_NUM_NODES > 1
     int error = seL4_TCB_SetAffinity(thread->thread.tcb.cptr, affinity);
@@ -415,61 +395,57 @@ set_helper_affinity(UNUSED env_t env, helper_thread_t *thread, seL4_Word affinit
 #endif
 }
 
-seL4_CPtr
-get_helper_tcb(helper_thread_t *thread)
+seL4_CPtr get_helper_tcb(helper_thread_t *thread)
 {
     return thread->thread.tcb.cptr;
 }
 
-seL4_CPtr
-get_helper_reply(helper_thread_t *thread)
+seL4_CPtr get_helper_reply(helper_thread_t *thread)
 {
     return thread->thread.reply.cptr;
 }
 
-seL4_CPtr
-get_helper_sched_context(helper_thread_t *thread)
+seL4_CPtr get_helper_sched_context(helper_thread_t *thread)
 {
     return thread->thread.sched_context.cptr;
 }
 
-uintptr_t
-get_helper_ipc_buffer_addr(helper_thread_t *thread)
+uintptr_t get_helper_ipc_buffer_addr(helper_thread_t *thread)
 {
     return thread->thread.ipc_buffer_addr;
 }
 
-uintptr_t
-get_helper_initial_stack_pointer(helper_thread_t *thread)
+uintptr_t get_helper_initial_stack_pointer(helper_thread_t *thread)
 {
     return (uintptr_t)thread->thread.initial_stack_pointer;
 }
 
-static void
-sel4test_send_time_request(seL4_CPtr ep, uint64_t ns, sel4test_output_t request_type, timeout_type_t timeout_type)
+static void sel4test_send_time_request(seL4_CPtr ep, uint64_t ns, sel4test_output_t request_type,
+                                       timeout_type_t timeout_type)
 {
     seL4_MessageInfo_t tag;
     seL4_SetMR(0, request_type);
 
-    switch(request_type) {
-        case SEL4TEST_TIME_TIMEOUT:
-            seL4_SetMR(1, timeout_type);
-            sel4utils_64_set_mr(2, ns);
-            tag = seL4_MessageInfo_new(0, 0, 0, (seL4_Uint32) SEL4UTILS_64_WORDS + 2);
-            break;
-        case SEL4TEST_TIME_TIMESTAMP:
-        case SEL4TEST_TIME_RESET:
-             tag = seL4_MessageInfo_new(0, 0, 0, 1);
-            break;
-        default:
-            ZF_LOGE("Invalid time request\n");
-            break;
+    switch (request_type) {
+    case SEL4TEST_TIME_TIMEOUT:
+        seL4_SetMR(1, timeout_type);
+        sel4utils_64_set_mr(2, ns);
+        tag = seL4_MessageInfo_new(0, 0, 0, (seL4_Uint32) SEL4UTILS_64_WORDS + 2);
+        break;
+    case SEL4TEST_TIME_TIMESTAMP:
+    case SEL4TEST_TIME_RESET:
+        tag = seL4_MessageInfo_new(0, 0, 0, 1);
+        break;
+    default:
+        ZF_LOGE("Invalid time request\n");
+        break;
     }
 
     seL4_Call(ep, tag);
 }
 
-void sleep_busy(env_t env, uint64_t ns) {
+void sleep_busy(env_t env, uint64_t ns)
+{
     uint64_t start = sel4test_timestamp(env);
     uint64_t now = sel4test_timestamp(env);
     int same = 0;
@@ -486,8 +462,7 @@ void sleep_busy(env_t env, uint64_t ns) {
     }
 }
 
-inline void
-sel4test_sleep(env_t env, uint64_t ns)
+inline void sel4test_sleep(env_t env, uint64_t ns)
 {
     /*
      * sleep is meant to block the calling thread for at least @ns. RPC costs and
@@ -507,14 +482,12 @@ sel4test_sleep(env_t env, uint64_t ns)
     seL4_Wait(env->timer_notification.cptr, NULL);
 }
 
-inline void
-sel4test_periodic_start(env_t env, uint64_t ns)
+inline void sel4test_periodic_start(env_t env, uint64_t ns)
 {
     sel4test_send_time_request(env->endpoint, ns, SEL4TEST_TIME_TIMEOUT, TIMEOUT_PERIODIC);
 }
 
-uint64_t
-sel4test_timestamp(env_t env)
+uint64_t sel4test_timestamp(env_t env)
 {
     /*
      * Request a timestamp from sel4test-driver. The request is sent over the fault ep,
@@ -529,20 +502,17 @@ sel4test_timestamp(env_t env)
     return time;
 }
 
-inline void
-sel4test_timer_reset(env_t env)
+inline void sel4test_timer_reset(env_t env)
 {
     sel4test_send_time_request(env->endpoint, 0, SEL4TEST_TIME_RESET, 0);
 }
 
-inline void
-sel4test_ntfn_timer_wait(env_t env)
+inline void sel4test_ntfn_timer_wait(env_t env)
 {
     seL4_Wait(env->timer_notification.cptr, NULL);
 }
-int
-set_helper_sched_params(UNUSED env_t env, UNUSED helper_thread_t *thread, UNUSED uint64_t budget,
-        UNUSED uint64_t period, UNUSED seL4_Word badge)
+int set_helper_sched_params(UNUSED env_t env, UNUSED helper_thread_t *thread, UNUSED uint64_t budget,
+                            UNUSED uint64_t period, UNUSED seL4_Word badge)
 {
     seL4_Word refills = 0;
     if (budget < period) {
@@ -551,8 +521,8 @@ set_helper_sched_params(UNUSED env_t env, UNUSED helper_thread_t *thread, UNUSED
 #endif
     }
     return api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0),
-                                       thread->thread.sched_context.cptr,
-                                       budget, period, refills, badge);
+                                    thread->thread.sched_context.cptr,
+                                    budget, period, refills, badge);
 }
 
 int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
@@ -563,7 +533,7 @@ int create_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, s
 }
 
 int start_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, seL4_CPtr ep,
-                          seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
+                         seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
 {
     start_helper(env, passive, fn, ep, arg1, arg2, arg3);
 
@@ -575,14 +545,13 @@ int start_passive_thread(env_t env, helper_thread_t *passive, helper_fn_t fn, se
     return api_sc_unbind(passive->thread.sched_context.cptr);
 }
 
-int
-restart_after_syscall(env_t env, helper_thread_t *helper)
+int restart_after_syscall(env_t env, helper_thread_t *helper)
 {
     /* save and resume helper->*/
     seL4_UserContext regs;
 
     int error = seL4_TCB_ReadRegisters(helper->thread.tcb.cptr, false, 0,
-                                   sizeof(seL4_UserContext) / sizeof(seL4_Word), &regs);
+                                       sizeof(seL4_UserContext) / sizeof(seL4_Word), &regs);
     test_eq(error, seL4_NoError);
 
     /* skip the call */
@@ -596,8 +565,7 @@ restart_after_syscall(env_t env, helper_thread_t *helper)
     return 0;
 }
 
-void
-set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep)
+void set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep)
 {
     ZF_LOGF_IF(!config_set(CONFIG_KERNEL_RT), "Unsupported on non MCS kernel");
 #ifdef CONFIG_KERNEL_RT

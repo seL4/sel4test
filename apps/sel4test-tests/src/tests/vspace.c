@@ -21,14 +21,12 @@
 
 #include "../helpers.h"
 
-static int
-remote_function(void)
+static int remote_function(void)
 {
     return 42;
 }
 
-static int
-test_interas_diffcspace(env_t env)
+static int test_interas_diffcspace(env_t env)
 {
     helper_thread_t t;
 
@@ -210,8 +208,9 @@ test_overassign_asid_pool(env_t env)
         test_assert(!ret);
         ret = seL4_ARCH_ASIDPool_Assign(path.capPtr, vspaceroot.cptr);
         test_eq(ret, seL4_NoError);
-        if (ret != seL4_NoError)
+        if (ret != seL4_NoError) {
             break;
+        }
     }
     test_eq(i, ASID_POOL_SIZE);
     ret = vka_alloc_vspace_root(vka, &vspaceroot);
@@ -225,14 +224,13 @@ DEFINE_TEST(VSPACE0005, "Test overassigning ASID pool", test_overassign_asid_poo
 static char
 incr_mem(seL4_Word tag)
 {
-    unsigned int* test = (void*)0x10000000;
+    unsigned int *test = (void *)0x10000000;
 
     *test = tag;
     return *test;
 }
 
-static int
-test_create_asid_pools_and_touch(env_t env)
+static int test_create_asid_pools_and_touch(env_t env)
 {
     vka_t *vka = &env->vka;
     seL4_CPtr pool;
@@ -289,7 +287,7 @@ test_dirty_accessed_bits(env_t env)
     rdtsc_cpuid();
 
     /* perform a read and check status flags */
-    asm volatile("" :: "r"(*(uint32_t*)vaddr) : "memory");
+    asm volatile("" :: "r"(*(uint32_t *)vaddr) : "memory");
     status = seL4_X86_PageDirectory_GetStatusBits(vspace_get_root(&env->vspace), (seL4_Word)vaddr);
     test_assert(!status.error);
     test_assert(status.accessed);
@@ -298,7 +296,7 @@ test_dirty_accessed_bits(env_t env)
     rdtsc_cpuid();
 
     /* perform a write and check status flags */
-    *(uint32_t*)vaddr = 42;
+    *(uint32_t *)vaddr = 42;
     asm volatile("" ::: "memory");
     status = seL4_X86_PageDirectory_GetStatusBits(vspace_get_root(&env->vspace), (seL4_Word)vaddr);
     test_assert(!status.error);

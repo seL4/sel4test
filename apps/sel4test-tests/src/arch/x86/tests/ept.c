@@ -31,8 +31,7 @@
  * inside a vt-x instance. I consider this too much work, and am largely checking
  * that none of these operations will cause the kernel to explode */
 
-static int
-map_ept_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr *pt, seL4_CPtr *frame)
+static int map_ept_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr *pt, seL4_CPtr *frame)
 {
     int error = 0;
 #ifdef CONFIG_VTX
@@ -54,8 +53,7 @@ map_ept_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr *pd, seL4
     return error;
 }
 
-static int
-map_ept_set(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPtr *pt, seL4_CPtr *frame)
+static int map_ept_set(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPtr *pt, seL4_CPtr *frame)
 {
     int error = 0;
 #ifdef CONFIG_VTX
@@ -75,8 +73,7 @@ map_ept_set(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPt
     return error;
 }
 
-static int
-map_ept_set_large_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr *frame)
+static int map_ept_set_large_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr *pd, seL4_CPtr *frame)
 {
     int error = 0;
 #ifdef CONFIG_VTX
@@ -97,8 +94,7 @@ map_ept_set_large_from_pdpt(env_t env, seL4_CPtr pml4, seL4_CPtr pdpt, seL4_CPtr
     return error;
 }
 
-static int
-map_ept_set_large(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPtr *frame)
+static int map_ept_set_large(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, seL4_CPtr *frame)
 {
     int error = 0;
 #ifdef CONFIG_VTX
@@ -120,8 +116,7 @@ map_ept_set_large(env_t env, seL4_CPtr *pml4, seL4_CPtr *pdpt, seL4_CPtr *pd, se
     return error;
 }
 
-static int
-test_ept_basic_ept(env_t env)
+static int test_ept_basic_ept(env_t env)
 {
     int error;
     seL4_CPtr pml4, pdpt, pd, pt, frame;
@@ -189,7 +184,8 @@ test_ept_basic_map_unmap_large(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT0003, "Test basic EPT mapping then unmapping of large frame", test_ept_basic_map_unmap_large, config_set(CONFIG_VTX))
+DEFINE_TEST(EPT0003, "Test basic EPT mapping then unmapping of large frame", test_ept_basic_map_unmap_large,
+            config_set(CONFIG_VTX))
 
 static int
 test_ept_regression_1(env_t env)
@@ -209,7 +205,8 @@ test_ept_regression_1(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT1001, "EPT Regression: Unmap large frame then invoke EPT PD unmap on frame", test_ept_regression_1, config_set(CONFIG_VTX))
+DEFINE_TEST(EPT1001, "EPT Regression: Unmap large frame then invoke EPT PD unmap on frame", test_ept_regression_1,
+            config_set(CONFIG_VTX))
 
 static int
 test_ept_regression_2(env_t env)
@@ -234,7 +231,8 @@ test_ept_regression_2(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT1002, "EPT Regression: Invoke EPT PD Unmap on large frame", test_ept_regression_2, config_set(CONFIG_VTX))
+DEFINE_TEST(EPT1002, "EPT Regression: Invoke EPT PD Unmap on large frame", test_ept_regression_2,
+            config_set(CONFIG_VTX))
 
 static int
 test_ept_no_overlapping_4k(env_t env)
@@ -271,7 +269,8 @@ test_ept_no_overlapping_large(env_t env)
     test_assert(error != seL4_NoError);
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT0005, "Test EPT cannot map overlapping large pages", test_ept_no_overlapping_large, config_set(CONFIG_VTX))
+DEFINE_TEST(EPT0005, "Test EPT cannot map overlapping large pages", test_ept_no_overlapping_large,
+            config_set(CONFIG_VTX))
 
 static int
 test_ept_aligned_4m(env_t env)
@@ -304,7 +303,8 @@ test_ept_aligned_4m(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(EPT0006, "Test EPT 4M mappings must be 4M aligned and cannot overlap", test_ept_aligned_4m, config_set(CONFIG_VTX) && config_set(CONFIG_ARCH_IA32))
+DEFINE_TEST(EPT0006, "Test EPT 4M mappings must be 4M aligned and cannot overlap", test_ept_aligned_4m,
+            config_set(CONFIG_VTX) &&config_set(CONFIG_ARCH_IA32))
 
 static int
 test_ept_no_overlapping_pt_4m(env_t env)
@@ -349,7 +349,7 @@ test_ept_no_overlapping_pt_4m(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(EPT0007, "Test EPT 4m frame and PT cannot overlap", test_ept_no_overlapping_pt_4m,
-            config_set(CONFIG_VTX) && config_set(CONFIG_ARCH_IA32))
+            config_set(CONFIG_VTX) &&config_set(CONFIG_ARCH_IA32))
 
 static int
 test_ept_map_remap_pd(env_t env)
