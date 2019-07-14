@@ -24,7 +24,6 @@
 #include <simple/simple.h>
 #include <vspace/vspace.h>
 #include <sel4platsupport/timer.h>
-#include <sel4platsupport/serial.h>
 
 /* This file is shared with seltest-tests. */
 #include <test_init_data.h>
