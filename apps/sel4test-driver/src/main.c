@@ -474,6 +474,62 @@ void *main_continued(void *arg UNUSED)
     return NULL;
 }
 
+/* Note that the following globals are place here because it is not expected that
+ * this function be refactored out of sel4test-driver in its current form. */
+/* Number of objects to track allocation of. Currently all serial devices are
+ * initialised with a single Frame object.  Future devices may need more than 1.
+ */
+#define NUM_ALLOC_AT_TO_TRACK 1
+/* Static global to store the original vka_utspace_alloc_at function. It
+ * isn't expected for this to dynamically change after initialisation.*/
+static vka_utspace_alloc_at_fn vka_utspace_alloc_at_base;
+/* State that serial_utspace_alloc_at_fn uses to determine whether to cache
+ * allocations. It is intended that this flag gets set before the serial device
+ * is initialised and then unset afterwards. */
+static bool serial_utspace_record = false;
+
+typedef struct uspace_alloc_at_args {
+    uintptr_t paddr;
+    seL4_Word type;
+    seL4_Word size_bits;
+    cspacepath_t dest;
+} uspace_alloc_at_args_t;
+/* This instance of vka_utspace_alloc_at_fn will keep a record of allocations up
+ * to NUM_ALLOC_AT_TO_TRACK while serial_utspace_record is set. When serial_utspace_record
+ * is unset, any allocations matching recorded allocations will instead copy the cap
+ * that was originally allocated. These subsequent allocations cannot be freed using
+ * vka_utspace_free and instead the caps would have to be manually deleted.
+ * Freeing these objects via vka_utspace_free would require also wrapping that function.*/
+static int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,
+                               uintptr_t paddr, seL4_Word *cookie)
+{
+    static uspace_alloc_at_args_t args_prev[NUM_ALLOC_AT_TO_TRACK] = {};
+    static size_t num_alloc = 0;
+
+    ZF_LOGF_IF(!vka_utspace_alloc_at_base, "vka_utspace_alloc_at_base not initialised.");
+    if(!serial_utspace_record) {
+        for(int i = 0; i < num_alloc; i++) {
+            if (paddr == args_prev[i].paddr &&
+                type == args_prev[i].type &&
+                size_bits == args_prev[i].size_bits) {
+                return vka_cnode_copy(dest, &args_prev[i].dest, seL4_AllRights);
+            }
+        }
+        return vka_utspace_alloc_at_base(data, dest, type, size_bits, paddr, cookie);
+    } else {
+        ZF_LOGF_IF(num_alloc >= NUM_ALLOC_AT_TO_TRACK, "Trying to allocate too many utspace objects");
+        int ret = vka_utspace_alloc_at_base(data, dest, type, size_bits, paddr, cookie);
+        if (ret) {
+            return ret;
+        }
+        uspace_alloc_at_args_t a = {.paddr = paddr, .type = type, .size_bits = size_bits, .dest = *dest};
+        args_prev[num_alloc] = a;
+        num_alloc++;
+        return ret;
+
+    }
+}
+
 int main(void)
 {
     int error;
@@ -492,25 +548,25 @@ int main(void)
      */
     init_env(&env);
 
-    /* Allocate slots for, and obtain the caps for, the hardware we will be
-     * using, in the same function.
-     */
-    sel4platsupport_init_default_serial_caps(&env.vka, &env.vspace, &env.simple, &env.serial_objects);
-
-    /* Construct a vka wrapper for returning the serial frame. We need to
+    /* Partially overwrite part of the VKA implementation to cache objects. We need to
      * create this wrapper as the actual vka implementation will only
-     * allocate/return any given device frame once. As we already allocated it
-     * in init_serial_caps when we the platsupport_serial_setup_simple attempts
-     * to allocate it will fail. This wrapper just returns a copy of the one
-     * we already allocated, whilst passing all other requests on to the
-     * actual vka
+     * allocate/return any given device frame once.
+     * We allocate serial objects for initialising the serial server in
+     * platsupport_serial_setup_simple but then we also need to use the objects
+     * in some of the tests but attempts to allocate will fail.
+     * Instead, this wrapper records the initial serial object allocations and
+     * then returns a copy of the one already allocated for future allocations.
+     * This requires the allocations for the serial driver to exist for the full
+     * lifetime of this application, and for the resources that are allocated to
+     * be able to be copied, I.E. frames.
      */
-    vka_t serial_vka = env.vka;
-    serial_vka.utspace_alloc_at = arch_get_serial_utspace_alloc_at(&env);
+    vka_utspace_alloc_at_base = env.vka.utspace_alloc_at;
+    env.vka.utspace_alloc_at = serial_utspace_alloc_at_fn;
 
     /* enable serial driver */
-    platsupport_serial_setup_simple(&env.vspace, &env.simple, &serial_vka);
-
+    serial_utspace_record = true;
+    platsupport_serial_setup_simple(&env.vspace, &env.simple, &env.vka);
+    serial_utspace_record = false;
     /* Initialise ltimer */
     init_timer();
 

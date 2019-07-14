@@ -23,16 +23,5 @@ int sel4test_rpc_recv(sel4rpc_server_env_t *env, void *data, RpcMessage *rpcMsg)
     driver_env_t drv_env = (driver_env_t)data;
     seL4_CPtr cap;
 
-    if (rpcMsg->which_msg == RpcMessage_memory_tag) {
-#ifndef CONFIG_ARCH_X86
-        if (rpcMsg->msg.memory.address == drv_env->serial_objects.arch_serial_objects.serial_frame_paddr) {
-            cap = drv_env->serial_objects.arch_serial_objects.serial_frame_obj.cptr;
-            seL4_SetCap(0, cap);
-            sel4rpc_server_reply(env, 1, 0);
-            return 0;
-        }
-#endif
-    }
-
     return sel4rpc_default_handler(env, NULL, rpcMsg);
 }
