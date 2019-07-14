@@ -57,8 +57,6 @@ struct driver_env {
     /* Only needed if we're on RT kernel */
     vka_object_t reply;
 
-    serial_objects_t serial_objects;
-
     /* init data frame vaddr */
     test_init_data_t *init;
     /* extra cap to the init data frame for mapping into the remote vspace */
@@ -75,8 +73,6 @@ struct driver_env {
     time_manager_t tm;
 };
 typedef struct driver_env *driver_env_t;
-
-vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(driver_env_t env);
 
 void plat_init(driver_env_t env) WEAK;
 
