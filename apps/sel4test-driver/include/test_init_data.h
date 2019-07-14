@@ -51,15 +51,6 @@ typedef struct {
      */
     seL4_CPtr timer_ntfn;
 
-    /* Paddr of the sel4platsupport default serial mmio region. */
-    uintptr_t serial_paddr;
-    /* cap to the sel4platsupport default serial irq handler */
-    seL4_CPtr serial_irq_cap;
-    /* cap to the sel4platsupport default serial physical frame */
-    seL4_CPtr serial_frame_cap;
-    /* cap to the sel4platsupport default serial I/O port; arch-specific. */
-    seL4_CPtr serial_io_port_cap;
-
     /* size of the test processes cspace */
     seL4_Word cspace_size_bits;
     /* range of free slots in the cspace */
