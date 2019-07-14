@@ -18,7 +18,7 @@
 
 #include "test.h"
 #include "timer.h"
-#include "rpc.h"
+#include <sel4rpc/server.h>
 #include <sel4testsupport/testreporter.h>
 
 /* Bootstrap test type. */
@@ -124,7 +124,7 @@ static int sel4test_driver_wait(driver_env_t env, struct testcase *test)
     seL4_Word badge = 0;
     sel4rpc_server_env_t rpc_server;
 
-    sel4rpc_server_init(&rpc_server, &env->vka, sel4test_rpc_recv, env,
+    sel4rpc_server_init(&rpc_server, &env->vka, sel4rpc_default_handler, env,
                         &env->reply, &env->simple);
 
     while (1) {
