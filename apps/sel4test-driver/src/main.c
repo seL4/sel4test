@@ -508,16 +508,8 @@ int main(void)
     vka_t serial_vka = env.vka;
     serial_vka.utspace_alloc_at = arch_get_serial_utspace_alloc_at(&env);
 
-    /* Construct a simple wrapper for returning the I/O ports. We need this
-     * wrapper as we can only allocate I/O ports once and we already allocated
-     * them in sel4platsupport_init_default_serial_caps */
-    simple_t serial_simple = env.simple;
-#ifdef CONFIG_ARCH_X86
-    serial_simple.arch_simple.IOPort_cap = arch_get_serial_ioport_cap(&env);
-#endif
-
     /* enable serial driver */
-    platsupport_serial_setup_simple(&env.vspace, &serial_simple, &serial_vka);
+    platsupport_serial_setup_simple(&env.vspace, &env.simple, &serial_vka);
 
     /* Initialise ltimer */
     init_timer();

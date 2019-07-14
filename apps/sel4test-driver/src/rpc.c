@@ -32,15 +32,6 @@ int sel4test_rpc_recv(sel4rpc_server_env_t *env, void *data, RpcMessage *rpcMsg)
             return 0;
         }
 #endif
-    } else if (rpcMsg->which_msg == RpcMessage_ioport_tag) {
-#ifdef CONFIG_ARCH_X86
-        if (rpcMsg->msg.ioport.start == SERIAL_CONSOLE_COM1_PORT) {
-            cap = drv_env->serial_objects.arch_serial_objects.serial_io_port_cap;
-            seL4_SetCap(0, cap);
-            sel4rpc_server_reply(env, 1, 0);
-            return 0;
-        }
-#endif
     }
 
     return sel4rpc_default_handler(env, NULL, rpcMsg);

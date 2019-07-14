@@ -78,10 +78,6 @@ typedef struct driver_env *driver_env_t;
 
 vka_utspace_alloc_at_fn arch_get_serial_utspace_alloc_at(driver_env_t env);
 
-#ifdef CONFIG_ARCH_X86
-arch_simple_get_IOPort_cap_fn arch_get_serial_ioport_cap(driver_env_t env);
-#endif
-
 void plat_init(driver_env_t env) WEAK;
 
 #ifdef CONFIG_ARM_SMMU
