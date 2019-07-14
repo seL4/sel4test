@@ -483,7 +483,6 @@ int main(void)
     seL4_DebugNameThread(seL4_CapInitThreadTCB, "sel4test-driver");
 #endif
 
-    compile_time_assert(init_data_fits_in_ipc_buffer, sizeof(test_init_data_t) < PAGE_SIZE_4K);
     /* initialise libsel4simple, which abstracts away which kernel version
      * we are running on */
     simple_default_init_bootinfo(&env.simple, info);
