@@ -47,7 +47,8 @@ static int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4
     };
 
     sel4rpc_call(rpc_client, &rpcMsg, dest->root, dest->capPtr, dest->capDepth);
-    return rpcMsg.msg.errorCode;
+    *cookie = rpcMsg.msg.ret.cookie;
+    return rpcMsg.msg.ret.errorCode;
 }
 
 void arch_init_allocator(env_t env, test_init_data_t *data)

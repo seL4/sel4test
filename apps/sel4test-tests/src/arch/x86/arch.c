@@ -44,7 +44,7 @@ static seL4_Error get_IOPort_cap(void *data, uint16_t start_port, uint16_t end_p
         return seL4_InvalidArgument;
     }
 
-    return rpcMsg.msg.errorCode;
+    return rpcMsg.msg.ret.errorCode;
 }
 
 static seL4_Error get_msi(void *data, seL4_CNode root, seL4_Word index, uint8_t depth,
