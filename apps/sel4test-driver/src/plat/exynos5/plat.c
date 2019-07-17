@@ -14,6 +14,7 @@
 #include <platsupport/plat/clock.h>
 #include <sel4platsupport/io.h>
 #include <utils/zf_log.h>
+#include <platsupport/plat/serial.h>
 
 #if defined(CONFIG_PLAT_EXYNOS5422)
 void
