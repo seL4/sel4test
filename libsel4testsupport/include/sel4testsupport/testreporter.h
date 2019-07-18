@@ -13,9 +13,6 @@
 #pragma once
 
 /* Include Kconfig variables. */
-#include <autoconf.h>
-#include <sel4test/gen_config.h>
-
 #include <stdbool.h>
 
 #include <sel4/sel4.h>

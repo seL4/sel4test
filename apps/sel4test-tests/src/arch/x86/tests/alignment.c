@@ -9,11 +9,6 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifdef HAVE_AUTOCONF
-#include <autoconf.h>
-#include <sel4test/gen_config.h>
-#endif
-
 #include <sel4/sel4.h>
 #include <utils/attribute.h>
 

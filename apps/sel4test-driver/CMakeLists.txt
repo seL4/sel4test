@@ -45,18 +45,20 @@ add_executable(sel4test-driver EXCLUDE_FROM_ALL ${static} archive.o)
 target_include_directories(sel4test-driver PRIVATE "include")
 target_link_libraries(
     sel4test-driver
-    muslc
-    sel4
-    sel4runtime
-    sel4allocman
-    sel4vka
-    sel4utils
-    sel4rpc
-    sel4test
-    sel4platsupport
-    sel4muslcsys
-    sel4testsupport
-    sel4test-driver_Config
+    PUBLIC
+        sel4_autoconf
+        muslc
+        sel4
+        sel4runtime
+        sel4allocman
+        sel4vka
+        sel4utils
+        sel4rpc
+        sel4test
+        sel4platsupport
+        sel4muslcsys
+        sel4testsupport
+    PRIVATE sel4test-driver_Config
 )
 target_compile_options(sel4test-driver PRIVATE -Werror -g)
 

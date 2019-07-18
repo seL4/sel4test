@@ -9,10 +9,7 @@
  *
  * @TAG(DATA61_BSD)
  */
-#ifdef HAVE_AUTOCONF
 #include <autoconf.h>
-#include <sel4test/gen_config.h>
-#endif
 
 #ifdef CONFIG_HARDWARE_DEBUG_API
 

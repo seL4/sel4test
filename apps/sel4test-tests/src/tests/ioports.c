@@ -11,7 +11,6 @@
  */
 
 #include <autoconf.h>
-#include <sel4test/gen_config.h>
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>

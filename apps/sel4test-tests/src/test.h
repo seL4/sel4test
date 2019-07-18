@@ -12,9 +12,6 @@
 /* this file is shared between sel4test-driver an sel4test-tests */
 #pragma once
 
-#include <autoconf.h>
-#include <sel4test/gen_config.h>
-#include <sel4test-driver/gen_config.h>
 #include <allocman/allocman.h>
 #include <sel4/bootinfo.h>
 

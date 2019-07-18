@@ -10,6 +10,7 @@
  * @TAG(DATA61_BSD)
  */
 
+#include <sel4test-driver/gen_config.h>
 #include <assert.h>
 #include <stdio.h>
 #include <sel4/sel4.h>

@@ -10,7 +10,6 @@
  * @TAG(DATA61_BSD)
  */
 #include <autoconf.h>
-#include <sel4test/gen_config.h>
 #define STACK_OFFSET_BYTES $(16 - (CONFIG_WORD_SIZE / 8))
 
 #ifdef CONFIG_ARCH_IA32
