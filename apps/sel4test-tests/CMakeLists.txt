@@ -16,12 +16,18 @@ project(sel4test-tests C CXX)
 
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -u __vsyscall_ptr")
 
+# Use arm arch source files on RISCV
+set(arch ${KernelArch})
+if(KernelArchRiscV)
+    set(arch arm)
+endif()
+
 file(
     GLOB
         deps
         src/*.c
         src/tests/*.c
-        src/arch/${KernelArch}/*.c
+        src/arch/${arch}/*.c
         src/arch/${KernelArch}/tests/*.c
         src/*.cxx
         src/tests/*.cxx
