@@ -70,9 +70,9 @@ if(NOT Sel4testAllowSettingsOverride)
     if(ARM_HYP)
         set(KernelArmHypervisorSupport ON CACHE BOOL "" FORCE)
     endif()
-    if(KernelArchARM)
+    if(KernelArchARM OR KernelArchRiscV)
         # Elfloader settings that correspond to how Data61 sets its boards up.
-        ApplyData61ElfLoaderSettings(${KernelARMPlatform} ${KernelSel4Arch})
+        ApplyData61ElfLoaderSettings(${KernelPlatform} ${KernelSel4Arch})
     endif()
 
     if(SIMULATION)
