@@ -102,11 +102,11 @@ test_unmap_after_delete(env_t env)
 
     seL4_CPtr vspace = (seL4_PGDBits == 0) ? pud : pgd;
     seL4_ARM_ASIDPool_Assign(env->asid_pool, vspace);
-    if (seL4_PGDBits) {
-        /* map pud into page global directory */
-        error = seL4_ARM_PageUpperDirectory_Map(pud, vspace, map_addr, seL4_ARM_Default_VMAttributes);
-        test_assert(error == seL4_NoError);
-    }
+#if seL4_PGDBits > 0
+    /* map pud into page global directory */
+    error = seL4_ARM_PageUpperDirectory_Map(pud, vspace, map_addr, seL4_ARM_Default_VMAttributes);
+    test_assert(error == seL4_NoError);
+#endif
 
     /* map pd into page upper directory */
     error = seL4_ARM_PageDirectory_Map(pd, vspace, map_addr, seL4_ARM_Default_VMAttributes);
