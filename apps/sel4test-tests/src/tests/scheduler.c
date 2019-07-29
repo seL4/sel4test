@@ -255,11 +255,13 @@ DEFINE_TEST(SCHED0003, "Test TCB suspend/resume", test_suspend, !config_set(CONF
  * correct order.
  */
 static int
-prio_test_func(seL4_Word my_prio, seL4_Word *last_prio, seL4_CPtr ep)
+prio_test_func(seL4_Word my_prio, volatile seL4_Word *last_prio, seL4_CPtr ep)
 {
+    COMPILER_MEMORY_FENCE();
     test_check(*last_prio - 1 == my_prio);
 
     *last_prio = my_prio;
+    COMPILER_MEMORY_FENCE();
 
     /* Unsuspend the top thread if we are the last one. */
     if (my_prio == MIN_PRIO) {
