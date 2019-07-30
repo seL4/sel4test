@@ -117,12 +117,8 @@ static void init_env(driver_env_t env)
     bootstrap_configure_virtual_pool(allocman, vaddr,
                                      ALLOCATOR_VIRTUAL_POOL_SIZE, simple_get_pd(&env->simple));
 
-
-    error = sel4platsupport_new_io_mapper(env->vspace, env->vka, &env->ops.io_mapper);
-    ZF_LOGF_IF(error, "Failed to initialise IO mapper");
-
-    error = sel4platsupport_new_malloc_ops(&env->ops.malloc_ops);
-    ZF_LOGF_IF(error, "Failed to malloc new ops");
+    error = sel4platsupport_new_io_ops(&env->vspace, &env->vka, &env->simple, &env->ops);
+    ZF_LOGF_IF(error, "Failed to initialise IO ops");
 }
 
 /* Free a list of objects */
