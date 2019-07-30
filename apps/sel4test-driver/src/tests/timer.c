@@ -21,7 +21,7 @@
 
 int test_timer(driver_env_t env)
 {
-    int error = ltimer_set_timeout(&env->timer.ltimer, 1 * NS_IN_S, TIMEOUT_PERIODIC);
+    int error = ltimer_set_timeout(&env->ltimer, 1 * NS_IN_S, TIMEOUT_PERIODIC);
     test_assert_fatal(!error);
 
     for (int i = 0; i < 3; i++) {
@@ -29,7 +29,7 @@ int test_timer(driver_env_t env)
         ZF_LOGV("Tick\n");
     }
 
-    error = ltimer_reset(&env->timer.ltimer);
+    error = ltimer_reset(&env->ltimer);
     test_assert_fatal(!error);
 
     return sel4test_get_result();
@@ -43,7 +43,7 @@ test_gettime_timeout(driver_env_t env)
     uint64_t start, end;
 
     start = timestamp(env);
-    error = ltimer_set_timeout(&env->timer.ltimer, 1 * NS_IN_MS, TIMEOUT_PERIODIC);
+    error = ltimer_set_timeout(&env->ltimer, 1 * NS_IN_MS, TIMEOUT_PERIODIC);
     test_assert_fatal(!error);
 
     for (int i = 0; i < 3; i++) {
@@ -55,7 +55,7 @@ test_gettime_timeout(driver_env_t env)
 
     test_gt(end, start);
 
-    error = ltimer_reset(&env->timer.ltimer);
+    error = ltimer_reset(&env->ltimer);
     test_assert_fatal(!error);
 
     return sel4test_get_result();

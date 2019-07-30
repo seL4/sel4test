@@ -149,7 +149,7 @@ static int sel4test_driver_wait(driver_env_t env, struct testcase *test)
 
         if (config_set(CONFIG_HAVE_TIMER) && badge != 0) {
             /* handle timer interrupts in hardware */
-            sel4platsupport_handle_timer_irq(&env->timer, badge);
+            handle_timer_interrupts(env, badge);
             /* Driver does extra work to check whether timeout succeeded and signals
              * clients/tests
              */
