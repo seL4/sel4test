@@ -238,6 +238,11 @@ void basic_set_up(uintptr_t e)
      * or a fault to see when the test finishes */
     env->endpoint = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, env->test_process.fault_endpoint.cptr);
 
+    /* copy the device frame, if any */
+    if (env->init->device_frame_cap) {
+        env->init->device_frame_cap = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, env->device_obj.cptr);
+    }
+
     /* map the cap into remote vspace */
     env->remote_vaddr = vspace_share_mem(&env->vspace, &(env->test_process).vspace, env->init, 1, PAGE_BITS_4K,
                                          seL4_AllRights, 1);
@@ -247,7 +252,11 @@ void basic_set_up(uintptr_t e)
      * AS THE SLOTS WILL BE CONSIDERED FREE AND OVERRIDDEN BY THE TEST PROCESS. */
     /* set up free slot range */
     env->init->cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
-    env->init->free_slots.start = env->endpoint + 1;
+    if (env->init->device_frame_cap) {
+        env->init->free_slots.start = env->init->device_frame_cap + 1;
+    } else {
+        env->init->free_slots.start = env->endpoint + 1;
+    }
     env->init->free_slots.end = (1u << CONFIG_SEL4UTILS_CSPACE_SIZE_BITS);
     assert(env->init->free_slots.start < env->init->free_slots.end);
 }

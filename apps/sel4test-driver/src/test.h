@@ -70,6 +70,9 @@ struct driver_env {
     int num_untypeds;
     vka_object_t *untypeds;
 
+    /* device frame to use for some tests */
+    vka_object_t device_obj;
+
     /* time server for managing timeouts */
     time_manager_t tm;
 };

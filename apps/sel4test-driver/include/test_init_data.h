@@ -69,6 +69,9 @@ typedef struct {
     /* sched control cap */
     seL4_CPtr sched_ctrl;
 
+    /* device frame cap */
+    seL4_CPtr device_frame_cap;
+
     /* List of elf regions in the test process image, this
      * is provided so the test process can launch copies of itself.
      *

@@ -215,6 +215,8 @@ int main(int argc, char **argv)
 
     env.timer_notification.cptr = init_data->timer_ntfn;
 
+    env.device_frame = init_data->device_frame_cap;
+
     /* initialse cspace, vspace and untyped memory allocation */
     init_allocator(&env, init_data);
 

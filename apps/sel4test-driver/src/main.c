@@ -431,6 +431,30 @@ void *main_continued(void *arg UNUSED)
     printf("=========\n");
     printf("\n");
 
+    int error;
+
+    /* allocate a piece of device untyped memory for the frame tests,
+     * note that spike doesn't have any device untypes so the tests that require device untypes are turned off */
+    if (!config_set(CONFIG_PLAT_SPIKE)) {
+        bool allocated = false;
+        int untyped_count = simple_get_untyped_count(&env.simple);
+        for (int i = 0; i < untyped_count; i++) {
+            bool device = false;
+            uintptr_t ut_paddr = 0;
+            size_t ut_size_bits = 0;
+            seL4_CPtr ut_cptr = simple_get_nth_untyped(&env.simple, i, &ut_size_bits, &ut_paddr, &device);
+            if (device) {
+                error = vka_alloc_frame_at(&env.vka, seL4_PageBits, ut_paddr, &env.device_obj);
+                if (!error) {
+                    allocated = true;
+                    /* we've allocated a single device frame and that's all we need */
+                    break;
+                }
+            }
+        }
+        ZF_LOGF_IF(allocated == false, "Failed to allocate a device frame for the frame tests");
+    }
+
     /* allocate lots of untyped memory for tests to use */
     env.num_untypeds = populate_untypeds(untypeds);
     env.untypeds = untypeds;
@@ -460,7 +484,7 @@ void *main_continued(void *arg UNUSED)
 
     /* Allocate a reply object for the RT kernel. */
     if (config_set(CONFIG_KERNEL_RT)) {
-        int error = vka_alloc_reply(&env.vka, &env.reply);
+        error = vka_alloc_reply(&env.vka, &env.reply);
         ZF_LOGF_IF(error, "Failed to allocate reply");
     }
 
