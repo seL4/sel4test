@@ -25,7 +25,6 @@
 #include <sel4utils/process.h>
 #include <simple/simple.h>
 #include <vspace/vspace.h>
-#include <sel4platsupport/timer.h>
 
 /* This file is shared with seltest-tests. */
 #include <test_init_data.h>
@@ -51,8 +50,8 @@ struct driver_env {
     /* IO ops for devices */
     ps_io_ops_t ops;
 
-    /* initialised timer */
-    seL4_timer_t timer;
+    /* logical timer interface */
+    ltimer_t ltimer;
 
     /* The main timer notification that sel4-driver receives ltimer IRQ on */
     vka_object_t timer_notification;

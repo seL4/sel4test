@@ -180,23 +180,19 @@ static void init_timer(void)
     if (config_set(CONFIG_HAVE_TIMER)) {
         int error;
 
-        error = vka_alloc_notification(&env.vka, &env.timer_notification);
-        ZF_LOGF_IF(error, "Failed to allocate notification object");
+        /* setup the timers and have our wrapper around simple capture the IRQ caps */
+        error = ltimer_default_init(&env.ltimer, env.ops, NULL, NULL);
+        ZF_LOGF_IF(error, "Failed to setup the timers");
 
         error = vka_alloc_notification(&env.vka, &env.timer_notify_test);
         ZF_LOGF_IF(error, "Failed to allocate notification object for tests");
-
-        error = sel4platsupport_init_default_timer(&env.vka, &env.vspace, &env.simple,
-                                                   env.timer_notification.cptr, &env.timer);
-        ZF_LOGF_IF(error, "Failed to initialise default timer");
 
         error = seL4_TCB_BindNotification(simple_get_tcb(&env.simple), env.timer_notification.cptr);
         ZF_LOGF_IF(error, "Failed to bind timer notification to sel4test-driver\n");
 
         /* set up the timer manager */
-        tm_init(&env.tm, &env.timer.ltimer, &env.ops, 1);
+        tm_init(&env.tm, &env.ltimer, &env.ops, 1);
     }
-
 }
 
 void sel4test_start_suite(const char *name)
