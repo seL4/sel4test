@@ -18,16 +18,10 @@
 void plat_init(driver_env_t env)
 {
     int error;
-    ps_io_ops_t io_ops = {};
     clock_sys_t clock = {};
     clk_t *clk;
 
-    error = sel4platsupport_new_io_mapper(env->vspace, env->vka, &io_ops.io_mapper);
-    if (error != 0) {
-        ZF_LOGF("Failed to initialise IO mapper");
-    }
-
-    error = clock_sys_init(&io_ops, &clock);
+    error = clock_sys_init(&env->ops, &clock);
     if (error != 0) {
         ZF_LOGF("Failed to initalise clock");
     }
