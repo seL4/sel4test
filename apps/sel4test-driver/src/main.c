@@ -546,6 +546,54 @@ static int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4
     }
 }
 
+static ps_irq_register_fn_t irq_register_fn_copy;
+
+static irq_id_t sel4test_timer_irq_register(UNUSED void *cookie, ps_irq_t irq, irq_callback_fn_t callback,
+                                            void *callback_data)
+{
+    static int num_timer_irqs = 0;
+
+    int error;
+
+    ZF_LOGF_IF(!callback, "Passed in a NULL callback");
+
+    ZF_LOGF_IF(num_timer_irqs >= MAX_TIMER_IRQS, "Trying to register too many timer IRQs");
+
+    /* Allocate the IRQ */
+    seL4_Error serror = sel4platsupport_copy_irq_cap(&env.vka, &env.simple, &irq,
+                                                     &env.timer_irqs[num_timer_irqs].handler_path);
+
+    /* Allocate the root notifitcation if we haven't already done so */
+    if (env.timer_notification.cptr == seL4_CapNull) {
+        error = vka_alloc_notification(&env.vka, &env.timer_notification);
+        ZF_LOGF_IF(error, "Failed to allocate notification object");
+    }
+
+    /* Mint a notification for the IRQ handler to pair with */
+    error = vka_cspace_alloc_path(&env.vka, &env.badged_timer_notifications[num_timer_irqs]);
+    ZF_LOGF_IF(error, "Failed to allocate path for the badged notification");
+    cspacepath_t root_notification_path = {0};
+    vka_cspace_make_path(&env.vka, env.timer_notification.cptr, &root_notification_path);
+    error = vka_cnode_mint(&env.badged_timer_notifications[num_timer_irqs], &root_notification_path,
+                           seL4_AllRights, BIT(num_timer_irqs));
+    ZF_LOGF_IF(error, "Failed to mint notification for timer");
+
+    /* Pair the notification and the handler */
+    error = seL4_IRQHandler_SetNotification(env.timer_irqs[num_timer_irqs].handler_path.capPtr,
+                                            env.badged_timer_notifications[num_timer_irqs].capPtr);
+    ZF_LOGF_IF(error, "Failed to pair the notification and handler together");
+
+    /* Ack the handler so interrupts can come in */
+    error = seL4_IRQHandler_Ack(env.timer_irqs[num_timer_irqs].handler_path.capPtr);
+    ZF_LOGF_IF(error, "Failed to ack the IRQ handler");
+
+    /* Fill out information about the callbacks */
+    env.timer_cbs[num_timer_irqs].callback = callback;
+    env.timer_cbs[num_timer_irqs].callback_data = callback_data;
+
+    return num_timer_irqs++;
+}
+
 int main(void)
 {
     int error;
@@ -583,8 +631,17 @@ int main(void)
     serial_utspace_record = true;
     platsupport_serial_setup_simple(&env.vspace, &env.simple, &env.vka);
     serial_utspace_record = false;
+
+    /* Partially overwrite the IRQ interface so that we can record the IRQ caps that were allocated.
+     * We need this only for the timer as the ltimer interfaces allocates the caps for us and hides them away.
+     * A few of the tests require actual interactions with the caps hence we record them.
+     */
+    irq_register_fn_copy = env.ops.irq_ops.irq_register_fn;
+    env.ops.irq_ops.irq_register_fn = sel4test_timer_irq_register;
     /* Initialise ltimer */
     init_timer();
+    /* Restore the IRQ interface's register function */
+    env.ops.irq_ops.irq_register_fn = irq_register_fn_copy;
 
     simple_print(&env.simple);
 
