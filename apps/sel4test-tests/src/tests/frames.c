@@ -265,7 +265,7 @@ static int test_device_frame_ipcbuf(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(FRAMEDIPC0001, "Test that we cannot create a thread with an IPC buffer that is a frame",
-            test_device_frame_ipcbuf, config_set(CONFIG_HAVE_TIMER))
+            test_device_frame_ipcbuf, !config_set(CONFIG_PLAT_SPIKE))
 
 static int wait_func(seL4_Word ep)
 {
@@ -304,7 +304,7 @@ static int test_switch_device_frame_ipcbuf(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(FRAMEDIPC0002, "Test that we cannot switch a threads IPC buffer to a device frame",
-            test_switch_device_frame_ipcbuf, config_set(CONFIG_HAVE_TIMER))
+            test_switch_device_frame_ipcbuf, !config_set(CONFIG_PLAT_SPIKE))
 
 static int touch_data_fault(seL4_Word data, seL4_Word fault_ep, seL4_Word arg3, seL4_Word arg4)
 {
