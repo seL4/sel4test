@@ -45,11 +45,11 @@ void reply_to_parent(seL4_Word result)
     seL4_Word empty = 0; /* ignored */
 
 #if defined(CONFIG_ARCH_IA32)
-#if defined(CONFIG_KERNEL_RT)
+#if defined(CONFIG_KERNEL_MCS)
     seL4_SendWithMRs(shared_endpoint, info, &empty);
 #else
     seL4_SendWithMRs(shared_endpoint, info, &empty, &empty);
-#endif /* CONFIG_KERNEL_RT */
+#endif /* CONFIG_KERNEL_MCS */
 #else
     seL4_SendWithMRs(shared_endpoint, info, &empty, &empty, &empty, &empty);
 #endif /* CONFIG_ARCH_IA32 */

@@ -157,7 +157,7 @@
         test_assert(a15 == 0xdeadbeefdead000f); \
     } while (0)
 #elif defined(CONFIG_ARCH_IA32)
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
 #define TEST_MRS 0
 #else
 #define TEST_MRS 0, 0
@@ -258,7 +258,7 @@ GENERATE_SYSCALL_TEST(SYSCALL0002, seL4_NBSend,
                       seL4_NBSend(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0)))
 
 GENERATE_SYSCALL_TEST_MAYBE(SYSCALL0003, api_reply,
-                            api_reply(0, seL4_MessageInfo_new(0, 0, 0, 0)), !config_set(CONFIG_KERNEL_RT))
+                            api_reply(0, seL4_MessageInfo_new(0, 0, 0, 0)), !config_set(CONFIG_KERNEL_MCS))
 
 GENERATE_SYSCALL_TEST(SYSCALL0004, seL4_Signal,
                       seL4_Signal(simple_get_cnode(&env->simple)))
@@ -366,15 +366,15 @@ GENERATE_SYSCALL_TEST(SYSCALL0014, seL4_SendWithMRs,
 GENERATE_SYSCALL_TEST(SYSCALL0015, seL4_NBSendWithMRs,
                       seL4_NBSendWithMRs(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
 
-#ifndef CONFIG_KERNEL_RT
+#ifndef CONFIG_KERNEL_MCS
 /* the seL4_ReplyWithMRs symbol is not defined in non RT builds and so we must #ifdef out */
 GENERATE_SYSCALL_TEST_MAYBE(SYSCALL0016, seL4_ReplyWithMRs,
-                            seL4_ReplyWithMRs(seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS), !config_set(CONFIG_KERNEL_RT))
+                            seL4_ReplyWithMRs(seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS), !config_set(CONFIG_KERNEL_MCS))
 #endif
 GENERATE_SYSCALL_TEST(SYSCALL0017, seL4_CallWithMRs,
                       seL4_CallWithMRs(simple_get_cnode(&env->simple), seL4_MessageInfo_new(0, 0, 0, 0), TEST_MRS))
 
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
 static int
 test_nbsend_recv(driver_env_t env)
 {
@@ -389,5 +389,5 @@ test_nbsend_recv(driver_env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST_BOOTSTRAP(SYSCALL0018, "Basic seL4_NBSendRecv testing", test_nbsend_recv, config_set(CONFIG_KERNEL_RT))
+DEFINE_TEST_BOOTSTRAP(SYSCALL0018, "Basic seL4_NBSendRecv testing", test_nbsend_recv, config_set(CONFIG_KERNEL_MCS))
 #endif

@@ -719,7 +719,7 @@ static int test_fault(env_t env, int fault_type, bool inter_as)
                     seL4_CPtr remote_fault_ep = sel4utils_copy_path_to_process(&faulter_thread.process, path);
                     assert(remote_fault_ep != -1);
 
-                    if (!config_set(CONFIG_KERNEL_RT)) {
+                    if (!config_set(CONFIG_KERNEL_MCS)) {
                         fault_ep = remote_fault_ep;
                     }
 
@@ -863,7 +863,7 @@ int test_timeout_fault(env_t env)
     /* wait for timeout fault */
     UNUSED seL4_MessageInfo_t info = api_recv(endpoint, NULL, ro);
     for (int i = 0; i < 10; i++) {
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
         test_eq(seL4_MessageInfo_get_length(info), (seL4_Word) seL4_Timeout_Length);
         test_check(seL4_isTimeoutFault_tag(info));
         test_eq(seL4_GetMR(seL4_Timeout_Data), data);
@@ -873,7 +873,7 @@ int test_timeout_fault(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(TIMEOUTFAULT0001, "Test timeout fault", test_timeout_fault, config_set(CONFIG_KERNEL_RT))
+DEFINE_TEST(TIMEOUTFAULT0001, "Test timeout fault", test_timeout_fault, config_set(CONFIG_KERNEL_MCS))
 
 void
 timeout_fault_server_fn(seL4_CPtr ep, env_t env, seL4_CPtr ro)
@@ -927,7 +927,7 @@ static int handle_timeout_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4ut
     ZF_LOGD("Wait for tf");
     seL4_MessageInfo_t info = api_recv(tfep, &badge, server_reply);
     test_eq(badge, expected_badge);
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
     test_check(seL4_isTimeoutFault_tag(info));
     test_eq(seL4_GetMR(seL4_Timeout_Data), expected_data);
     test_eq(seL4_MessageInfo_get_length(info), (seL4_Word) seL4_Timeout_Length);
@@ -945,7 +945,7 @@ static int handle_timeout_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4ut
     test_eq(error, seL4_NoError);
 
     ZF_LOGD("Reply to server");
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
     info = seL4_TimeoutReply_new(true, cp->regs, sizeof(seL4_UserContext) / sizeof(seL4_Word));
 #endif
     /* reply, restoring server state, and wait for server to init */
@@ -991,7 +991,7 @@ static int test_timeout_fault_in_server(env_t env)
 
 }
 DEFINE_TEST(TIMEOUTFAULT0002, "Handle a timeout fault in a server",
-            test_timeout_fault_in_server, config_set(CONFIG_KERNEL_RT))
+            test_timeout_fault_in_server, config_set(CONFIG_KERNEL_MCS))
 
 static void
 timeout_fault_proxy_fn(seL4_CPtr in, seL4_CPtr out, seL4_CPtr ro)
@@ -1059,7 +1059,7 @@ static int test_timeout_fault_nested_servers(env_t env)
     return sel4test_get_result();
 }
 /* this test is disabled for the same reason as TIMEOUTFAULT0002 */
-DEFINE_TEST(TIMEOUTFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers, config_set(CONFIG_KERNEL_RT))
+DEFINE_TEST(TIMEOUTFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers, config_set(CONFIG_KERNEL_MCS))
 
 static void vm_enter(void)
 {

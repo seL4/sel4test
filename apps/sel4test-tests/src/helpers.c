@@ -143,7 +143,7 @@ int cnode_savecaller(env_t env, seL4_CPtr cap)
 {
     cspacepath_t path;
     vka_cspace_make_path(&env->vka, cap, &path);
-#ifndef CONFIG_KERNEL_RT
+#ifndef CONFIG_KERNEL_MCS
     return vka_cnode_saveCaller(&path);
 #else
     ZF_LOGF("Should not be called");
@@ -383,7 +383,7 @@ void set_helper_mcp(env_t env, helper_thread_t *thread, seL4_Word mcp)
 
 void set_helper_affinity(UNUSED env_t env, helper_thread_t *thread, seL4_Word affinity)
 {
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
     seL4_Time timeslice = CONFIG_BOOT_THREAD_TIME_SLICE * US_IN_S;
     int error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, affinity),
                                             thread->thread.sched_context.cptr,
@@ -516,7 +516,7 @@ int set_helper_sched_params(UNUSED env_t env, UNUSED helper_thread_t *thread, UN
 {
     seL4_Word refills = 0;
     if (budget < period) {
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
         refills = seL4_MaxExtraRefills(seL4_MinSchedContextBits);
 #endif
     }
@@ -567,8 +567,8 @@ int restart_after_syscall(env_t env, helper_thread_t *helper)
 
 void set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep)
 {
-    ZF_LOGF_IF(!config_set(CONFIG_KERNEL_RT), "Unsupported on non MCS kernel");
-#ifdef CONFIG_KERNEL_RT
+    ZF_LOGF_IF(!config_set(CONFIG_KERNEL_MCS), "Unsupported on non MCS kernel");
+#ifdef CONFIG_KERNEL_MCS
     int error = seL4_TCB_SetTimeoutEndpoint(thread->thread.tcb.cptr, tfep);
     if (error != seL4_NoError) {
         ZF_LOGF("Failed to set tfep\n");

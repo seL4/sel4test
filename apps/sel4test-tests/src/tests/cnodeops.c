@@ -305,4 +305,4 @@ test_cnode_savecaller(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CNODEOP0009, "Basic seL4_CNode_SaveCaller() testing", test_cnode_savecaller, !config_set(CONFIG_KERNEL_RT))
+DEFINE_TEST(CNODEOP0009, "Basic seL4_CNode_SaveCaller() testing", test_cnode_savecaller, !config_set(CONFIG_KERNEL_MCS))

@@ -475,7 +475,7 @@ void *main_continued(void *arg UNUSED)
     }
 
     /* Allocate a reply object for the RT kernel. */
-    if (config_set(CONFIG_KERNEL_RT)) {
+    if (config_set(CONFIG_KERNEL_MCS)) {
         error = vka_alloc_reply(&env.vka, &env.reply);
         ZF_LOGF_IF(error, "Failed to allocate reply");
     }

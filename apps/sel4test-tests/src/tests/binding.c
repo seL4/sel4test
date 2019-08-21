@@ -253,7 +253,7 @@ static int test_notification_binding_no_sc(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(BIND005, "Test passing thread notification binding with no scheduling context",
-            test_notification_binding_no_sc, config_set(CONFIG_KERNEL_RT))
+            test_notification_binding_no_sc, config_set(CONFIG_KERNEL_MCS))
 
 static int
 test_notification_binding_with_sc(env_t env)
@@ -297,4 +297,4 @@ test_notification_binding_with_sc(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(BIND006, "Test passing thread notification binding with a scheduling context",
-            test_notification_binding_with_sc, config_set(CONFIG_KERNEL_RT))
+            test_notification_binding_with_sc, config_set(CONFIG_KERNEL_MCS))

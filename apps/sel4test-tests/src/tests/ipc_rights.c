@@ -183,7 +183,7 @@ static int test_send_cap_needs_grant(env_t env)
 
 DEFINE_TEST(IPCRIGHTS0003, "seL4_Send with caps needs grant", test_send_cap_needs_grant, true)
 
-#ifndef CONFIG_KERNEL_RT
+#ifndef CONFIG_KERNEL_MCS
 
 static int
 check_call(env_t env, seL4_CPtr ep, bool should_call, bool reply_recv)
@@ -394,5 +394,5 @@ DEFINE_TEST(IPCRIGHTS0005, "seL4_Reply grant depends of the grant of previous se
 
 
 
-#endif /* CONFIG_KERNEL_RT */
+#endif /* CONFIG_KERNEL_MCS */
 

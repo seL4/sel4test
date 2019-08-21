@@ -46,7 +46,7 @@ static int test_nbwait(env_t env)
     error = vka_alloc_notification(&env->vka, &notification);
     test_eq(error, 0);
 
-    if (config_set(CONFIG_KERNEL_RT)) {
+    if (config_set(CONFIG_KERNEL_MCS)) {
         error = vka_alloc_reply(&env->vka, &reply);
         test_eq(error, 0);
     }

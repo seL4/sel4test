@@ -80,7 +80,7 @@ void set_helper_mcp(env_t env, helper_thread_t *thread, seL4_Word mcp);
 /* set a helper threads core affinity. This will have no effect on passive threads. */
 void set_helper_affinity(env_t env, helper_thread_t *thread, seL4_Word affinity);
 
-/* if CONFIG_KERNEL_RT is set, set the helpers scheduling parameters */
+/* if CONFIG_KERNEL_MCS is set, set the helpers scheduling parameters */
 int set_helper_sched_params(UNUSED env_t env, UNUSED helper_thread_t *thread, UNUSED uint64_t budget,
                             UNUSED uint64_t period, seL4_Word badge);
 

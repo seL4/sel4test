@@ -639,7 +639,7 @@ static int test_ipc_prios(struct env *env)
     return sel4test_get_result();
 }
 /* this test does not work on the RT kernel as it relies on FIFO IPC */
-DEFINE_TEST(SCHED0006, "Test IPC priorities for Send", test_ipc_prios, !config_set(CONFIG_KERNEL_RT))
+DEFINE_TEST(SCHED0006, "Test IPC priorities for Send", test_ipc_prios, !config_set(CONFIG_KERNEL_MCS))
 
 #define SCHED0007_NUM_CLIENTS 5
 #define SCHED0007_PRIO(x) ((seL4_Word)(seL4_MaxPrio - 1 - SCHED0007_NUM_CLIENTS + (x)))
@@ -710,7 +710,7 @@ int test_ipc_ordered(env_t env)
     /* server returns success if all requests are processed in order */
     return wait_for_helper(&server);
 }
-DEFINE_TEST(SCHED0007, "Test IPC priorities", test_ipc_ordered, config_set(CONFIG_KERNEL_RT));
+DEFINE_TEST(SCHED0007, "Test IPC priorities", test_ipc_ordered, config_set(CONFIG_KERNEL_MCS));
 
 #define SCHED0008_NUM_CLIENTS 5
 
@@ -861,7 +861,7 @@ int test_change_prio_on_endpoint(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0008, "Test changing prio while in endpoint queues results in correct message order",
-            test_change_prio_on_endpoint, config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER))
+            test_change_prio_on_endpoint, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
 
 #define SCHED0009_SERVERS 5
 
@@ -934,7 +934,7 @@ static int test_ordered_ipc_fastpath(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0009, "Test ordered ipc on reply wait fastpath", test_ordered_ipc_fastpath,
-            config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER))
+            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
 
 int
 sched0010_fn(volatile int *state)
@@ -987,7 +987,7 @@ int test_resume_empty_or_no_sched_context(env_t env)
 }
 DEFINE_TEST(SCHED0010, "Test resuming a thread with empty or missing scheduling context",
             test_resume_empty_or_no_sched_context,
-            (config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER)))
+            (config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER)))
 
 void
 sched0011_helper(void)
@@ -1030,7 +1030,7 @@ int test_scheduler_accuracy(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0011, "Test scheduler accuracy",
-            test_scheduler_accuracy, config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER))
+            test_scheduler_accuracy, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
 
 /* used by sched0012, 0013, 0014 */
 static void
@@ -1071,7 +1071,7 @@ int test_one_periodic_thread(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0012, "Test one periodic thread", test_one_periodic_thread,
-            config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER))
+            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
 
 int
 test_two_periodic_threads(env_t env)
@@ -1103,7 +1103,7 @@ test_two_periodic_threads(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0013, "Test two periodic threads", test_two_periodic_threads,
-            config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER));
+            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER));
 
 int test_ordering_periodic_threads(env_t env)
 {
@@ -1153,7 +1153,7 @@ int test_ordering_periodic_threads(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0014, "Test periodic thread ordering", test_ordering_periodic_threads,
-            config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER))
+            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
 
 static void
 sched0015_helper(int id, env_t env, volatile unsigned long long *counters)
@@ -1277,9 +1277,9 @@ int test_resume_no_overflow(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0016, "Test resume cannot be used to exceed budget", test_resume_no_overflow,
-            config_set(CONFIG_KERNEL_RT));
+            config_set(CONFIG_KERNEL_MCS));
 
-#ifdef CONFIG_KERNEL_RT
+#ifdef CONFIG_KERNEL_MCS
 void sched0017_helper_fn(seL4_CPtr sc, volatile seL4_SchedContext_YieldTo_t *ret)
 {
     ZF_LOGD("Yield To");
@@ -1320,7 +1320,7 @@ int test_yieldTo_errors(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0017, "Test seL4_SchedContext_YieldTo errors", test_yieldTo_errors, config_set(CONFIG_KERNEL_RT));
+DEFINE_TEST(SCHED0017, "Test seL4_SchedContext_YieldTo errors", test_yieldTo_errors, config_set(CONFIG_KERNEL_MCS));
 
 int sched0018_to_fn(void)
 {
@@ -1411,7 +1411,7 @@ int test_yieldTo_cleanup(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0018, "Test clean up cases after seL4_SchedContext_YieldTo", test_yieldTo_cleanup,
-            config_set(CONFIG_KERNEL_RT) &&config_set(CONFIG_HAVE_TIMER));
+            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER));
 
 
 int test_yieldTo(env_t env)
@@ -1440,9 +1440,9 @@ int test_yieldTo(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0019, "Test seL4_SchedContext_YieldTo", test_yieldTo, config_set(CONFIG_KERNEL_RT));
+DEFINE_TEST(SCHED0019, "Test seL4_SchedContext_YieldTo", test_yieldTo, config_set(CONFIG_KERNEL_MCS));
 
-#endif /* CONFIG_KERNEL_RT */
+#endif /* CONFIG_KERNEL_MCS */
 
 void set_higher_prio_helper(volatile int *state)
 {

@@ -224,7 +224,7 @@ void basic_set_up(uintptr_t e)
 #endif
     env->init->cores = simple_get_core_count(&env->simple);
     /* copy the sched ctrl caps to the remote process */
-    if (config_set(CONFIG_KERNEL_RT)) {
+    if (config_set(CONFIG_KERNEL_MCS)) {
         seL4_CPtr sched_ctrl = simple_get_sched_ctrl(&env->simple, 0);
         env->init->sched_ctrl = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, sched_ctrl);
         for (int i = 1; i < env->init->cores; i++) {
