@@ -55,12 +55,7 @@ if("${index}" STREQUAL "-1")
 Valid platforms are: \"${valid_platforms}\"")
 endif()
 
-mark_as_advanced(
-    CLEAR
-    LibSel4TestPrinterRegex
-    LibSel4TestPrinterHaltOnTestFailure
-    LibSel4TestPrintXML
-)
+mark_as_advanced(CLEAR LibSel4TestPrinterRegex LibSel4TestPrinterHaltOnTestFailure)
 
 set(LibNanopb ON CACHE BOOL "" FORCE)
 

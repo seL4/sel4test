@@ -25,7 +25,11 @@ config_option(
     DEFAULT
     ON
 )
-
+if(Sel4testAllowSettingsOverride)
+    mark_as_advanced(CLEAR Sel4testHaveTimer Sel4testHaveCache)
+else()
+    mark_as_advanced(FORCE Sel4testHaveTimer Sel4testHaveCache)
+endif()
 add_config_library(sel4test-driver "${configure_string}")
 
 file(
