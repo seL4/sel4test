@@ -12,10 +12,23 @@
 
 cmake_minimum_required(VERSION 3.7.2)
 
-add_subdirectory(apps/sel4test-tests)
-add_subdirectory(apps/sel4test-driver)
-add_subdirectory(libsel4testsupport)
+include(settings.cmake)
 
+project(sel4test C CXX ASM)
+
+find_package(seL4 REQUIRED)
+find_package(elfloader-tool REQUIRED)
+
+# Use ccache if possible
+include(use_ccache)
+use_ccache()
+
+sel4_import_kernel()
+elfloader_import_project()
+
+add_subdirectory(apps/sel4test-driver)
+
+include(simulation)
 if(KernelSel4ArchX86_64)
     SetSimulationScriptProperty(MEM_SIZE "3G")
 endif()

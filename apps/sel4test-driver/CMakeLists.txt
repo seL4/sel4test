@@ -32,6 +32,19 @@ else()
 endif()
 add_config_library(sel4test-driver "${configure_string}")
 
+find_package(musllibc REQUIRED)
+find_package(util_libs REQUIRED)
+find_package(seL4_libs REQUIRED)
+find_package(sel4_projects_libs REQUIRED)
+
+# This sets up environment build flags and imports musllibc and runtime libraries.
+musllibc_setup_build_environment_with_sel4runtime()
+sel4_import_libsel4()
+util_libs_import_libraries()
+sel4_libs_import_libraries()
+sel4_projects_libs_import_libraries()
+add_subdirectory(../../libsel4testsupport libsel4testsupport)
+
 file(
     GLOB
         static
@@ -43,6 +56,9 @@ file(
         src/plat/${KernelPlatform}/*.S
 )
 
+# Import build rules for test app
+add_subdirectory(../sel4test-tests sel4test-tests)
+include(cpio)
 MakeCPIO(archive.o "$<TARGET_FILE:sel4test-tests>")
 
 add_executable(sel4test-driver EXCLUDE_FROM_ALL ${static} archive.o)
@@ -67,4 +83,5 @@ target_link_libraries(
 target_compile_options(sel4test-driver PRIVATE -Werror -g)
 
 # Set this image as the rootserver
+include(rootserver)
 DeclareRootserver(sel4test-driver)
