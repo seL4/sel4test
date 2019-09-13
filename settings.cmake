@@ -119,11 +119,9 @@ if(NOT Sel4testAllowSettingsOverride)
 
     if(BAMBOO)
         set(LibSel4TestPrintXML ON CACHE BOOL "" FORCE)
-        set(LibSel4BufferOutput ON CACHE BOOL "" FORCE)
         set(KernelIRQReporting OFF CACHE BOOL "" FORCE)
     else()
         set(LibSel4TestPrintXML OFF CACHE BOOL "" FORCE)
-        set(LibSel4BufferOutput OFF CACHE BOOL "" FORCE)
         set(KernelIRQReporting ON CACHE BOOL "" FORCE)
     endif()
 
