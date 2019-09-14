@@ -111,4 +111,11 @@ if(NOT Sel4testAllowSettingsOverride)
     else()
         set(KernelMaxNumNodes 1 CACHE STRING "" FORCE)
     endif()
+
+    if(MCS)
+        set(KernelIsMCS ON CACHE BOOL "" FORCE)
+    else()
+        set(KernelIsMCS OFF CACHE BOOL "" FORCE)
+    endif()
+
 endif()
