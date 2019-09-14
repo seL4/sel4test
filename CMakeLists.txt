@@ -19,10 +19,6 @@ project(sel4test C CXX ASM)
 find_package(seL4 REQUIRED)
 find_package(elfloader-tool REQUIRED)
 
-# Use ccache if possible
-include(use_ccache)
-use_ccache()
-
 sel4_import_kernel()
 elfloader_import_project()
 
