@@ -47,8 +47,6 @@ if (NOT "${PLATFORM}" IN_LIST valid_platforms)
 Valid platforms are: \"${valid_platforms}\"")
 endif()
 
-mark_as_advanced(CLEAR LibSel4TestPrinterRegex LibSel4TestPrinterHaltOnTestFailure)
-
 # We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
 # in the cmake-gui to prevent excessively confusing users
 if(NOT Sel4testAllowSettingsOverride)
