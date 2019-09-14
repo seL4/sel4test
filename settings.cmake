@@ -78,18 +78,8 @@ if(NOT Sel4testAllowSettingsOverride)
     endif()
 
     # Check the hardware debug API non simulated (except for ia32, which can be simulated),
-    # skipping any aarch64 platform, as this does not yet support the debug API, and a
-    # few other miscelaneous platforms that do not support it
-    if(
-        ((NOT SIMULATION) OR KernelSel4ArchIA32)
-        AND (NOT KernelSel4ArchAarch64)
-        AND (NOT KernelArchRiscV)
-        AND (NOT KernelPlatformExynos5250)
-        AND (NOT KernelPlatformAM335X)
-        AND (NOT KernelPlatformOMAP3)
-        AND (NOT KernelPlatformKZM)
-        AND (NOT KernelPlatformExynos5410)
-    )
+    # or platforms that don't support it.
+    if(((NOT SIMULATION) OR KernelSel4ArchIA32) AND NOT KernelHardwareDebugAPIUnsupported)
         set(HardwareDebugAPI ON CACHE BOOL "" FORCE)
     else()
         set(HardwareDebugAPI OFF CACHE BOOL "" FORCE)
