@@ -45,6 +45,10 @@ musllibc_setup_build_environment_with_sel4runtime()
 sel4_import_libsel4()
 util_libs_import_libraries()
 sel4_libs_import_libraries()
+
+# Setting LibNanopb On causes its libraries to be created when sel4_projects_libs_import_libraries
+# is called.
+set(LibNanopb ON CACHE BOOL "" FORCE)
 sel4_projects_libs_import_libraries()
 add_subdirectory(../../libsel4testsupport libsel4testsupport)
 

@@ -29,10 +29,6 @@ set(BBL_PATH ${project_dir}/tools/riscv-pk CACHE STRING "BBL Folder location")
 set(SEL4_CONFIG_DEFAULT_ADVANCED ON)
 
 include(application_settings)
-
-# Set our custom domain schedule
-set(KernelDomainSchedule "${CMAKE_CURRENT_LIST_DIR}/domain_schedule.c" CACHE INTERNAL "")
-
 # Declare a cache variable that enables/disablings the forcing of cache variables to
 # the specific test values. By default it is disabled
 set(Sel4testAllowSettingsOverride OFF CACHE BOOL "Allow user to override configuration settings")
@@ -53,17 +49,11 @@ endif()
 
 mark_as_advanced(CLEAR LibSel4TestPrinterRegex LibSel4TestPrinterHaltOnTestFailure)
 
-set(LibNanopb ON CACHE BOOL "" FORCE)
-
 # We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
 # in the cmake-gui to prevent excessively confusing users
 if(NOT Sel4testAllowSettingsOverride)
     if(ARM_HYP)
         set(KernelArmHypervisorSupport ON CACHE BOOL "" FORCE)
-    endif()
-    if(KernelArchARM OR KernelArchRiscV)
-        # Elfloader settings that correspond to how Data61 sets its boards up.
-        ApplyData61ElfLoaderSettings(${KernelPlatform} ${KernelSel4Arch})
     endif()
 
     if(SIMULATION)
