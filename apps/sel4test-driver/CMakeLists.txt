@@ -37,6 +37,9 @@ find_package(util_libs REQUIRED)
 find_package(seL4_libs REQUIRED)
 find_package(sel4_projects_libs REQUIRED)
 
+# Need to disable GC sections as it causes our tests to be stripped sometimes
+# This option is tested in the following musllibc_setup_build_environment_with_sel4runtime call.
+set(UserLinkerGCSections OFF CACHE BOOL "" FORCE)
 # This sets up environment build flags and imports musllibc and runtime libraries.
 musllibc_setup_build_environment_with_sel4runtime()
 sel4_import_libsel4()
