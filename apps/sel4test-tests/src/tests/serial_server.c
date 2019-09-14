@@ -305,9 +305,9 @@ static int setup_client_process_allocman_vka_and_vspace(seL4_CPtr ut_cap, size_t
         return seL4_InvalidArgument;
     }
     *allocman = bootstrap_use_current_1level(SEL4UTILS_CNODE_SLOT,
-                                             CONFIG_SEL4UTILS_CSPACE_SIZE_BITS,
+                                             TEST_PROCESS_CSPACE_SIZE_BITS,
                                              first_free_cptr,
-                                             BIT(CONFIG_SEL4UTILS_CSPACE_SIZE_BITS),
+                                             BIT(TEST_PROCESS_CSPACE_SIZE_BITS),
                                              allocman_mem_size,
                                              allocman_mem);
     if (*allocman == NULL) {

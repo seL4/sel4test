@@ -203,6 +203,7 @@ void create_helper_process_custom_asid(env_t env, helper_thread_t *thread, seL4_
     sel4utils_process_config_t config = process_config_default_simple(&env->simple, "", OUR_PRIO - 1);
     config = process_config_asid_pool(config, asid);
     config = process_config_noelf(config, NULL, 0);
+    config = process_config_create_cnode(config, TEST_PROCESS_CSPACE_SIZE_BITS);
     config = process_config_create_vspace(config, env->regions, env->num_regions);
     vka_object_t fault_endpoint = { .cptr = env->endpoint };
     config = process_config_fault_endpoint(config, fault_endpoint);

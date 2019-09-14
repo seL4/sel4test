@@ -196,6 +196,7 @@ void basic_set_up(uintptr_t e)
     sel4utils_process_config_t config = process_config_default_simple(&env->simple, TESTS_APP, env->init->priority);
     config = process_config_mcp(config, seL4_MaxPrio);
     config = process_config_auth(config, simple_get_tcb(&env->simple));
+    config = process_config_create_cnode(config, TEST_PROCESS_CSPACE_SIZE_BITS);
     error = sel4utils_configure_process_custom(&(env->test_process), &env->vka, &env->vspace, config);
     assert(error == 0);
 
@@ -251,13 +252,13 @@ void basic_set_up(uintptr_t e)
     /* WARNING: DO NOT COPY MORE CAPS TO THE PROCESS BEYOND THIS POINT,
      * AS THE SLOTS WILL BE CONSIDERED FREE AND OVERRIDDEN BY THE TEST PROCESS. */
     /* set up free slot range */
-    env->init->cspace_size_bits = CONFIG_SEL4UTILS_CSPACE_SIZE_BITS;
+    env->init->cspace_size_bits = TEST_PROCESS_CSPACE_SIZE_BITS;
     if (env->init->device_frame_cap) {
         env->init->free_slots.start = env->init->device_frame_cap + 1;
     } else {
         env->init->free_slots.start = env->endpoint + 1;
     }
-    env->init->free_slots.end = (1u << CONFIG_SEL4UTILS_CSPACE_SIZE_BITS);
+    env->init->free_slots.end = (1u << TEST_PROCESS_CSPACE_SIZE_BITS);
     assert(env->init->free_slots.start < env->init->free_slots.end);
 }
 
