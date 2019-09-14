@@ -29,9 +29,6 @@ set(BBL_PATH ${project_dir}/tools/riscv-pk CACHE STRING "BBL Folder location")
 set(SEL4_CONFIG_DEFAULT_ADVANCED ON)
 
 include(application_settings)
-# Declare a cache variable that enables/disablings the forcing of cache variables to
-# the specific test values. By default it is disabled
-set(Sel4testAllowSettingsOverride OFF CACHE BOOL "Allow user to override configuration settings")
 
 include(${CMAKE_CURRENT_LIST_DIR}/easy-settings.cmake)
 
@@ -42,14 +39,17 @@ sel4_configure_platform_settings()
 
 set(valid_platforms ${KernelPlatform_all_strings} ${correct_platform_strings_platform_aliases})
 set_property(CACHE PLATFORM PROPERTY STRINGS ${valid_platforms})
-if (NOT "${PLATFORM}" IN_LIST valid_platforms)
+if(NOT "${PLATFORM}" IN_LIST valid_platforms)
     message(FATAL_ERROR "Invalid PLATFORM selected: \"${PLATFORM}\"
 Valid platforms are: \"${valid_platforms}\"")
 endif()
 
-# We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
-# in the cmake-gui to prevent excessively confusing users
+# Declare a cache variable that enables/disablings the forcing of cache variables to
+# the specific test values. By default it is disabled
+set(Sel4testAllowSettingsOverride OFF CACHE BOOL "Allow user to override configuration settings")
 if(NOT Sel4testAllowSettingsOverride)
+    # We use 'FORCE' when settings these values instead of 'INTERNAL' so that they still appear
+    # in the cmake-gui to prevent excessively confusing users
     if(ARM_HYP)
         set(KernelArmHypervisorSupport ON CACHE BOOL "" FORCE)
     endif()
@@ -84,7 +84,6 @@ if(NOT Sel4testAllowSettingsOverride)
     endif()
 
     ApplyCommonReleaseVerificationSettings(${RELEASE} ${VERIFICATION})
-
 
     if(BAMBOO)
         set(LibSel4TestPrintXML ON CACHE BOOL "" FORCE)
