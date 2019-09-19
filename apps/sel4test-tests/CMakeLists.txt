@@ -14,8 +14,6 @@ cmake_minimum_required(VERSION 3.7.2)
 
 project(sel4test-tests C CXX)
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -u __vsyscall_ptr")
-
 # Use arm arch source files on RISCV
 set(arch ${KernelArch})
 if(KernelArchRiscV)
