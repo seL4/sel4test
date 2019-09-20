@@ -220,7 +220,7 @@ void basic_set_up(uintptr_t e)
     env->init->io_space = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple,
                                                                                                              seL4_CapIOSpace));
 #endif /* CONFIG_IOMMU */
-#ifdef CONFIG_ARM_SMMU
+#ifdef CONFIG_TK1_SMMU
     env->init->io_space_caps = arch_copy_iospace_caps_to_process(&(env->test_process), &env);
 #endif
     env->init->cores = simple_get_core_count(&env->simple);

@@ -234,7 +234,7 @@ DEFINE_TEST(IOPT0011, "Test IOPT map and remap PT", test_iopt_map_remap_pt, true
 
 #endif /* CONFIG_IOMMU */
 
-#ifdef CONFIG_ARM_SMMU
+#ifdef CONFIG_TK1_SMMU
 /* tests for ARM SystemMMU */
 
 #define IOPT_MAP_BASE   0x10000000

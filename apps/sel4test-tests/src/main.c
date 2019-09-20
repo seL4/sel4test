@@ -206,7 +206,7 @@ int main(int argc, char **argv)
 #ifdef CONFIG_IOMMU
     env.io_space = init_data->io_space;
 #endif
-#ifdef CONFIG_ARM_SMMU
+#ifdef CONFIG_TK1_SMMU
     env.io_space_caps = init_data->io_space_caps;
 #endif
     env.cores = init_data->cores;

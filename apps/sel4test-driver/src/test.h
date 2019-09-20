@@ -97,7 +97,7 @@ typedef struct driver_env *driver_env_t;
 
 void plat_init(driver_env_t env) WEAK;
 
-#ifdef CONFIG_ARM_SMMU
+#ifdef CONFIG_TK1_SMMU
 seL4_SlotRegion arch_copy_iospace_caps_to_process(sel4utils_process_t *process, driver_env_t env);
 #endif
 
