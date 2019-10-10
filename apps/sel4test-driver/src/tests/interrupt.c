@@ -53,7 +53,7 @@ static int override_timer_irqs(driver_env_t env, int targetCore)
 
         /* And replace it by the new, core specific handler */
         err = seL4_IRQControl_GetTriggerCore(seL4_CapIRQControl, irq.irq.irq.number,
-                                             1, path.root, path.capPtr, path.capDepth, 1 << targetCore);
+           1, path.root, path.capPtr, path.capDepth, 1 << targetCore);
         test_assert(err == seL4_NoError);
 
         /* Rebind it with its notification object */
@@ -125,3 +125,37 @@ static int test_core_affinity_interrupt(driver_env_t env)
 DEFINE_TEST_BOOTSTRAP(SMPIRQ0001, "Test multicore irqs", test_core_affinity_interrupt, true);
 
 #endif
+
+
+
+#ifdef CONFIG_ARM_SMMU 
+
+
+static int test_smmu_control_caps(driver_env_t env) {
+
+    int error; 
+    cspacepath_t slot_path; 
+
+    error = vka_cspace_alloc_path(&env->vka, &slot_path);
+
+    ZF_LOGF_IF(error, "Failed to allocate cnode slot");
+
+    error = seL4_ARM_SIDControl_GetSID(simple_get_sid_ctrl(&env->simple), 0, slot_path.root, slot_path.capPtr, slot_path.capDepth); 
+
+    ZF_LOGF_IF(error, "Failed to allocate SID cap");
+    
+    error = vka_cspace_alloc_path(&env->vka, &slot_path);
+
+    ZF_LOGF_IF(error, "Failed to allocate cnode slot");
+    
+    error = seL4_ARM_CBControl_GetCB(simple_get_cb_ctrl(&env->simple), 0, slot_path.root, slot_path.capPtr, slot_path.capDepth); 
+
+    ZF_LOGF_IF(error, "Failed to allocate SID cap");
+
+    return sel4test_get_result(); 
+}
+
+
+DEFINE_TEST_BOOTSTRAP(SMMU0001, "Test SMMU control caps", test_smmu_control_caps, true);
+
+#endif 
