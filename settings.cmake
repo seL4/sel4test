@@ -23,7 +23,7 @@ list(
         ${project_modules}
 )
 
-set(NANOPB_SRC_ROOT_FOLDER "${project_dir}/nanopb" CACHE INTERNAL "")
+set(NANOPB_SRC_ROOT_FOLDER "${project_dir}/tools/nanopb" CACHE INTERNAL "")
 set(BBL_PATH ${project_dir}/tools/riscv-pk CACHE STRING "BBL Folder location")
 
 set(SEL4_CONFIG_DEFAULT_ADVANCED ON)
