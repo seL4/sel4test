@@ -248,7 +248,7 @@ int smp_test_tlb(env_t env)
     vspace_unmap_pages(&env->vspace, (void *) shared_mem, 1, seL4_PageBits, &env->vka);
 
     /* Wait for some access... */
-    sel4test_sleep(env, 10 * NS_IN_MS);
+    sel4test_sleep(env, CONFIG_TIMER_TICK_MS * NS_IN_MS / 10);
 
     /* We should see page fault */
     test_check(tag == seL4_Fault_VMFault);
