@@ -177,13 +177,11 @@ DEFINE_TEST(MULTICORE0005, "Test remote delete thread running on other cores", s
             config_set(CONFIG_HAVE_TIMER) &&CONFIG_MAX_NUM_NODES > 1)
 
 static int
-faulter_func(volatile seL4_Word *shared_mem)
+faulter_func(volatile seL4_Word shared_mem)
 {
     volatile seL4_Word *page;
 
-    /* Wait for new mapping */
-    while (*shared_mem == 0);
-    page = ((seL4_Word *) *shared_mem);
+    page = (volatile seL4_Word *)shared_mem;
 
     /* Accessing to the new page... */
     while (1) {
@@ -204,7 +202,7 @@ static int handler_func(seL4_CPtr fault_ep, volatile seL4_Word *pf)
     return 0;
 }
 
-int smp_test_tlb(env_t env)
+static int smp_test_tlb_instance(env_t env, bool inter_as)
 {
     int error;
     volatile seL4_Word tag;
@@ -213,39 +211,58 @@ int smp_test_tlb(env_t env)
 
     helper_thread_t handler_thread;
     helper_thread_t faulter_thread;
-    create_helper_thread(env, &handler_thread);
-    create_helper_thread(env, &faulter_thread);
-
-    /* The endpoint on which faults are received. */
+    vspace_t *vspace;
+    seL4_CPtr faulter_vspace, faulter_cspace;
     seL4_CPtr fault_ep = vka_alloc_endpoint_leaky(&env->vka);
-
+    create_helper_thread(env, &handler_thread);
     set_helper_priority(env, &handler_thread, 100);
 
+    seL4_CPtr fault_ep_faulter = fault_ep;
+    if (inter_as) {
+        create_helper_process(env, &faulter_thread);
+
+        /* copy the fault endpoint to the faulter */
+        cspacepath_t path;
+        vka_cspace_make_path(&env->vka,  fault_ep, &path);
+        seL4_CPtr remote_fault_ep = sel4utils_copy_path_to_process(&faulter_thread.process, path);
+        assert(remote_fault_ep != -1);
+
+        if (!config_set(CONFIG_KERNEL_MCS)) {
+            fault_ep_faulter = remote_fault_ep;
+        }
+
+        faulter_cspace = faulter_thread.process.cspace.cptr;
+        faulter_vspace = faulter_thread.process.pd.cptr;
+        vspace = &faulter_thread.process.vspace;
+    } else {
+        create_helper_thread(env, &faulter_thread);
+        faulter_cspace = env->cspace_root;
+        faulter_vspace = env->page_directory;
+        vspace = &env->vspace;
+    }
+
     error = api_tcb_set_space(get_helper_tcb(&faulter_thread),
-                              fault_ep,
-                              env->cspace_root,
+                              fault_ep_faulter,
+                              faulter_cspace,
                               api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
-                              env->page_directory, seL4_NilData);
+                              faulter_vspace, seL4_NilData);
     test_assert(!error);
 
     /* Move handler to core 1 and faulter to the last available core */
     set_helper_affinity(env, &handler_thread, 1);
     set_helper_affinity(env, &faulter_thread, env->cores - 1);
 
-    start_helper(env, &handler_thread, (helper_fn_t) handler_func, fault_ep, (seL4_Word) &tag, 0, 0);
-    start_helper(env, &faulter_thread, (helper_fn_t) faulter_func, (seL4_Word) &shared_mem, 0, 0, 0);
-
-    /* Wait for all threads to check in */
-    sel4test_sleep(env, 10 * NS_IN_MS);
-
     /* Map new page to shared address space */
-    shared_mem = (seL4_Word) vspace_new_pages(&env->vspace, seL4_AllRights, 1, seL4_PageBits);
+    shared_mem = (seL4_Word) vspace_new_pages(vspace, seL4_AllRights, 1, seL4_PageBits);
+
+    start_helper(env, &handler_thread, (helper_fn_t) handler_func, fault_ep, (seL4_Word) &tag, 0, 0);
+    start_helper(env, &faulter_thread, (helper_fn_t) faulter_func, (seL4_Word) shared_mem, 0, 0, 0);
 
     /* Wait for some access... */
     sel4test_sleep(env, 10 * NS_IN_MS);
 
     /* Unmap the page */
-    vspace_unmap_pages(&env->vspace, (void *) shared_mem, 1, seL4_PageBits, &env->vka);
+    vspace_unmap_pages(vspace, (void *) shared_mem, 1, seL4_PageBits, &env->vka);
 
     /* Wait for some access... */
     sel4test_sleep(env, CONFIG_TIMER_TICK_MS * NS_IN_MS / 10);
@@ -257,6 +274,21 @@ int smp_test_tlb(env_t env)
     cleanup_helper(env, &faulter_thread);
     cleanup_helper(env, &handler_thread);
     return sel4test_get_result();
+}
+
+int smp_test_tlb(env_t env)
+{
+    test_result_t result;
+    /* Test unmapping a frame from the same VSpace and different VSpace. */
+    for (int i = 0; i < 20; i++) {
+        bool inter_as = (i % 2 == 0) ? true : false;
+        result = smp_test_tlb_instance(env, inter_as);
+        if (result != SUCCESS) {
+            return result;
+        }
+    }
+    return result;
+
 }
 DEFINE_TEST(MULTICORE0003, "Test TLB invalidated cross cores", smp_test_tlb,
             config_set(CONFIG_HAVE_TIMER) &&CONFIG_MAX_NUM_NODES > 1)
