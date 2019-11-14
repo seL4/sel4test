@@ -14,6 +14,10 @@
 
 Library for creating and running tests for seL4.
 
+## Setup
+
+See the [Getting Started](https://docs.sel4.systems/GettingStarted.html) page for instructions for installing required Host dependencies and how to checkout, build and run the tests in seL4test (this project).
+
 ## Usage
 
 *Small unit tests* can be defined anywhere, such as libraries outside of `sel4test` or in `sel4test-driver`. *Larger tests* that do things like creating processes need to be declared inside `sel4test-tests`.
