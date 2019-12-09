@@ -892,12 +892,12 @@ static int delete_sc_client_sending_on_endpoint(env_t env)
 DEFINE_TEST(IPC0019, "Test deleteing the scheduling context while a client is sending on an endpoint",
             delete_sc_client_sending_on_endpoint, config_set(CONFIG_KERNEL_MCS));
 
-static void ipc0020_helper(seL4_CPtr endpoint, volatile int *state)
+static void ipc0020_helper(seL4_CPtr notification, volatile int *state)
 {
     *state = 1;
     while (1) {
         ZF_LOGD("Recv");
-        seL4_Wait(endpoint, NULL);
+        seL4_Wait(notification, NULL);
         *state = *state + 1;
     }
 }
@@ -906,12 +906,12 @@ static int delete_sc_client_waiting_on_endpoint(env_t env)
 {
     helper_thread_t waiter;
     volatile int state = 0;
-    seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr notification = vka_alloc_notification_leaky(&env->vka);
 
     create_helper_thread(env, &waiter);
     set_helper_priority(env, &waiter, 10);
     int error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
-    start_helper(env, &waiter, (helper_fn_t) ipc0020_helper, endpoint, (seL4_Word) &state, 0, 0);
+    start_helper(env, &waiter, (helper_fn_t) ipc0020_helper, notification, (seL4_Word) &state, 0, 0);
 
     /* helper should run and block receiving on endpoint */
     test_eq(state, 1);
@@ -920,7 +920,7 @@ static int delete_sc_client_waiting_on_endpoint(env_t env)
     vka_free_object(&env->vka, &waiter.thread.sched_context);
 
     /* send message */
-    seL4_Send(endpoint, seL4_MessageInfo_new(0, 0, 0, 0));
+    seL4_Send(notification, seL4_MessageInfo_new(0, 0, 0, 0));
 
     /* thread should not have moved */
     test_eq(state, 1);
