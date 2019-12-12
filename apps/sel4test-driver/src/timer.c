@@ -49,6 +49,7 @@ static int ack_timer_interrupts(void *ack_data)
     ZF_LOGF_IF(error, "Failed to acknowledge timer IRQ handler");
 
     ps_free(&env->ops.malloc_ops, sizeof(sel4test_ack_data_t), ack_data);
+    return error;
 }
 
 void handle_timer_interrupts(driver_env_t env, seL4_Word badge)
