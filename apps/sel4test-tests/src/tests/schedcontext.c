@@ -111,8 +111,18 @@ test_bind_errors(env_t env)
     seL4_CPtr notification = vka_alloc_notification_leaky(&env->vka);
     seL4_CPtr endpoint = vka_alloc_endpoint_leaky(&env->vka);
 
+    /* You can't bing a scheduling context that is not ready or
+     * configured */
+    int error = api_sc_bind(sched_context, tcb);
+    test_eq(error, seL4_IllegalOperation);
+
+    /* Configure the scheduling context */
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sched_context,
+                                     5 * US_IN_S, 5 * US_IN_S, 0, 0);
+    test_eq(error, seL4_NoError);
+
     /* binding an object that is not a tcb or ntfn should fail */
-    int error = api_sc_bind(sched_context, endpoint);
+    error = api_sc_bind(sched_context, endpoint);
     test_eq(error, seL4_InvalidCapability);
 
     error = api_sc_bind(sched_context, tcb);
@@ -672,11 +682,12 @@ test_revoke_sched_context_on_call_chain(env_t env)
     seL4_CPtr sched_context = vka_alloc_sched_context_leaky(&env->vka);
     test_neq(sched_context, (seL4_CPtr) seL4_CapNull);
 
-    error = api_sc_bind(sched_context, proxy.thread.tcb.cptr);
-    test_eq(error, seL4_NoError);
-
+    /* Configure the scheduling context */
     error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sched_context,
                                      5 * US_IN_S, 5 * US_IN_S, 0, 0);
+    test_eq(error, seL4_NoError);
+
+    error = api_sc_bind(sched_context, proxy.thread.tcb.cptr);
     test_eq(error, seL4_NoError);
 
     restart_after_syscall(env, &proxy);
