@@ -165,7 +165,7 @@ test_registers:
 test_registers_fail:
     mov x0, #1
     b reply_trampoline
-);
+
 #elif defined(CONFIG_ARCH_X86_64)
 reply_trampoline:
     leaq  _safe_stack, %rsp
