@@ -189,6 +189,15 @@ static int test_smmu_control_caps(driver_env_t env) {
 
     ZF_LOGF_IF(error, "Failed to invalidate TLB entries in a CB");
 
+    error = seL4_ARM_CB_UnassignVspace(cb_cap); 
+
+    ZF_LOGF_IF(error, "Failed to unassigned VSpace in a CB");
+
+    seL4_ARM_CB_UnassignVspace(cb_cap); 
+     /*testing if can be reassigned*/
+    error = seL4_ARM_CB_AssignVspace(cb_copy_cap, simple_get_pd(&env->simple)); 
+    ZF_LOGF_IF(error, "Failed to reassigned vspace to CB");
+
     return sel4test_get_result(); 
 }
 
