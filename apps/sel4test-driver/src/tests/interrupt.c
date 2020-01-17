@@ -198,6 +198,24 @@ static int test_smmu_control_caps(driver_env_t env) {
     error = seL4_ARM_CB_AssignVspace(cb_copy_cap, simple_get_pd(&env->simple)); 
     ZF_LOGF_IF(error, "Failed to reassigned vspace to CB");
 
+    error = seL4_ARM_SID_UnbindCB(sid_cap);
+    ZF_LOGF_IF(error, "Failed to unbind CB from the SID");
+
+    error = seL4_ARM_SID_BindCB(sid_cap, cb_copy_cap); 
+    ZF_LOGF_IF(error, "Failed to rebind CB to SID");
+
+    //testing revoking the cb cap 
+    vka_cspace_make_path(&env->vka, cb_cap, &src_path);
+    error = vka_cnode_delete(&src_path); 
+    ZF_LOGF_IF(error, "Failed to delete CB cap");
+
+    vka_cspace_make_path(&env->vka, cb_copy_cap, &src_path);
+    error = vka_cnode_delete(&src_path); 
+    ZF_LOGF_IF(error, "Failed to delete the second CB cap");
+
+    error = seL4_ARM_SID_UnbindCB(sid_cap);
+    ZF_LOGF_IF(error, "Failed to unbind CB from the SID, this should remove the copy of the vspace");
+
     return sel4test_get_result(); 
 }
 
