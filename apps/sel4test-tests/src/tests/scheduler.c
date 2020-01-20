@@ -97,7 +97,8 @@ static int test_thread_suspend(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0000, "Test suspending and resuming a thread (flaky)", test_thread_suspend,
-            config_set(CONFIG_HAVE_TIMER) && !config_set(CONFIG_ARCH_RISCV))
+            config_set(CONFIG_HAVE_TIMER)
+            && !config_set(CONFIG_ARCH_RISCV))
 
 /*
  * Test TCB Resume on self.
