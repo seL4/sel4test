@@ -1478,3 +1478,156 @@ static int test_set_higher_prio(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0020, "test set prio to a higher prio runs higher prio thread", test_set_higher_prio, true);
+
+#define PREEMPTION_THREADS 4
+
+#ifdef CONFIG_KERNEL_MCS
+/* Under MCS each round-robin thread will run for a dedicated time slice
+ * before being pre-empted at the end. This should ensure full
+ * utilisation of the entire slice for each thread. */
+#define MIN_THREAD_SLICE (CONFIG_BOOT_THREAD_TIME_SLICE * NS_IN_MS)
+#define MAX_THREAD_SLICE MIN_THREAD_SLICE
+#else
+/* With the non-mcs scheduler timer ticks occur periodically and may
+ * even include some amount of drift. Whichever thread is executing when
+ * a tick occurs is charged an entire tick from its time slice. A thread
+ * executing continually may therefore only actually execute for one
+ * less than the allocated number of ticks */
+#define MIN_THREAD_SLICE (CONFIG_TIMER_TICK_MS * (CONFIG_TIME_SLICE - 1) * NS_IN_MS)
+#define MAX_THREAD_SLICE (CONFIG_TIMER_TICK_MS * CONFIG_TIME_SLICE * NS_IN_MS)
+#endif
+
+#define TIME_SCALE(time, dividend, divisor) (((time) * (dividend)) / (divisor))
+
+/* This test should at least run through the minimal time for each
+ * concurrent thread updating the data. Allow for 2% speedup */
+#define MIN_TIME TIME_SCALE(MIN_THREAD_SLICE * PREEMPTION_THREADS, 98, 100)
+/* This thread should run for no longer that tne maximum time for all
+ * threads to execute plus the time to execute monitor thread. Allow for
+ * 2% slowdown. */
+#define MAX_TIME TIME_SCALE(MAX_THREAD_SLICE * (PREEMPTION_THREADS + 1), 102, 100)
+
+volatile unsigned int preemption_thread_data[PREEMPTION_THREADS];
+volatile unsigned int test_simple_preempt_start = 0;
+
+static inline uint64_t time_now(struct env *env)
+{
+    if (config_set(CONFIG_HAVE_TIMER)) {
+        return sel4test_timestamp(env);
+    } else {
+        return 0;
+    }
+}
+
+void test_simple_preempt_runner(size_t thread_id)
+{
+    size_t next_thread = thread_id + 1;
+    if (next_thread < PREEMPTION_THREADS) {
+        next_thread -= PREEMPTION_THREADS;
+    }
+
+    while (test_simple_preempt_start == 0) {
+        seL4_Yield();
+    }
+
+    while (true) {
+        /* Signal test thread */
+        unsigned int data = preemption_thread_data[thread_id] + 1;
+        preemption_thread_data[thread_id] = data;
+
+        ZF_LOGD("#%zu = %u", thread_id, data);
+
+        /* Busy wait to force pre-emption */
+        while (preemption_thread_data[next_thread] < data);
+    }
+}
+
+static int test_simple_preempt(struct env *env)
+{
+#ifdef CONFIG_DEBUG_BUILD
+    seL4_DebugNameThread(env->tcb, "Pre-empt monitor");
+#endif
+
+    uint64_t total = 0;
+    uint64_t prev = time_now(env);
+    for (size_t i = 0; i < 10; i++) {
+        uint64_t next = time_now(env);
+        total += next - prev;
+        prev = next;
+    }
+    ZF_LOGD("Average to read time %lluns", total / 10);
+
+    helper_thread_t threads[PREEMPTION_THREADS] = {};
+
+    ZF_LOGD("%zu threads, %lluus time slice", (size_t)PREEMPTION_THREADS, (uint64_t)(MAX_THREAD_SLICE / NS_IN_US));
+
+    /* Configure all of the threads */
+    for (size_t thread = 0; thread < PREEMPTION_THREADS; thread += 1) {
+        /* Ensure the thread data starts at 0 */
+        preemption_thread_data[thread] = 0;
+
+        create_helper_thread(env, &threads[thread]);
+
+        /* Thread must run at same prio as monitor */
+        set_helper_priority(env, &threads[thread], OUR_PRIO);
+
+#ifdef CONFIG_DEBUG_BUILD
+        char name[32] = "";
+        snprintf(name, 32, "Pre-empt #%zu", thread);
+        seL4_DebugNameThread(threads[thread].thread.tcb.cptr, name);
+#endif
+
+        /* Start the thread (will yield until we're ready) */
+        start_helper(env, &threads[thread], (helper_fn_t) test_simple_preempt_runner, thread, 0, 0, 0);
+    }
+
+    /* Set a timeout for the test.
+     * Each thread should be run for one tick */
+    uint64_t start = time_now(env);
+    uint64_t now = start;
+
+    /* Start executing other threads */
+    test_simple_preempt_start = 1;
+    seL4_Yield();
+
+    /* Wait for each thread to update its data */
+    for (size_t thread = 0; thread < PREEMPTION_THREADS; thread += 1) {
+        /* Wait until thread has updated its data */
+        while (preemption_thread_data[thread] == 0 && now - start < MAX_TIME) {
+            seL4_Yield();
+            now = time_now(env);
+        };
+
+        /* Give up if we exceed the timeout */
+        if (now - start >= MAX_TIME) {
+            break;
+        }
+    }
+
+    /* Get the total time taken to synchronise */
+    now = time_now(env);
+    uint64_t duration = now - start;
+
+    for (size_t thread = 0; thread < PREEMPTION_THREADS; thread += 1) {
+        cleanup_helper(env, &threads[thread]);
+
+        /* Each thread should only have been run once */
+        test_eq(preemption_thread_data[thread], 1);
+    }
+
+    /* Only check duration where a user timer is available */
+    if (config_set(CONFIG_HAVE_TIMER)) {
+        /* Show total time */
+        ZF_LOGI("Finished in %lluus", (now - start) / NS_IN_US);
+
+        /* If the timeout was exceeded this test has failed */
+        test_geq(now, start);
+        test_geq(duration, MIN_TIME);
+        test_lt(duration, MAX_TIME);
+    }
+
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0021, "Test for pre-emption during running of many threads with equal prio", test_simple_preempt,
+            true);
