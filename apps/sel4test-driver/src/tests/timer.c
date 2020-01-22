@@ -19,15 +19,45 @@
 
 #include <utils/util.h>
 
+static bool test_finished;
+
+typedef struct timer_test_data {
+    int curr_count;
+    int goal_count;
+} timer_test_data_t;
+
+static int test_callback(uintptr_t token)
+{
+    assert(token);
+    timer_test_data_t *test_data = (timer_test_data_t *) token;
+    test_data->curr_count++;
+    if (test_data->curr_count == test_data->goal_count) {
+        test_finished = true;
+    }
+}
+
 int test_timer(driver_env_t env)
 {
-    int error = ltimer_set_timeout(&env->ltimer, 1 * NS_IN_S, TIMEOUT_PERIODIC);
+    uint64_t time = 0;
+    test_finished = false;
+    timer_test_data_t test_data = { .goal_count = 10 };
+
+    int error = tm_alloc_id_at(&env->tm, TIMER_ID);
     test_assert_fatal(!error);
 
-    for (int i = 0; i < 3; i++) {
+    error = tm_register_cb(&env->tm, TIMEOUT_PERIODIC, 1 * NS_IN_S, 0, TIMER_ID,
+                           test_callback, (uintptr_t) &test_data);
+    test_assert_fatal(!error);
+
+    while (!test_finished) {
         wait_for_timer_interrupt(env);
         ZF_LOGV("Tick\n");
+        error = tm_update(&env->tm);
+        test_assert_fatal(!error);
     }
+
+    error = tm_free_id(&env->tm, TIMER_ID);
+    test_assert_fatal(!error);
 
     error = ltimer_reset(&env->ltimer);
     test_assert_fatal(!error);
@@ -41,19 +71,30 @@ test_gettime_timeout(driver_env_t env)
 {
     int error = 0;
     uint64_t start, end;
+    test_finished = false;
+    timer_test_data_t test_data = { .goal_count = 3 };
 
-    start = timestamp(env);
-    error = ltimer_set_timeout(&env->ltimer, 1 * NS_IN_MS, TIMEOUT_PERIODIC);
+    error = tm_alloc_id_at(&env->tm, TIMER_ID);
     test_assert_fatal(!error);
 
-    for (int i = 0; i < 3; i++) {
+    start = timestamp(env);
+    error = tm_register_cb(&env->tm, TIMEOUT_PERIODIC, 1 * NS_IN_MS, 0, TIMER_ID,
+                           test_callback, (uintptr_t) &test_data);
+    test_assert_fatal(!error);
+
+    while (!test_finished) {
         wait_for_timer_interrupt(env);
         ZF_LOGV("Tick\n");
+        error = tm_update(&env->tm);
+        test_assert_fatal(!error);
     }
 
     end = timestamp(env);
 
     test_gt(end, start);
+
+    error = tm_free_id(&env->tm, TIMER_ID);
+    test_assert_fatal(!error);
 
     error = ltimer_reset(&env->ltimer);
     test_assert_fatal(!error);
