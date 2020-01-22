@@ -231,13 +231,31 @@ static int test_smmu_control_caps(driver_env_t env) {
     error = vka_cnode_delete(&src_path); 
     ZF_LOGF_IF(error, "Failed to delete the second SID cap");
 
-
     error = vka_cspace_alloc_path(&env->vka, &slot_path);
     ZF_LOGF_IF(error, "Failed to allocate cnode slot");
 
     error = seL4_ARM_SIDControl_GetSID(simple_get_sid_ctrl(&env->simple), 0, slot_path.root, slot_path.capPtr, slot_path.capDepth); 
     ZF_LOGF_IF(error, "Failed to re-allocate SID cap");
 
+    // testing deleting sid and cb control caps
+    vka_cspace_make_path(&env->vka, simple_get_sid_ctrl(&env->simple), &src_path);
+    error = vka_cnode_delete(&src_path); 
+    ZF_LOGF_IF(error, "Failed to delete the SID control cap");
+
+    vka_cspace_make_path(&env->vka, simple_get_cb_ctrl(&env->simple), &src_path);
+    error = vka_cnode_delete(&src_path); 
+    ZF_LOGF_IF(error, "Failed to delete the CB control cap");
+
+    //testing cap allocation with invalide control cap
+    error = vka_cspace_alloc_path(&env->vka, &slot_path);
+    ZF_LOGF_IF(error, "Failed to allocate cnode slot");
+
+    seL4_ARM_SIDControl_GetSID(simple_get_sid_ctrl(&env->simple), 1, slot_path.root, slot_path.capPtr, slot_path.capDepth); 
+   
+    error = vka_cspace_alloc_path(&env->vka, &slot_path);
+    ZF_LOGF_IF(error, "Failed to allocate cnode slot");
+
+    seL4_ARM_CBControl_GetCB(simple_get_cb_ctrl(&env->simple), 1, slot_path.root, slot_path.capPtr, slot_path.capDepth); 
 
     return sel4test_get_result(); 
 }
