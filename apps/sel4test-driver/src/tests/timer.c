@@ -34,6 +34,7 @@ static int test_callback(uintptr_t token)
     if (test_data->curr_count == test_data->goal_count) {
         test_finished = true;
     }
+    return 0;
 }
 
 int test_timer(driver_env_t env)
