@@ -14,6 +14,7 @@
 
 #include <stdio.h>
 #include <sel4/sel4.h>
+#include <sel4test/testutil.h>
 #include <sel4test/macros.h>
 
 #include "../helpers.h"
