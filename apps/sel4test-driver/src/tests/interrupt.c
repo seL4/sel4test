@@ -134,6 +134,8 @@ static int test_smmu_control_caps(driver_env_t env) {
     int error; 
     cspacepath_t slot_path, src_path, dest_path; 
     seL4_CPtr cb_cap, sid_cap, cb_copy_cap, sid_copy_cap; 
+    seL4_ARM_SIDControl_GetFault_t smmu_global_fault; 
+    seL4_ARM_CB_CBGetFault_t smmu_cb_fault; 
 
     error = vka_cspace_alloc_path(&env->vka, &slot_path);
 
@@ -176,6 +178,14 @@ static int test_smmu_control_caps(driver_env_t env) {
     error = seL4_ARM_CB_AssignVspace(cb_cap, simple_get_pd(&env->simple)); 
     ZF_LOGF_IF(error, "Failed to assign vspace to CB");
 
+    smmu_cb_fault = seL4_ARM_CB_CBGetFault(cb_cap); 
+    printf("cb fault return %d status 0x%x address 0x%lx \n", smmu_cb_fault.error,
+        smmu_cb_fault.status, smmu_cb_fault.address);
+    ZF_LOGF_IF(smmu_cb_fault.error, "Failed to read the fault status of the context bank");
+
+    error = seL4_ARM_CB_CBClearFault(cb_cap); 
+    ZF_LOGF_IF(error, "Failed to clear fault status of the context bank");
+
     /*testing if can be reassigned*/
     error = seL4_ARM_CB_AssignVspace(cb_copy_cap, simple_get_pd(&env->simple)); 
     
@@ -188,6 +198,15 @@ static int test_smmu_control_caps(driver_env_t env) {
     error = seL4_ARM_CB_TLBInvalidate(cb_cap); 
 
     ZF_LOGF_IF(error, "Failed to invalidate TLB entries in a CB");
+
+    smmu_global_fault = seL4_ARM_SIDControl_GetFault(simple_get_sid_ctrl(&env->simple)); 
+    printf("global fault return %d status 0x%x syndrome_0 0x%x syndrome_1 0x%x\n", smmu_global_fault.error,
+        smmu_global_fault.status, smmu_global_fault.syndrome_0, smmu_global_fault.syndrome_1);
+    ZF_LOGF_IF(smmu_global_fault.error, "Failed to read the global fault status of the SMMU ");
+
+    error = seL4_ARM_SIDControl_ClearFault(simple_get_sid_ctrl(&env->simple)); 
+    ZF_LOGF_IF(error, "Failed to clear the global fault status of the SMMU ");
+
 
     error = seL4_ARM_CB_UnassignVspace(cb_cap); 
 
@@ -203,6 +222,7 @@ static int test_smmu_control_caps(driver_env_t env) {
 
     error = seL4_ARM_SID_BindCB(sid_cap, cb_copy_cap); 
     ZF_LOGF_IF(error, "Failed to rebind CB to SID");
+
 
     //testing revoking the cb cap 
     vka_cspace_make_path(&env->vka, cb_cap, &src_path);
@@ -256,6 +276,7 @@ static int test_smmu_control_caps(driver_env_t env) {
     ZF_LOGF_IF(error, "Failed to allocate cnode slot");
 
     seL4_ARM_CBControl_GetCB(simple_get_cb_ctrl(&env->simple), 1, slot_path.root, slot_path.capPtr, slot_path.capDepth); 
+
 
     return sel4test_get_result(); 
 }
