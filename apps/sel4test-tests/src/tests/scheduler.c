@@ -1632,3 +1632,61 @@ static int test_simple_preempt(struct env *env)
 }
 DEFINE_TEST(SCHED0021, "Test for pre-emption during running of many threads with equal prio", test_simple_preempt,
             true);
+
+int sched0022_to_fn(struct env *env, helper_thread_t *thread, seL4_CPtr ep)
+{
+    seL4_MessageInfo_t tag = {0};
+    seL4_MessageInfo_ptr_set_length(&tag, 2);
+
+    /* change to core 1 */
+    seL4_Error error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 1),
+                                                thread->thread.sched_context.cptr,
+                                                10000,
+                                                10000,
+                                                1,
+                                                0);
+    seL4_SetMR(0, error);
+    /* and back to core 0 */
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0),
+                                     thread->thread.sched_context.cptr,
+                                     10000,
+                                     10000,
+                                     1,
+                                     0);
+
+    seL4_SetMR(1, error);
+    seL4_Send(ep, tag);
+}
+
+/* Test that a helper thread can move itself back from another core.
+ * Save the return values and check them in test thread.
+ */
+static int test_changing_affinity(struct env *env)
+{
+    int error;
+    helper_thread_t t0;
+    seL4_MessageInfo_t tag;
+    seL4_CPtr reply, ep;
+    seL4_Word sender_badge = 0;
+
+    ep = vka_alloc_endpoint_leaky(&env->vka);
+
+    create_helper_thread(env, &t0);
+
+    reply = get_helper_reply(&t0);
+
+    start_helper(env, &t0, (helper_fn_t) sched0022_to_fn, (seL4_Word) env, (seL4_Word) &t0, ep, 0);
+
+    tag = seL4_Recv(ep, &sender_badge, reply);
+
+    /* Check error codes */
+    for (int i = 0; i < seL4_MessageInfo_get_length(tag); i++) {
+        test_assert(!seL4_GetMR(i));
+    }
+
+    cleanup_helper(env, &t0);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0022, "test changing a helper threads core", test_changing_affinity,
+            (config_set(CONFIG_KERNEL_MCS) &&(CONFIG_MAX_NUM_NODES > 1)));
