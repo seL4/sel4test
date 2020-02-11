@@ -1677,7 +1677,7 @@ static int test_changing_affinity(struct env *env)
 
     start_helper(env, &t0, (helper_fn_t) sched0022_to_fn, (seL4_Word) env, (seL4_Word) &t0, ep, 0);
 
-    tag = seL4_Recv(ep, &sender_badge, reply);
+    tag = api_recv(ep, &sender_badge, reply);
 
     /* Check error codes */
     for (int i = 0; i < seL4_MessageInfo_get_length(tag); i++) {
