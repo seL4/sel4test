@@ -54,6 +54,10 @@ if(NOT Sel4testAllowSettingsOverride)
         set(KernelArmHypervisorSupport ON CACHE BOOL "" FORCE)
     endif()
 
+    if(KernelPlatformQEMUArmVirt)
+        set(SIMULATION ON CACHE BOOL "" FORCE)
+    endif()
+
     if(SIMULATION)
         ApplyCommonSimulationSettings(${KernelArch})
     else()
