@@ -40,5 +40,8 @@ include(simulation)
 if(KernelSel4ArchX86_64)
     SetSimulationScriptProperty(MEM_SIZE "3G")
 endif()
+if(KernelPlatformQEMUArmVirt)
+    SetSimulationScriptProperty(MEM_SIZE "2G")
+endif()
 
 GenerateSimulateScript()
