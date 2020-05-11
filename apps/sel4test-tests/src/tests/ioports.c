@@ -111,7 +111,7 @@ static int test_native_ioports(env_t env)
                               faulter_vspace, seL4_NilData);
     set_helper_priority(env, &faulter_thread, 100);
 
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
 
     /* clear the faults */
     total_faults = 0;

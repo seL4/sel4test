@@ -69,23 +69,23 @@ static int test_frame_exported(env_t env)
 
             uintptr_t cookie = 0;
             err = vspace_map_pages_at_vaddr(&env->vspace, &frame, &cookie, (void *)vaddr, 1, frame_types[i].size_bits, reserve);
-            test_assert(err == seL4_NoError);
+            test_error_eq(err, seL4_NoError);
 
             /* Touch the memory */
             char *data = (char *)vaddr;
             touch_data(data, 0, 'U', frame_types[i].size_bits);
 
             err = seL4_ARCH_Page_Map(frame,
-                                       env->page_directory,
-                                       (seL4_Word) vaddr,
-                                       seL4_AllRights,
-                                       seL4_ARCH_Default_VMAttributes);
-            test_assert(!err);
+                                     env->page_directory,
+                                     (seL4_Word) vaddr,
+                                     seL4_AllRights,
+                                     seL4_ARCH_Default_VMAttributes);
+            test_error_eq(err, seL4_NoError);
             /* ensure the memory is what it was before and touch it again */
             touch_data(vaddr, 'U', 'V', frame_types[i].size_bits);
 
             vspace_unmap_pages(&env->vspace, (void *)vaddr, 1, frame_types[i].size_bits, VSPACE_PRESERVE);
-            test_assert(err == seL4_NoError);
+            test_error_eq(err, seL4_NoError);
         }
         test_assert(once);
     }
@@ -185,8 +185,8 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
      * in it any more.
      */
     err = seL4_ARM_Page_Map(frame_cap, env->page_directory, (seL4_Word) dest, seL4_AllRights,
-                              seL4_ARM_Default_VMAttributes | seL4_ARM_ExecuteNever);
-    test_assert(err == 0);
+                            seL4_ARM_Default_VMAttributes | seL4_ARM_ExecuteNever);
+    test_error_eq(err, 0);
 
     /* The page should still contain our code from before. */
     test_assert(!memcmp(dest, (void *)fault, 100));
@@ -247,7 +247,7 @@ static int test_device_frame_ipcbuf(env_t env)
     error = vka_cspace_alloc_path(&env->vka, &path);
     vka_cspace_make_path(&env->vka, env->device_frame, &frame_path);
     vka_cnode_copy(&path, &frame_path, seL4_AllRights);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     helper_thread_t other;
     create_helper_thread(env, &other);
@@ -284,7 +284,7 @@ static int test_switch_device_frame_ipcbuf(env_t env)
     error = vka_cspace_alloc_path(&env->vka, &path);
     vka_cspace_make_path(&env->vka, env->device_frame, &frame_path);
     vka_cnode_copy(&path, &frame_path, seL4_AllRights);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     ep = vka_alloc_endpoint_leaky(&env->vka);
     test_assert(ep != seL4_CapNull);
@@ -328,7 +328,7 @@ static int test_unmap_on_delete(env_t env)
     /* create a copy of the frame cap */
     cspacepath_t frame_copy;
     err = vka_cspace_alloc_path(&env->vka, &frame_copy);
-    test_assert(err == seL4_NoError);
+    test_error_eq(err, seL4_NoError);
     vka_cnode_copy(&frame_copy, &frame_path, seL4_AllRights);
 
     /* Map it in */

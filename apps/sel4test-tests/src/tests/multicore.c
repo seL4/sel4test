@@ -246,7 +246,7 @@ static int smp_test_tlb_instance(env_t env, bool inter_as)
                               faulter_cspace,
                               api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                               faulter_vspace, seL4_NilData);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
 
     /* Move handler to core 1 and faulter to the last available core */
     set_helper_affinity(env, &handler_thread, 1);

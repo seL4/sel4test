@@ -109,7 +109,7 @@ test_resume_self(struct env *env)
     ZF_LOGD("Starting test_resume_self\n");
     /* Ensure nothing bad happens if we resume ourselves. */
     int error = seL4_TCB_Resume(env->tcb);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     ZF_LOGD("Ending test_resume_self\n");
     return sel4test_get_result();
 }

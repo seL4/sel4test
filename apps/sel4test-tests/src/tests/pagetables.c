@@ -67,10 +67,10 @@ static int do_test_pagetable_tlbflush_on_vaddr_reuse(env_t env, seL4_CPtr cap1, 
     error = seL4_ARM_Page_Map(cap1, env->page_directory,
                               vaddr, seL4_AllRights,
                               seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     vptr[0] = 1;
     error = seL4_ARM_Page_Unmap(cap1);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* map, touch page 2 */
     vaddr = vstart + size;
@@ -78,10 +78,10 @@ static int do_test_pagetable_tlbflush_on_vaddr_reuse(env_t env, seL4_CPtr cap1, 
     error = seL4_ARM_Page_Map(cap2, env->page_directory,
                               vaddr, seL4_AllRights,
                               seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     vptr[0] = 2;
     error = seL4_ARM_Page_Unmap(cap2);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Test TLB */
     vaddr = vstart + 2 * size;
@@ -89,20 +89,20 @@ static int do_test_pagetable_tlbflush_on_vaddr_reuse(env_t env, seL4_CPtr cap1, 
     error = seL4_ARM_Page_Map(cap1, env->page_directory,
                               vaddr, seL4_AllRights,
                               seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     test_check(vptr[0] == 1);
 
     error = seL4_ARM_Page_Map(cap2, env->page_directory,
                               vaddr, seL4_AllRights,
                               seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     test_check(vptr[0] == 2 || !"TLB contains stale entry");
 
     /* clean up */
     error = seL4_ARM_Page_Unmap(cap1);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     error = seL4_ARM_Page_Unmap(cap2);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     return sel4test_get_result();
 }
 
@@ -137,12 +137,12 @@ static int test_pagetable_arm(env_t env)
     test_assert(supersection != 0);
     error = seL4_ARM_Page_Map(supersection, env->page_directory,
                               vstart + SUPSECT_SIZE / 2, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_AlignmentError);
+    test_error_eq(error, seL4_AlignmentError);
 
     /* Check we can map it in somewhere correctly aligned. */
     error = seL4_ARM_Page_Map(supersection, env->page_directory,
                               vstart + SUPSECT_SIZE, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Now fill it with stuff to check later. */
     /* TDDO fx these constants */
@@ -153,20 +153,20 @@ static int test_pagetable_arm(env_t env)
     error = seL4_ARM_Page_Map(section, env->page_directory,
                               vstart + SUPSECT_SIZE + SUPSECT_SIZE / 2, seL4_AllRights,
                               seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_DeleteFirst);
+    test_error_eq(error, seL4_DeleteFirst);
 
     /* Unmapping the section shouldn't do anything. */
     error = seL4_ARM_Page_Unmap(section);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Unmap supersection and try again. */
     error = seL4_ARM_Page_Unmap(supersection);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     error = seL4_ARM_Page_Map(section, env->page_directory,
                               vstart + SUPSECT_SIZE + SUPSECT_SIZE / 2, seL4_AllRights,
                               seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     fill_memory(vstart + SUPSECT_SIZE + SUPSECT_SIZE / 2, SECT_SIZE);
 
@@ -174,7 +174,7 @@ static int test_pagetable_arm(env_t env)
      * top. */
     error = seL4_ARM_Page_Map(supersection, env->page_directory,
                               vstart + SUPSECT_SIZE, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_DeleteFirst);
+    test_error_eq(error, seL4_DeleteFirst);
 
     if (!check_memory(vstart + SUPSECT_SIZE + SUPSECT_SIZE / 2, SECT_SIZE)) {
         return FAILURE;
@@ -182,15 +182,15 @@ static int test_pagetable_arm(env_t env)
 
     /* Unmap the section, leaving nothing mapped. */
     error = seL4_ARM_Page_Unmap(section);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Now, try mapping in the supersection into two places. */
     error = seL4_ARM_Page_Map(supersection, env->page_directory,
                               vstart, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     error = seL4_ARM_Page_Map(supersection, env->page_directory,
                               vstart + SUPSECT_SIZE, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_InvalidArgument);
+    test_error_eq(error, seL4_InvalidArgument);
 
     /* Now check what we'd written earlier is still there. */
     test_assert(check_memory(vstart, SUPSECT_SIZE));
@@ -198,46 +198,46 @@ static int test_pagetable_arm(env_t env)
     /* Try mapping the section into two places. */
     error = seL4_ARM_Page_Map(section, env->page_directory,
                               vstart + 2 * SUPSECT_SIZE, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     error = seL4_ARM_Page_Map(section, env->page_directory,
                               vstart + SUPSECT_SIZE, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_InvalidArgument);
+    test_error_eq(error, seL4_InvalidArgument);
 
     /* Unmap everything again. */
     error = seL4_ARM_Page_Unmap(section);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     error = seL4_ARM_Page_Unmap(supersection);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Map a large page somewhere with no pagetable. */
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_FailedLookup);
+    test_error_eq(error, seL4_FailedLookup);
 
     /* Map a pagetable at an unaligned address. Oddly enough, this will succeed
      * as the kernel silently truncates the address to the nearest correct
      * boundary. */
     error = seL4_ARM_PageTable_Map(pt, env->page_directory,
                                    vstart + SECT_SIZE + 10, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Map the large page in at an unaligned address. */
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart + SECT_SIZE + LPAGE_SIZE / 2,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_AlignmentError);
+    test_error_eq(error, seL4_AlignmentError);
 
     /* Map the large page in at an aligned address. */
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart + SECT_SIZE + LPAGE_SIZE,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Map it again, to a different vaddr, and it should fail. */
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart + SECT_SIZE + 2 * LPAGE_SIZE,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_InvalidArgument);
+    test_error_eq(error, seL4_InvalidArgument);
 
     /* Fill it with more stuff to check. */
     fill_memory(vstart + SECT_SIZE + LPAGE_SIZE, LPAGE_SIZE);
@@ -246,13 +246,13 @@ static int test_pagetable_arm(env_t env)
     error = seL4_ARM_Page_Map(small_page, env->page_directory,
                               vstart + SECT_SIZE + LPAGE_SIZE,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_DeleteFirst);
+    test_error_eq(error, seL4_DeleteFirst);
 
     /* Try mapping a small page elsewhere useful. */
     error = seL4_ARM_Page_Map(small_page, env->page_directory,
                               vstart + SECT_SIZE + 3 * LPAGE_SIZE,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Fill the small page with useful data too. */
     fill_memory(vstart + SECT_SIZE + 3 * LPAGE_SIZE, PAGE_SIZE_4K);
@@ -260,28 +260,28 @@ static int test_pagetable_arm(env_t env)
     /* Pull the plug on the page table. Apparently a recycle isn't good enough.
      * Get another pagetable! */
     error = seL4_CNode_Delete(env->cspace_root, pt, seL4_WordBits);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     error = seL4_ARM_Page_Unmap(small_page);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     error = seL4_ARM_Page_Unmap(large_page);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     pt = vka_alloc_page_table_leaky(&env->vka);
 
     /* Map the pagetable somewhere new. */
     error = seL4_ARM_PageTable_Map(pt, env->page_directory,
                                    vstart, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Map our small page and large page back in. */
     error = seL4_ARM_Page_Map(small_page, env->page_directory,
                               vstart + PAGE_SIZE_4K,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart + LPAGE_SIZE,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Check their contents. */
     test_assert(check_memory(vstart + PAGE_SIZE_4K, PAGE_SIZE_4K));
@@ -289,17 +289,17 @@ static int test_pagetable_arm(env_t env)
 
     /* Now unmap the small page */
     error = seL4_ARM_Page_Unmap(small_page);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Unmap the large page. */
     error = seL4_ARM_Page_Unmap(large_page);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Now map the large page where the small page was. */
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Now check the contents of the large page. */
     test_assert(check_memory(vstart, LPAGE_SIZE));
@@ -308,17 +308,17 @@ static int test_pagetable_arm(env_t env)
     error = seL4_ARM_Page_Map(small_page, env->page_directory,
                               vstart + LPAGE_SIZE,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Now unmap the small page */
     error = seL4_ARM_Page_Unmap(small_page);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Map a different small page in its place. */
     error = seL4_ARM_Page_Map(small_page2, env->page_directory,
                               vstart + LPAGE_SIZE,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Fill it in with stuff. */
     fill_memory(vstart + LPAGE_SIZE, PAGE_SIZE_4K);
@@ -363,7 +363,7 @@ test_pagetable_tlbflush_on_vaddr_reuse(env_t env)
     /* map a PT for smaller page objects */
     error = seL4_ARM_PageTable_Map(pt, env->page_directory,
                                    (seL4_Word)vstart, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Large page */
     cap1 = vka_alloc_object_leaky(&env->vka, seL4_ARM_LargePageObject, 0);
@@ -411,60 +411,60 @@ test_pagetable_arm(env_t env)
     /* Check we can't map the large page in at an address it's not aligned to. */
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart + LPAGE_SIZE / 2, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_AlignmentError);
+    test_error_eq(error, seL4_AlignmentError);
 
     /* Check we can map it in somewhere correctly aligned. */
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart + LPAGE_SIZE, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Unmap large page and try again. */
     error = seL4_ARM_Page_Unmap(large_page);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart + LPAGE_SIZE, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     fill_memory(vstart + LPAGE_SIZE, LPAGE_SIZE);
 
     /* Unmap the large page, leaving nothing mapped. */
     error = seL4_ARM_Page_Unmap(large_page);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Now, try mapping in the large page into two places. */
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Trying to remap to a different vaddr */
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart + LPAGE_SIZE, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_InvalidArgument);
+    test_error_eq(error, seL4_InvalidArgument);
 
     /* Now check what we'd written earlier is still there. */
     test_assert(check_memory(vstart, LPAGE_SIZE));
 
     /* Unmap everything again. */
     error = seL4_ARM_Page_Unmap(large_page);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Map a small page somewhere with no pagetable. */
     error = seL4_ARM_Page_Map(small_page, env->page_directory,
                               vstart, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_FailedLookup);
+    test_error_eq(error, seL4_FailedLookup);
 
     /* Map a pagetable at an unaligned address. Oddly enough, this will succeed
      * as the kernel silently truncates the address to the nearest correct
      * boundary. */
     error = seL4_ARM_PageTable_Map(pt, env->page_directory,
                                    vstart + LPAGE_SIZE + 10, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Try mapping a small page. */
     error = seL4_ARM_Page_Map(small_page, env->page_directory, vstart + LPAGE_SIZE + PAGE_SIZE_4K,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Fill the small page with useful data too. */
     fill_memory(vstart + LPAGE_SIZE + PAGE_SIZE_4K, PAGE_SIZE_4K);
@@ -472,28 +472,28 @@ test_pagetable_arm(env_t env)
     /* Pull the plug on the page table. Apparently a recycle isn't good enough.
      * Get another pagetable! */
     error = seL4_CNode_Delete(env->cspace_root, pt, seL4_WordBits);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     error = seL4_ARM_Page_Unmap(small_page);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     error = seL4_ARM_Page_Unmap(large_page);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
     pt = vka_alloc_page_table_leaky(&env->vka);
 
     /* Map the pagetable somewhere new. */
     error = seL4_ARM_PageTable_Map(pt, env->page_directory,
                                    vstart, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Map our small page and large page back in. */
     error = seL4_ARM_Page_Map(small_page, env->page_directory,
                               vstart + PAGE_SIZE_4K,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     error = seL4_ARM_Page_Map(large_page, env->page_directory,
                               vstart + LPAGE_SIZE,
                               seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Check their contents. */
     test_assert(check_memory(vstart + PAGE_SIZE_4K, PAGE_SIZE_4K));
@@ -501,11 +501,11 @@ test_pagetable_arm(env_t env)
 
     /* Now unmap the small page */
     error = seL4_ARM_Page_Unmap(small_page);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     /* Unmap the large page. */
     error = seL4_ARM_Page_Unmap(large_page);
-    test_assert(error == 0);
+    test_error_eq(error, 0);
 
     vspace_free_reservation(&env->vspace, reserve);
 

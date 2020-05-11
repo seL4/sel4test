@@ -30,7 +30,7 @@ static int test_page_flush(env_t env)
     uintptr_t vstart, vstartc;
     volatile uint32_t *ptr, *ptrc;
     vka_t *vka;
-    int err;
+    int error;
 
     vka = &env->vka;
 
@@ -60,23 +60,23 @@ static int test_page_flush(env_t env)
     /* Duplicate the cap */
     framec = get_free_slot(env);
     test_assert(framec != seL4_CapNull);
-    err = cnode_copy(env, frame, framec, seL4_AllRights);
-    test_assert(!err);
+    error = cnode_copy(env, frame, framec, seL4_AllRights);
+    test_error_eq(error, seL4_NoError);
 
     /* map in a cap with cacheability */
-    err = vspace_map_pages_at_vaddr(&env->vspace, &framec, NULL, vaddrc, 1, seL4_PageBits, reservationc);
-    test_assert(!err);
+    error = vspace_map_pages_at_vaddr(&env->vspace, &framec, NULL, vaddrc, 1, seL4_PageBits, reservationc);
+    test_error_eq(error, seL4_NoError);
     /* map in a cap without cacheability */
-    err = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
-    test_assert(!err);
+    error = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
+    test_error_eq(error, seL4_NoError);
 
     /* Clean makes data observable to non-cached page */
     *ptr = 0xC0FFEE;
     *ptrc = 0xDEADBEEF;
     test_assert(*ptr == 0xC0FFEE);
     test_assert(*ptrc == 0xDEADBEEF);
-    err = seL4_ARM_Page_Clean_Data(framec, 0, PAGE_SIZE_4K);
-    assert(!err);
+    error = seL4_ARM_Page_Clean_Data(framec, 0, PAGE_SIZE_4K);
+    assert(!error);
     test_assert(*ptr == 0xDEADBEEF);
     test_assert(*ptrc == 0xDEADBEEF);
     /* Clean/Invalidate makes data observable to non-cached page */
@@ -84,8 +84,8 @@ static int test_page_flush(env_t env)
     *ptrc = 0xDEADBEEF;
     test_assert(*ptr == 0xC0FFEE);
     test_assert(*ptrc == 0xDEADBEEF);
-    err = seL4_ARM_Page_CleanInvalidate_Data(framec, 0, PAGE_SIZE_4K);
-    assert(!err);
+    error = seL4_ARM_Page_CleanInvalidate_Data(framec, 0, PAGE_SIZE_4K);
+    assert(!error);
     test_assert(*ptr == 0xDEADBEEF);
     test_assert(*ptrc == 0xDEADBEEF);
     /* Invalidate makes RAM data observable to cached page */
@@ -93,8 +93,8 @@ static int test_page_flush(env_t env)
     *ptrc = 0xDEADBEEF;
     test_assert(*ptr == 0xC0FFEE);
     test_assert(*ptrc == 0xDEADBEEF);
-    err = seL4_ARM_Page_Invalidate_Data(framec, 0, PAGE_SIZE_4K);
-    assert(!err);
+    error = seL4_ARM_Page_Invalidate_Data(framec, 0, PAGE_SIZE_4K);
+    assert(!error);
 
     /* In case the invalidation performs an implicit clean, write a new
        value to RAM and make sure the cached read retrieves it
@@ -138,31 +138,31 @@ static int test_large_page_flush_operation(env_t env)
         uintptr_t cookie = 0;
         error = vspace_map_pages_at_vaddr(&env->vspace, &frames[i], &cookie, (void *)(vstart + frame_types[i].vaddr_offset), 1,
                                           frame_types[i].size_bits, reserve);
-        test_assert(error == seL4_NoError);
+        test_error_eq(error, seL4_NoError);
     }
 
     /* See if we can invoke page flush on each of them */
     for (int i = 0; i < num_frame_types; i++) {
         error = seL4_ARM_Page_Invalidate_Data(frames[i], 0, BIT(frame_types[i].size_bits));
-        test_assert(error == 0);
+        test_error_eq(error, 0);
         error = seL4_ARM_Page_Clean_Data(frames[i], 0, BIT(frame_types[i].size_bits));
-        test_assert(error == 0);
+        test_error_eq(error, 0);
         error = seL4_ARM_Page_CleanInvalidate_Data(frames[i], 0, BIT(frame_types[i].size_bits));
-        test_assert(error == 0);
+        test_error_eq(error, 0);
         error = seL4_ARM_Page_Unify_Instruction(frames[i], 0, BIT(frame_types[i].size_bits));
-        test_assert(error == 0);
+        test_error_eq(error, 0);
         error = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstart + frame_types[i].vaddr_offset,
                                                         vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
-        test_assert(error == 0);
+        test_error_eq(error, 0);
         error = seL4_ARCH_PageDirectory_Clean_Data(env->page_directory, vstart + frame_types[i].vaddr_offset,
                                                    vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
-        test_assert(error == 0);
+        test_error_eq(error, 0);
         error = seL4_ARCH_PageDirectory_CleanInvalidate_Data(env->page_directory, vstart + frame_types[i].vaddr_offset,
                                                              vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
-        test_assert(error == 0);
+        test_error_eq(error, 0);
         error = seL4_ARCH_PageDirectory_Unify_Instruction(env->page_directory, vstart + frame_types[i].vaddr_offset,
                                                           vstart + frame_types[i].vaddr_offset + BIT(frame_types[i].size_bits));
-        test_assert(error == 0);
+        test_error_eq(error, 0);
     }
 
     return sel4test_get_result();
@@ -205,14 +205,14 @@ static int test_page_directory_flush(env_t env)
     framec = get_free_slot(env);
     test_assert(framec != seL4_CapNull);
     err = cnode_copy(env, frame, framec, seL4_AllRights);
-    test_assert(!err);
+    test_error_eq(err, seL4_NoError);
 
     /* map in a cap with cacheability */
     err = vspace_map_pages_at_vaddr(&env->vspace, &framec, NULL, vaddrc, 1, seL4_PageBits, reservationc);
-    test_assert(!err);
+    test_error_eq(err, seL4_NoError);
     /* map in a cap without cacheability */
     err = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
-    test_assert(!err);
+    test_error_eq(err, seL4_NoError);
 
     /* Clean makes data observable to non-cached page */
     *ptr = 0xC0FFEE;

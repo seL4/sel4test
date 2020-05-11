@@ -96,7 +96,7 @@ static int test_preempt_revoke_actual(env_t env, int num_cnode_bits)
      * and time the revoke operation
      */
     error = create_cnode_table(env, num_cnode_bits, ep);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
 
     uint64_t start, end, diff;
     /* meaure revoke_func time.
@@ -122,7 +122,7 @@ static int test_preempt_revoke_actual(env_t env, int num_cnode_bits)
      * test.
      */
     error = create_cnode_table(env, num_cnode_bits, ep);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     sel4test_periodic_start(env, timeout_val);
 
     /* Last thread to start runs first. */

@@ -89,7 +89,7 @@ test_recv_needs_read(env_t env)
                                   env->cspace_root,
                                   seL4_NilData,
                                   env->page_directory, seL4_NilData);
-        test_assert(!error);
+        test_error_eq(error, seL4_NoError);
         start_helper(env, &t, (helper_fn_t)check_recv, epMint, MAGIC1, reply, 0);
 
         if (seL4_CapRights_get_capAllowRead(rights)) {
@@ -115,7 +115,7 @@ check_recv_cap(env_t env, seL4_CPtr ep, bool should_recv_cap, seL4_CPtr reply)
 
     seL4_CPtr recvSlot;
     int vka_error = vka_cspace_alloc(vka, &recvSlot);
-    test_assert(!vka_error);
+    test_error_eq(vka_error, seL4_NoError);
     set_cap_receive_path(env, recvSlot);
     api_recv(ep, NULL, reply);
 

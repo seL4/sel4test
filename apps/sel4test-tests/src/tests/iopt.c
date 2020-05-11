@@ -73,7 +73,7 @@ static int map_iopt_set(env_t env, seL4_CPtr *iospace, iopt_cptrs_t *pts, seL4_C
     /* Allocate a random device ID that hopefully doesn't exist have any
      * RMRR regions */
     error = vka_cspace_alloc(&env->vka, iospace);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     vka_cspace_make_path(&env->vka, *iospace, &iospace_path);
     vka_cspace_make_path(&env->vka, env->io_space, &master_path);
     error = vka_cnode_mint(&iospace_path, &master_path, seL4_AllRights, (DOMAIN_ID << 16) | FAKE_PCI_DEVICE);

@@ -60,11 +60,11 @@ test_unmap_after_delete(env_t env)
 
     /* map page table into page directory */
     error = seL4_ARM_PageTable_Map(pt, pd, map_addr, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_NoError);
+    test_error_eq(error, seL4_NoError);
 
     /* map frame into the page table */
     error = seL4_ARM_Page_Map(frame, pd, map_addr, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_NoError);
+    test_error_eq(error, seL4_NoError);
 
     /* delete the page directory */
     vka_cspace_make_path(&env->vka, pd, &path);
@@ -105,20 +105,20 @@ test_unmap_after_delete(env_t env)
 #if seL4_PGDBits > 0
     /* map pud into page global directory */
     error = seL4_ARM_PageUpperDirectory_Map(pud, vspace, map_addr, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_NoError);
+    test_error_eq(error, seL4_NoError);
 #endif
 
     /* map pd into page upper directory */
     error = seL4_ARM_PageDirectory_Map(pd, vspace, map_addr, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_NoError);
+    test_error_eq(error, seL4_NoError);
 
     /* map page table into page directory */
     error = seL4_ARM_PageTable_Map(pt, vspace, map_addr, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_NoError);
+    test_error_eq(error, seL4_NoError);
 
     /* map frame into the page table */
     error = seL4_ARM_Page_Map(frame, vspace, map_addr, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-    test_assert(error == seL4_NoError);
+    test_error_eq(error, seL4_NoError);
 
     /* delete the page directory */
     vka_cspace_make_path(&env->vka, vspace, &path);

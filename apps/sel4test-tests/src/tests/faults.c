@@ -752,7 +752,7 @@ static int test_fault(env_t env, int fault_type, bool inter_as)
                                           faulter_cspace,
                                           api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                                           faulter_vspace, seL4_NilData);
-                test_assert(!error);
+                test_error_eq(error, seL4_NoError);
                 set_helper_priority(env, &faulter_thread, prio);
 
                 // Ensure that the BADGED and RESTART bits are not

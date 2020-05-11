@@ -77,7 +77,7 @@ static int test_full_cspace(env_t env)
                     cnode[i - 1], slot, 1,
                     env->cspace_root, cnode[i], seL4_WordBits,
                     seL4_AllRights);
-        test_assert(!error);
+        test_error_eq(error, seL4_NoError);
         ep_pos |= (slot << i);
         slot ^= 1;
     }
@@ -86,7 +86,7 @@ static int test_full_cspace(env_t env)
                 cnode[CONFIG_WORD_SIZE - 1], slot, 1,
                 env->cspace_root, ep, seL4_WordBits,
                 seL4_AllRights);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
 
     /* Start a helper thread in our own cspace, to let it get set up. */
     helper_thread_t t;
@@ -106,7 +106,7 @@ static int test_full_cspace(env_t env)
                               cnode[0], seL4_NilData, env->page_directory,
                               seL4_NilData);
 
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
 
     /* And now wait for it to do some tests and return to us. */
     tag = api_wait(ep, &sender_badge);

@@ -26,7 +26,7 @@ static seL4_CPtr badge_endpoint(env_t env, seL4_Word badge, seL4_CPtr ep)
 
     seL4_CPtr slot = get_free_slot(env);
     int error = cnode_mint(env, ep, slot, seL4_AllRights, badge);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     return slot;
 }
 
@@ -60,7 +60,7 @@ static int test_notification_binding(env_t env)
 
     /* bind the endpoint */
     int error = seL4_TCB_BindNotification(env->tcb, notification_ep);
-    test_assert(error == seL4_NoError);
+    test_error_eq(error, seL4_NoError);
 
     start_helper(env, &notification, sender, badged_notification_ep, ASYNC, NUM_RUNS, 0);
     start_helper(env, &sync, sender, badged_sync_ep, SYNC, NUM_RUNS, 0);
@@ -85,7 +85,7 @@ static int test_notification_binding(env_t env)
     test_check(num_sync_messages == NUM_RUNS);
 
     error = seL4_TCB_UnbindNotification(env->tcb);
-    test_assert(error == seL4_NoError);
+    test_error_eq(error, seL4_NoError);
 
     cleanup_helper(env, &sync);
     cleanup_helper(env, &notification);
@@ -113,7 +113,7 @@ test_notification_binding_2(env_t env)
 
     /* bind the endpoint */
     int error = seL4_TCB_BindNotification(env->tcb, notification_ep);
-    test_assert(error == seL4_NoError);
+    test_error_eq(error, seL4_NoError);
 
     start_helper(env, &notification, sender, badged_notification_ep, ASYNC, NUM_RUNS, 0);
 
@@ -132,7 +132,7 @@ test_notification_binding_2(env_t env)
     test_check(num_notification_messages == NUM_RUNS);
 
     error = seL4_TCB_UnbindNotification(env->tcb);
-    test_assert(error == seL4_NoError);
+    test_error_eq(error, seL4_NoError);
 
     cleanup_helper(env, &notification);
 
@@ -168,7 +168,7 @@ static int test_notification_binding_prio(env_t env, uint8_t waiter_prio, uint8_
     set_helper_priority(env, &sender_thread, sender_prio);
 
     int error = seL4_TCB_BindNotification(get_helper_tcb(&waiter_thread), notification_ep);
-    test_assert(error == seL4_NoError);
+    test_error_eq(error, seL4_NoError);
 
     start_helper(env, &waiter_thread, waiter, notification_ep, 0, 0, 0);
     start_helper(env, &sender_thread, sender, notification_ep, 0, 1, 0);

@@ -31,7 +31,7 @@ int test_allocator(env_t env)
 
     for (int i = 0; i < MIN_EXPECTED_ALLOCATIONS; i++) {
         error = vka_alloc_endpoint(&env->vka, &endpoint);
-        test_assert(error == 0);
+        test_error_eq(error, 0);
         test_assert(endpoint.cptr != 0);
         vka_free_object(&env->vka, &endpoint);
     }

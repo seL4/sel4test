@@ -369,7 +369,7 @@ static int test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_a
     }
 
     error = cnode_delete(env, ep);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     return sel4test_get_result();
 }
 

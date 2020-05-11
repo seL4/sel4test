@@ -35,21 +35,21 @@ static int test_cnode_copy(env_t env)
     dest = get_free_slot(env);
     test_assert(is_slot_empty(env, dest));
     error = cnode_copy(env, src, dest, seL4_AllRights);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     test_assert(are_tcbs_distinct(src, dest) == 0);
 
     /* Copy to an occupied slot (should fail). */
     src = get_cap(&env->vka);
     dest = get_cap(&env->vka);
     error = cnode_copy(env, src, dest, seL4_AllRights);
-    test_assert(error == seL4_DeleteFirst);
+    test_error_eq(error, seL4_DeleteFirst);
 
     /* Copy from a free slot to an occupied slot (should fail). */
     src = get_free_slot(env);
     test_assert(is_slot_empty(env, src));
     dest = get_cap(&env->vka);
     error = cnode_copy(env, src, dest, seL4_AllRights);
-    test_assert(error == seL4_DeleteFirst);
+    test_error_eq(error, seL4_DeleteFirst);
 
     /* Copy from a free slot to a free slot (should fail). */
     src = get_free_slot(env);
@@ -57,7 +57,7 @@ static int test_cnode_copy(env_t env)
     dest = get_free_slot(env);
     test_assert(is_slot_empty(env, dest));
     error = cnode_copy(env, src, dest, seL4_AllRights);
-    test_assert(error == seL4_FailedLookup);
+    test_error_eq(error, seL4_FailedLookup);
 
     return sel4test_get_result();
 }
@@ -72,13 +72,13 @@ test_cnode_delete(env_t env)
     /* A call that should succeed. */
     slot = get_cap(&env->vka);
     error = cnode_delete(env, slot);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     test_assert(is_slot_empty(env, slot));
 
     /* Deleting a free slot (should succeed). */
     slot = get_free_slot(env);
     error = cnode_delete(env, slot);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     test_assert(is_slot_empty(env, slot));
 
     return sel4test_get_result();
@@ -95,20 +95,20 @@ test_cnode_mint(env_t env)
     src = get_cap(&env->vka);
     dest = get_free_slot(env);
     error = cnode_mint(env, src, dest, seL4_AllRights, seL4_NilData);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     test_assert(are_tcbs_distinct(src, dest) == 0);
 
     /* Mint to an occupied slot (should fail). */
     src = get_cap(&env->vka);
     dest = get_cap(&env->vka);
     error = cnode_mint(env, src, dest, seL4_AllRights, seL4_NilData);
-    test_assert(error == seL4_DeleteFirst);
+    test_error_eq(error, seL4_DeleteFirst);
 
     /* Mint from an empty slot (should fail). */
     src = get_free_slot(env);
     dest = get_free_slot(env);
     error = cnode_mint(env, src, dest, seL4_AllRights, seL4_NilData);
-    test_assert(error == seL4_FailedLookup);
+    test_error_eq(error, seL4_FailedLookup);
 
     return sel4test_get_result();
 }
@@ -124,7 +124,7 @@ test_cnode_move(env_t env)
     src = get_cap(&env->vka);
     dest = get_free_slot(env);
     error = cnode_move(env, src, dest);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     test_assert(is_slot_empty(env, src));
     test_assert(!is_slot_empty(env, dest));
 
@@ -132,14 +132,14 @@ test_cnode_move(env_t env)
     src = get_free_slot(env);
     dest = get_free_slot(env);
     error = cnode_move(env, src, dest);
-    test_assert(error = seL4_FailedLookup);
+    test_error_eq(error, seL4_FailedLookup);
     test_assert(is_slot_empty(env, dest));
 
     /* Move to an occupied slot (should fail). */
     src = get_cap(&env->vka);
     dest = get_cap(&env->vka);
     error = cnode_move(env, src, dest);
-    test_assert(error == seL4_DeleteFirst);
+    test_error_eq(error, seL4_DeleteFirst);
     test_assert(!is_slot_empty(env, src));
     test_assert(!is_slot_empty(env, dest));
 
@@ -157,7 +157,7 @@ test_cnode_mutate(env_t env)
     src = get_cap(&env->vka);
     dest = get_free_slot(env);
     error = cnode_mutate(env, src, dest);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     test_assert(is_slot_empty(env, src));
     test_assert(!is_slot_empty(env, dest));
 
@@ -165,7 +165,7 @@ test_cnode_mutate(env_t env)
     src = get_cap(&env->vka);
     dest = get_cap(&env->vka);
     error = cnode_mutate(env, src, dest);
-    test_assert(error == seL4_DeleteFirst);
+    test_error_eq(error, seL4_DeleteFirst);
     test_assert(!is_slot_empty(env, src));
     test_assert(!is_slot_empty(env, dest));
 
@@ -173,7 +173,7 @@ test_cnode_mutate(env_t env)
     src = get_free_slot(env);
     dest = get_free_slot(env);
     error = cnode_mutate(env, src, dest);
-    test_assert(error == seL4_FailedLookup);
+    test_error_eq(error, seL4_FailedLookup);
     test_assert(is_slot_empty(env, src));
     test_assert(is_slot_empty(env, dest));
 
@@ -190,13 +190,13 @@ test_cnode_cancelBadgedSends(env_t env)
     /* A call that should succeed. */
     seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
     error = cnode_cancelBadgedSends(env, ep);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     test_assert(!is_slot_empty(env, ep));
 
     /* Recycling an empty slot (should fail). */
     slot = get_free_slot(env);
     error = cnode_cancelBadgedSends(env, slot);
-    test_assert(error == seL4_IllegalOperation);
+    test_error_eq(error, seL4_IllegalOperation);
     test_assert(is_slot_empty(env, slot));
 
     return sel4test_get_result();
@@ -212,13 +212,13 @@ test_cnode_revoke(env_t env)
     /* A call that should succeed. */
     slot = get_cap(&env->vka);
     error = cnode_revoke(env, slot);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     test_assert(!is_slot_empty(env, slot));
 
     /* Revoking a null cap (should fail). */
     slot = get_free_slot(env);
     error = cnode_revoke(env, slot);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     test_assert(is_slot_empty(env, slot));
 
     return sel4test_get_result();
@@ -236,7 +236,7 @@ test_cnode_rotate(env_t env)
     pivot = get_cap(&env->vka);
     dest = get_free_slot(env);
     error = cnode_rotate(env, src, pivot, dest);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     test_assert(is_slot_empty(env, src));
     test_assert(!is_slot_empty(env, pivot));
     test_assert(!is_slot_empty(env, dest));
@@ -246,7 +246,7 @@ test_cnode_rotate(env_t env)
     pivot = get_cap(&env->vka);
     dest = get_cap(&env->vka);
     error = cnode_rotate(env, src, pivot, dest);
-    test_assert(error == seL4_DeleteFirst);
+    test_error_eq(error, seL4_DeleteFirst);
     test_assert(!is_slot_empty(env, src));
     test_assert(!is_slot_empty(env, pivot));
     test_assert(!is_slot_empty(env, dest));
@@ -256,7 +256,7 @@ test_cnode_rotate(env_t env)
     pivot = get_cap(&env->vka);
     dest = src;
     error = cnode_rotate(env, src, pivot, dest);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
     test_assert(are_tcbs_distinct(src, dest) == 0);
     test_assert(!is_slot_empty(env, pivot));
 
@@ -265,7 +265,7 @@ test_cnode_rotate(env_t env)
     pivot = src;
     dest = get_free_slot(env);
     error = cnode_rotate(env, src, pivot, dest);
-    test_assert(error == seL4_IllegalOperation);
+    test_error_eq(error, seL4_IllegalOperation);
     test_assert(!is_slot_empty(env, src));
     test_assert(is_slot_empty(env, dest));
 
@@ -274,7 +274,7 @@ test_cnode_rotate(env_t env)
     pivot = get_free_slot(env);
     dest = get_free_slot(env);
     error = cnode_rotate(env, src, pivot, dest);
-    test_assert(error == seL4_FailedLookup);
+    test_error_eq(error, seL4_FailedLookup);
     test_assert(is_slot_empty(env, src));
     test_assert(is_slot_empty(env, pivot));
     test_assert(is_slot_empty(env, dest));
@@ -293,12 +293,12 @@ test_cnode_savecaller(env_t env)
     /* A call that should succeed. */
     slot = get_free_slot(env);
     error = cnode_savecaller(env, slot);
-    test_assert(!error);
+    test_error_eq(error, seL4_NoError);
 
     /* Save to an occupied slot (should fail). */
     slot = get_cap(&env->vka);
     error = cnode_savecaller(env, slot);
-    test_assert(error == seL4_DeleteFirst);
+    test_error_eq(error, seL4_DeleteFirst);
     test_assert(!is_slot_empty(env, slot));
 
     /* TODO: Test saving an actual reply capability. */
