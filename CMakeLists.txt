@@ -19,7 +19,7 @@ project(sel4test C CXX ASM)
 find_package(seL4 REQUIRED)
 find_package(elfloader-tool REQUIRED)
 
-# Set the rootttask CNode size to be large enough for DTB, timer caps, etc
+# Set the roottask CNode size to be large enough for DTB, timer caps, etc
 # Note that this works for the platforms that we have at the moment, and may
 # need to be increased in the future
 set(KernelRootCNodeSizeBits 13 CACHE INTERNAL "")
