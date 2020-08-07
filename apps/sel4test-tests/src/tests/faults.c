@@ -900,17 +900,24 @@ static int timeout_fault_client_fn(seL4_CPtr ep)
     return 0;
 }
 
-int create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CPtr tfep,
-                                    seL4_Word badge, helper_fn_t fn, seL4_CPtr ep, seL4_Word arg1,
-                                    seL4_Word arg2, seL4_Word arg3, sel4utils_checkpoint_t *cp)
+static int create_and_set_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep, seL4_Word badge)
 {
     seL4_CPtr minted_tfep = get_free_slot(env);
     int error = cnode_mint(env, tfep, minted_tfep, seL4_AllRights, badge);
     test_eq(error, seL4_NoError);
 
-    error = create_passive_thread(env, passive, fn, ep, arg1, arg2, arg3);
-    set_helper_tfep(env, passive, minted_tfep);
+    set_helper_tfep(env, thread, minted_tfep);
+}
+
+int create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CPtr tfep,
+                                    seL4_Word badge, helper_fn_t fn, seL4_CPtr ep, seL4_Word arg1,
+                                    seL4_Word arg2, seL4_Word arg3, sel4utils_checkpoint_t *cp)
+{
+    create_helper_thread(env, passive);
+    int error = start_passive_thread(env, passive, fn, ep, arg1, arg2, arg3);
     test_eq(error, 0);
+
+    create_and_set_tfep(env, passive, tfep, badge);
 
     /* checkpoint */
     return sel4utils_checkpoint_thread(&passive->thread, cp, false);
