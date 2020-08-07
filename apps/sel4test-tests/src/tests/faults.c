@@ -937,6 +937,7 @@ static int handle_timeout_fault(seL4_CPtr tfep, seL4_Word expected_badge, sel4ut
 #ifdef CONFIG_KERNEL_MCS
     test_check(seL4_isTimeoutFault_tag(info));
     test_eq(seL4_GetMR(seL4_Timeout_Data), expected_data);
+    test_eq(seL4_GetMR(seL4_Timeout_Reason), (seL4_Word) seL4_Timeout_Exhausted);
     test_eq(seL4_MessageInfo_get_length(info), (seL4_Word) seL4_Timeout_Length);
 #endif
     /* reply to client on behalf of server */
