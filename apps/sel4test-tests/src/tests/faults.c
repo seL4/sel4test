@@ -1069,6 +1069,367 @@ static int test_timeout_fault_nested_servers(env_t env)
 /* this test is disabled for the same reason as TIMEOUTFAULT0002 */
 DEFINE_TEST(TIMEOUTFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers, config_set(CONFIG_KERNEL_MCS))
 
+/* Test of invalid SC and no SC faults */
+
+typedef int request_fn(void *);
+
+static int timeout_fault_generic_server_fn(seL4_CPtr ep, seL4_CPtr ro)
+{
+    api_nbsend_recv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL, ro);
+    while (true) {
+        request_fn *request = (request_fn *)seL4_GetMR(0);
+        void *request_data = (void *)seL4_GetMR(1);
+        int result = request(request_data);
+        seL4_SetMR(0, result);
+        api_reply_recv(ep, seL4_MessageInfo_new(0, 0, 0, 1), NULL, ro);
+    }
+}
+
+static int timeout_fault_infinite_loop_request(void *data)
+{
+    ZF_LOGD("Entering infinite loop");
+    while (true);
+}
+
+static int timeout_fault_donate_client_fn(seL4_CPtr ep, int donate)
+{
+    seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 2);
+    seL4_SetMR(0, (seL4_Word)timeout_fault_infinite_loop_request);
+    seL4_SetMR(1, 0);
+    if (donate) {
+        ZF_LOGD("Client call");
+        seL4_Call(ep, info);
+    } else {
+        ZF_LOGD("Client send");
+        seL4_Send(ep, info);
+    }
+    ZF_LOGD("Client return");
+    return 0;
+}
+
+static int catch_invalid_sc(seL4_CPtr tfep, seL4_Word expected_badge, seL4_Word expected_data,
+                            seL4_Word expected_reason, env_t env)
+{
+    seL4_Word badge;
+    seL4_CPtr server_reply = vka_alloc_reply_leaky(&env->vka);
+
+    /* wait for timeout fault */
+    ZF_LOGD("Wait for tf");
+    seL4_MessageInfo_t info = api_recv(tfep, &badge, server_reply);
+    test_eq(badge, expected_badge);
+#ifdef CONFIG_KERNEL_MCS
+    test_check(seL4_isTimeoutFault_tag(info));
+    test_eq(seL4_MessageInfo_get_length(info), (seL4_Word) seL4_Timeout_Length);
+    test_eq(seL4_GetMR(seL4_Timeout_Data), expected_data);
+    test_eq(seL4_GetMR(seL4_Timeout_Reason), expected_reason);
+#endif
+
+    return 0;
+}
+
+static int test_timeout_fault_no_donated_sc(env_t env)
+{
+    helper_thread_t client, server;
+    sel4utils_checkpoint_t server_cp;
+
+    seL4_Word client_data = 1;
+    seL4_Word server_badge = 2;
+
+    seL4_CPtr server_ep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr tfep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr server_ro = vka_alloc_reply_leaky(&env->vka);
+
+    /* create server */
+    int error = create_passive_thread_with_tfep(env, &server, tfep, server_badge,
+                                                (helper_fn_t) timeout_fault_generic_server_fn, server_ep,
+                                                server_ro, 0, 0, &server_cp);
+    test_eq(error, 0);
+
+    /* create non-donating client */
+    create_helper_thread(env, &client);
+
+    /* Run the helper */
+    start_helper(env, &client, (helper_fn_t) timeout_fault_donate_client_fn, server_ep, 0, 0, 0);
+
+#ifdef CONFIG_KERNEL_MCS
+    /* Catch the fault */
+    catch_invalid_sc(tfep, server_badge, 0, seL4_Timeout_NoSC, env);
+#endif
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(TIMEOUTFAULT0004, "Fault on no donated SC", test_timeout_fault_no_donated_sc, config_set(CONFIG_KERNEL_MCS))
+
+typedef struct {
+    env_t env;
+    seL4_CPtr ep;
+    int replace_sc;
+} create_client_request_t;
+
+static int create_client_request(void *data)
+{
+    create_client_request_t *request = data;
+
+    /* Create a new client */
+    helper_thread_t client;
+    create_helper_thread(request->env, &client);
+    start_helper(request->env, &client, (helper_fn_t) timeout_fault_donate_client_fn, request->ep, 1, 0, 0);
+
+    /* Yield to the client to let it call */
+    seL4_Yield();
+
+    /* Remove existing SC */
+    int error = api_sc_unbind(client.thread.sched_context.cptr);
+    test_eq(error, 0);
+
+    /* Replace with unconfigured SC */
+    if (request->replace_sc) {
+        seL4_CPtr sc = vka_alloc_sched_context_leaky(&request->env->vka);
+        error = api_sc_bind(sc, client.thread.tcb.cptr);
+        test_eq(error, 0);
+    }
+
+    return 0;
+}
+
+static void call_create_client_request(env_t env, seL4_CPtr server_ep, int replace_sc)
+{
+    create_client_request_t request = {
+        .env = env,
+        .ep = server_ep,
+        .replace_sc = replace_sc,
+    };
+    seL4_SetMR(0, (seL4_Word)create_client_request);
+    seL4_SetMR(1, (seL4_Word)(&request));
+    seL4_Call(server_ep, seL4_MessageInfo_new(0, 0, 0, 2));
+}
+
+static int test_timeout_fault_client_sc_removed(env_t env)
+{
+    helper_thread_t server;
+    sel4utils_checkpoint_t server_cp;
+
+    seL4_Word client_data = 1;
+    seL4_Word server_badge = 2;
+
+    seL4_CPtr server_ep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr tfep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr server_ro = vka_alloc_reply_leaky(&env->vka);
+
+    /* create server */
+    int error = create_passive_thread_with_tfep(env, &server, tfep, server_badge,
+                                                (helper_fn_t) timeout_fault_generic_server_fn, server_ep,
+                                                server_ro, 0, 0, &server_cp);
+    test_eq(error, 0);
+
+    /* Use server to create client to ensure client is blocked on the
+     * endpoint when its SC is removed. */
+    ZF_LOGD("Creating client from server");
+    /* Yield to ensure maximum time in donated SC */
+    seL4_Yield();
+    call_create_client_request(env, server_ep, 0);
+
+#ifdef CONFIG_KERNEL_MCS
+    /* Catch the fault */
+    catch_invalid_sc(tfep, server_badge, 0, seL4_Timeout_NoSC, env);
+#endif
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(TIMEOUTFAULT0005, "Fault on client SC removed", test_timeout_fault_client_sc_removed,
+            config_set(CONFIG_KERNEL_MCS))
+
+
+static int timeout_fault_spinning_client(void)
+{
+    while (1) {}
+    return 0;
+}
+
+static int test_timeout_fault_sc_removed(env_t env)
+{
+    helper_thread_t thread;
+
+    seL4_Word badge = 1;
+
+    seL4_CPtr tfep = vka_alloc_endpoint_leaky(&env->vka);
+
+    /* create thread */
+    create_helper_thread(env, &thread);
+    create_and_set_tfep(env, &thread, tfep, badge);
+    start_helper(env, &thread, (helper_fn_t) timeout_fault_spinning_client, 0, 0, 0, 0);
+
+    /* Remove the SC from the thread */
+    int error = api_sc_unbind(thread.thread.sched_context.cptr);
+    test_eq(error, 0);
+
+#ifdef CONFIG_KERNEL_MCS
+    /* Catch the fault */
+    catch_invalid_sc(tfep, badge, 0, seL4_Timeout_NoSC, env);
+#endif
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(TIMEOUTFAULT0006, "Fault on SC removed while running", test_timeout_fault_sc_removed,
+            config_set(CONFIG_KERNEL_MCS))
+
+void
+timeout_fault_sc_remove_server_fn(seL4_CPtr ep, env_t env, seL4_CPtr ro, seL4_CPtr ntfn)
+{
+    /* signal to initialiser that we are done, and wait for a message from
+     * the client */
+    api_nbsend_recv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL, ro);
+    /* Signal to indicate entry into server */
+    seL4_Signal(ntfn);
+    /* spin, this will use up all of the clients budget */
+    while (true);
+    /* we should not get here, as a timeout fault should have been raised
+     * and the handler will reset us */
+    ZF_LOGF("Should not get here");
+}
+
+static int test_timeout_fault_donated_sc_removed(env_t env)
+{
+    helper_thread_t client, server;
+    sel4utils_checkpoint_t server_cp;
+
+    seL4_Word client_data = 1;
+    seL4_Word server_badge = 2;
+
+    seL4_CPtr server_ep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr tfep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr server_ro = vka_alloc_reply_leaky(&env->vka);
+    seL4_CPtr server_ntfn = vka_alloc_notification_leaky(&env->vka);
+
+    /* create server */
+    ZF_LOGD("Start server");
+    int error = create_passive_thread_with_tfep(env, &server, tfep, server_badge,
+                                                (helper_fn_t) timeout_fault_sc_remove_server_fn, server_ep,
+                                                (seL4_Word)env, server_ro, server_ntfn, &server_cp);
+    test_eq(error, 0);
+
+    /* create donating client */
+    ZF_LOGD("Start client");
+    create_helper_thread(env, &client);
+    start_helper(env, &client, (helper_fn_t) timeout_fault_donate_client_fn, server_ep, 1, 0, 0);
+
+    /* Wait for server to get donated SC. */
+    ZF_LOGD("Wait for server");
+    seL4_Wait(server_ntfn, NULL);
+
+    /* Remove SC from client */
+    error = api_sc_unbind(client.thread.sched_context.cptr);
+    test_eq(error, 0);
+
+#ifdef CONFIG_KERNEL_MCS
+    /* Catch the fault from the server */
+    catch_invalid_sc(tfep, server_badge, 0, seL4_Timeout_NoSC, env);
+#endif
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(TIMEOUTFAULT0007, "Fault on donated SC removed while running", test_timeout_fault_donated_sc_removed,
+            config_set(CONFIG_KERNEL_MCS))
+
+static int test_timeout_fault_reply_without_sc_return(env_t env)
+{
+    helper_thread_t client, proxy, server;
+    sel4utils_checkpoint_t proxy_cp, server_cp;
+
+    seL4_Word client_data = 1;
+    seL4_Word server_badge = 2;
+    seL4_Word proxy_badge = 3;
+    seL4_Word client_badge = 4;
+
+    seL4_CPtr server_ep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr proxy_ep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr tfep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr server_ro = vka_alloc_reply_leaky(&env->vka);
+    seL4_CPtr proxy_ro = vka_alloc_reply_leaky(&env->vka);
+
+    /* create server */
+    ZF_LOGD("Start server");
+    int error = create_passive_thread_with_tfep(env, &server, tfep, server_badge,
+                                                (helper_fn_t) timeout_fault_generic_server_fn, server_ep,
+                                                server_ro, 0, 0, &server_cp);
+    test_eq(error, 0);
+
+    /* create proxy */
+    /* The proxy is used to ensure that if the proxy prematurely replies
+     * to the client before it is returned an SC, the client still
+     * faults */
+    error = create_passive_thread_with_tfep(env, &proxy, tfep, proxy_badge, (helper_fn_t) timeout_fault_proxy_fn, proxy_ep,
+                                            server_ep, proxy_ro, 0, &proxy_cp);
+    test_eq(error, 0);
+
+    /* create donating client */
+    ZF_LOGD("Start client");
+    create_helper_thread(env, &client);
+
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0),
+                                     client.thread.sched_context.cptr,
+                                     0.1 * US_IN_S, 0.5 * US_IN_S, 0, client_data);
+    test_eq(error, 0);
+
+    create_and_set_tfep(env, &client, tfep, client_badge);
+    start_helper(env, &client, (helper_fn_t) timeout_fault_donate_client_fn, proxy_ep, 1, 0, 0);
+
+#ifdef CONFIG_KERNEL_MCS
+    /* Catch the fault from the server */
+    ZF_LOGD("Wait for server to exhaust SC");
+    catch_invalid_sc(tfep, server_badge, client_data, seL4_Timeout_Exhausted, env);
+#endif
+
+    /* Reply to the client */
+    ZF_LOGD("Resume client without SC");
+    seL4_Send(proxy_ro, seL4_MessageInfo_new(0, 0, 0, 0));
+
+#ifdef CONFIG_KERNEL_MCS
+    /* Catch the client fault */
+    ZF_LOGD("Catch client fault");
+    catch_invalid_sc(tfep, client_badge, 0, seL4_Timeout_NoSC, env);
+#endif
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(TIMEOUTFAULT0008, "Fault on reply without SC return", test_timeout_fault_reply_without_sc_return,
+            config_set(CONFIG_KERNEL_MCS))
+
+static int test_timeout_fault_inactive_sc_donation(env_t env)
+{
+    helper_thread_t server;
+    sel4utils_checkpoint_t server_cp;
+
+    seL4_Word client_data = 1;
+    seL4_Word server_badge = 2;
+
+    seL4_CPtr server_ep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr tfep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr server_ro = vka_alloc_reply_leaky(&env->vka);
+
+    /* create server */
+    int error = create_passive_thread_with_tfep(env, &server, tfep, server_badge,
+                                                (helper_fn_t) timeout_fault_generic_server_fn, server_ep,
+                                                server_ro, 0, 0, &server_cp);
+    test_eq(error, 0);
+
+    /* Use server to create client to ensure client is blocked on the
+     * endpoint when its SC is replaced. */
+    ZF_LOGD("Creating client from server");
+    /* Yield to ensure maximum time in donated SC */
+    seL4_Yield();
+    call_create_client_request(env, server_ep, 1);
+
+#ifdef CONFIG_KERNEL_MCS
+    /* Catch the fault */
+    catch_invalid_sc(tfep, server_badge, 0, seL4_Timeout_Unconfigured, env);
+#endif
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(TIMEOUTFAULT0009, "Fault on donation of unconfigured SC", test_timeout_fault_inactive_sc_donation,
+            config_set(CONFIG_KERNEL_MCS))
+
 static void vm_enter(void)
 {
 #ifdef CONFIG_VTX
