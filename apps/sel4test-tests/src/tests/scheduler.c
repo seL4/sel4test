@@ -1527,7 +1527,7 @@ void test_simple_preempt_runner(size_t thread_id)
         ZF_LOGD("#%zu", thread_id);
     }
 
-    while (true) {
+    while (test_simple_preempt_start) {
         /* Signal test thread */
         unsigned int data = preemption_thread_data[thread_id] + 1;
         preemption_thread_data[thread_id] = data;
@@ -1602,21 +1602,10 @@ static int test_simple_preempt(struct env *env)
     /* Start executing other threads */
     ZF_LOGD("Releasing Threads");
     test_simple_preempt_start = 1;
+    /* Yield should cause all other threads to execute before returning
+     * to the current thread. */
     seL4_Yield();
-
-    /* Wait for each thread to update its data */
-    for (size_t thread = 0; thread < PREEMPTION_THREADS; thread += 1) {
-        /* Wait until thread has updated its data */
-        while (preemption_thread_data[thread] == 0 && now - start < MAX_TIME) {
-            seL4_Yield();
-            now = time_now(env);
-        };
-
-        /* Give up if we exceed the timeout */
-        if (now - start >= MAX_TIME) {
-            break;
-        }
-    }
+    test_simple_preempt_start = 0;
 
     /* Get the total time taken to synchronise */
     now = time_now(env);
