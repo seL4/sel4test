@@ -1527,6 +1527,12 @@ void test_simple_preempt_runner(size_t thread_id)
         ZF_LOGD("#%zu", thread_id);
     }
 
+    /* Get the count for the previous thread */
+    unsigned int next_data = preemption_thread_data[next];
+
+    /* We only stay in this loop until we get back to the monitor to
+     * ensure that we don't loop again if it takes too long to check all
+     * the threads. */
     while (test_simple_preempt_start) {
         /* Signal test thread */
         unsigned int data = preemption_thread_data[thread_id] + 1;
@@ -1534,17 +1540,9 @@ void test_simple_preempt_runner(size_t thread_id)
 
         ZF_LOGD("#%zu = %u", thread_id, data);
 
-        /* Busy wait on next thread */
-        while (preemption_thread_data[next] < data)
-            ;
-        /*
-         * If thread_id is zero, then all threads have run
-         * and updated their data.
-         * In this case, yield() so the runner can get a look in
-         */
-        if (!thread_id) {
-            seL4_Yield();
-        }
+        /* Wait for next thread to progress */
+        while (preemption_thread_data[next] <= next_data);
+        next_data = preemption_thread_data[next];
     }
 }
 
