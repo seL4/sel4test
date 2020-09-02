@@ -80,7 +80,13 @@ if(NOT Sel4testAllowSettingsOverride)
         else()
             set(Sel4testHaveTimer OFF CACHE BOOL "" FORCE)
         endif()
-    elseif(KernelPlatformZynqmp OR (SIMULATION AND (KernelArchRiscV OR KernelArchARM)))
+    elseif(
+        KernelPlatformZynqmp
+        OR KernelPlatformPolarfire
+        OR (SIMULATION AND (KernelArchRiscV OR KernelArchARM))
+    )
+        # Frequency settings of the ZynqMP make the ltimer tests problematic
+        # Polarfire does not have a complete ltimer implementation
         set(Sel4testHaveTimer OFF CACHE BOOL "" FORCE)
     else()
         set(Sel4testHaveTimer ON CACHE BOOL "" FORCE)
