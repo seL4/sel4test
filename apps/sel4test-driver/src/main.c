@@ -21,6 +21,8 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#include <sel4runtime.h>
+
 #include <allocman/bootstrap.h>
 #include <allocman/vka.h>
 
@@ -591,8 +593,17 @@ static irq_id_t sel4test_timer_irq_register(UNUSED void *cookie, ps_irq_t irq, i
     return num_timer_irqs++;
 }
 
+/* When the root task exists, it should simply suspend itself */
+static void sel4test_exit(int code)
+{
+    seL4_TCB_Suspend(seL4_CapInitThreadTCB);
+}
+
 int main(void)
 {
+    /* Set exit handler */
+    sel4runtime_set_exit(sel4test_exit);
+
     int error;
     seL4_BootInfo *info = platsupport_get_bootinfo();
 
