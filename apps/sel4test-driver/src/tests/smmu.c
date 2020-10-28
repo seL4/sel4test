@@ -124,21 +124,21 @@ static int test_smmu_control_caps(driver_env_t env)
     /*testing the get fault API on context bank cap*/
     smmu_cb_fault = seL4_ARM_CB_CBGetFault(cb_cap);
     ZF_LOGF_IF(smmu_cb_fault.error, "Failed to read the fault status of the context bank 0");
-    printf("cb fault return %d status 0x%x address 0x%lx for context bank 0\n", smmu_cb_fault.error,
+    printf("cb fault return %d status 0x%lx address 0x%lx for context bank 0\n", smmu_cb_fault.error,
            smmu_cb_fault.status, smmu_cb_fault.address);
     error = seL4_ARM_CB_CBClearFault(cb_cap);
     ZF_LOGF_IF(error, "Failed to clear fault status of the context bank 0");
 
     smmu_cb_fault = seL4_ARM_CB_CBGetFault(cb_cap_2);
     ZF_LOGF_IF(smmu_cb_fault.error, "Failed to read the fault status of the context bank 63");
-    printf("cb fault return %d status 0x%x address 0x%lx for context bank 63\n", smmu_cb_fault.error,
+    printf("cb fault return %d status 0x%lx address 0x%lx for context bank 63\n", smmu_cb_fault.error,
            smmu_cb_fault.status, smmu_cb_fault.address);
     error = seL4_ARM_CB_CBClearFault(cb_cap);
     ZF_LOGF_IF(error, "Failed to clear fault status of the context bank 63");
 
     /*testing if the unmapping can trigger TLB invalidation in the context banks*/
     page_ptr = vspace_new_pages(&smmu_process.vspace, seL4_AllRights, 1, PAGE_BITS_4K);
-    printf("mapped page_ptr 0x%x\n", page_ptr);
+    printf("mapped page_ptr 0x%p\n", page_ptr);
     assert(page_ptr != NULL);
     vspace_unmap_pages(&smmu_process.vspace, page_ptr, 1, PAGE_BITS_4K, NULL);
     printf("unmap page is done\n");
@@ -163,7 +163,7 @@ static int test_smmu_control_caps(driver_env_t env)
     /*testing the global falut status on SMMU*/
     smmu_global_fault = seL4_ARM_SIDControl_GetFault(simple_get_sid_ctrl(&env->simple));
     ZF_LOGF_IF(smmu_global_fault.error, "Failed to read the global fault status of the SMMU ");
-    printf("global fault return %d status 0x%x syndrome_0 0x%x syndrome_1 0x%x\n", smmu_global_fault.error,
+    printf("global fault return %d status 0x%lx syndrome_0 0x%lx syndrome_1 0x%lx\n", smmu_global_fault.error,
            smmu_global_fault.status, smmu_global_fault.syndrome_0, smmu_global_fault.syndrome_1);
     error = seL4_ARM_SIDControl_ClearFault(simple_get_sid_ctrl(&env->simple));
     ZF_LOGF_IF(error, "Failed to clear the global fault status of the SMMU ");
