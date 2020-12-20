@@ -513,7 +513,7 @@ int test_sched_context_unbind_server(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED_CONTEXT_0010, "Test unbinding scheduling context from server", test_sched_context_unbind_server,
-            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_KERNEL_MCS))
+            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
 
 void
 sched_context_0011_proxy_fn(seL4_CPtr in, seL4_CPtr out, seL4_CPtr reply)
@@ -572,7 +572,7 @@ int test_revoke_reply_on_call_chain_returns_sc(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED_CONTEXT_0011, "Test revoking a reply on a call chain returns scheduling context along chain",
-            test_revoke_reply_on_call_chain_returns_sc, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_KERNEL_MCS))
+            test_revoke_reply_on_call_chain_returns_sc, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
 
 /* sched 0011 but unordered */
 int
@@ -624,7 +624,7 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED_CONTEXT_0012, "Test revoking a reply on a call chain unorderd",
-            test_revoke_reply_on_call_chain_unordered, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_KENEL_RT))
+            test_revoke_reply_on_call_chain_unordered, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
 
 int
 test_revoke_sched_context_on_call_chain(env_t env)
@@ -693,4 +693,4 @@ test_revoke_sched_context_on_call_chain(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED_CONTEXT_0013, "Test revoking a scheduling context on a call chain",
-            test_revoke_sched_context_on_call_chain, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_KERNEL_MCS))
+            test_revoke_sched_context_on_call_chain, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
