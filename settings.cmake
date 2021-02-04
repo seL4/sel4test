@@ -53,7 +53,7 @@ if(NOT Sel4testAllowSettingsOverride)
     endif()
 
     if(SIMULATION)
-        ApplyCommonSimulationSettings(${KernelArch})
+        ApplyCommonSimulationSettings(${KernelSel4Arch})
     else()
         if(KernelArchX86)
             set(KernelIOMMU ON CACHE BOOL "" FORCE)
