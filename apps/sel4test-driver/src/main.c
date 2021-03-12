@@ -408,7 +408,7 @@ void *main_continued(void *arg UNUSED)
 
     unsigned long elf_size;
     unsigned long cpio_len = _cpio_archive_end - _cpio_archive;
-    char *elf_file = cpio_get_file(_cpio_archive, cpio_len, TESTS_APP, &elf_size);
+    char const *elf_file = cpio_get_file(_cpio_archive, cpio_len, TESTS_APP, &elf_size);
     ZF_LOGF_IF(elf_file == NULL, "Error: failed to lookup ELF file");
     int status = elf_newFile(elf_file, elf_size, &tests_elf);
     ZF_LOGF_IF(status, "Error: invalid ELF file");
