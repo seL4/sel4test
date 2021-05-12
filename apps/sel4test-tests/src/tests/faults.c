@@ -973,6 +973,11 @@ static int test_timeout_fault_in_server(env_t env)
     set_helper_sched_params(env, &client, 0.1 * US_IN_S, US_IN_S, client_data);
     start_helper(env, &client, (helper_fn_t) timeout_fault_client_fn, ep, 0, 0, 0);
 
+    /* Ensure the client doesn't preempt the server when the server is
+     * being reset */
+    set_helper_priority(env, &server, OUR_PRIO - 1);
+    set_helper_priority(env, &client, OUR_PRIO - 2);
+
     /* handle a few faults */
     for (int i = 0; i < 5; i++) {
         ZF_LOGD("Handling fault");
