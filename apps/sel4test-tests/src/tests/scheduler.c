@@ -1124,9 +1124,9 @@ int test_ordering_periodic_threads(env_t env)
         set_helper_priority(env, &helpers[i], env->priority);
     }
 
-    set_helper_sched_params(env, &helpers[0], 10 * US_IN_MS, 100 * US_IN_MS, 0);
-    set_helper_sched_params(env, &helpers[1], 10 * US_IN_MS, 200 * US_IN_MS, 0);
-    set_helper_sched_params(env, &helpers[2], 10 * US_IN_MS, 800 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[0], 20 * US_IN_MS, 100 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[1], 20 * US_IN_MS, 200 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[2], 20 * US_IN_MS, 800 * US_IN_MS, 0);
 
     for (int i = 0; i < num_threads; i++) {
         start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 0, 0);
