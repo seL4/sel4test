@@ -404,10 +404,13 @@ sched_context_0009_server_fn(seL4_CPtr ep, volatile int *state, seL4_CPtr reply)
     }
 }
 
-void sched_context_0009_client_fn(seL4_CPtr ep)
+void sched_context_0009_client_fn(seL4_CPtr ep, volatile int *state)
 {
     ZF_LOGD("Client call\n");
     seL4_Call(ep, seL4_MessageInfo_new(0, 0, 0, 0));
+    if (state != NULL) {
+        *state = *state + 1;
+    }
 }
 
 int test_sched_context_goes_to_to_caller_on_reply_cap_delete(env_t env)
@@ -580,6 +583,7 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
 {
     helper_thread_t client, proxy, server;
     volatile int state = 0;
+    volatile int client_state = 0;
     int error;
 
     seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
@@ -593,7 +597,7 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
     create_passive_thread(env, &proxy, (helper_fn_t) sched_context_0011_proxy_fn, ep, ep2, proxy_reply, 0);
 
     create_helper_thread(env, &client);
-    start_helper(env, &client, (helper_fn_t) sched_context_0009_client_fn, ep, 0, 0, 0);
+    start_helper(env, &client, (helper_fn_t) sched_context_0009_client_fn, ep, (seL4_Word) &client_state, 0, 0);
 
     /* let a call b which calls the server, let the server run a bit */
     sel4test_sleep(env, 0.2 * NS_IN_S);
@@ -617,9 +621,9 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
     /* save and resume client */
     restart_after_syscall(env, &client);
 
-    /* check the client got its scheduling context back and is now running */
-    ZF_LOGD("Waiting for client\n");
-    wait_for_helper(&client);
+    /* check the client lost its scheduling context and isn't running */
+    sel4test_sleep(env, 0.2 * NS_IN_S);
+    test_eq(client_state, 0);
 
     return sel4test_get_result();
 }
