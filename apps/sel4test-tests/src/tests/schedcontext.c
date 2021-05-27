@@ -623,8 +623,9 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
 
     return sel4test_get_result();
 }
+/* Test is disabled on purpose. */
 DEFINE_TEST(SCHED_CONTEXT_0012, "Test revoking a reply on a call chain unorderd",
-            test_revoke_reply_on_call_chain_unordered, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
+            test_revoke_reply_on_call_chain_unordered, 0 && config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
 
 int
 test_revoke_sched_context_on_call_chain(env_t env)
