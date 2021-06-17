@@ -11,9 +11,11 @@
 
 /* This list must be ordered by size - highest first */
 static const frame_type_t frame_types[] = {
-    /* Rocket-Chip for zedboard only has 256MiB of RAM, so we can't allocate a 1GiB page */
-    /* Polarfire has 1GiB of memory can't allocate a 1GiB page for user space */
-#if __riscv_xlen == 64 && !defined(CONFIG_BUILD_ROCKET_CHIP_ZEDBOARD) && !defined(CONFIG_PLAT_ARIANE) &&!defined(CONFIG_PLAT_POLARFIRE)
+    /* Rocket-Chip only has a default 256MiB of RAM in rocketchip.dts,
+    * so we can't allocate a 1GiB page for this test.
+    * Polarfire has 1GiB of memory can't allocate a 1GiB page for user space */
+#if __riscv_xlen == 64 && !defined(CONFIG_PLAT_ROCKETCHIP) \
+ && !defined(CONFIG_PLAT_ARIANE) &&!defined(CONFIG_PLAT_POLARFIRE)
     { seL4_RISCV_Giga_Page, 0, seL4_HugePageBits, },
 #endif
     { seL4_RISCV_Mega_Page, 0, seL4_LargePageBits, },
