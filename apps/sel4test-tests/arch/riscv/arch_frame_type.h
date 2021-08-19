@@ -1,13 +1,7 @@
 /*
- * Copyright 2018, Data61
- * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
- * ABN 41 687 119 230.
+ * Copyright 2018, Data61, CSIRO (ABN 41 687 119 230)
  *
- * This software may be distributed and modified according to the terms of
- * the BSD 2-Clause license. Note that NO WARRANTY is provided.
- * See "LICENSE_BSD2.txt" for details.
- *
- * @TAG(DATA61_BSD)
+ * SPDX-License-Identifier: BSD-2-Clause
  */
 #pragma once
 
@@ -17,8 +11,11 @@
 
 /* This list must be ordered by size - highest first */
 static const frame_type_t frame_types[] = {
-    /* Rocket-Chip for zedboard only has 256MiB of RAM, so we can't allocate a 1GiB page */
-#if __riscv_xlen == 64 && !defined(CONFIG_BUILD_ROCKET_CHIP_ZEDBOARD) && !defined(CONFIG_PLAT_ARIANE)
+    /* Rocket-Chip only has a default 256MiB of RAM in rocketchip.dts,
+    * so we can't allocate a 1GiB page for this test.
+    * Polarfire has 1GiB of memory can't allocate a 1GiB page for user space */
+#if __riscv_xlen == 64 && !defined(CONFIG_PLAT_ROCKETCHIP) \
+ && !defined(CONFIG_PLAT_ARIANE) &&!defined(CONFIG_PLAT_POLARFIRE)
     { seL4_RISCV_Giga_Page, 0, seL4_HugePageBits, },
 #endif
     { seL4_RISCV_Mega_Page, 0, seL4_LargePageBits, },

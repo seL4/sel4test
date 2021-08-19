@@ -1,13 +1,7 @@
 /*
- *  Copyright 2017, Data61
- *  Commonwealth Scientific and Industrial Research Organisation (CSIRO)
- *  ABN 41 687 119 230.
+ * Copyright 2017, Data61, CSIRO (ABN 41 687 119 230)
  *
- * This software may be distributed and modified according to the terms of
- * the BSD 2-Clause license. Note that NO WARRANTY is provided.
- * See "LICENSE_BSD2.txt" for details.
- *
- * @TAG(DATA61_BSD)
+ * SPDX-License-Identifier: BSD-2-Clause
  */
 #include <autoconf.h>
 #include <sel4test-driver/gen_config.h>
@@ -410,10 +404,13 @@ sched_context_0009_server_fn(seL4_CPtr ep, volatile int *state, seL4_CPtr reply)
     }
 }
 
-void sched_context_0009_client_fn(seL4_CPtr ep)
+void sched_context_0009_client_fn(seL4_CPtr ep, volatile int *state)
 {
     ZF_LOGD("Client call\n");
     seL4_Call(ep, seL4_MessageInfo_new(0, 0, 0, 0));
+    if (state != NULL) {
+        *state = *state + 1;
+    }
 }
 
 int test_sched_context_goes_to_to_caller_on_reply_cap_delete(env_t env)
@@ -519,7 +516,7 @@ int test_sched_context_unbind_server(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED_CONTEXT_0010, "Test unbinding scheduling context from server", test_sched_context_unbind_server,
-            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_KERNEL_MCS))
+            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
 
 void
 sched_context_0011_proxy_fn(seL4_CPtr in, seL4_CPtr out, seL4_CPtr reply)
@@ -578,7 +575,7 @@ int test_revoke_reply_on_call_chain_returns_sc(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED_CONTEXT_0011, "Test revoking a reply on a call chain returns scheduling context along chain",
-            test_revoke_reply_on_call_chain_returns_sc, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_KERNEL_MCS))
+            test_revoke_reply_on_call_chain_returns_sc, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
 
 /* sched 0011 but unordered */
 int
@@ -586,6 +583,7 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
 {
     helper_thread_t client, proxy, server;
     volatile int state = 0;
+    volatile int client_state = 0;
     int error;
 
     seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
@@ -599,7 +597,7 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
     create_passive_thread(env, &proxy, (helper_fn_t) sched_context_0011_proxy_fn, ep, ep2, proxy_reply, 0);
 
     create_helper_thread(env, &client);
-    start_helper(env, &client, (helper_fn_t) sched_context_0009_client_fn, ep, 0, 0, 0);
+    start_helper(env, &client, (helper_fn_t) sched_context_0009_client_fn, ep, (seL4_Word) &client_state, 0, 0);
 
     /* let a call b which calls the server, let the server run a bit */
     sel4test_sleep(env, 0.2 * NS_IN_S);
@@ -623,14 +621,14 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
     /* save and resume client */
     restart_after_syscall(env, &client);
 
-    /* check the client got its scheduling context back and is now running */
-    ZF_LOGD("Waiting for client\n");
-    wait_for_helper(&client);
+    /* check the client lost its scheduling context and isn't running */
+    sel4test_sleep(env, 0.2 * NS_IN_S);
+    test_eq(client_state, 0);
 
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED_CONTEXT_0012, "Test revoking a reply on a call chain unorderd",
-            test_revoke_reply_on_call_chain_unordered, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_KENEL_RT))
+            test_revoke_reply_on_call_chain_unordered, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
 
 int
 test_revoke_sched_context_on_call_chain(env_t env)
@@ -699,4 +697,4 @@ test_revoke_sched_context_on_call_chain(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED_CONTEXT_0013, "Test revoking a scheduling context on a call chain",
-            test_revoke_sched_context_on_call_chain, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_KERNEL_MCS))
+            test_revoke_sched_context_on_call_chain, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))

@@ -1,13 +1,7 @@
 /*
- * Copyright 2017, Data61
- * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
- * ABN 41 687 119 230.
+ * Copyright 2017, Data61, CSIRO (ABN 41 687 119 230)
  *
- * This software may be distributed and modified according to the terms of
- * the BSD 2-Clause license. Note that NO WARRANTY is provided.
- * See "LICENSE_BSD2.txt" for details.
- *
- * @TAG(DATA61_BSD)
+ * SPDX-License-Identifier: BSD-2-Clause
  */
 
 /* Include Kconfig variables. */
@@ -220,7 +214,7 @@ void basic_set_up(uintptr_t e)
     env->init->io_space = sel4utils_copy_cap_to_process(&(env->test_process), &env->vka, simple_get_init_cap(&env->simple,
                                                                                                              seL4_CapIOSpace));
 #endif /* CONFIG_IOMMU */
-#ifdef CONFIG_ARM_SMMU
+#ifdef CONFIG_TK1_SMMU
     env->init->io_space_caps = arch_copy_iospace_caps_to_process(&(env->test_process), &env);
 #endif
     env->init->cores = simple_get_core_count(&env->simple);

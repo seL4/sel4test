@@ -1,13 +1,7 @@
 #
-# Copyright 2019, Data61
-# Commonwealth Scientific and Industrial Research Organisation (CSIRO)
-# ABN 41 687 119 230.
+# Copyright 2019, Data61, CSIRO (ABN 41 687 119 230)
 #
-# This software may be distributed and modified according to the terms of
-# the BSD 2-Clause license. Note that NO WARRANTY is provided.
-# See "LICENSE_BSD2.txt" for details.
-#
-# @TAG(DATA61_BSD)
+# SPDX-License-Identifier: BSD-2-Clause
 #
 
 cmake_minimum_required(VERSION 3.7.2)
@@ -24,7 +18,7 @@ list(
 )
 
 set(NANOPB_SRC_ROOT_FOLDER "${project_dir}/tools/nanopb" CACHE INTERNAL "")
-set(BBL_PATH ${project_dir}/tools/riscv-pk CACHE STRING "BBL Folder location")
+set(OPENSBI_PATH "${project_dir}/tools/opensbi" CACHE STRING "OpenSBI Folder location")
 
 set(SEL4_CONFIG_DEFAULT_ADVANCED ON)
 
@@ -59,7 +53,7 @@ if(NOT Sel4testAllowSettingsOverride)
     endif()
 
     if(SIMULATION)
-        ApplyCommonSimulationSettings(${KernelArch})
+        ApplyCommonSimulationSettings(${KernelSel4Arch})
     else()
         if(KernelArchX86)
             set(KernelIOMMU ON CACHE BOOL "" FORCE)
@@ -80,7 +74,13 @@ if(NOT Sel4testAllowSettingsOverride)
         else()
             set(Sel4testHaveTimer OFF CACHE BOOL "" FORCE)
         endif()
-    elseif(KernelPlatformZynqmp OR (SIMULATION AND (KernelArchRiscV OR KernelArchARM)))
+    elseif(
+        KernelPlatformZynqmp
+        OR KernelPlatformPolarfire
+        OR (SIMULATION AND (KernelArchRiscV OR KernelArchARM))
+    )
+        # Frequency settings of the ZynqMP make the ltimer tests problematic
+        # Polarfire does not have a complete ltimer implementation
         set(Sel4testHaveTimer OFF CACHE BOOL "" FORCE)
     else()
         set(Sel4testHaveTimer ON CACHE BOOL "" FORCE)

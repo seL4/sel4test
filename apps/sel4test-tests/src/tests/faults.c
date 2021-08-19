@@ -1,13 +1,7 @@
 /*
- * Copyright 2017, Data61
- * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
- * ABN 41 687 119 230.
+ * Copyright 2017, Data61, CSIRO (ABN 41 687 119 230)
  *
- * This software may be distributed and modified according to the terms of
- * the BSD 2-Clause license. Note that NO WARRANTY is provided.
- * See "LICENSE_BSD2.txt" for details.
- *
- * @TAG(DATA61_BSD)
+ * SPDX-License-Identifier: BSD-2-Clause
  */
 
 #include <autoconf.h>
@@ -987,6 +981,11 @@ static int test_timeout_fault_in_server(env_t env)
     set_helper_sched_params(env, &client, 0.1 * US_IN_S, US_IN_S, client_data);
     start_helper(env, &client, (helper_fn_t) timeout_fault_client_fn, ep, 0, 0, 0);
 
+    /* Ensure the client doesn't preempt the server when the server is
+     * being reset */
+    set_helper_priority(env, &server, OUR_PRIO - 1);
+    set_helper_priority(env, &client, OUR_PRIO - 2);
+
     /* handle a few faults */
     for (int i = 0; i < 5; i++) {
         ZF_LOGD("Handling fault");
@@ -1066,7 +1065,6 @@ static int test_timeout_fault_nested_servers(env_t env)
 
     return sel4test_get_result();
 }
-/* this test is disabled for the same reason as TIMEOUTFAULT0002 */
 DEFINE_TEST(TIMEOUTFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers, config_set(CONFIG_KERNEL_MCS))
 
 /* Test of invalid SC and no SC faults */

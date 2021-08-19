@@ -1,13 +1,7 @@
 /*
- * Copyright 2017, Data61
- * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
- * ABN 41 687 119 230.
+ * Copyright 2017, Data61, CSIRO (ABN 41 687 119 230)
  *
- * This software may be distributed and modified according to the terms of
- * the BSD 2-Clause license. Note that NO WARRANTY is provided.
- * See "LICENSE_BSD2.txt" for details.
- *
- * @TAG(DATA61_BSD)
+ * SPDX-License-Identifier: BSD-2-Clause
  */
 
 #include <autoconf.h>
@@ -17,6 +11,7 @@
 #include <stdio.h>
 #include <sel4/sel4.h>
 #include <vka/object.h>
+#include <vka/capops.h>
 #include <sel4utils/util.h>
 #include <sel4utils/arch/cache.h>
 
@@ -259,3 +254,78 @@ DEFINE_TEST(CACHEFLUSH0003, "Test that cache maintenance can be done on large pa
             config_set(CONFIG_HAVE_CACHE))
 
 #endif
+
+
+static int test_page_uncached_after_retype(env_t env)
+{
+    seL4_CPtr frame, frame2, untyped;
+    uintptr_t vstart, vstart2;
+    volatile uint32_t *ptr, *ptr2;
+    vka_t *vka;
+    int error;
+
+    vka = &env->vka;
+
+    // Create 2 vspace reservations because when we revoke the untyped the state gets out of sync.
+    void *vaddr;
+    void *vaddr2;
+    reservation_t reservation, reservation2;
+
+    reservation = vspace_reserve_range(&env->vspace,
+                                       PAGE_SIZE_4K, seL4_AllRights, 0, &vaddr);
+    assert(reservation.res);
+    reservation2 = vspace_reserve_range(&env->vspace,
+                                        PAGE_SIZE_4K, seL4_AllRights, 0, &vaddr2);
+    assert(reservation2.res);
+
+    vstart = (uintptr_t)vaddr;
+    assert(IS_ALIGNED(vstart, seL4_PageBits));
+    vstart2 = (uintptr_t)vaddr2;
+    assert(IS_ALIGNED(vstart2, seL4_PageBits));
+
+    ptr = (volatile uint32_t *)vstart;
+    ptr2 = (volatile uint32_t *)vstart2;
+
+    /* Get an untyped */
+    untyped = vka_alloc_untyped_leaky(vka, PAGE_BITS_4K);
+    test_assert(untyped != seL4_CapNull);
+    cspacepath_t src_path;
+    vka_cspace_make_path(vka, untyped, &src_path);
+
+    frame = get_free_slot(env);
+    test_assert(frame != seL4_CapNull);
+    cspacepath_t dest_path;
+    vka_cspace_make_path(vka, frame, &dest_path);
+    /* Create a frame from the untyped */
+    error = seL4_Untyped_Retype(untyped, seL4_ARCH_4KPage, PAGE_BITS_4K, dest_path.root, dest_path.dest,
+                                dest_path.destDepth, dest_path.offset, 1);
+    test_error_eq(error, seL4_NoError);
+
+    /* map in the without cacheability */
+    error = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
+    test_error_eq(error, seL4_NoError);
+
+    /* Write some data directly to RAM as it's uncached */
+    *ptr = 0xC0FFEE;
+
+    /* Revoke the untyped. This deletes the frame. */
+    vka_cnode_revoke(&src_path);
+
+    /* Create the frame with the same untyped. The kernel guarantees that the contents have been zeroed. */
+    error = seL4_Untyped_Retype(untyped, seL4_ARCH_4KPage, PAGE_BITS_4K, dest_path.root, dest_path.dest,
+                                dest_path.destDepth, dest_path.offset, 1);
+    test_error_eq(error, seL4_NoError);
+
+
+    /* map in the frame without cacheability again. */
+    error = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr2, 1, seL4_PageBits, reservation2);
+    test_error_eq(error, seL4_NoError);
+    /* Confirm that the contents are zeroed */
+    test_assert(*ptr2 == 0x0);
+
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(CACHEFLUSH0004, "Test that mapping a frame uncached doesn't see stale data after retype",
+            test_page_uncached_after_retype,
+            config_set(CONFIG_HAVE_CACHE))

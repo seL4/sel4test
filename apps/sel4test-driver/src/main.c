@@ -1,13 +1,7 @@
 /*
- * Copyright 2017, Data61
- * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
- * ABN 41 687 119 230.
+ * Copyright 2017, Data61, CSIRO (ABN 41 687 119 230)
  *
- * This software may be distributed and modified according to the terms of
- * the BSD 2-Clause license. Note that NO WARRANTY is provided.
- * See "LICENSE_BSD2.txt" for details.
- *
- * @TAG(DATA61_BSD)
+ * SPDX-License-Identifier: BSD-2-Clause
  */
 
 /* Include Kconfig variables. */
@@ -20,6 +14,8 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <limits.h>
+
+#include <sel4runtime.h>
 
 #include <allocman/bootstrap.h>
 #include <allocman/vka.h>
@@ -412,7 +408,7 @@ void *main_continued(void *arg UNUSED)
 
     unsigned long elf_size;
     unsigned long cpio_len = _cpio_archive_end - _cpio_archive;
-    char *elf_file = cpio_get_file(_cpio_archive, cpio_len, TESTS_APP, &elf_size);
+    const void *elf_file = cpio_get_file(_cpio_archive, cpio_len, TESTS_APP, &elf_size);
     ZF_LOGF_IF(elf_file == NULL, "Error: failed to lookup ELF file");
     int status = elf_newFile(elf_file, elf_size, &tests_elf);
     ZF_LOGF_IF(status, "Error: invalid ELF file");
@@ -556,8 +552,9 @@ static irq_id_t sel4test_timer_irq_register(UNUSED void *cookie, ps_irq_t irq, i
     ZF_LOGF_IF(num_timer_irqs >= MAX_TIMER_IRQS, "Trying to register too many timer IRQs");
 
     /* Allocate the IRQ */
-    seL4_Error serror = sel4platsupport_copy_irq_cap(&env.vka, &env.simple, &irq,
-                                                     &env.timer_irqs[num_timer_irqs].handler_path);
+    error = sel4platsupport_copy_irq_cap(&env.vka, &env.simple, &irq,
+                                         &env.timer_irqs[num_timer_irqs].handler_path);
+    ZF_LOGF_IF(error, "Failed to allocate IRQ handler");
 
     /* Allocate the root notifitcation if we haven't already done so */
     if (env.timer_notification.cptr == seL4_CapNull) {
@@ -590,8 +587,17 @@ static irq_id_t sel4test_timer_irq_register(UNUSED void *cookie, ps_irq_t irq, i
     return num_timer_irqs++;
 }
 
+/* When the root task exists, it should simply suspend itself */
+static void sel4test_exit(int code)
+{
+    seL4_TCB_Suspend(seL4_CapInitThreadTCB);
+}
+
 int main(void)
 {
+    /* Set exit handler */
+    sel4runtime_set_exit(sel4test_exit);
+
     int error;
     seL4_BootInfo *info = platsupport_get_bootinfo();
 

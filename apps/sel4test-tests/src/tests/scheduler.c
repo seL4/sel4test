@@ -1,13 +1,7 @@
 /*
- * Copyright 2017, Data61
- * Commonwealth Scientific and Industrial Research Organisation (CSIRO)
- * ABN 41 687 119 230.
+ * Copyright 2017, Data61, CSIRO (ABN 41 687 119 230)
  *
- * This software may be distributed and modified according to the terms of
- * the BSD 2-Clause license. Note that NO WARRANTY is provided.
- * See "LICENSE_BSD2.txt" for details.
- *
- * @TAG(DATA61_BSD)
+ * SPDX-License-Identifier: BSD-2-Clause
  */
 
 #include <autoconf.h>
@@ -1130,9 +1124,9 @@ int test_ordering_periodic_threads(env_t env)
         set_helper_priority(env, &helpers[i], env->priority);
     }
 
-    set_helper_sched_params(env, &helpers[0], 10 * US_IN_MS, 100 * US_IN_MS, 0);
-    set_helper_sched_params(env, &helpers[1], 10 * US_IN_MS, 200 * US_IN_MS, 0);
-    set_helper_sched_params(env, &helpers[2], 10 * US_IN_MS, 800 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[0], 20 * US_IN_MS, 100 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[1], 20 * US_IN_MS, 200 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[2], 20 * US_IN_MS, 800 * US_IN_MS, 0);
 
     for (int i = 0; i < num_threads; i++) {
         start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 0, 0);
@@ -1522,27 +1516,35 @@ static inline uint64_t time_now(struct env *env)
 
 void test_simple_preempt_runner(size_t thread_id)
 {
-    size_t next_thread = thread_id + 1;
-    if (next_thread < PREEMPTION_THREADS) {
-        next_thread -= PREEMPTION_THREADS;
-    }
-
+    ssize_t next = (thread_id - 1) % PREEMPTION_THREADS;
     while (test_simple_preempt_start == 0) {
-        seL4_Yield();
+        ZF_LOGD("#%zu", thread_id);
     }
 
-    while (true) {
+    /* Get the count for the previous thread */
+    unsigned int next_data = preemption_thread_data[next];
+
+    /* We only stay in this loop until we get back to the monitor to
+     * ensure that we don't loop again if it takes too long to check all
+     * the threads. */
+    while (test_simple_preempt_start) {
         /* Signal test thread */
         unsigned int data = preemption_thread_data[thread_id] + 1;
         preemption_thread_data[thread_id] = data;
 
         ZF_LOGD("#%zu = %u", thread_id, data);
 
-        /* Busy wait to force pre-emption */
-        while (preemption_thread_data[next_thread] < data);
+        /* Wait for next thread to progress */
+        while (preemption_thread_data[next] <= next_data);
+        next_data = preemption_thread_data[next];
     }
 }
 
+
+/*
+ * Checks that ticks preempt threads of equal priority, and
+ * all threads get run RR exactly once
+ */
 static int test_simple_preempt(struct env *env)
 {
 #ifdef CONFIG_DEBUG_BUILD
@@ -1579,7 +1581,9 @@ static int test_simple_preempt(struct env *env)
 #endif
 
         /* Start the thread (will yield until we're ready) */
+        ZF_LOGD("Start thread %u", thread);
         start_helper(env, &threads[thread], (helper_fn_t) test_simple_preempt_runner, thread, 0, 0, 0);
+        ZF_LOGD("Started thread %u", thread);
     }
 
     /* Set a timeout for the test.
@@ -1588,22 +1592,12 @@ static int test_simple_preempt(struct env *env)
     uint64_t now = start;
 
     /* Start executing other threads */
+    ZF_LOGD("Releasing Threads");
     test_simple_preempt_start = 1;
+    /* Yield should cause all other threads to execute before returning
+     * to the current thread. */
     seL4_Yield();
-
-    /* Wait for each thread to update its data */
-    for (size_t thread = 0; thread < PREEMPTION_THREADS; thread += 1) {
-        /* Wait until thread has updated its data */
-        while (preemption_thread_data[thread] == 0 && now - start < MAX_TIME) {
-            seL4_Yield();
-            now = time_now(env);
-        };
-
-        /* Give up if we exceed the timeout */
-        if (now - start >= MAX_TIME) {
-            break;
-        }
-    }
+    test_simple_preempt_start = 0;
 
     /* Get the total time taken to synchronise */
     now = time_now(env);
