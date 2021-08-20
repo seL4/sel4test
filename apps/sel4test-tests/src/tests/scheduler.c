@@ -1624,8 +1624,10 @@ static int test_simple_preempt(struct env *env)
 
     return sel4test_get_result();
 }
+/* This test is flaky under simulation. Probably a race condition that only
+   comes out under simulator timing conditions. See also #42  */
 DEFINE_TEST(SCHED0021, "Test for pre-emption during running of many threads with equal prio", test_simple_preempt,
-            true);
+            !config_set(CONFIG_SIMULATION));
 
 int sched0022_to_fn(struct env *env, helper_thread_t *thread, seL4_CPtr ep)
 {
