@@ -12,6 +12,8 @@ set(configure_string "")
 
 config_option(Sel4testHaveTimer HAVE_TIMER "Enable tests that require a timer driver" DEFAULT ON)
 
+config_option(Sel4testSimulation SIMULATION "Disable tests not suitable for simulation" DEFAULT OFF)
+
 config_option(
     Sel4testHaveCache
     HAVE_CACHE

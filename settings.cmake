@@ -63,8 +63,10 @@ if(NOT Sel4testAllowSettingsOverride)
     # sel4test specific config settings.
 
     if(SIMULATION)
+        set(Sel4testSimulation ON CACHE BOOL "" FORCE)
         set(Sel4testHaveCache OFF CACHE BOOL "" FORCE)
     else()
+        set(Sel4testSimulation OFF CACHE BOOL "" FORCE)
         set(Sel4testHaveCache ON CACHE BOOL "" FORCE)
     endif()
 

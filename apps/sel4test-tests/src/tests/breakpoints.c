@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 #include <autoconf.h>
+#include <sel4test-driver/gen_config.h>
 
 #ifdef CONFIG_HARDWARE_DEBUG_API
 
@@ -263,8 +264,11 @@ test_debug_set_data_breakpoint(struct env *env)
     }
     return sel4test_get_result();
 }
+/* This test is flaky under simulation. See also #43  */
 DEFINE_TEST(BREAKPOINT_002, "Attempt to set and trigger a data breakpoint",
-            test_debug_set_data_breakpoint, config_set(CONFIG_HARDWARE_DEBUG_API))
+            test_debug_set_data_breakpoint,
+            config_set(CONFIG_HARDWARE_DEBUG_API) &&
+            !config_set(CONFIG_SIMULATION))
 
 static int
 test_debug_get_instruction_breakpoint(struct env *env)
