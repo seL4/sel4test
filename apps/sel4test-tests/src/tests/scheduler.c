@@ -1652,6 +1652,7 @@ int sched0022_to_fn(struct env *env, helper_thread_t *thread, seL4_CPtr ep)
 
     seL4_SetMR(1, error);
     seL4_Send(ep, tag);
+    return 0;
 }
 
 /* Test that a helper thread can move itself back from another core.
