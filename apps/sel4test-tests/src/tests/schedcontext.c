@@ -116,32 +116,27 @@ test_bind_errors(env_t env)
     error = api_sc_bind(sched_context, tcb);
     test_eq(error, seL4_IllegalOperation);
 
-    /* similarly we cannot bind a notification if a tcb is bound */
+    /* we can bind a notification if a tcb is bound, this will automatically
+     * unbind the tcb when the task waits for the notification */
+    error = api_sc_bind(sched_context, notification);
+    test_eq(error, seL4_NoError);
+
+    /* you can't bind a notification if a notification is already bound */
     error = api_sc_bind(sched_context, notification);
     test_eq(error, seL4_IllegalOperation);
+
+    /* check that unbinding works */
+    error = api_sc_unbind_object(sched_context, notification);
+    test_eq(error, seL4_NoError);
 
     error = api_sc_unbind_object(sched_context, tcb);
-    test_eq(error, seL4_NoError);
-
-    error = api_sc_bind(sched_context, notification);
-    test_eq(error, seL4_NoError);
-
-    /* and you can't bind a notification if a notification is already bound*/
-    error = api_sc_bind(sched_context, notification);
-    test_eq(error, seL4_IllegalOperation);
-
-    /* and you can't bind a tcb if a notification is already bound */
-    error = api_sc_bind(sched_context, tcb);
-    test_eq(error, seL4_IllegalOperation);
-
-    error = api_sc_unbind_object(sched_context, notification);
     test_eq(error, seL4_NoError);
 
     /* check unbinding an object that is not a tcb or notification fails */
     error = api_sc_unbind_object(sched_context, endpoint);
     test_eq(error, seL4_InvalidCapability);
 
-    /* check trying to unbind a valid object that is not bounnd fails */
+    /* check trying to unbind a valid object that is not bound fails */
     error = api_sc_unbind_object(sched_context, notification);
     test_eq(error, seL4_IllegalOperation);
 
@@ -273,9 +268,15 @@ int sched_context_007_helper_fn(void)
     return 1;
 }
 
+void sched_context_007_lazy_fn(seL4_CPtr notification)
+{
+    seL4_Wait(notification, NULL);
+}
+
 int test_passive_thread_start(env_t env)
 {
     helper_thread_t helper;
+    seL4_CPtr notification = vka_alloc_notification_leaky(&env->vka);
     int error;
 
     ZF_LOGD("z");
@@ -311,9 +312,24 @@ int test_passive_thread_start(env_t env)
     error = wait_for_helper(&helper);
     test_eq(error, 1);
 
+    /* lazy unbind: Bind scheduling context to both tcb and notification */
+    error = api_sc_bind(helper.thread.sched_context.cptr, notification);
+    test_eq(error, seL4_NoError);
+    /* set helper to higher prio to make behaviour deterministic */
+    set_helper_priority(env, &helper, env->priority + 1);
+
+    /* double check that the tcb is still bound */
+    error = api_sc_bind(helper.thread.sched_context.cptr, helper.thread.tcb.cptr);
+    test_eq(error, seL4_IllegalOperation);
+
+    start_helper(env, &helper, (helper_fn_t)sched_context_007_lazy_fn, notification, 0, 0, 0);
+    /* the tcb should have been unbound lazily when the helper called seL4_Wait */
+    error = api_sc_bind(helper.thread.sched_context.cptr, helper.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED_CONTEXT0007, "test resuming a passive thread and binding scheduling context",
+DEFINE_TEST(SCHED_CONTEXT_0007, "test resuming a passive thread and binding scheduling context",
             test_passive_thread_start, config_set(CONFIG_KERNEL_MCS))
 
 static void
