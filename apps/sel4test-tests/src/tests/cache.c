@@ -97,9 +97,7 @@ static int test_page_flush(env_t env)
     */
     *ptr = 0xBEEFCAFE;
 #if defined(CONFIG_ARCH_AARCH32)
-#ifndef CONFIG_ARCH_ARM_V6
     asm volatile("dmb" ::: "memory");
-#endif /* CONFIG_ARCH_ARM_V6 */
 #elif defined(CONFIG_ARCH_AARCH64)
     asm volatile("dmb sy" ::: "memory");
 #endif /* CONFIG_ARCH_AARCHxx */
