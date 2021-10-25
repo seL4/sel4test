@@ -35,7 +35,7 @@ int test_timer(driver_env_t env)
 {
     uint64_t time = 0;
     test_finished = false;
-    timer_test_data_t test_data = { .goal_count = 10 };
+    timer_test_data_t test_data = { .goal_count = 3 };
 
     int error = tm_alloc_id_at(&env->tm, TIMER_ID);
     test_assert_fatal(!error);
