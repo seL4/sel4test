@@ -12,6 +12,10 @@
 
 #include "../helpers.h"
 
+#ifndef MIN_BUDGET_US
+#define MIN_BUDGET_US (2 * 10)
+#endif
+
 int test_sched_control_configure(env_t env)
 {
     int error;
@@ -24,27 +28,35 @@ int test_sched_control_configure(env_t env)
     test_neq(sc, (seL4_Word)seL4_CapNull);
 
     /* test it works */
-    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 5000llu, 5000llu, 0, 0);
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 5000, 5000, 0, 0);
     test_eq(error, seL4_NoError);
 
     /* test calling it on something that isn't a sched context */
     seL4_CPtr tcb = vka_alloc_tcb_leaky(&env->vka);
     test_neq(tcb, (seL4_Word)seL4_CapNull);
 
-    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), tcb, 5000llu, 5000llu, 0, 0);
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), tcb, 5000, 5000, 0, 0);
     test_eq(error, seL4_InvalidCapability);
 
     /* test a 0 budget doesn't work */
-    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 0llu, 5000llu, 0, 0);
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 0, 5000, 0, 0);
     test_eq(error, seL4_RangeError);
 
     /* test a period of 0 doesn't work */
-    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 0llu, 0llu, 0, 0);
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 0, 0, 0, 0);
     test_eq(error, seL4_RangeError);
 
     /* test budget > period doesn't work */
-    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 5000llu, 1000llu, 0, 0);
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 5000, 1000, 0, 0);
     test_eq(error, seL4_RangeError);
+
+    /* test budget < MIN_BUDGET doesn't work */
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 1, 5000, 0, 0);
+    test_eq(error, seL4_RangeError);
+
+    /* test budget == MIN_BUDGET does work */
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, MIN_BUDGET_US, 5000, 0, 0);
+    test_eq(error, seL4_NoError);
 
     //TODO test refills cases
 
@@ -71,7 +83,7 @@ int test_sched_control_reconfigure(env_t env)
     seL4_CPtr sc = thread.thread.sched_context.cptr;
 
     /* reconfigure a paused thread */
-    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 5000llu, 5000llu, 0, 0);
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 5000, 5000, 0, 0);
     test_eq(error, seL4_NoError);
 
     /* now start the thread */
@@ -81,14 +93,14 @@ int test_sched_control_reconfigure(env_t env)
     sel4test_sleep(env, 10 * NS_IN_MS);
 
     /* reconfigure a resumed thread */
-    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 10000llu, 10000llu, 0, 0);
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 10000, 10000, 0, 0);
     test_eq(error, seL4_NoError);
 
     /* let it run a little */
     sel4test_sleep(env, 10 * NS_IN_MS);
 
     /* less */
-    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 3000llu, 3000llu, 0, 0);
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), sc, 3000, 3000, 0, 0);
     test_eq(error, seL4_NoError);
 
     /* done! */
@@ -727,7 +739,7 @@ int test_smp_delete_sched_context(env_t env)
     set_helper_priority(env, &helper, env->priority - 1);
     /* Run it on another core and time it such that it runs out of budget during the SC free */
     error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, CONFIG_MAX_NUM_NODES - 1),
-                                     helper.thread.sched_context.cptr, 20, 10 * US_IN_MS, 0, 0);
+                                     helper.thread.sched_context.cptr, MIN_BUDGET_US, 10 * US_IN_MS, 0, 0);
     test_eq(error, seL4_NoError);
 
     start_helper(env, &helper, (helper_fn_t)sched_context_0005_helper_fn, (seL4_Word)&state, 0, 0, 0);
