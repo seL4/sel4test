@@ -714,3 +714,30 @@ test_revoke_sched_context_on_call_chain(env_t env)
 }
 DEFINE_TEST(SCHED_CONTEXT_0013, "Test revoking a scheduling context on a call chain",
             test_revoke_sched_context_on_call_chain, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
+
+/* Try to recreate race situation of issue 633 */
+int test_smp_delete_sched_context(env_t env)
+{
+    seL4_Error error;
+    helper_thread_t helper;
+    volatile int state = 0;
+    int prev_state = state;
+
+    create_helper_thread(env, &helper);
+    set_helper_priority(env, &helper, env->priority - 1);
+    /* Run it on another core and time it such that it runs out of budget during the SC free */
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, CONFIG_MAX_NUM_NODES - 1),
+                                     helper.thread.sched_context.cptr, 20, 10 * US_IN_MS, 0, 0);
+    test_eq(error, seL4_NoError);
+
+    start_helper(env, &helper, (helper_fn_t)sched_context_0005_helper_fn, (seL4_Word)&state, 0, 0, 0);
+
+    /* Wait till helper runs */
+    while (state == prev_state);
+
+    vka_free_object(&env->vka, &helper.thread.sched_context);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT_0014, "Test deleting a scheduling context while it runs out of budget on another core",
+            test_smp_delete_sched_context, config_set(CONFIG_KERNEL_MCS) &&CONFIG_MAX_NUM_NODES > 1);
