@@ -12,8 +12,13 @@
 
 #include "../helpers.h"
 
+/* FIXME: this is a temporary hack and MIN_BUDGET_US should be exported via libsel4 */
 #ifndef MIN_BUDGET_US
+#ifdef CONFIG_PLAT_TK1
+#define MIN_BUDGET_US (2 * 100)
+#else
 #define MIN_BUDGET_US (2 * 10)
+#endif
 #endif
 
 int test_sched_control_configure(env_t env)
