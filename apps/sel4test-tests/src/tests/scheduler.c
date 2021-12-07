@@ -59,6 +59,11 @@ static int test_thread_suspend(env_t env)
     old_counter = counter;
 
     /* Let it run again. */
+    /* We wait for two timer interrupts to force a block in case 10ms passes instantly
+     * in cases where we are running on a simulator that simulates larger clock rates
+     * via compressing the clock stream.
+     */
+    sel4test_ntfn_timer_wait(env);
     sel4test_ntfn_timer_wait(env);
 
     /* Now, counter should have moved. */
@@ -68,12 +73,14 @@ static int test_thread_suspend(env_t env)
     /* Suspend the thread, and wait again. */
     seL4_TCB_Suspend(get_helper_tcb(&t1));
     sel4test_ntfn_timer_wait(env);
+    sel4test_ntfn_timer_wait(env);
 
     /* Counter should not have moved. */
     test_check(counter == old_counter);
     old_counter = counter;
 
     /* Check once more for good measure. */
+    sel4test_ntfn_timer_wait(env);
     sel4test_ntfn_timer_wait(env);
 
     /* Counter should not have moved. */
