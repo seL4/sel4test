@@ -54,7 +54,7 @@ static int test_thread_suspend(env_t env)
      * cause large instantaneous time jumps.
      */
     int timeout = config_set(CONFIG_SIMULATION) ? 100 : 10;
-    sel4test_periodic_start(env, 10 * NS_IN_MS);
+    sel4test_periodic_start(env, timeout * NS_IN_MS);
 
     seL4_Word old_counter;
 
