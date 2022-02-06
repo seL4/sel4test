@@ -28,9 +28,15 @@ file(
 )
 
 add_executable(sel4test-tests EXCLUDE_FROM_ALL ${deps})
+# special handling for "arm_hyp", it's really "aarch32"
+set(_inc_folder_KernelSel4Arch "${KernelSel4Arch}")
+if("${KernelSel4Arch}" STREQUAL "arm_hyp")
+    set(_inc_folder_KernelSel4Arch "aarch32")
+endif()
+
 target_include_directories(
     sel4test-tests
-    PRIVATE include arch/${KernelArch} sel4_arch/${KernelSel4Arch}
+    PRIVATE include arch/${KernelArch} sel4_arch/${_inc_folder_KernelSel4Arch}
 )
 
 target_link_libraries(
