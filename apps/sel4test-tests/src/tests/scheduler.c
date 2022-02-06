@@ -49,7 +49,12 @@ static int test_thread_suspend(env_t env)
     set_helper_priority(env, &t1, 100);
     start_helper(env, &t1, (helper_fn_t) counter_func, (seL4_Word) &counter, 0, 0, 0);
 
-    sel4test_periodic_start(env, 10 * NS_IN_MS);
+    /* We increase the timeout in cases where we are running on a simulator that
+     * simulates larger clock rates via compressing the clock stream and can
+     * cause large instantaneous time jumps.
+     */
+    int timeout = config_set(CONFIG_SIMULATION) ? 100 : 10;
+    sel4test_periodic_start(env, timeout * NS_IN_MS);
 
     seL4_Word old_counter;
 
@@ -59,9 +64,8 @@ static int test_thread_suspend(env_t env)
     old_counter = counter;
 
     /* Let it run again. */
-    /* We wait for two timer interrupts to force a block in case 10ms passes instantly
-     * in cases where we are running on a simulator that simulates larger clock rates
-     * via compressing the clock stream.
+    /* We wait for two timer interrupts to force a block in case 100ms passes
+     * instantly in cases where we are running on a simulator.
      */
     sel4test_ntfn_timer_wait(env);
     sel4test_ntfn_timer_wait(env);
