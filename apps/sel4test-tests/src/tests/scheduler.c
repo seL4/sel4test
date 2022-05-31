@@ -1697,3 +1697,65 @@ static int test_changing_affinity(struct env *env)
 }
 DEFINE_TEST(SCHED0022, "test changing a helper threads core", test_changing_affinity,
             (config_set(CONFIG_KERNEL_MCS) &&(CONFIG_MAX_NUM_NODES > 1)));
+
+static void yielding_thread(int id, volatile unsigned long *counters)
+{
+    counters[id] = 0;
+    while (1) {
+        counters[id]++;
+        seL4_Yield();
+    }
+}
+
+#define M   (200) // Minimum budget
+#define P   (2 * M)
+#define N   (US_IN_S / P)
+
+static int run_test_period_drift(env_t env, int num_threads)
+{
+    int error;
+    helper_thread_t t[num_threads];
+    volatile unsigned long counters[num_threads];
+
+    /* Create tasks with lower priority: */
+    for (int i = 0; i < num_threads; i++) {
+        create_helper_thread(env, &t[i]);
+        set_helper_priority(env, &t[i], env->priority - 1);
+    }
+    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0), // Core 0
+                                     t[0].thread.sched_context.cptr, P / 2, P, 0, 0);
+    test_error_eq(error, seL4_NoError);
+    if (num_threads > 1) {
+        error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 1), // Core 1
+                                         t[1].thread.sched_context.cptr, M, M, 0, 0);
+        test_error_eq(error, seL4_NoError);
+    }
+
+    /* Periodic task */
+    start_helper(env, &t[0], (helper_fn_t)yielding_thread, 0, (seL4_Word)counters, 0, 0);
+    if (num_threads > 1) {
+        /* Introduce lock contention with round-robin task on other core */
+        start_helper(env, &t[1], (helper_fn_t)yielding_thread, 1, (seL4_Word)counters, 0, 0);
+    }
+
+    /* Measure with P/2 margin: */
+    sel4test_sleep(env, 1 * NS_IN_S - P / 2 * 1000);
+
+    test_eq(counters[0], N);
+
+    return sel4test_get_result();
+}
+
+int test_period_drift(env_t env)
+{
+    return run_test_period_drift(env, 1);
+}
+DEFINE_TEST(SCHED0023, "Test period drift", test_period_drift,
+            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
+
+int test_period_drift_smp(env_t env)
+{
+    return run_test_period_drift(env, 2);
+}
+DEFINE_TEST(SCHED0024, "Test period drift SMP", test_period_drift_smp,
+            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER) &&CONFIG_MAX_NUM_NODES > 1)
