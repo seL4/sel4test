@@ -79,7 +79,7 @@ int set_helper_sched_params(UNUSED env_t env, UNUSED helper_thread_t *thread, UN
                             UNUSED uint64_t period, seL4_Word badge);
 
 /* set a helper threads timeout fault handler */
-void set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep);
+void set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep, seL4_Word tfdata, seL4_CapRights_t tfrights);
 
 /* Start a helper. Note: arguments to helper processes will be copied into
  * the address space of that process. Do not pass pointers to data only in

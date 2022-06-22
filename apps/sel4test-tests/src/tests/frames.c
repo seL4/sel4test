@@ -155,7 +155,7 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     create_helper_thread(env, &faulter);
     set_helper_priority(env, &faulter, 100);
     err = api_tcb_set_space(get_helper_tcb(&faulter),
-                            fault_ep,
+                            fault_ep, seL4_NilData, seL4_NoRights,
                             env->cspace_root,
                             api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                             env->page_directory, seL4_NilData);
@@ -195,7 +195,8 @@ static int test_xn(env_t env, seL4_ArchObjectType frame_type)
     create_helper_thread(env, &faulter);
     set_helper_priority(env, &faulter, 100);
     err = api_tcb_configure(get_helper_tcb(&faulter),
-                            fault_ep, seL4_CapNull,
+                            fault_ep, seL4_NilData, seL4_NoRights,
+                            seL4_CapNull, seL4_NilData, seL4_NoRights,
                             get_helper_sched_context(&faulter),
                             env->cspace_root,
                             api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
@@ -247,7 +248,8 @@ static int test_device_frame_ipcbuf(env_t env)
     create_helper_thread(env, &other);
     /* Try and create a thread with a device frame as its IPC buffer */
     error = api_tcb_configure(get_helper_tcb(&other),
-                              0, seL4_CapNull,
+                              0, seL4_NilData, seL4_NoRights,
+                              seL4_CapNull, seL4_NilData, seL4_NoRights,
                               get_helper_sched_context(&other),
                               env->cspace_root,
                               api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
@@ -347,7 +349,7 @@ static int test_unmap_on_delete(env_t env)
     create_helper_thread(env, &faulter);
     set_helper_priority(env, &faulter, 100);
     err = api_tcb_set_space(get_helper_tcb(&faulter),
-                            fault_ep,
+                            fault_ep, seL4_NilData, seL4_NoRights,
                             env->cspace_root,
                             api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                             env->page_directory, seL4_NilData);
