@@ -394,6 +394,12 @@ do_bad_instruction(void)
         /* Set SP to val. */
         "mv sp, %[valptr]\n\t"
 
+        /* All ones is used as the illegal instruction because it is reasonable
+         * to assume that all current targets support a maximum instruction
+         * length (ILEN) of 32 bits. All zeros was considered and not used
+         * because all ones is easier to validated for the purposes of this
+         * test. Note: on targets that require 32 bit aligned instructions,
+         * this will be 32 bit aligned due to the previous instruction. */
         "bad_instruction_address:\n\t"
         ".word 0xffffffff\n\t"
         "bad_instruction_restart_address:\n\t"
