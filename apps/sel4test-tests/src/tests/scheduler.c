@@ -1649,7 +1649,7 @@ int sched0022_to_fn(struct env *env, helper_thread_t *thread, seL4_CPtr ep)
                                                 thread->thread.sched_context.cptr,
                                                 10000,
                                                 10000,
-                                                1,
+                                                0,
                                                 0);
     seL4_SetMR(0, error);
     /* and back to core 0 */
@@ -1657,7 +1657,7 @@ int sched0022_to_fn(struct env *env, helper_thread_t *thread, seL4_CPtr ep)
                                      thread->thread.sched_context.cptr,
                                      10000,
                                      10000,
-                                     1,
+                                     0,
                                      0);
 
     seL4_SetMR(1, error);
