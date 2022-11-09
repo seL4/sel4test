@@ -48,7 +48,7 @@ if(NOT Sel4testAllowSettingsOverride)
         set(KernelArmHypervisorSupport ON CACHE BOOL "" FORCE)
     endif()
 
-    if(KernelPlatformQEMUArmVirt OR KernelPlatformSpike)
+    if(KernelPlatformQEMUArmVirt OR KernelPlatformQEMURiscVVirt OR KernelPlatformSpike)
         set(SIMULATION ON CACHE BOOL "" FORCE)
     endif()
 
