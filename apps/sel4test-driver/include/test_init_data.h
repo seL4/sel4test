@@ -64,6 +64,11 @@ typedef struct {
     /* sched control cap */
     seL4_CPtr sched_ctrl;
 
+#ifdef CONFIG_ALLOW_SMC_CALLS
+    /* smc cap */
+    seL4_CPtr smc;
+#endif /* CONFIG_ALLOW_SMC_CALLS */
+
     /* device frame cap */
     seL4_CPtr device_frame_cap;
 
