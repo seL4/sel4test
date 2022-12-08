@@ -198,6 +198,9 @@ int main(int argc, char **argv)
     env.asid_pool = init_data->asid_pool;
     env.asid_ctrl = init_data->asid_ctrl;
     env.sched_ctrl = init_data->sched_ctrl;
+#ifdef CONFIG_ALLOW_SMC_CALLS
+    env.smc = init_data->smc;
+#endif
 #ifdef CONFIG_IOMMU
     env.io_space = init_data->io_space;
 #endif
