@@ -107,7 +107,7 @@ if(NOT Sel4testAllowSettingsOverride)
     endif()
 
     if(DOMAINS)
-        set(KernelNumDomains 16 CACHE STRING "" FORCE)
+        set(KernelNumDomains 4 CACHE STRING "" FORCE)
     else()
         set(KernelNumDomains 1 CACHE STRING "" FORCE)
     endif()
