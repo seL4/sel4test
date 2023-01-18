@@ -6,7 +6,12 @@
 
 /* This is a domain schedule that is suitable for the domains tests in sel4test. All
  * sel4test actually needs is for every domain to be executable for some period of time
- * in order for the tests to make progress
+ * in order for the tests to make progress.
+ *
+ * Most tests run only in domain 0, so we give it the longest period to reduce
+ * overall idle time. We pick 2 ticks as the shortest period so that tests can
+ * make some progress if they exist, and we pick some variety in the first four
+ * domains so that not everything is equal.
  */
 
 /* remember that this is compiled as part of the kernel, and so is referencing kernel headers */
@@ -17,51 +22,51 @@
 
 /* Default schedule. */
 const dschedule_t ksDomSchedule[] = {
-    { .domain = 0, .length = 1 },
+    { .domain = 0, .length = 60 },
 #if CONFIG_NUM_DOMAINS > 1
-    { .domain = 1, .length = 1 },
+    { .domain = 1, .length = 4 },
 #endif
 #if CONFIG_NUM_DOMAINS > 2
-    { .domain = 2, .length = 1 },
+    { .domain = 2, .length = 3 },
 #endif
 #if CONFIG_NUM_DOMAINS > 3
-    { .domain = 3, .length = 1 },
+    { .domain = 3, .length = 2 },
 #endif
 #if CONFIG_NUM_DOMAINS > 4
-    { .domain = 4, .length = 1 },
+    { .domain = 4, .length = 2 },
 #endif
 #if CONFIG_NUM_DOMAINS > 5
-    { .domain = 5, .length = 1 },
+    { .domain = 5, .length = 2 },
 #endif
 #if CONFIG_NUM_DOMAINS > 6
-    { .domain = 6, .length = 1 },
+    { .domain = 6, .length = 2 },
 #endif
 #if CONFIG_NUM_DOMAINS > 7
-    { .domain = 7, .length = 1 },
+    { .domain = 7, .length = 2 },
 #endif
 #if CONFIG_NUM_DOMAINS > 8
-    { .domain = 8, .length = 1 },
+    { .domain = 8, .length = 2 },
 #endif
 #if CONFIG_NUM_DOMAINS > 9
-    { .domain = 9, .length = 1 },
+    { .domain = 9, .length = 2 },
 #endif
 #if CONFIG_NUM_DOMAINS > 10
-    { .domain = 10, .length = 1 },
+    { .domain = 10, .length = 2 },
 #endif
 #if CONFIG_NUM_DOMAINS > 11
-    { .domain = 11, .length = 1 },
+    { .domain = 11, .length = 2 },
 #endif
 #if CONFIG_NUM_DOMAINS > 12
-    { .domain = 12, .length = 1 },
+    { .domain = 12, .length = 2 },
 #endif
 #if CONFIG_NUM_DOMAINS > 13
-    { .domain = 13, .length = 1 },
+    { .domain = 13, .length = 2 },
 #endif
 #if CONFIG_NUM_DOMAINS > 14
-    { .domain = 14, .length = 1 },
+    { .domain = 14, .length = 2 },
 #endif
 #if CONFIG_NUM_DOMAINS > 15
-    { .domain = 15, .length = 1 },
+    { .domain = 15, .length = 2 },
 #endif
 #if CONFIG_NUM_DOMAINS > 16
 #error Unsupportd number of domains set
