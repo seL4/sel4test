@@ -86,8 +86,9 @@ static int do_test_pagetable_tlbflush_on_vaddr_reuse(env_t env, seL4_CPtr cap1, 
     test_error_eq(error, 0);
     test_check(vptr[0] == 1);
 
-    /* This test no longer works as it relies on overmapping */
-
+    error = seL4_ARM_Page_Unmap(cap1);
+    test_error_eq(error, 0)
+    
     error = seL4_ARM_Page_Map(cap2, env->page_directory,
                               vaddr, seL4_AllRights,
                               seL4_ARM_Default_VMAttributes);
