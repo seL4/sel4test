@@ -87,8 +87,8 @@ static int do_test_pagetable_tlbflush_on_vaddr_reuse(env_t env, seL4_CPtr cap1, 
     test_check(vptr[0] == 1);
 
     error = seL4_ARM_Page_Unmap(cap1);
-    test_error_eq(error, 0)
-    
+    test_error_eq(error, 0);
+
     error = seL4_ARM_Page_Map(cap2, env->page_directory,
                               vaddr, seL4_AllRights,
                               seL4_ARM_Default_VMAttributes);
@@ -514,7 +514,8 @@ DEFINE_TEST(PT0001, "Fun with page tables on ARM", test_pagetable_arm, true)
 
 
 #if defined(CONFIG_ARCH_AARCH32)
-static int test_overmap_small(env_t env) {
+static int test_overmap_small(env_t env)
+{
     seL4_Word map_addr = 0x10000000;
     cspacepath_t path;
     int error;
@@ -550,7 +551,8 @@ static int test_overmap_small(env_t env) {
 }
 DEFINE_TEST(PT0011, "Test that overmapping small pages is not permitted", test_overmap_small, true)
 
-static int test_overmap_large(env_t env) {
+static int test_overmap_large(env_t env)
+{
     seL4_Word map_addr = 0x10000000;
     cspacepath_t path;
     int error;
@@ -586,7 +588,8 @@ static int test_overmap_large(env_t env) {
 }
 DEFINE_TEST(PT0012, "Test that overmapping large pages is not permitted", test_overmap_large, true)
 
-static int test_overmap_section(env_t env) {
+static int test_overmap_section(env_t env)
+{
     seL4_Word map_addr = 0x10000000;
     cspacepath_t path;
     int error;
@@ -616,7 +619,8 @@ static int test_overmap_section(env_t env) {
 }
 DEFINE_TEST(PT0013, "Test that overmapping sections is not permitted", test_overmap_section, true)
 
-static int test_overmap_supersection(env_t env) {
+static int test_overmap_supersection(env_t env)
+{
     seL4_Word map_addr = 0x10000000;
     cspacepath_t path;
     int error;
@@ -647,7 +651,8 @@ static int test_overmap_supersection(env_t env) {
 DEFINE_TEST(PT0014, "Test that overmapping super sections is not permitted", test_overmap_supersection, true)
 
 #elif defined(CONFIG_ARCH_AARCH64)
-static int test_overmap_small(env_t env) {
+static int test_overmap_small(env_t env)
+{
     seL4_Word map_addr = 0x10000000;
     cspacepath_t path;
     int error;
@@ -701,7 +706,8 @@ static int test_overmap_small(env_t env) {
 }
 DEFINE_TEST(PT0011, "Test that overmapping small pages is not permitted", test_overmap_small, true)
 
-static int test_overmap_large(env_t env) {
+static int test_overmap_large(env_t env)
+{
     seL4_Word map_addr = 0x10000000;
     cspacepath_t path;
     int error;
@@ -793,19 +799,24 @@ DEFINE_TEST(PT0012, "Test that overmapping large pages is not permitted", test_o
 // DEFINE_TEST(PT0013, "Test that overmapping huge pages is not permitted", test_overmap_huge, true)
 #elif defined(CONFIG_ARCH_RISCV)
 
-static int test_overmap_small(env_t env) {
+static int test_overmap_small(env_t env)
+{
     seL4_Word map_addr = 0x10000000;
     cspacepath_t path;
     int error;
 
     seL4_CPtr vspace = vka_alloc_object_leaky(&env->vka, seL4_RISCV_PageTableObject, 0);
     seL4_CPtr level2 = vka_alloc_object_leaky(&env->vka, seL4_RISCV_PageTableObject, 0);
+#if defined(CONFIG_ARCH_RISCV64)
     seL4_CPtr level3 = vka_alloc_object_leaky(&env->vka, seL4_RISCV_PageTableObject, 0);
+#endif
     seL4_CPtr frame = vka_alloc_object_leaky(&env->vka, seL4_RISCV_4K_Page, 0);
     seL4_CPtr frame2  = vka_alloc_object_leaky(&env->vka, seL4_RISCV_4K_Page, 0);
     test_assert(vspace != 0);
     test_assert(level2 != 0);
+#if defined(CONFIG_ARCH_RISCV64)
     test_assert(level3 != 0);
+#endif
     test_assert(frame != 0);
     test_assert(frame2 != 0);
 
@@ -816,9 +827,11 @@ static int test_overmap_small(env_t env) {
     error = seL4_RISCV_PageTable_Map(level2, vspace, map_addr, seL4_RISCV_Default_VMAttributes);
     test_error_eq(error, seL4_NoError);
 
+#if defined(CONFIG_ARCH_RISCV64)
     /* map lvl3 into vspace */
     error = seL4_RISCV_PageTable_Map(level3, vspace, map_addr, seL4_RISCV_Default_VMAttributes);
     test_error_eq(error, seL4_NoError);
+#endif
 
     /* map frame into the page table */
     error = seL4_RISCV_Page_Map(frame, vspace, map_addr, seL4_AllRights, seL4_RISCV_Default_VMAttributes);
@@ -838,7 +851,8 @@ DEFINE_TEST(PT0011, "Test that overmapping small pages is not permitted", test_o
 #elif defined(CONFIG_ARCH_X86_64)
 
 
-static int test_overmap_small(env_t env) {
+static int test_overmap_small(env_t env)
+{
     seL4_Word map_addr = 0x10000000;
     cspacepath_t path;
     int error;
@@ -886,7 +900,8 @@ static int test_overmap_small(env_t env) {
 }
 DEFINE_TEST(PT0011, "Test that overmapping small pages is not permitted", test_overmap_small, true)
 
-static int test_overmap_large(env_t env) {
+static int test_overmap_large(env_t env)
+{
     seL4_Word map_addr = 0x10000000;
     cspacepath_t path;
     int error;
@@ -928,7 +943,8 @@ static int test_overmap_large(env_t env) {
 }
 DEFINE_TEST(PT0012, "Test that overmapping large pages is not permitted", test_overmap_large, true)
 
-static int test_overmap_huge(env_t env) {
+static int test_overmap_huge(env_t env)
+{
     seL4_Word map_addr = 0x40000000;
     cspacepath_t path;
     int error;
