@@ -755,48 +755,49 @@ static int test_overmap_large(env_t env)
 }
 DEFINE_TEST(PT0012, "Test that overmapping large pages is not permitted", test_overmap_large, true)
 
-// static int test_overmap_huge(env_t env) {
-//     seL4_Word map_addr = 0x10000000;
-//     cspacepath_t path;
-//     int error;
+static int test_overmap_huge(env_t env)
+{
+    seL4_Word map_addr = 0x10000000;
+    cspacepath_t path;
+    int error;
 
-//     ZF_LOGE("hi %d", seL4_HugePageBits);
-//     seL4_CPtr pgd = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageGlobalDirectoryObject, 0);
-//     seL4_CPtr pud = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageUpperDirectoryObject, 0);
-//     seL4_CPtr frame = vka_alloc_object_leaky(&env->vka, seL4_ARM_HugePageObject, 0);
-//     seL4_CPtr frame2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_HugePageObject, 0);
-//     /* Under an Arm Hyp configuration where the CPU only supports 40bit physical addressing, we
-//      * only have 3 level page tables and no PGD.
-//      */
-//     test_assert((seL4_PGDBits == 0) || pgd != 0);
-//     test_assert(pud != 0);
-//     test_assert(frame != 0);
-//     test_assert(frame2 != 0);
+    seL4_CPtr pgd = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageGlobalDirectoryObject, 0);
+    seL4_CPtr pud = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageUpperDirectoryObject, 0);
+    seL4_CPtr frame = vka_alloc_object_leaky(&env->vka, seL4_ARM_HugePageObject, 0);
+    seL4_CPtr frame2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_HugePageObject, 0);
+    /* Under an Arm Hyp configuration where the CPU only supports 40bit physical addressing, we
+     * only have 3 level page tables and no PGD.
+     */
+    test_assert((seL4_PGDBits == 0) || pgd != 0);
+    test_assert(pud != 0);
+    test_assert(frame != 0);
+    test_assert(frame2 != 0);
 
 
-//     seL4_CPtr vspace = (seL4_PGDBits == 0) ? pud : pgd;
-//     seL4_ARM_ASIDPool_Assign(env->asid_pool, vspace);
-// #if seL4_PGDBits > 0
-//     /* map pud into page global directory */
-//     error = seL4_ARM_PageUpperDirectory_Map(pud, vspace, map_addr, seL4_ARM_Default_VMAttributes);
-//     test_error_eq(error, seL4_NoError);
-// #endif
+    seL4_CPtr vspace = (seL4_PGDBits == 0) ? pud : pgd;
+    seL4_ARM_ASIDPool_Assign(env->asid_pool, vspace);
+#if seL4_PGDBits > 0
+    /* map pud into page global directory */
+    error = seL4_ARM_PageUpperDirectory_Map(pud, vspace, map_addr, seL4_ARM_Default_VMAttributes);
+    test_error_eq(error, seL4_NoError);
+#endif
 
-//     /* map frame into the page table */
-//     error = seL4_ARM_Page_Map(frame, vspace, map_addr, seL4_AllRights, seL4_ARM_Default_VMAttributes);
-//     test_error_eq(error, seL4_NoError);
+    /* map frame into the page table */
+    error = seL4_ARM_Page_Map(frame, vspace, map_addr, seL4_AllRights, seL4_ARM_Default_VMAttributes);
+    test_error_eq(error, seL4_NoError);
 
-//     /* Remap the frame with readonly permissions */
-//     error = seL4_ARM_Page_Map(frame, vspace, map_addr, seL4_NoWrite, seL4_ARM_Default_VMAttributes);
-//     test_error_eq(error, seL4_NoError);
+    /* Remap the frame with readonly permissions */
+    error = seL4_ARM_Page_Map(frame, vspace, map_addr, seL4_NoWrite, seL4_ARM_Default_VMAttributes);
+    test_error_eq(error, seL4_NoError);
 
-//     /* Try to overmap the existing mapping*/
-//     error = seL4_ARM_Page_Map(frame2, vspace, map_addr, seL4_NoWrite, seL4_ARM_Default_VMAttributes);
-//     test_error_eq(error, seL4_DeleteFirst);
+    /* Try to overmap the existing mapping*/
+    error = seL4_ARM_Page_Map(frame2, vspace, map_addr, seL4_NoWrite, seL4_ARM_Default_VMAttributes);
+    test_error_eq(error, seL4_DeleteFirst);
 
-//     return sel4test_get_result();
-// }
-// DEFINE_TEST(PT0013, "Test that overmapping huge pages is not permitted", test_overmap_huge, true)
+    return sel4test_get_result();
+}
+DEFINE_TEST(PT0013, "Test that overmapping huge pages is not permitted", test_overmap_huge,
+            config_set(CONFIG_SIMULATION))
 #elif defined(CONFIG_ARCH_RISCV)
 
 static int test_overmap_small(env_t env)
@@ -978,5 +979,6 @@ static int test_overmap_huge(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(PT0013, "Test that overmapping huge pages is not permitted", test_overmap_huge, true)
+DEFINE_TEST(PT0013, "Test that overmapping huge pages is not permitted", test_overmap_huge,
+            config_set(CONFIG_SIMULATION))
 #endif
