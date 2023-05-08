@@ -86,11 +86,11 @@ do_read_fault(void)
     );
 #elif defined(CONFIG_ARCH_AARCH64)
     asm volatile(
-        "mov x0, %[val]\n\t"
+        "mov w0, %w[val]\n\t"
         "read_fault_address:\n\t"
         "ldr x0, [%[addrreg]]\n\t"
         "read_fault_restart_address:\n\t"
-        "mov %[val], x0\n\t"
+        "mov %w[val], w0\n\t"
         : [val] "+r"(val)
         : [addrreg] "r"(x)
         : "x0"
@@ -144,11 +144,11 @@ do_write_fault(void)
     );
 #elif defined(CONFIG_ARCH_AARCH64)
     asm volatile(
-        "mov x0, %[val]\n\t"
+        "mov w0, %w[val]\n\t"
         "write_fault_address:\n\t"
         "str x0, [%[addrreg]]\n\t"
         "write_fault_restart_address:\n\t"
-        "mov %[val], x0\n\t"
+        "mov %w[val], w0\n\t"
         : [val] "+r"(val)
         : [addrreg] "r"(x)
         : "x0"
@@ -200,10 +200,10 @@ do_instruction_fault(void)
     );
 #elif defined(CONFIG_ARCH_AARCH64)
     asm volatile(
-        "mov x0, %[val]\n\t"
+        "mov w0, %w[val]\n\t"
         "blr %[addrreg]\n\t"
         "instruction_fault_restart_address:\n\t"
-        "mov %[val], x0\n\t"
+        "mov %w[val], w0\n\t"
         : [val] "+r"(val)
         : [addrreg] "r"(x)
         : "x0", "x30"
@@ -259,11 +259,11 @@ do_bad_syscall(void)
 #elif defined(CONFIG_ARCH_AARCH64)
     asm volatile(
         "mov x7, %[scno]\n\t"
-        "mov x0, %[val]\n\t"
+        "mov w0, %w[val]\n\t"
         "bad_syscall_address:\n\t"
         "svc %[scno]\n\t"
         "bad_syscall_restart_address:\n\t"
-        "mov %[val], x0\n\t"
+        "mov %w[val], w0\n\t"
         : [val] "+r"(val)
         : [addrreg] "r"(x),
         [scno] "i"(BAD_SYSCALL_NUMBER)
