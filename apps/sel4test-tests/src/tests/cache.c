@@ -433,3 +433,141 @@ static int test_flush_outside_window(env_t env)
 DEFINE_TEST(CACHEFLUSH0005, "Test that cache maintenance outside the kernel window is disallowed",
             test_flush_outside_window, true)
 #endif
+
+#if defined(CONFIG_ARCH_ARM)
+
+/*
+ * The following tests aim to test the seL4_ARM_* cache operations on every
+ * kind of frame mapping that can be created. The motivation behind this is
+ * that some ARM hardware cache instructions generate faults depending on the
+ * permissions of the mapping and we need to ensure that the kernel catches
+ * these so that a fault does not occur in kernel space. In addition, these
+ * tests ensure that the kernel is enforcing a frame's cap rights, depending
+ * on the cache operation.
+ *
+ * For each kind of mapping we need to test the following operations:
+ *
+ * seL4_ARM_VSpace_Clean_Data
+ * seL4_ARM_VSpace_Invalidate_Data
+ * seL4_ARM_VSpace_CleanInvalidate_Data
+ * seL4_ARM_VSpace_Unify_Instruction
+ * seL4_ARM_Page_Clean_Data
+ * seL4_ARM_Page_Invalidate_Data
+ * seL4_ARM_Page_CleanInvalidate_Data
+ * seL4_ARM_Page_Unify_Instruction
+ *
+ */
+static int test_cache_invalid(env_t env)
+{
+    seL4_CPtr frame;
+    int err;
+
+    /* Create a frame, but deliberately do not create a mapping for it. */
+    frame = vka_alloc_frame_leaky(&env->vka, PAGE_BITS_4K);
+    test_assert(frame != seL4_CapNull);
+
+    /* Top-level page table operations for invalid mappings are silently ignored by
+     * the kernel so we do not test them here */
+
+    /* Page-level operations */
+    err = seL4_ARM_Page_Clean_Data(frame, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+    err = seL4_ARM_Page_Invalidate_Data(frame, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+    err = seL4_ARM_Page_CleanInvalidate_Data(frame, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+    err = seL4_ARM_Page_Unify_Instruction(frame, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+
+    return sel4test_get_result();
+}
+
+/*
+ * Map a fresh frame with the given rights and test all cache maintenance
+ * operations on that frame. Clean, CleanInvalidate and Unify are expected to
+ * always succeed on any valid mapping. For Invalidate this varies, so we pass
+ * in the expected result value.
+ */
+static int test_cache_ops_on_mapping(env_t env, seL4_CapRights_t rights, seL4_Error expected_invalidate)
+{
+    seL4_CPtr frame;
+    uintptr_t vstart;
+    void *vaddr;
+    reservation_t reservation;
+    int err;
+
+    reservation = vspace_reserve_range(&env->vspace, PAGE_SIZE_4K, rights, 1, &vaddr);
+    assert(reservation.res);
+
+    vstart = (uintptr_t)vaddr;
+    assert(IS_ALIGNED(vstart, seL4_PageBits));
+
+    /* Create a frame */
+    frame = vka_alloc_frame_leaky(&env->vka, PAGE_BITS_4K);
+    test_assert(frame != seL4_CapNull);
+
+    /* map in a cap with cacheability */
+    err = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
+    test_error_eq(err, seL4_NoError);
+
+    /* Top-level page table operations */
+    err = seL4_ARCH_PageDirectory_Clean_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, expected_invalidate);
+    err = seL4_ARCH_PageDirectory_CleanInvalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARCH_PageDirectory_Unify_Instruction(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    /* Page-level operations */
+    err = seL4_ARM_Page_Clean_Data(frame, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARM_Page_Invalidate_Data(frame, 0, PAGE_SIZE_4K);
+    test_error_eq(err, expected_invalidate);
+    err = seL4_ARM_Page_CleanInvalidate_Data(frame, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARM_Page_Unify_Instruction(frame, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+
+    return sel4test_get_result();
+}
+
+/*
+ * Expected result of Invalidate on a mapping without write rights. The kernel
+ * only rejects this on ARMv8-a at EL1. On ARMv7-a and in EL2 the corresponding
+ * operations are safe for the kernel to perform.
+ */
+static inline seL4_Error CONST invalidate_non_writable_result(void)
+{
+    if (config_set(CONFIG_ARCH_AARCH64) && !config_set(CONFIG_ARM_HYPERVISOR_SUPPORT)) {
+        return seL4_IllegalOperation;
+    }
+    return seL4_NoError;
+}
+
+static int test_cache_kernel_only(env_t env)
+{
+    /* A mapping with seL4_NoRights is mapped in by the kernel with the kernel-only VM attribute. */
+    return test_cache_ops_on_mapping(env, seL4_NoRights, invalidate_non_writable_result());
+}
+
+static int test_cache_read_write(env_t env)
+{
+    return test_cache_ops_on_mapping(env, seL4_AllRights, seL4_NoError);
+}
+
+static int test_cache_read_only(env_t env)
+{
+    return test_cache_ops_on_mapping(env, seL4_CanRead, invalidate_non_writable_result());
+}
+
+DEFINE_TEST(CACHEFLUSH0006, "Test cache maintenance on invalid mappings", test_cache_invalid,
+            config_set(CONFIG_HAVE_CACHE))
+DEFINE_TEST(CACHEFLUSH0007, "Test cache maintenance on kernel-only mappings", test_cache_kernel_only,
+            config_set(CONFIG_HAVE_CACHE))
+DEFINE_TEST(CACHEFLUSH0008, "Test cache maintenance on read-write mappings", test_cache_read_write,
+            config_set(CONFIG_HAVE_CACHE))
+DEFINE_TEST(CACHEFLUSH0009, "Test cache maintenance on read-only mappings", test_cache_read_only,
+            config_set(CONFIG_HAVE_CACHE))
+
+#endif
