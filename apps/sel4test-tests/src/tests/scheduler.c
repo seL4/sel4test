@@ -1113,9 +1113,9 @@ DEFINE_TEST(SCHED0013, "Test two periodic threads", test_two_periodic_threads,
 int test_ordering_periodic_threads(env_t env)
 {
     /*
-     * Set up 3 periodic threads with different budgets.
-     * All 3 threads increment global counters,
-     * check their increments are inline with their budgets.
+     * Set up 3 periodic threads with same budget and different periods.
+     * All 3 threads increment global counters.
+     * We check that their increments are in line with their budgets.
      */
 
     const int num_threads = 3;
