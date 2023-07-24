@@ -571,3 +571,90 @@ DEFINE_TEST(CACHEFLUSH0009, "Test cache maintenance on read-only mappings", test
             config_set(CONFIG_HAVE_CACHE))
 
 #endif
+
+#ifdef CONFIG_ARCH_AARCH64
+/*
+ * On AArch64, the kernel can be configured (CONFIG_AARCH64_USER_CACHE_ENABLE)
+ * to allow user-space to execute certain cache maintenance instructions
+ * directly, without going into the kernel. The specific instructions are DC
+ * CVAU, DC CIVAC, DC CVAC, and IC IVAU. When the option is not enabled,
+ * executing any of these instructions from user-space should trap.
+ */
+
+
+/*
+ * Execute the cache maintenance instructions in a helper which should either
+ * fault or not, depending on the config setting.
+ */
+static int do_user_cache_ops(seL4_Word vaddr, seL4_Word arg1, seL4_Word arg2, seL4_Word arg3)
+{
+    asm volatile("dc cvau, %0" :: "r"(vaddr));
+    asm volatile("dc civac, %0" :: "r"(vaddr));
+    asm volatile("dc cvac, %0" :: "r"(vaddr));
+    asm volatile("ic ivau, %0" :: "r"(vaddr));
+
+    return 0;
+}
+
+static int test_user_cache_ops(env_t env)
+{
+    seL4_CPtr frame;
+    helper_thread_t t;
+    seL4_MessageInfo_t tag;
+    seL4_Word badge;
+    int error;
+
+    void *vaddr;
+    reservation_t reservation;
+
+    reservation = vspace_reserve_range(&env->vspace,
+                                       PAGE_SIZE_4K, seL4_AllRights, 1, &vaddr);
+    test_assert(reservation.res);
+
+    /* Create a frame */
+    frame = vka_alloc_frame_leaky(&env->vka, PAGE_BITS_4K);
+    test_assert(frame != seL4_CapNull);
+
+    /* map in a cap with cacheability */
+    error = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
+    test_error_eq(error, seL4_NoError);
+
+    create_helper_thread(env, &t);
+
+    /* Make the helper thread endpoint also its fault endpoint, so that we
+     * receive either a fault or the result on the same endpoint. */
+    error = api_tcb_set_space(get_helper_tcb(&t), t.local_endpoint.cptr,
+                              env->cspace_root,
+                              api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
+                              env->page_directory, seL4_NilData);
+    test_error_eq(error, seL4_NoError);
+
+    /* Execute the cache instructions on the virtual address of the page we mapped */
+    start_helper(env, &t, do_user_cache_ops, (seL4_Word)vaddr, 0, 0, 0);
+
+    tag = api_recv(t.local_endpoint.cptr, &badge, get_helper_reply(&t));
+
+    if (config_set(CONFIG_AARCH64_USER_CACHE_ENABLE)) {
+        /* In this config, the helper must finish without faulting, indicated by message content 0. */
+        test_eq(seL4_MessageInfo_get_label(tag), 0);
+        test_eq(seL4_GetMR(0), 0);
+    } else {
+        /* Here the helper must fault. */
+#ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
+        /* On Hyp the fault type is VPUFault instead of UserException. */
+        test_eq(seL4_MessageInfo_get_label(tag), seL4_Fault_VCPUFault);
+#else
+        test_eq(seL4_MessageInfo_get_label(tag), seL4_Fault_UserException);
+#endif
+    }
+
+    cleanup_helper(env, &t);
+
+    return sel4test_get_result();
+}
+/* We can run this test even without CONFIG_HAVE_CACHE, because we are only
+ * testing if the instructions execute, not if they do anything to the cache.
+ * That means the behaviour is correctly observable in simulation. */
+DEFINE_TEST(CACHEOPS0001, "Test that user-space cache-maintenance instructions fault iff the kernel disallows them",
+            test_user_cache_ops, true)
+#endif /* CONFIG_ARCH_AARCH64 */
