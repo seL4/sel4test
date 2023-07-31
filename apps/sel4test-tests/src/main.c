@@ -119,13 +119,14 @@ static void init_allocator(env_t env, test_init_data_t *init_data)
     arch_init_allocator(env, init_data);
 
     /* create a vspace */
-    void *existing_frames[init_data->stack_pages + 2];
+    void *existing_frames[init_data->stack_pages + 3];
     existing_frames[0] = (void *) init_data;
     existing_frames[1] = seL4_GetIPCBuffer();
     assert(init_data->stack_pages > 0);
     for (int i = 0; i < init_data->stack_pages; i++) {
         existing_frames[i + 2] = init_data->stack + (i * PAGE_SIZE_4K);
     }
+    existing_frames[init_data->stack_pages + 2] = NULL;
 
     error = sel4utils_bootstrap_vspace(&env->vspace, &alloc_data, init_data->page_directory, &env->vka,
                                        NULL, NULL, existing_frames);
