@@ -79,7 +79,11 @@ test_unmap_after_delete(env_t env)
     cspacepath_t path;
     int error;
 
+#if seL4_PGDBits > 0
     seL4_CPtr pgd = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageGlobalDirectoryObject, 0);
+#else
+    seL4_CPtr pgd = 0;
+#endif
     seL4_CPtr pud = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageUpperDirectoryObject, 0);
     seL4_CPtr pd = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageDirectoryObject, 0);
     seL4_CPtr pt = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageTableObject, 0);
