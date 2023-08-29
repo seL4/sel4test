@@ -80,11 +80,13 @@ if(NOT Sel4testAllowSettingsOverride)
         KernelPlatformZynqmp
         OR KernelPlatformPolarfire
         OR KernelPlatformQuartz64
+        OR KernelPlatformRocketchipZCU102
         OR (SIMULATION AND (KernelArchRiscV OR KernelArchARM))
     )
         # Frequency settings of the ZynqMP make the ltimer tests problematic
         # Polarfire does not have a complete ltimer implementation
         # Quartz64 does not have a complete ltimer implementation
+        # Rocket Chip on the ZCU102 FPGA does not have a timer peripheral
         set(Sel4testHaveTimer OFF CACHE BOOL "" FORCE)
     else()
         set(Sel4testHaveTimer ON CACHE BOOL "" FORCE)
