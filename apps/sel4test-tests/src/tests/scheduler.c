@@ -1179,7 +1179,7 @@ sched0015_helper(int id, env_t env, volatile unsigned long long *counters)
 
 int test_budget_overrun(env_t env)
 {
-    /* Run two periodic threads that do not yeild but count the approximate
+    /* Run two periodic threads that do not yield but count the approximate
      * amount of time that they run for in 10's of nanoseconds.
      *
      * Each thread has a different share of the processor.
