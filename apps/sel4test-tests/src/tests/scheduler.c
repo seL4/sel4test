@@ -1003,7 +1003,7 @@ sched0011_helper(void)
 int test_scheduler_accuracy(env_t env)
 {
     /*
-     * Start a thread with a 1s timeslice at our priority, and make sure it
+     * Start a thread with a 100ms timeslice at our priority, and make sure it
      * runs for that long
      */
     helper_thread_t helper;
