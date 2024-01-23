@@ -748,7 +748,7 @@ static int test_fault(env_t env, int fault_type, bool inter_as)
 
                 set_helper_priority(env, &handler_thread, 101);
                 error = api_tcb_set_space(get_helper_tcb(&faulter_thread),
-                                          fault_ep,
+                                          fault_ep, seL4_NilData, seL4_NoRights,
                                           faulter_cspace,
                                           api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                                           faulter_vspace, seL4_NilData);
@@ -857,7 +857,7 @@ int test_timeout_fault(env_t env)
 
     create_helper_thread(env, &helper);
     set_helper_sched_params(env, &helper, US_IN_MS, US_IN_S, data);
-    set_helper_tfep(env, &helper, endpoint);
+    set_helper_tfep(env, &helper, endpoint, seL4_NilData, seL4_NoRights);
     start_helper(env, &helper, (helper_fn_t) timeout_fault_0001_fn, 0, 0, 0, 0);
 
     /* wait for timeout fault */
@@ -909,7 +909,7 @@ int create_passive_thread_with_tfep(env_t env, helper_thread_t *passive, seL4_CP
     test_eq(error, seL4_NoError);
 
     error = create_passive_thread(env, passive, fn, ep, arg1, arg2, arg3);
-    set_helper_tfep(env, passive, minted_tfep);
+    set_helper_tfep(env, passive, minted_tfep, seL4_NilData, seL4_NoRights);
     test_eq(error, 0);
 
     /* checkpoint */
@@ -1080,8 +1080,8 @@ static int test_vm_enter_non_vm(env_t env)
     create_helper_thread(env, &helper);
 
     seL4_Word guard = seL4_WordBits - env->cspace_size_bits;
-    err = api_tcb_set_space(get_helper_tcb(&helper), fault_ep, env->cspace_root,
-                            api_make_guard_skip_word(guard),
+    err = api_tcb_set_space(get_helper_tcb(&helper), fault_ep,  seL4_NilData, seL4_NoRights,
+                            env->cspace_root, api_make_guard_skip_word(guard),
                             env->page_directory, seL4_NilData);
     test_eq(err, 0);
 

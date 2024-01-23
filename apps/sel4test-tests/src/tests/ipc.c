@@ -984,7 +984,7 @@ static int test_fault_handler_donated_sc(env_t env)
 
     /* set fault handler */
     seL4_Word data = api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits);
-    error = api_tcb_set_space(faulter.thread.tcb.cptr, endpoint,
+    error = api_tcb_set_space(faulter.thread.tcb.cptr, endpoint, seL4_NilData, seL4_NoRights,
                               env->cspace_root, data, env->page_directory, seL4_NilData);
     test_eq(error, seL4_NoError);
 

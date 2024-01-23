@@ -79,7 +79,7 @@ test_recv_needs_read(env_t env)
         create_helper_thread(env, &t);
         int error;
         error = api_tcb_set_space(get_helper_tcb(&t),
-                                  fault_ep,
+                                  fault_ep, seL4_NilData, seL4_NoRights,
                                   env->cspace_root,
                                   seL4_NilData,
                                   env->page_directory, seL4_NilData);

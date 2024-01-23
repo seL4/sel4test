@@ -560,11 +560,11 @@ int restart_after_syscall(env_t env, helper_thread_t *helper)
     return 0;
 }
 
-void set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep)
+void set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep, seL4_Word tfdata, seL4_CapRights_t tfrights)
 {
     ZF_LOGF_IF(!config_set(CONFIG_KERNEL_MCS), "Unsupported on non MCS kernel");
 #ifdef CONFIG_KERNEL_MCS
-    int error = seL4_TCB_SetTimeoutEndpoint(thread->thread.tcb.cptr, tfep);
+    int error = seL4_TCB_SetTimeoutEndpoint(thread->thread.tcb.cptr, tfep, tfdata, tfrights);
     if (error != seL4_NoError) {
         ZF_LOGF("Failed to set tfep\n");
     }

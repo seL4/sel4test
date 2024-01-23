@@ -236,7 +236,7 @@ static int smp_test_tlb_instance(env_t env, bool inter_as)
     }
 
     error = api_tcb_set_space(get_helper_tcb(&faulter_thread),
-                              fault_ep_faulter,
+                              fault_ep_faulter, seL4_NilData, seL4_NoRights,
                               faulter_cspace,
                               api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                               faulter_vspace, seL4_NilData);
