@@ -187,4 +187,4 @@ int smp_test_fpu(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(FPU0002, "Test FPU remain valid across core migration", smp_test_fpu,
-            config_set(CONFIG_MAX_NUM_NODES) &&config_set(CONFIG_HAVE_TIMER) &&CONFIG_MAX_NUM_NODES > 1)
+            config_set(CONFIG_HAVE_TIMER) &&(CONFIG_MAX_NUM_NODES > 1))

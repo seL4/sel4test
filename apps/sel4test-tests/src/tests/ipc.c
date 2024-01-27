@@ -1362,5 +1362,5 @@ static int test_sched_donation_cross_core(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(IPC0028, "Cross core sched donation", test_sched_donation_cross_core,
-            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_MAX_NUM_NODES) &&CONFIG_MAX_NUM_NODES > 1);
+            config_set(CONFIG_KERNEL_MCS) &&(CONFIG_MAX_NUM_NODES > 1));
 #endif /* CONFIG_KERNEL_MCS */
