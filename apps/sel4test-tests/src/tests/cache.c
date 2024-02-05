@@ -245,10 +245,241 @@ static int test_page_directory_flush(env_t env)
     return sel4test_get_result();
 }
 
+/*
+ * The following tests aim to test the seL4_ARM_* cache operations on every
+ * kind of frame mapping that can be created. The motivation behind this is
+ * that some ARM hardware cache instructions generate faults depending on the
+ * permissions of the mapping and we need to ensure that the kernel catches
+ * these so that a fault does not occur in kernel space. In addition, these
+ * tests ensure that the kernel is enforcing a frame's cap rights, depending
+ * on the cache operation.
+ *
+ * For each kind of mapping we need to test the following operations:
+ *
+ * seL4_ARM_VSpace_Clean_Data
+ * seL4_ARM_VSpace_Invalidate_Data
+ * seL4_ARM_VSpace_CleanInvalidate_Data
+ * seL4_ARM_VSpace_Unify_Instruction
+ * seL4_ARM_Page_Clean_Data
+ * seL4_ARM_Page_Invalidate_Data
+ * seL4_ARM_Page_CleanInvalidate_Data
+ * seL4_ARM_Page_Unify_Instruction
+ *
+ */
+static int test_cache_invalid(env_t env)
+{
+    seL4_CPtr frame;
+    uintptr_t vstart;
+    vka_t *vka;
+    int err;
+
+    vka = &env->vka;
+
+    void *vaddr;
+    reservation_t reservation;
+
+    reservation = vspace_reserve_range(&env->vspace,
+                                       PAGE_SIZE_4K, seL4_AllRights, 1, &vaddr);
+    assert(reservation.res);
+
+    vstart = (uintptr_t)vaddr;
+    assert(IS_ALIGNED(vstart, seL4_PageBits));
+
+    /* Create a frame, but deliberately do not create a mapping for it. */
+    frame = vka_alloc_frame_leaky(vka, PAGE_BITS_4K);
+    test_assert(frame != seL4_CapNull);
+
+    /* Top-level page table operations */
+    err = seL4_ARCH_PageDirectory_Clean_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_FailedLookup);
+    err = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_FailedLookup);
+    err = seL4_ARCH_PageDirectory_CleanInvalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_FailedLookup);
+    err = seL4_ARCH_PageDirectory_Unify_Instruction(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_FailedLookup);
+    /* Page-level operations */
+    err = seL4_ARM_Page_Clean_Data(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_FailedLookup);
+    err = seL4_ARM_Page_Invalidate_Data(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_FailedLookup);
+    err = seL4_ARM_Page_CleanInvalidate_Data(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_FailedLookup);
+    err = seL4_ARM_Page_Unify_Instruction(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_FailedLookup);
+
+    return sel4test_get_result();
+}
+
+static int test_cache_kernel_only(env_t env)
+{
+    /*
+     * This test makes a mapping to a frame with seL4_NoRights, this means
+     * that the kernel will map it in with the kernel-only VM attribute.
+     */
+    seL4_CPtr frame;
+    uintptr_t vstart;
+    vka_t *vka;
+    int err;
+
+    vka = &env->vka;
+
+    void *vaddr;
+    reservation_t reservation;
+
+    reservation = vspace_reserve_range(&env->vspace,
+                                       PAGE_SIZE_4K, seL4_NoRights, 1, &vaddr);
+    assert(reservation.res);
+
+    vstart = (uintptr_t)vaddr;
+    assert(IS_ALIGNED(vstart, seL4_PageBits));
+
+    /* Create a frame */
+    frame = vka_alloc_frame_leaky(vka, PAGE_BITS_4K);
+    test_assert(frame != seL4_CapNull);
+
+    /* map in a cap with cacheability */
+    err = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
+    test_error_eq(err, seL4_NoError);
+
+    /* Since the mapping is kernel-only, all of these invocations should fail.*/
+
+    /* Top-level page table operations */
+    err = seL4_ARCH_PageDirectory_Clean_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+    err = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+    err = seL4_ARCH_PageDirectory_CleanInvalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+    err = seL4_ARCH_PageDirectory_Unify_Instruction(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+    /* Page-level operations */
+    err = seL4_ARM_Page_Clean_Data(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+    err = seL4_ARM_Page_Invalidate_Data(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+    err = seL4_ARM_Page_CleanInvalidate_Data(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+    err = seL4_ARM_Page_Unify_Instruction(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+
+    return sel4test_get_result();
+}
+
+static int test_cache_read_write(env_t env)
+{
+    seL4_CPtr frame;
+    uintptr_t vstart;
+    vka_t *vka;
+    int err;
+
+    vka = &env->vka;
+
+    void *vaddr;
+    reservation_t reservation;
+
+    reservation = vspace_reserve_range(&env->vspace,
+                                       PAGE_SIZE_4K, seL4_AllRights, 1, &vaddr);
+    assert(reservation.res);
+
+    vstart = (uintptr_t)vaddr;
+    assert(IS_ALIGNED(vstart, seL4_PageBits));
+
+    /* Create a frame */
+    frame = vka_alloc_frame_leaky(vka, PAGE_BITS_4K);
+    test_assert(frame != seL4_CapNull);
+
+    /* map in a cap with cacheability */
+    err = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
+    test_error_eq(err, seL4_NoError);
+
+    /* Now that we have setup the read-write mapping, we can test all the caching operations. */
+
+    /* Top-level page table operations */
+    err = seL4_ARCH_PageDirectory_Clean_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARCH_PageDirectory_CleanInvalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARCH_PageDirectory_Unify_Instruction(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    /* Page-level operations */
+    err = seL4_ARM_Page_Clean_Data(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARM_Page_Invalidate_Data(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARM_Page_CleanInvalidate_Data(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARM_Page_Unify_Instruction(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+
+    return sel4test_get_result();
+}
+
+static int test_cache_read_only(env_t env)
+{
+    seL4_CPtr frame;
+    uintptr_t vstart;
+    vka_t *vka;
+    int err;
+
+    vka = &env->vka;
+
+    void *vaddr;
+    reservation_t reservation;
+
+    reservation = vspace_reserve_range(&env->vspace,
+                                       PAGE_SIZE_4K, seL4_CanRead, 1, &vaddr);
+    assert(reservation.res);
+
+    vstart = (uintptr_t)vaddr;
+    assert(IS_ALIGNED(vstart, seL4_PageBits));
+
+    /* Create a frame */
+    frame = vka_alloc_frame_leaky(vka, PAGE_BITS_4K);
+    test_assert(frame != seL4_CapNull);
+
+    /* map in a cap with cacheability */
+    err = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
+    test_error_eq(err, seL4_NoError);
+
+    /* Now that we have setup the read-only mapping, we can test all the caching operations. */
+
+    /* Top-level page table operations */
+    err = seL4_ARCH_PageDirectory_Clean_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+    err = seL4_ARCH_PageDirectory_CleanInvalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARCH_PageDirectory_Unify_Instruction(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    /* Page-level operations */
+    err = seL4_ARM_Page_Clean_Data(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARM_Page_Invalidate_Data(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_IllegalOperation);
+    err = seL4_ARM_Page_CleanInvalidate_Data(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+    err = seL4_ARM_Page_Unify_Instruction(vstart, 0, PAGE_SIZE_4K);
+    test_error_eq(err, seL4_NoError);
+
+    return sel4test_get_result();
+}
+
 DEFINE_TEST(CACHEFLUSH0001, "Test a cache maintenance on pages", test_page_flush, config_set(CONFIG_HAVE_CACHE))
 DEFINE_TEST(CACHEFLUSH0002, "Test a cache maintenance on page directories", test_page_directory_flush,
             config_set(CONFIG_HAVE_CACHE))
 DEFINE_TEST(CACHEFLUSH0003, "Test that cache maintenance can be done on large pages", test_large_page_flush_operation,
+            config_set(CONFIG_HAVE_CACHE))
+DEFINE_TEST(CACHEFLUSH0004, "Test cache maintenance on invalid mappings", test_cache_invalid,
+            config_set(CONFIG_HAVE_CACHE))
+DEFINE_TEST(CACHEFLUSH0005, "Test cache maintenance on kernel-only mappings", test_cache_kernel_only,
+            config_set(CONFIG_HAVE_CACHE))
+DEFINE_TEST(CACHEFLUSH0006, "Test cache maintenance on read-write mappings", test_cache_read_write,
+            config_set(CONFIG_HAVE_CACHE))
+DEFINE_TEST(CACHEFLUSH0008, "Test cache maintenance on read-only mappings", test_cache_read_only,
             config_set(CONFIG_HAVE_CACHE))
 
 #endif
@@ -324,6 +555,6 @@ static int test_page_uncached_after_retype(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(CACHEFLUSH0004, "Test that mapping a frame uncached doesn't see stale data after retype",
+DEFINE_TEST(CACHEFLUSH0009, "Test that mapping a frame uncached doesn't see stale data after retype",
             test_page_uncached_after_retype,
             config_set(CONFIG_HAVE_CACHE))
