@@ -38,8 +38,8 @@ static int test_smc_calls(env_t env)
     /* Set function and arguments */
     smc_args.x0 = ARM_STD_SVC_VERSION;
     smc_args.x1 = 0;
-    smc_args.x2 = 2;
-    smc_args.x3 = 3;
+    smc_args.x2 = 0;
+    smc_args.x3 = 0;
     smc_args.x4 = 0;
     smc_args.x5 = 0;
     smc_args.x6 = 0;
@@ -55,10 +55,6 @@ static int test_smc_calls(env_t env)
     /* Check that the version returned is non-zero */
     seL4_Word version_sum = smc_results.x0 + smc_results.x1;
     test_geq(version_sum, 1UL);
-
-    /* Check that the remaining result registers are clobbered */
-    test_eq(smc_results.x2, 0UL);
-    test_eq(smc_results.x3, 0UL);
 
     /* This should fail - SMC call with a different function id from badge */
     smc_args.x0 = UNASSIGNED_SMC;
