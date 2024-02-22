@@ -80,6 +80,7 @@ if(NOT Sel4testAllowSettingsOverride)
         KernelPlatformZynqmp
         OR KernelPlatformPolarfire
         OR KernelPlatformQuartz64
+        OR KernelPlatformRocketchip
         OR KernelPlatformRocketchipZCU102
         OR (SIMULATION AND (KernelArchRiscV OR KernelArchARM))
     )
