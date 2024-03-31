@@ -17,7 +17,7 @@ list(
         ${project_modules}
 )
 
-set(NANOPB_SRC_ROOT_FOLDER "${project_dir}/tools/nanopb" CACHE INTERNAL "")
+set(NANOPB_SRC_ROOT_FOLDER "${project_dir}/tools/nanopb" CACHE STRING "NanoPB Folder location")
 set(OPENSBI_PATH "${project_dir}/tools/opensbi" CACHE STRING "OpenSBI Folder location")
 
 set(SEL4_CONFIG_DEFAULT_ADVANCED ON)
