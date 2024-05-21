@@ -352,18 +352,18 @@ DEFINE_TEST(SCHED_CONTEXT_0007, "test resuming a passive thread and binding sche
 static void
 sched_context0008_client_fn(seL4_CPtr send_ep, seL4_CPtr wait_ep)
 {
-    ZF_LOGD("Client send\n");
+    ZF_LOGD("Client send");
     api_nbsend_wait(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
 }
 
 static void sched_context0008_proxy_fn(seL4_CPtr send_ep, seL4_CPtr wait_ep)
 {
     /* signal to test runner that we are initialised and waiting for client */
-    ZF_LOGD("Proxy init\n");
+    ZF_LOGD("Proxy init");
     api_nbsend_wait(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
 
     /* forward on the message we got */
-    ZF_LOGD("Proxy fwd\n");
+    ZF_LOGD("Proxy fwd");
     api_nbsend_wait(send_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
 
     ZF_LOGF("Should not get here");
@@ -371,10 +371,10 @@ static void sched_context0008_proxy_fn(seL4_CPtr send_ep, seL4_CPtr wait_ep)
 
 static void sched_context0008_server_fn(seL4_CPtr init_ep, seL4_CPtr wait_ep)
 {
-    ZF_LOGD("Server init\n");
+    ZF_LOGD("Server init");
     /* tell test runner we are done by sending to init ep, then wait for proxy message */
     api_nbsend_wait(init_ep, seL4_MessageInfo_new(0, 0, 0, 0), wait_ep, NULL);
-    ZF_LOGD("Server exit\n");
+    ZF_LOGD("Server exit");
     /* hold on to scheduling context */
 }
 static int test_delete_sendwait_tcb(env_t env)
@@ -386,28 +386,28 @@ static int test_delete_sendwait_tcb(env_t env)
     seL4_CPtr server_ep = vka_alloc_endpoint_leaky(&env->vka);
 
     /* set up and start server */
-    ZF_LOGD("Create server\n");
+    ZF_LOGD("Create server");
     int error = create_passive_thread(env, &server, (helper_fn_t) sched_context0008_server_fn,
                                       server_ep, proxy_send, 0, 0);
     test_eq(error, 0);
 
     /* setup and start proxy */
-    ZF_LOGD("Create proxy\n");
+    ZF_LOGD("Create proxy");
     error = create_passive_thread(env, &proxy, (helper_fn_t) sched_context0008_proxy_fn, proxy_send,
                                   client_send, 0, 0);
     test_eq(error, 0);
 
-    ZF_LOGD("Create client\n");
+    ZF_LOGD("Create client");
     /* create and start the client */
     create_helper_thread(env, &client);
     start_helper(env, &client, (helper_fn_t) sched_context0008_client_fn, client_send,
                  client_wait, 0, 0);
 
-    ZF_LOGD("Wait for server\n");
+    ZF_LOGD("Wait for server");
     /* wait for the server to finish, who has stolen the scheduling context */
     wait_for_helper(&server);
 
-    ZF_LOGD("Kill server\n");
+    ZF_LOGD("Kill server");
     /* kill the server */
     vka_free_object(&env->vka, &server.thread.tcb);
 
@@ -415,10 +415,10 @@ static int test_delete_sendwait_tcb(env_t env)
     error = api_sc_bind(client.thread.sched_context.cptr, client.thread.tcb.cptr);
     test_eq(error, seL4_NoError);
 
-    ZF_LOGD("Signal client\n");
+    ZF_LOGD("Signal client");
     seL4_Signal(client_wait);
 
-    ZF_LOGD("Wait for client\n");
+    ZF_LOGD("Wait for client");
     /* now the client should finish */
     wait_for_helper(&client);
 
@@ -430,7 +430,7 @@ DEFINE_TEST(SCHED_CONTEXT_0008, "Test deleting a tcb running on donated sc",
 void
 sched_context_0009_server_fn(seL4_CPtr ep, volatile int *state, seL4_CPtr reply)
 {
-    ZF_LOGD("Server init\n");
+    ZF_LOGD("Server init");
     api_nbsend_recv(ep, seL4_MessageInfo_new(0, 0, 0, 0), ep, NULL, reply);
     while (1) {
         *state = *state + 1;
@@ -439,7 +439,7 @@ sched_context_0009_server_fn(seL4_CPtr ep, volatile int *state, seL4_CPtr reply)
 
 void sched_context_0009_client_fn(seL4_CPtr ep, volatile int *state)
 {
-    ZF_LOGD("Client call\n");
+    ZF_LOGD("Client call");
     seL4_Call(ep, seL4_MessageInfo_new(0, 0, 0, 0));
     if (state != NULL) {
         *state = *state + 1;
@@ -487,7 +487,7 @@ int test_sched_context_goes_to_to_caller_on_reply_cap_delete(env_t env)
     /* save and resume client */
     restart_after_syscall(env, &client);
 
-    printf("Waiting for client\n");
+    printf("Waiting for client");
     wait_for_helper(&client);
 
     return sel4test_get_result();
@@ -543,7 +543,7 @@ int test_sched_context_unbind_server(env_t env)
     /* save and resume client */
     restart_after_syscall(env, &client);
 
-    printf("Waiting for client\n");
+    printf("Waiting for client");
     wait_for_helper(&client);
 
     return sel4test_get_result();
@@ -554,13 +554,13 @@ DEFINE_TEST(SCHED_CONTEXT_0010, "Test unbinding scheduling context from server",
 void
 sched_context_0011_proxy_fn(seL4_CPtr in, seL4_CPtr out, seL4_CPtr reply)
 {
-    ZF_LOGD("Proxy init\n");
+    ZF_LOGD("Proxy init");
     api_nbsend_recv(in, seL4_MessageInfo_new(0, 0, 0, 0), in, NULL, reply);
 
-    ZF_LOGD("Proxy call\n");
+    ZF_LOGD("Proxy call");
     seL4_Call(out, seL4_MessageInfo_new(0, 0, 0, 0));
 
-    ZF_LOGD("Proxy here\n");
+    ZF_LOGD("Proxy here");
 }
 
 int test_revoke_reply_on_call_chain_returns_sc(env_t env)
@@ -602,7 +602,7 @@ int test_revoke_reply_on_call_chain_returns_sc(env_t env)
     /* save and resume client */
     restart_after_syscall(env, &client);
 
-    ZF_LOGD("Waiting for client\n");
+    ZF_LOGD("Waiting for client");
     wait_for_helper(&client);
 
     return sel4test_get_result();
@@ -642,7 +642,7 @@ test_revoke_reply_on_call_chain_unordered(env_t env)
     test_eq(error, seL4_NoError);
 
     /* kill the servers reply cap */
-    ZF_LOGD("Nuke server reply cap\n");
+    ZF_LOGD("Nuke server reply cap");
     error = cnode_delete(env, server_reply);
     test_eq(error, seL4_NoError);
 
@@ -712,7 +712,7 @@ test_revoke_sched_context_on_call_chain(env_t env)
 
     restart_after_syscall(env, &proxy);
 
-    ZF_LOGD("Waiting for proxy\n");
+    ZF_LOGD("Waiting for proxy");
     wait_for_helper(&proxy);
 
     error = api_sc_unbind_object(sched_context, proxy.thread.tcb.cptr);
@@ -724,7 +724,7 @@ test_revoke_sched_context_on_call_chain(env_t env)
 
     restart_after_syscall(env, &client);
 
-    ZF_LOGD("Waiting for Client\n");
+    ZF_LOGD("Waiting for Client");
     wait_for_helper(&client);
 
     return sel4test_get_result();

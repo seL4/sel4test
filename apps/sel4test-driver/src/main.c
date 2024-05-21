@@ -184,7 +184,7 @@ static void init_timer(void)
         ZF_LOGF_IF(error, "Failed to allocate notification object for tests");
 
         error = seL4_TCB_BindNotification(simple_get_tcb(&env.simple), env.timer_notification.cptr);
-        ZF_LOGF_IF(error, "Failed to bind timer notification to sel4test-driver\n");
+        ZF_LOGF_IF(error, "Failed to bind timer notification to sel4test-driver");
 
         /* set up the timer manager */
         tm_init(&env.tm, &env.ltimer, &env.ops, 1);
@@ -323,7 +323,7 @@ void sel4test_run_tests(struct driver_env *e)
     /* Extract and filter the tests based on the regex */
     regex_t reg;
     int error = regcomp(&reg, CONFIG_TESTPRINTER_REGEX, REG_EXTENDED | REG_NOSUB);
-    ZF_LOGF_IF(error, "Error compiling regex \"%s\"\n", CONFIG_TESTPRINTER_REGEX);
+    ZF_LOGF_IF(error, "Error compiling regex \"%s\"", CONFIG_TESTPRINTER_REGEX);
 
     int skipped_tests = 0;
     /* get all the tests in the test case section in the driver */
