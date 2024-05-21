@@ -33,7 +33,6 @@ static int test_callback(uintptr_t token)
 
 int test_timer(driver_env_t env)
 {
-    uint64_t time = 0;
     test_finished = false;
     timer_test_data_t test_data = { .goal_count = 3 };
 
