@@ -291,7 +291,7 @@ static int test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_a
             for (int sender_prio = 98; sender_prio <= 102; sender_prio++) {
                 for (int waiter_prio = 100; waiter_prio <= 100; waiter_prio++) {
                     for (int sender_first = 0; sender_first <= 1; sender_first++) {
-                        ZF_LOGD("%d %s %d\n",
+                        ZF_LOGD("%d %s %d",
                                 sender_prio, sender_first ? "->" : "<-", waiter_prio);
                         seL4_Word thread_a_arg0, thread_b_arg0;
                         seL4_CPtr thread_a_reply, thread_b_reply;
@@ -469,13 +469,13 @@ server_fn(seL4_CPtr endpoint, seL4_CPtr reply, volatile int *state)
     *state = *state + 1;
     seL4_MessageInfo_t info = api_nbsend_recv(endpoint, info, endpoint, NULL, reply);
     /* from here on we are running on borrowed time */
-    ZF_LOGD("Server awake!\n");
+    ZF_LOGD("Server awake!");
     int i = 0;
     while (i < RUNS) {
         test_eq(seL4_GetMR(0), (seL4_Word) 12345678);
         seL4_SetMR(0, 0xdeadbeef);
         *state = *state + 1;
-        ZF_LOGD("Server replyRecv\n");
+        ZF_LOGD("Server replyRecv");
         info = seL4_ReplyRecv(endpoint, info, NULL, reply);
         i++;
     }
@@ -486,7 +486,7 @@ static void proxy_fn(seL4_CPtr receive_endpoint, seL4_CPtr call_endpoint, seL4_W
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
 
     /* signal the initialiser that we are awake */
-    ZF_LOGD("Proxy nbsendrecv, sending on ep %lu, receiving on ep %lu, reply is %lu\n", call_endpoint, receive_endpoint,
+    ZF_LOGD("Proxy nbsendrecv, sending on ep %lu, receiving on ep %lu, reply is %lu", call_endpoint, receive_endpoint,
             reply);
     *state = *state + 1;
     info = api_nbsend_recv(call_endpoint, info, receive_endpoint, NULL, reply);
@@ -498,13 +498,13 @@ static void proxy_fn(seL4_CPtr receive_endpoint, seL4_CPtr call_endpoint, seL4_W
         test_eq(seL4_GetMR(0), (seL4_Word) 12345678);
         seL4_SetMR(0, 12345678);
 
-        ZF_LOGD("Proxy call\n");
+        ZF_LOGD("Proxy call");
         seL4_Call(call_endpoint, info);
 
         test_eq(seL4_GetMR(0), (seL4_Word) 0xdeadbeef);
 
         seL4_SetMR(0, 0xdeadbeef);
-        ZF_LOGD("Proxy replyRecv\n");
+        ZF_LOGD("Proxy replyRecv");
         *state = *state + 1;
         info = seL4_ReplyRecv(receive_endpoint, info, NULL, reply);
         i++;
@@ -522,7 +522,7 @@ static void client_fn(seL4_CPtr endpoint, bool fastpath, int unused, volatile in
         seL4_SetMR(0, 12345678);
         seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, length);
 
-        ZF_LOGD("Client calling on ep %lu\n", endpoint);
+        ZF_LOGD("Client calling on ep %lu", endpoint);
         info = seL4_Call(endpoint, info);
 
         test_eq(seL4_GetMR(0), (seL4_Word) 0xdeadbeef);
@@ -555,12 +555,12 @@ static int single_client_server_chain_test(env_t env, int fastpath, int prio_dif
         seL4_CPtr call_endpoint = vka_alloc_endpoint_leaky(&env->vka);
         create_helper_thread(env, &proxies[i]);
         set_helper_priority(env, &proxies[i], prio);
-        ZF_LOGD("Start proxy\n");
+        ZF_LOGD("Start proxy");
         start_helper(env, &proxies[i], (helper_fn_t) proxy_fn, receive_endpoint,
                      call_endpoint, proxies[i].thread.reply.cptr, (seL4_Word) &proxy_state[i]);
 
         /* wait for proxy to initialise */
-        ZF_LOGD("Recv for proxy\n");
+        ZF_LOGD("Recv for proxy");
         seL4_Wait(call_endpoint, NULL);
         test_eq(proxy_state[i], 1);
         /* now take away its scheduling context */
@@ -642,9 +642,9 @@ ipc0016_call_once_fn(seL4_CPtr endpoint, volatile int *state)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
     *state = *state + 1;
-    ZF_LOGD("Call %d\n", *state);
+    ZF_LOGD("Call %d", *state);
     seL4_Call(endpoint, info);
-    ZF_LOGD("Resumed with reply\n");
+    ZF_LOGD("Resumed with reply");
     *state = *state + 1;
 }
 
@@ -653,15 +653,15 @@ static void ipc0016_reply_once_fn(seL4_CPtr endpoint, seL4_CPtr reply)
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
 
     /* send initialisation context back */
-    ZF_LOGD("seL4_nbsendrecv\n");
+    ZF_LOGD("seL4_nbsendrecv");
     api_nbsend_recv(endpoint, info, endpoint, NULL, reply);
 
     /* reply */
-    ZF_LOGD("Reply\n");
+    ZF_LOGD("Reply");
     seL4_Send(reply, info);
 
     /* wait (keeping sc) */
-    ZF_LOGD("Recv\n");
+    ZF_LOGD("Recv");
     seL4_Wait(endpoint, NULL);
 
     test_check(!"should not get here");
@@ -708,7 +708,7 @@ DEFINE_TEST(IPC0016, "Test reply returns scheduling context",
 static void sender(seL4_CPtr endpoint, volatile int *state)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
-    ZF_LOGD("Client send\n");
+    ZF_LOGD("Client send");
     *state = 1;
     seL4_Send(endpoint, info);
     *state = 2;
@@ -720,7 +720,7 @@ static void wait_server(seL4_CPtr endpoint, int messages)
     seL4_Send(endpoint, seL4_MessageInfo_new(0, 0, 0, 0));
     int i = 0;
     while (i < messages) {
-        ZF_LOGD("Server wait\n");
+        ZF_LOGD("Server wait");
         seL4_Wait(endpoint, NULL);
         i++;
     }
@@ -938,9 +938,9 @@ DEFINE_TEST(IPC0020, "test deleting a scheduling context while the client is wai
 
 static void ipc21_faulter_fn(int *addr)
 {
-    ZF_LOGD("Fault at %p\n", addr);
+    ZF_LOGD("Fault at %p", addr);
     *addr = 0xdeadbeef;
-    ZF_LOGD("Resumed\n");
+    ZF_LOGD("Resumed");
 }
 
 static void ipc21_fault_handler_fn(seL4_CPtr endpoint, vspace_t *vspace, reservation_t *res, seL4_CPtr reply)
@@ -951,7 +951,7 @@ static void ipc21_fault_handler_fn(seL4_CPtr endpoint, vspace_t *vspace, reserva
     while (1) {
         test_check(seL4_isVMFault_tag(info));
         void *addr = (void *) seL4_GetMR(seL4_VMFault_Addr);
-        ZF_LOGD("Handling fault at %p\n", addr);
+        ZF_LOGD("Handling fault at %p", addr);
         int error = vspace_new_pages_at_vaddr(vspace, addr, 1, seL4_PageBits, *res);
         test_eq(error, seL4_NoError);
         seL4_ReplyRecv(endpoint, info, NULL, reply);
@@ -1012,7 +1012,7 @@ static seL4_CPtr ipc22_go;
 static void ipc22_server_fn(seL4_CPtr init_ep, seL4_CPtr reply_cap)
 {
     seL4_MessageInfo_t info = seL4_MessageInfo_new(0, 0, 0, 0);
-    ZF_LOGD("Server init\n");
+    ZF_LOGD("Server init");
 
     /* wait for the signal to go from the test runner -
      * we have to block here to wait for all the clients to
@@ -1020,7 +1020,7 @@ static void ipc22_server_fn(seL4_CPtr init_ep, seL4_CPtr reply_cap)
      * by the same server and the point is to test stack spawning  */
     api_nbsend_wait(init_ep, info, init_ep, NULL);
 
-    ZF_LOGD("Server reply to fwded cap\n");
+    ZF_LOGD("Server reply to fwded cap");
     seL4_Send(reply_cap, info);
 }
 
@@ -1043,9 +1043,9 @@ static void ipc22_stack_spawner_fn(env_t env, seL4_CPtr endpoint, int server_pri
         /* after the first nbsend, we want to signal the clients via init_ep */
         first_ep = init_ep;
 
-        ZF_LOGD("Got another client\n");
+        ZF_LOGD("Got another client");
         /* start helper and allow to initialise */
-        ZF_LOGD("Spawn server\n");
+        ZF_LOGD("Spawn server");
         start_helper(env, &servers[i], (helper_fn_t) ipc22_server_fn, init_ep,
                      servers[i].thread.reply.cptr, 0, 0);
         /* wait for it to block */
@@ -1207,7 +1207,7 @@ static int test_delete_reply_cap_then_sc(env_t env)
     int error = seL4_TCB_SetPriority(env->tcb, env->tcb, 10);
     test_eq(error, 0);
 
-    ZF_LOGD("Removed sc\n");
+    ZF_LOGD("Removed sc");
     /* remove schedluing context */
     error = api_sc_unbind(server.thread.sched_context.cptr);
     test_eq(error, seL4_NoError);
