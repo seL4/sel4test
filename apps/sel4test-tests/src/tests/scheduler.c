@@ -239,13 +239,13 @@ static int test_suspend(struct env *env)
     set_helper_priority(env, &thread2b, 101);
 
     suspend_test_step = 0;
-    ZF_LOGD("      ");
+    ZF_LOGD("Waiting...");
 
     wait_for_helper(&thread1);
     wait_for_helper(&thread2b);
 
     CHECK_STEP(suspend_test_step, 6);
-    ZF_LOGD("\n");
+    ZF_LOGD("Suspended\n");
 
     cleanup_helper(env, &thread1);
     cleanup_helper(env, &thread2a);
