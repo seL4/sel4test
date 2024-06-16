@@ -11,7 +11,7 @@
 
 #define TIMER_ID 0
 
-/* Timing related functions used only by in sel4test-driver */
+/* Timing related functions used only within sel4test-driver */
 void handle_timer_interrupts(driver_env_t env, seL4_Word badge);
 void wait_for_timer_interrupt(driver_env_t env);
 void timeout(driver_env_t env, uint64_t ns, timeout_type_t timeout);

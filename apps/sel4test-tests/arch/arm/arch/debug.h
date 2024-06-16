@@ -5,12 +5,21 @@
  */
 #pragma once
 
+#ifdef CONFIG_ARCH_AARCH32
 #define TEST_SOFTWARE_BREAK_ASM() \
     asm volatile( \
         ".global sbreak, post_sbreak\n\t" \
         ".type post_sbreak, function\n\t" \
         "sbreak:\n\t" \
         "bkpt\n\t")
+#elif CONFIG_ARCH_AARCH64
+#define TEST_SOFTWARE_BREAK_ASM() \
+    asm volatile( \
+        ".global sbreak, post_sbreak\n\t" \
+        ".type post_sbreak, function\n\t" \
+        "sbreak:\n\t" \
+        "brk #0\n\t")
+#endif
 
 /* Tell C about the symbols exported by the ASM above. */
 extern char sbreak;

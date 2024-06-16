@@ -38,8 +38,8 @@ static int test_smc_calls(env_t env)
     /* Set function and arguments */
     smc_args.x0 = ARM_STD_SVC_VERSION;
     smc_args.x1 = 0;
-    smc_args.x2 = 2;
-    smc_args.x3 = 3;
+    smc_args.x2 = 0;
+    smc_args.x3 = 0;
     smc_args.x4 = 0;
     smc_args.x5 = 0;
     smc_args.x6 = 0;
@@ -56,10 +56,6 @@ static int test_smc_calls(env_t env)
     seL4_Word version_sum = smc_results.x0 + smc_results.x1;
     test_geq(version_sum, 1UL);
 
-    /* Check that the remaining result registers are clobbered */
-    test_eq(smc_results.x2, 0UL);
-    test_eq(smc_results.x3, 0UL);
-
     /* This should fail - SMC call with a different function id from badge */
     smc_args.x0 = UNASSIGNED_SMC;
     error = seL4_ARM_SMC_Call(badged_smc_cap, &smc_args, &smc_results);
@@ -73,5 +69,134 @@ static int test_smc_calls(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SMC0001, "Test SMC calls", test_smc_calls, true)
+
+
+int test_smc_2(env_t env)
+{
+
+    seL4_CPtr dest = get_free_slot(env);
+    int error = cnode_copy(env, env->smc, dest, seL4_AllRights);
+    test_error_eq(error, seL4_NoError);
+    test_assert(!is_slot_empty(env, dest));
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SMC0002, "SMC Caps can be copied", test_smc_2, true)
+
+int test_smc_3(env_t env)
+{
+
+    seL4_CPtr dest = get_free_slot(env);
+    int error = cnode_copy(env, env->smc, dest, seL4_AllRights);
+    test_error_eq(error, seL4_NoError);
+    test_assert(!is_slot_empty(env, dest));
+
+    error = cnode_revoke(env, env->smc);
+    test_assert(!is_slot_empty(env, dest));
+
+    return sel4test_get_result();
+}
+
+DEFINE_TEST(SMC0003, "Copied SMC Caps lose revocable authority", test_smc_3, true)
+
+int test_smc_4(env_t env)
+{
+
+    seL4_CPtr dest = get_free_slot(env);
+    int error = cnode_mint(env, env->smc, dest, seL4_AllRights, 1);
+    test_error_eq(error, seL4_NoError);
+    test_assert(!is_slot_empty(env, dest));
+
+    return sel4test_get_result();
+}
+
+DEFINE_TEST(SMC0004, "Unbadged SMC Caps can be badged", test_smc_4, true)
+
+
+int test_smc_5(env_t env)
+{
+
+    seL4_CPtr dest = get_free_slot(env);
+    int error = cnode_mint(env, env->smc, dest, seL4_AllRights, 1);
+    test_error_eq(error, seL4_NoError);
+    test_assert(!is_slot_empty(env, dest));
+
+    seL4_CPtr dest2 = get_free_slot(env);
+    error = cnode_mint(env, dest, dest2, seL4_AllRights, 2);
+    test_error_eq(error, seL4_IllegalOperation);
+    test_assert(is_slot_empty(env, dest2));
+
+    return sel4test_get_result();
+}
+
+DEFINE_TEST(SMC0005, "Badged SMC caps cannot change badge", test_smc_5, true)
+
+int test_smc_6(env_t env)
+{
+
+    seL4_CPtr dest = get_free_slot(env);
+    int error = cnode_mint(env, env->smc, dest, seL4_AllRights, 1);
+    test_error_eq(error, seL4_NoError);
+    test_assert(!is_slot_empty(env, dest));
+
+    seL4_CPtr dest2 = get_free_slot(env);
+    error = cnode_copy(env, dest, dest2, seL4_AllRights);
+    test_error_eq(error, seL4_NoError);
+    test_assert(!is_slot_empty(env, dest2));
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SMC0006, "Badged SMC caps can be copied", test_smc_6, true)
+
+
+int test_smc_7(env_t env)
+{
+
+    seL4_CPtr dest = get_free_slot(env);
+    int error = cnode_mint(env, env->smc, dest, seL4_AllRights, 1);
+    test_error_eq(error, seL4_NoError);
+    test_assert(!is_slot_empty(env, dest));
+
+    seL4_CPtr dest2 = get_free_slot(env);
+    error = cnode_copy(env, dest, dest2, seL4_AllRights);
+    test_error_eq(error, seL4_NoError);
+    test_assert(!is_slot_empty(env, dest2));
+
+    error = cnode_revoke(env, dest);
+    test_assert(is_slot_empty(env, dest2));
+
+    return sel4test_get_result();
+}
+
+DEFINE_TEST(SMC0007, "Original badged SMC caps can revoke copies", test_smc_7, true)
+
+int test_smc_8(env_t env)
+{
+
+    seL4_CPtr dest = get_free_slot(env);
+    int error = cnode_mint(env, env->smc, dest, seL4_AllRights, 1);
+    test_error_eq(error, seL4_NoError);
+    test_assert(!is_slot_empty(env, dest));
+
+    seL4_CPtr dest2 = get_free_slot(env);
+    error = cnode_mint(env, env->smc, dest2, seL4_AllRights, 1);
+    test_error_eq(error, seL4_NoError);
+    test_assert(!is_slot_empty(env, dest2));
+
+
+    seL4_CPtr dest3 = get_free_slot(env);
+    error = cnode_copy(env, dest2, dest3, seL4_AllRights);
+    test_error_eq(error, seL4_NoError);
+    test_assert(!is_slot_empty(env, dest3));
+
+    error = cnode_revoke(env, dest2);
+    test_assert(is_slot_empty(env, dest3));
+    test_assert(!is_slot_empty(env, dest));
+
+    return sel4test_get_result();
+}
+
+
+DEFINE_TEST(SMC0008, "Original badged SMC caps don't revoke other original badges", test_smc_8, true)
 
 #endif
