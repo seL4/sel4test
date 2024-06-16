@@ -6,7 +6,7 @@
 
 cmake_minimum_required(VERSION 3.7.2)
 
-set(project_dir "${CMAKE_CURRENT_LIST_DIR}/../../")
+set(project_dir "${CMAKE_CURRENT_LIST_DIR}/../..")
 file(GLOB project_modules ${project_dir}/projects/*)
 list(
     APPEND
@@ -17,7 +17,7 @@ list(
         ${project_modules}
 )
 
-set(NANOPB_SRC_ROOT_FOLDER "${project_dir}/tools/nanopb" CACHE INTERNAL "")
+set(NANOPB_SRC_ROOT_FOLDER "${project_dir}/tools/nanopb" CACHE STRING "NanoPB Folder location")
 set(OPENSBI_PATH "${project_dir}/tools/opensbi" CACHE STRING "OpenSBI Folder location")
 
 set(SEL4_CONFIG_DEFAULT_ADVANCED ON)
@@ -80,11 +80,13 @@ if(NOT Sel4testAllowSettingsOverride)
         KernelPlatformZynqmp
         OR KernelPlatformPolarfire
         OR KernelPlatformQuartz64
+        OR KernelPlatformRocketchipZCU102
         OR (SIMULATION AND (KernelArchRiscV OR KernelArchARM))
     )
         # Frequency settings of the ZynqMP make the ltimer tests problematic
         # Polarfire does not have a complete ltimer implementation
         # Quartz64 does not have a complete ltimer implementation
+        # Rocket Chip on the ZCU102 FPGA does not have a timer peripheral
         set(Sel4testHaveTimer OFF CACHE BOOL "" FORCE)
     else()
         set(Sel4testHaveTimer ON CACHE BOOL "" FORCE)

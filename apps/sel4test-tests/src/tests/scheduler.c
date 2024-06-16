@@ -1003,7 +1003,7 @@ sched0011_helper(void)
 int test_scheduler_accuracy(env_t env)
 {
     /*
-     * Start a thread with a 1s timeslice at our priority, and make sure it
+     * Start a thread with a 100ms timeslice at our priority, and make sure it
      * runs for that long
      */
     helper_thread_t helper;
@@ -1179,7 +1179,7 @@ sched0015_helper(int id, env_t env, volatile unsigned long long *counters)
 
 int test_budget_overrun(env_t env)
 {
-    /* Run two periodic threads that do not yeild but count the approximate
+    /* Run two periodic threads that do not yield but count the approximate
      * amount of time that they run for in 10's of nanoseconds.
      *
      * Each thread has a different share of the processor.
@@ -1598,11 +1598,17 @@ static int test_simple_preempt(struct env *env)
 
     /* Set a timeout for the test.
      * Each thread should be run for one tick */
-    uint64_t start = time_now(env);
-    uint64_t now = start;
 
     /* Start executing other threads */
     ZF_LOGD("Releasing Threads");
+    /* Release our time slice now to get a new one. That should ensure we are
+     * not interrupted due to bad luck by the preemptive scheduler right after
+     * setting test_simple_preempt_start to 1 and then voluntarily yielding
+     * (which gives the preemption threads 2 time slices instead of one). For
+     * the same reason we are also printing the ZF_LOGD() above already.
+     */
+    seL4_Yield();
+    uint64_t start = time_now(env);
     test_simple_preempt_start = 1;
     /* Yield should cause all other threads to execute before returning
      * to the current thread. */
@@ -1610,7 +1616,7 @@ static int test_simple_preempt(struct env *env)
     test_simple_preempt_start = 0;
 
     /* Get the total time taken to synchronise */
-    now = time_now(env);
+    uint64_t now = time_now(env);
     uint64_t duration = now - start;
 
     for (size_t thread = 0; thread < PREEMPTION_THREADS; thread += 1) {
