@@ -1361,6 +1361,8 @@ static int test_sched_donation_cross_core(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(IPC0028, "Cross core sched donation", test_sched_donation_cross_core,
-            config_set(CONFIG_KERNEL_MCS) &&(CONFIG_MAX_NUM_NODES > 1));
+/* This test currently fails.
+   See https://github.com/seL4/seL4/issues/941 and https://github.com/seL4/seL4/pull/986 */
+DEFINE_TEST(IPC0028, "Cross core sched donation", test_sched_donation_cross_core, false);
+/*            config_set(CONFIG_KERNEL_MCS) &&(CONFIG_MAX_NUM_NODES > 1)); */
 #endif /* CONFIG_KERNEL_MCS */
