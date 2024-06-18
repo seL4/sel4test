@@ -430,7 +430,6 @@ static int test_cache_kernel_only(env_t env)
     test_error_eq(err, seL4_NoError);
     /* Page-level operations */
     err = seL4_ARM_Page_Clean_Data(frame, 0, PAGE_SIZE_4K);
-    printf("kernel_only: page clean err: 0x%lx\n", err);
     test_error_eq(err, seL4_NoError);
     err = seL4_ARM_Page_Invalidate_Data(frame, 0, PAGE_SIZE_4K);
     test_error_eq(err, seL4_IllegalOperation);
