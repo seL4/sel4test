@@ -327,3 +327,52 @@ static int test_page_uncached_after_retype(env_t env)
 DEFINE_TEST(CACHEFLUSH0004, "Test that mapping a frame uncached doesn't see stale data after retype",
             test_page_uncached_after_retype,
             config_set(CONFIG_HAVE_CACHE))
+
+/*
+ * On AArch64, the kernel can allow the user to perform certain cache
+ * maintenance operations directly, without going into the kernel. The specific
+ * instructions are DC CVAU, DC CIVAC, DC CVAC, and IC IVAU.
+ *
+ * This test ensures that no exceptions arise from executing these instructions
+ * when the kernel is configured to allow them from user-space.
+ *
+ */
+static int test_user_cache_ops(env_t env)
+{
+    seL4_CPtr frame;
+    uintptr_t vstart;
+    vka_t *vka;
+    int err;
+
+    vka = &env->vka;
+
+    void *vaddr;
+    reservation_t reservation;
+
+    reservation = vspace_reserve_range(&env->vspace,
+                                       PAGE_SIZE_4K, seL4_AllRights, 1, &vaddr);
+    assert(reservation.res);
+
+    vstart = (uintptr_t)vaddr;
+    assert(IS_ALIGNED(vstart, seL4_PageBits));
+
+    /* Create a frame */
+    frame = vka_alloc_frame_leaky(vka, PAGE_BITS_4K);
+    test_assert(frame != seL4_CapNull);
+
+    /* map in a cap with cacheability */
+    err = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
+    test_error_eq(err, seL4_NoError);
+
+    /* Now that we have a page of memory in our virtual address space, we can
+     * test the cache instructions in its virtual address. */
+    asm volatile("dc cvau, %0" :: "r"(vaddr));
+    asm volatile("dc civac, %0" :: "r"(vaddr));
+    asm volatile("dc cvac, %0" :: "r"(vaddr));
+    asm volatile("ic ivau, %0" :: "r"(vaddr));
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(CACHEOPS0001, "Test cache-maintenance instructions from user-space",
+            test_user_cache_ops,
+            config_set(CONFIG_HAVE_CACHE) && config_set(CONFIG_AARCH64_USER_CACHE_ENABLE))
