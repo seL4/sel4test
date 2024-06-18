@@ -33,7 +33,7 @@ int check_zeroes(seL4_Word addr, seL4_Word size_bytes)
     seL4_Word size_words = size_bytes / sizeof(seL4_Word);
     while (size_words--) {
         if (*p++ != 0) {
-            ZF_LOGE("Found non-zero at position %ld: %lu\n", ((long)p) - (addr), (unsigned long)p[-1]);
+            ZF_LOGE("Found non-zero at position %ld: %lu", ((long)p) - (addr), (unsigned long)p[-1]);
             return 0;
         }
     }
@@ -432,7 +432,7 @@ static void sel4test_send_time_request(seL4_CPtr ep, uint64_t ns, sel4test_outpu
         tag = seL4_MessageInfo_new(0, 0, 0, 1);
         break;
     default:
-        ZF_LOGE("Invalid time request\n");
+        ZF_LOGE("Invalid time request");
         break;
     }
 
@@ -566,7 +566,7 @@ void set_helper_tfep(env_t env, helper_thread_t *thread, seL4_CPtr tfep)
 #ifdef CONFIG_KERNEL_MCS
     int error = seL4_TCB_SetTimeoutEndpoint(thread->thread.tcb.cptr, tfep);
     if (error != seL4_NoError) {
-        ZF_LOGF("Failed to set tfep\n");
+        ZF_LOGF("Failed to set tfep");
     }
 #endif
 }

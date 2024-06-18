@@ -78,7 +78,7 @@ void wait_for_timer_interrupt(driver_env_t env)
 void timeout(driver_env_t env, uint64_t ns, timeout_type_t timeout_type)
 {
     if (config_set(CONFIG_HAVE_TIMER)) {
-        ZF_LOGD_IF(timeServer_timeoutPending, "Overwriting a previous timeout request\n");
+        ZF_LOGD_IF(timeServer_timeoutPending, "Overwriting a previous timeout request");
         timeServer_timeoutType = timeout_type;
         int error = tm_register_cb(&env->tm, timeout_type, ns, 0,
                                    TIMER_ID, timeout_cb, env->timer_notify_test.cptr);

@@ -19,19 +19,19 @@
 /* Bootstrap test type. */
 static inline void bootstrap_set_up_test_type(uintptr_t e)
 {
-    ZF_LOGD("setting up bootstrap test type\n");
+    ZF_LOGD("setting up bootstrap test type");
 }
 static inline void bootstrap_tear_down_test_type(uintptr_t e)
 {
-    ZF_LOGD("tearing down bootstrap test type\n");
+    ZF_LOGD("tearing down bootstrap test type");
 }
 static inline void bootstrap_set_up(uintptr_t e)
 {
-    ZF_LOGD("set up bootstrap test\n");
+    ZF_LOGD("set up bootstrap test");
 }
 static inline void bootstrap_tear_down(uintptr_t e)
 {
-    ZF_LOGD("tear down bootstrap test\n");
+    ZF_LOGD("tear down bootstrap test");
 }
 static inline test_result_t bootstrap_run_test(struct testcase *test, uintptr_t e)
 {

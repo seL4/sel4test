@@ -43,7 +43,7 @@ static int test_thread_suspend(env_t env)
 {
     helper_thread_t t1;
     volatile seL4_Word counter;
-    ZF_LOGD("test_thread_suspend\n");
+    ZF_LOGD("test_thread_suspend");
     create_helper_thread(env, &t1);
 
     set_helper_priority(env, &t1, 100);
@@ -110,11 +110,11 @@ DEFINE_TEST(SCHED0000, "Test suspending and resuming a thread (flaky)", test_thr
 static int
 test_resume_self(struct env *env)
 {
-    ZF_LOGD("Starting test_resume_self\n");
+    ZF_LOGD("Starting test_resume_self");
     /* Ensure nothing bad happens if we resume ourselves. */
     int error = seL4_TCB_Resume(env->tcb);
     test_error_eq(error, seL4_NoError);
-    ZF_LOGD("Ending test_resume_self\n");
+    ZF_LOGD("Ending test_resume_self");
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0002, "Test resuming ourselves", test_resume_self, true)
@@ -201,10 +201,10 @@ static int test_suspend(struct env *env)
     helper_thread_t thread2a;
     helper_thread_t thread2b;
 
-    ZF_LOGD("Starting test_suspend\n");
+    ZF_LOGD("Starting test_suspend");
 
     create_helper_thread(env, &thread1);
-    ZF_LOGD("Show me\n");
+    ZF_LOGD("Show me");
     create_helper_thread(env, &thread2a);
 
     create_helper_thread(env, &thread2b);
@@ -239,13 +239,13 @@ static int test_suspend(struct env *env)
     set_helper_priority(env, &thread2b, 101);
 
     suspend_test_step = 0;
-    ZF_LOGD("      ");
+    ZF_LOGD("Waiting...");
 
     wait_for_helper(&thread1);
     wait_for_helper(&thread2b);
 
     CHECK_STEP(suspend_test_step, 6);
-    ZF_LOGD("\n");
+    ZF_LOGD("Suspended");
 
     cleanup_helper(env, &thread1);
     cleanup_helper(env, &thread2a);

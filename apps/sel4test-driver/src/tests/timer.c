@@ -33,7 +33,6 @@ static int test_callback(uintptr_t token)
 
 int test_timer(driver_env_t env)
 {
-    uint64_t time = 0;
     test_finished = false;
     timer_test_data_t test_data = { .goal_count = 3 };
 
@@ -46,7 +45,7 @@ int test_timer(driver_env_t env)
 
     while (!test_finished) {
         wait_for_timer_interrupt(env);
-        ZF_LOGV("Tick\n");
+        ZF_LOGV("Tick");
         error = tm_update(&env->tm);
         test_assert_fatal(!error);
     }
@@ -79,7 +78,7 @@ test_gettime_timeout(driver_env_t env)
 
     while (!test_finished) {
         wait_for_timer_interrupt(env);
-        ZF_LOGV("Tick\n");
+        ZF_LOGV("Tick");
         error = tm_update(&env->tm);
         test_assert_fatal(!error);
     }
