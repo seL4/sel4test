@@ -99,7 +99,7 @@ static int test_native_ioports(env_t env)
     set_helper_priority(env, &handler_thread, 100);
 
     error = api_tcb_set_space(get_helper_tcb(&faulter_thread),
-                              fault_ep,
+                              fault_ep, seL4_NilData, seL4_NoRights,
                               faulter_cspace,
                               api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
                               faulter_vspace, seL4_NilData);
