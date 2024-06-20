@@ -386,6 +386,10 @@ static int test_cache_invalid(env_t env)
     return sel4test_get_result();
 }
 
+static inline int CONST invalidate_should_fail() {
+    return config_set(CONFIG_ARCH_AARCH64) && !config_set(CONFIG_ARM_HYPERVISOR_SUPPORT);
+}
+
 static int test_cache_kernel_only(env_t env)
 {
     /*
@@ -423,7 +427,7 @@ static int test_cache_kernel_only(env_t env)
     err = seL4_ARCH_PageDirectory_Clean_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
     test_error_eq(err, seL4_NoError);
     err = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
-    test_error_eq(err, seL4_IllegalOperation);
+    test_error_eq(err, invalidate_should_fail() ? seL4_IllegalOperation : seL4_NoError);
     err = seL4_ARCH_PageDirectory_CleanInvalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
     test_error_eq(err, seL4_NoError);
     err = seL4_ARCH_PageDirectory_Unify_Instruction(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
@@ -432,7 +436,7 @@ static int test_cache_kernel_only(env_t env)
     err = seL4_ARM_Page_Clean_Data(frame, 0, PAGE_SIZE_4K);
     test_error_eq(err, seL4_NoError);
     err = seL4_ARM_Page_Invalidate_Data(frame, 0, PAGE_SIZE_4K);
-    test_error_eq(err, seL4_IllegalOperation);
+    test_error_eq(err, invalidate_should_fail() ? seL4_IllegalOperation : seL4_NoError);
     err = seL4_ARM_Page_CleanInvalidate_Data(frame, 0, PAGE_SIZE_4K);
     test_error_eq(err, seL4_NoError);
     err = seL4_ARM_Page_Unify_Instruction(frame, 0, PAGE_SIZE_4K);
@@ -525,7 +529,7 @@ static int test_cache_read_only(env_t env)
     err = seL4_ARCH_PageDirectory_Clean_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
     test_error_eq(err, seL4_NoError);
     err = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
-    test_error_eq(err, seL4_IllegalOperation);
+    test_error_eq(err, invalidate_should_fail() ? seL4_IllegalOperation : seL4_NoError);
     err = seL4_ARCH_PageDirectory_CleanInvalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
     test_error_eq(err, seL4_NoError);
     err = seL4_ARCH_PageDirectory_Unify_Instruction(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
@@ -534,7 +538,7 @@ static int test_cache_read_only(env_t env)
     err = seL4_ARM_Page_Clean_Data(frame, 0, PAGE_SIZE_4K);
     test_error_eq(err, seL4_NoError);
     err = seL4_ARM_Page_Invalidate_Data(frame, 0, PAGE_SIZE_4K);
-    test_error_eq(err, seL4_IllegalOperation);
+    test_error_eq(err, invalidate_should_fail() ? seL4_IllegalOperation : seL4_NoError);
     err = seL4_ARM_Page_CleanInvalidate_Data(frame, 0, PAGE_SIZE_4K);
     test_error_eq(err, seL4_NoError);
     err = seL4_ARM_Page_Unify_Instruction(frame, 0, PAGE_SIZE_4K);
