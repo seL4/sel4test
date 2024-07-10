@@ -182,14 +182,6 @@ static int suspend_test_helper_1(seL4_CPtr t1, seL4_CPtr t2a, seL4_CPtr t2b)
 
     /* We should have been preempted immediately, so by the time we run again,
      * the suspend_test_step should be 5. */
-
-#if 1 // WE HAVE A BROKEN SCHEDULER IN SEL4
-    /* FIXME: The seL4 scheduler is broken, and seL4_TCB_Resume will not
-     * preempt. The only way to get preempted is to force it ourselves (or wait
-     * for a timer tick). */
-    seL4_Yield();
-#endif
-
     CHECK_STEP(suspend_test_step, 5);
 
     return sel4test_get_result();
