@@ -1038,7 +1038,7 @@ periodic_thread(int id, volatile unsigned long *counters)
     while (1) {
         counters[id]++;
         test_leq(counters[id], (unsigned long) 10000);
-        printf("Tick\n");
+        printf("Tick (%d)\n", id);
         seL4_Yield();
     }
 }
