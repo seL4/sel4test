@@ -1695,3 +1695,72 @@ static int test_changing_affinity(struct env *env)
 }
 DEFINE_TEST(SCHED0022, "test changing a helper threads core", test_changing_affinity,
             (config_set(CONFIG_KERNEL_MCS) &&(CONFIG_MAX_NUM_NODES > 1)));
+
+
+/* busy wait for a number of iterations */
+static void delay_loop(unsigned iterations) {
+    for (int i = 0; i < iterations; i++) {
+        __asm__ __volatile__ ("");
+    }
+}
+
+#define SCHED0023_NUM_ROUNDS 5
+
+/* used in test_round_robin below */
+static void round_robin_thread(int id, volatile unsigned long *counters)
+{
+    delay_loop(id * 10000);
+
+    /* assumes counters are initialised already */
+    while (counters[id] < SCHED0023_NUM_ROUNDS) {
+        counters[id]++;
+        /* thread "id" should run after thread "id-1", so we should be at the same
+           count after incrementing if we are scheduled round robin. */
+        if (0 < id) {
+            test_eq(counters[id], counters[id - 1]);
+        }
+        printf("Tick (%d)\n", id);
+        /* busy wait so we can be preempted at least once before we increment
+           the counter again */
+        delay_loop(5000000);
+    }
+
+    test_eq(counters[id], (unsigned long) SCHED0023_NUM_ROUNDS);
+}
+
+/* Test that round robin threads are indeed round robin. */
+static int test_round_robin(struct env *env)
+{
+    const int num_threads = 5;
+    helper_thread_t helpers[num_threads];
+    volatile unsigned long counters[num_threads];
+
+    for (int i = 0; i < num_threads; i++) {
+        counters[i] = 0;
+        create_helper_thread(env, &helpers[i]);
+        /* keep at lower priority first, we will drop our own priority when they are all started */
+        set_helper_priority(env, &helpers[i], env->priority - 1);
+        /* budget == priority makes them round robin */
+        set_helper_sched_params(env, &helpers[i], 1 * US_IN_MS, 1 * US_IN_MS, 0);
+    }
+
+    /* start in reverse order, because most recently started is first in scheduling
+       queue and we want id 0 to run first */
+    for (int i = num_threads - 1; i >= 0; i--) {
+        start_helper(env, &helpers[i],
+                     (helper_fn_t) round_robin_thread, i, (seL4_Word) counters, 0, 0);
+    }
+
+    int error = seL4_TCB_SetPriority(env->tcb, env->tcb, env->priority - 2);
+    test_error_eq(error, seL4_NoError);
+
+    /* We will only get to run again when the round robin threads have all finished,
+       because they are higher priority */
+    for (int i = 0; i < num_threads; i++) {
+        test_eq(counters[i], (unsigned long) SCHED0023_NUM_ROUNDS);
+    }
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0023, "test round robin threads", test_round_robin,
+            (config_set(CONFIG_KERNEL_MCS)));
