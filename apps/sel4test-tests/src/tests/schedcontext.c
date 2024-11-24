@@ -182,7 +182,7 @@ int test_delete_tcb_sched_context(env_t env)
     start_helper(env, &helper, (helper_fn_t) sched_context_0005_helper_fn, (seL4_Word) &state, 0, 0, 0);
 
     /* let helper run */
-    sel4test_sleep(env, 1 * NS_IN_S);
+    sel4test_sleep(env, 10 * NS_IN_MS);
 
     printf("Sleep....\n");
     int prev_state = state;
@@ -193,7 +193,7 @@ int test_delete_tcb_sched_context(env_t env)
 
     /* let it run again */
     printf("Sleep....\n");
-    sel4test_sleep(env, 1 * NS_IN_S);
+    sel4test_sleep(env, 10 * NS_IN_MS);
     printf("Awake\n");
 
     /* it should not have run */

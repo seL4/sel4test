@@ -284,55 +284,51 @@ static int test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_a
     seL4_CPtr a_reply = vka_alloc_reply_leaky(vka);
     seL4_CPtr b_reply = vka_alloc_reply_leaky(vka);
 
+    seL4_Word thread_a_arg0, thread_b_arg0;
+    seL4_CPtr thread_a_reply, thread_b_reply;
+
+    if (inter_as) {
+        create_helper_process(env, &thread_a);
+
+        cspacepath_t path;
+        vka_cspace_make_path(&env->vka, ep, &path);
+        thread_a_arg0 = sel4utils_copy_path_to_process(&thread_a.process, path);
+        assert(thread_a_arg0 != -1);
+
+        create_helper_process(env, &thread_b);
+        thread_b_arg0 = sel4utils_copy_path_to_process(&thread_b.process, path);
+        assert(thread_b_arg0 != -1);
+
+        if (config_set(CONFIG_KERNEL_MCS)) {
+            thread_a_reply = sel4utils_copy_cap_to_process(&thread_a.process, vka, a_reply);
+            thread_b_reply = sel4utils_copy_cap_to_process(&thread_b.process, vka, b_reply);
+        }
+    } else {
+        create_helper_thread(env, &thread_a);
+        create_helper_thread(env, &thread_b);
+        thread_a_arg0 = ep;
+        thread_b_arg0 = ep;
+        thread_a_reply = a_reply;
+        thread_b_reply = b_reply;
+    }
     /* Test sending messages of varying lengths. */
     /* Please excuse the awful indending here. */
     for (int core_a = 0; core_a < nr_cores; core_a++) {
+        set_helper_affinity(env, &thread_a, core_a);
         for (int core_b = 0; core_b < nr_cores; core_b++) {
+            set_helper_affinity(env, &thread_b, core_b);
             for (int sender_prio = 98; sender_prio <= 102; sender_prio++) {
+                set_helper_priority(env, &thread_a, sender_prio);
                 for (int waiter_prio = 100; waiter_prio <= 100; waiter_prio++) {
+                    /* Set the flag for nbwait_func that tells it whether or not it really
+                     * should wait. */
+                    int nbwait_should_wait = (sender_prio < waiter_prio);
+
+                    set_helper_priority(env, &thread_b, waiter_prio);
+
                     for (int sender_first = 0; sender_first <= 1; sender_first++) {
                         ZF_LOGD("%d %s %d",
                                 sender_prio, sender_first ? "->" : "<-", waiter_prio);
-                        seL4_Word thread_a_arg0, thread_b_arg0;
-                        seL4_CPtr thread_a_reply, thread_b_reply;
-
-                        if (inter_as) {
-                            create_helper_process(env, &thread_a);
-
-                            cspacepath_t path;
-                            vka_cspace_make_path(&env->vka, ep, &path);
-                            thread_a_arg0 = sel4utils_copy_path_to_process(&thread_a.process, path);
-                            assert(thread_a_arg0 != -1);
-
-                            create_helper_process(env, &thread_b);
-                            thread_b_arg0 = sel4utils_copy_path_to_process(&thread_b.process, path);
-                            assert(thread_b_arg0 != -1);
-
-                            if (config_set(CONFIG_KERNEL_MCS)) {
-                                thread_a_reply = sel4utils_copy_cap_to_process(&thread_a.process, vka, a_reply);
-                                thread_b_reply = sel4utils_copy_cap_to_process(&thread_b.process, vka, b_reply);
-                            }
-                        } else {
-                            create_helper_thread(env, &thread_a);
-                            create_helper_thread(env, &thread_b);
-                            thread_a_arg0 = ep;
-                            thread_b_arg0 = ep;
-                            thread_a_reply = a_reply;
-                            thread_b_reply = b_reply;
-                        }
-
-                        set_helper_priority(env, &thread_a, sender_prio);
-                        set_helper_priority(env, &thread_b, waiter_prio);
-
-                        set_helper_affinity(env, &thread_a, core_a);
-                        set_helper_affinity(env, &thread_b, core_b);
-
-                        /* Set the flag for nbwait_func that tells it whether or not it really
-                         * should wait. */
-                        int nbwait_should_wait;
-                        nbwait_should_wait =
-                            (sender_prio < waiter_prio);
-
                         /* Threads are enqueued at the head of the scheduling queue, so the
                          * thread enqueued last will be run first, for a given priority. */
                         if (sender_first) {
@@ -352,15 +348,14 @@ static int test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_a
                         res = wait_for_helper(&thread_b);
                         test_eq(res, SUCCESS);
 
-                        cleanup_helper(env, &thread_a);
-                        cleanup_helper(env, &thread_b);
-
                         start_number += 0x71717171;
                     }
                 }
             }
         }
     }
+    cleanup_helper(env, &thread_a);
+    cleanup_helper(env, &thread_b);
 
     error = cnode_delete(env, ep);
     test_error_eq(error, seL4_NoError);
