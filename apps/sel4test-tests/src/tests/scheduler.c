@@ -747,7 +747,7 @@ static inline int check_receive_ordered(env_t env, seL4_CPtr endpoint, int pos, 
     }
 
     /* let everyone queue up again */
-    sel4test_sleep(env, 1 * NS_IN_S);
+    sel4test_sleep(env, 100 * NS_IN_MS);
     return sel4test_get_result();
 }
 
@@ -905,7 +905,7 @@ static int test_ordered_ipc_fastpath(env_t env)
         start_helper(env, &threads[i], (helper_fn_t) sched0009_server, endpoint, i,
                      get_helper_reply(&threads[i]), 0);
         /* sleep and allow it to run */
-        sel4test_sleep(env, 1 * NS_IN_S);
+        sel4test_sleep(env, 100 * NS_IN_MS);
         /* since we resume a higher prio server each time this should work */
         seL4_Call(endpoint, info);
         test_eq(seL4_GetMR(0), (seL4_Word)i);
@@ -1060,7 +1060,7 @@ int test_one_periodic_thread(env_t env)
 
     start_helper(env, &helper, (helper_fn_t) periodic_thread, 0, (seL4_Word) &counter, 0, 0);
 
-    while (counter < 10) {
+    while (counter < 5) {
         printf("Tock %ld\n", counter);
         sel4test_sleep(env, NS_IN_S);
     }
@@ -1086,15 +1086,17 @@ test_two_periodic_threads(env_t env)
         set_helper_priority(env, &helpers[i], env->priority);
     }
 
-    set_helper_sched_params(env, &helpers[0], 0.1 * US_IN_S, 2 * US_IN_S, 0);
-    set_helper_sched_params(env, &helpers[1], 0.1 * US_IN_S, 3 * US_IN_S, 0);
+    set_helper_sched_params(env, &helpers[0], 99 * US_IN_MS, 100 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[1], 99 * US_IN_MS, 200 * US_IN_MS, 0);
 
     for (int i = 0; i < num_threads; i++) {
         start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 0, 0);
     }
 
+    sel4test_sleep(env, 150 * NS_IN_MS);
     while (counters[0] < 3 && counters[1] < 3) {
-        sel4test_sleep(env, NS_IN_S);
+        test_gt(counters[0], counters[1]);
+        sel4test_sleep(env, 100 * NS_IN_MS);
     }
 
     return sel4test_get_result();
@@ -1126,9 +1128,9 @@ int test_ordering_periodic_threads(env_t env)
         set_helper_priority(env, &helpers[i], env->priority);
     }
 
-    set_helper_sched_params(env, &helpers[0], 20 * US_IN_MS, 100 * US_IN_MS, 0);
-    set_helper_sched_params(env, &helpers[1], 20 * US_IN_MS, 200 * US_IN_MS, 0);
-    set_helper_sched_params(env, &helpers[2], 20 * US_IN_MS, 800 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[0], 20 * US_IN_MS, 25 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[1], 20 * US_IN_MS, 50 * US_IN_MS, 0);
+    set_helper_sched_params(env, &helpers[2], 20 * US_IN_MS, 100 * US_IN_MS, 0);
 
     for (int i = 0; i < num_threads; i++) {
         start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 0, 0);
@@ -1137,15 +1139,15 @@ int test_ordering_periodic_threads(env_t env)
     /* stop once 2 reaches 11 increments */
     const unsigned long limit = 11u;
     while (counters[2] < limit) {
-        sel4test_sleep(env, NS_IN_S);
+        sel4test_sleep(env, 100 * NS_IN_MS);
     }
 
     ZF_LOGD("O: %lu\n1: %lu\n2: %lu\n", counters[0], counters[1], counters[2]);
 
-    /* zero should have run 8 times as much as 2 */
-    test_geq(counters[0], (limit - 1) * 8);
-    /* one should have run 4 times as much as 2 */
-    test_geq(counters[1], (limit - 1) * 4);
+    /* zero should have run 4 times as much as 2 */
+    test_geq(counters[0], (limit - 1) * 4);
+    /* one should have run 2 times as much as 2 */
+    test_geq(counters[1], (limit - 1) * 2);
 
     return sel4test_get_result();
 }
@@ -1347,7 +1349,7 @@ int test_yieldTo_cleanup(env_t env)
 
     /* wait for them to execute */
     ZF_LOGD("Sleep\n");
-    sel4test_sleep(env, NS_IN_S);
+    sel4test_sleep(env, 100 * NS_IN_MS);
 
     ZF_LOGD("suspend to\n");
     /* suspend yielded to thread */
@@ -1375,7 +1377,7 @@ int test_yieldTo_cleanup(env_t env)
 
     /* let them run */
     ZF_LOGD("Sleep\n");
-    sel4test_sleep(env, NS_IN_S);
+    sel4test_sleep(env, 100 * NS_IN_MS);
 
     /* delete yielded to thread */
     ZF_LOGD("Delete yielded to\n");
@@ -1398,7 +1400,7 @@ int test_yieldTo_cleanup(env_t env)
     set_helper_mcp(env, &from, seL4_MaxPrio);
     /* wait for them to execute */
     ZF_LOGD("sleep\n");
-    sel4test_sleep(env, NS_IN_S);
+    sel4test_sleep(env, 100 * NS_IN_MS);
 
     /* delete yielded from thread */
     /* delete yielded from thread */

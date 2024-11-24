@@ -39,7 +39,7 @@ int test_timer(driver_env_t env)
     int error = tm_alloc_id_at(&env->tm, TIMER_ID);
     test_assert_fatal(!error);
 
-    error = tm_register_cb(&env->tm, TIMEOUT_PERIODIC, 1 * NS_IN_S, 0, TIMER_ID,
+    error = tm_register_cb(&env->tm, TIMEOUT_PERIODIC, 100 * NS_IN_MS, 0, TIMER_ID,
                            test_callback, (uintptr_t) &test_data);
     test_assert_fatal(!error);
 

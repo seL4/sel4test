@@ -694,74 +694,73 @@ static int test_fault(env_t env, int fault_type, bool inter_as)
     vka_object_t reply;
     error = vka_alloc_reply(&env->vka, &reply);
 
-    for (int restart = 0; restart <= 1; restart++) {
-        for (int prio = 100; prio <= 102; prio++) {
-            for (int badged = 0; badged <= 1; badged++) {
-                seL4_Word handler_arg0, handler_arg1;
-                /* The endpoint on which faults are received. */
-                seL4_CPtr fault_ep = vka_alloc_endpoint_leaky(&env->vka);
-                if (badged) {
-                    seL4_CPtr badged_fault_ep = get_free_slot(env);
-                    cnode_mint(env, fault_ep, badged_fault_ep, seL4_AllRights, EXPECTED_BADGE);
+    for (int badged = 0; badged <= 1; badged++) {
+        seL4_Word handler_arg0, handler_arg1;
+        /* The endpoint on which faults are received. */
+        seL4_CPtr fault_ep = vka_alloc_endpoint_leaky(&env->vka);
+        if (badged) {
+            seL4_CPtr badged_fault_ep = get_free_slot(env);
+            cnode_mint(env, fault_ep, badged_fault_ep, seL4_AllRights, EXPECTED_BADGE);
 
-                    fault_ep = badged_fault_ep;
-                }
+            fault_ep = badged_fault_ep;
+        }
 
-                seL4_CPtr faulter_vspace, faulter_cspace, reply_cptr;
+        seL4_CPtr faulter_vspace, faulter_cspace, reply_cptr;
 
-                if (inter_as) {
-                    create_helper_process(env, &faulter_thread);
-                    create_helper_process(env, &handler_thread);
+        if (inter_as) {
+            create_helper_process(env, &faulter_thread);
+            create_helper_process(env, &handler_thread);
 
-                    /* copy the fault endpoint to the faulter */
-                    cspacepath_t path;
-                    vka_cspace_make_path(&env->vka,  fault_ep, &path);
-                    seL4_CPtr remote_fault_ep = sel4utils_copy_path_to_process(&faulter_thread.process, path);
-                    assert(remote_fault_ep != -1);
+            /* copy the fault endpoint to the faulter */
+            cspacepath_t path;
+            vka_cspace_make_path(&env->vka,  fault_ep, &path);
+            seL4_CPtr remote_fault_ep = sel4utils_copy_path_to_process(&faulter_thread.process, path);
+            assert(remote_fault_ep != -1);
 
-                    if (!config_set(CONFIG_KERNEL_MCS)) {
-                        fault_ep = remote_fault_ep;
-                    }
+            if (!config_set(CONFIG_KERNEL_MCS)) {
+                fault_ep = remote_fault_ep;
+            }
 
-                    /* copy the fault endpoint to the handler */
-                    handler_arg0 = sel4utils_copy_path_to_process(&handler_thread.process, path);
-                    assert(handler_arg0 != -1);
+            /* copy the fault endpoint to the handler */
+            handler_arg0 = sel4utils_copy_path_to_process(&handler_thread.process, path);
+            assert(handler_arg0 != -1);
 
-                    /* copy the fault tcb to the handler */
-                    vka_cspace_make_path(&env->vka, get_helper_tcb(&faulter_thread), &path);
-                    handler_arg1 = sel4utils_copy_path_to_process(&handler_thread.process, path);
-                    assert(handler_arg1 != -1);
+            /* copy the fault tcb to the handler */
+            vka_cspace_make_path(&env->vka, get_helper_tcb(&faulter_thread), &path);
+            handler_arg1 = sel4utils_copy_path_to_process(&handler_thread.process, path);
+            assert(handler_arg1 != -1);
 
-                    reply_cptr = sel4utils_copy_cap_to_process(&handler_thread.process, &env->vka,
-                                                               reply.cptr);
-                    faulter_cspace = faulter_thread.process.cspace.cptr;
-                    faulter_vspace = faulter_thread.process.pd.cptr;
-                } else {
-                    create_helper_thread(env, &faulter_thread);
-                    create_helper_thread(env, &handler_thread);
-                    faulter_cspace = env->cspace_root;
-                    faulter_vspace = env->page_directory;
-                    handler_arg0 = fault_ep;
-                    handler_arg1 = get_helper_tcb(&faulter_thread);
-                    reply_cptr = reply.cptr;
-                }
+            reply_cptr = sel4utils_copy_cap_to_process(&handler_thread.process, &env->vka, reply.cptr);
+            faulter_cspace = faulter_thread.process.cspace.cptr;
+            faulter_vspace = faulter_thread.process.pd.cptr;
+        } else {
+            create_helper_thread(env, &faulter_thread);
+            create_helper_thread(env, &handler_thread);
+            faulter_cspace = env->cspace_root;
+            faulter_vspace = env->page_directory;
+            handler_arg0 = fault_ep;
+            handler_arg1 = get_helper_tcb(&faulter_thread);
+            reply_cptr = reply.cptr;
+        }
 
-                set_helper_priority(env, &handler_thread, 101);
-                error = api_tcb_set_space(get_helper_tcb(&faulter_thread),
-                                          fault_ep,
-                                          faulter_cspace,
-                                          api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
-                                          faulter_vspace, seL4_NilData);
-                test_error_eq(error, seL4_NoError);
+        set_helper_priority(env, &handler_thread, 101);
+        error = api_tcb_set_space(get_helper_tcb(&faulter_thread),
+                                  fault_ep,
+                                  faulter_cspace,
+                                  api_make_guard_skip_word(seL4_WordBits - env->cspace_size_bits),
+                                  faulter_vspace, seL4_NilData);
+        test_error_eq(error, seL4_NoError);
+
+        // Ensure that the BADGED and RESTART bits are not
+        // already set on the cptr.
+        test_assert(!(reply_cptr & (BIT(RESTART) | BIT(BADGED))));
+
+        for (int restart = 0; restart <= 1; restart++) {
+            seL4_Word flags_and_reply = reply_cptr |
+                                        (badged ? BIT(BADGED) : 0) |
+                                        (restart ? BIT(RESTART) : 0);
+            for (int prio = 100; prio <= 102; prio++) {
                 set_helper_priority(env, &faulter_thread, prio);
-
-                // Ensure that the BADGED and RESTART bits are not
-                // already set on the cptr.
-                test_assert(!(reply_cptr & (BIT(RESTART) | BIT(BADGED))));
-                seL4_Word flags_and_reply = reply_cptr |
-                                            (badged ? BIT(BADGED) : 0) |
-                                            (restart ? BIT(RESTART) : 0);
-
                 start_helper(env, &handler_thread, (helper_fn_t) handle_fault,
                              handler_arg0, handler_arg1, fault_type, flags_and_reply);
                 start_helper(env, &faulter_thread, (helper_fn_t) cause_fault,
@@ -771,13 +770,11 @@ static int test_fault(env_t env, int fault_type, bool inter_as)
                 if (restart) {
                     wait_for_helper(&faulter_thread);
                 }
-
-                cleanup_helper(env, &handler_thread);
-                cleanup_helper(env, &faulter_thread);
             }
         }
+        cleanup_helper(env, &handler_thread);
+        cleanup_helper(env, &faulter_thread);
     }
-
     return sel4test_get_result();
 }
 
@@ -856,13 +853,13 @@ int test_timeout_fault(env_t env)
     seL4_CPtr ro = vka_alloc_reply_leaky(&env->vka);
 
     create_helper_thread(env, &helper);
-    set_helper_sched_params(env, &helper, US_IN_MS, US_IN_S, data);
+    set_helper_sched_params(env, &helper, 1 * US_IN_MS, 2 * US_IN_MS, data);
     set_helper_tfep(env, &helper, endpoint);
     start_helper(env, &helper, (helper_fn_t) timeout_fault_0001_fn, 0, 0, 0, 0);
 
     /* wait for timeout fault */
     UNUSED seL4_MessageInfo_t info = api_recv(endpoint, NULL, ro);
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 100; i++) {
 #ifdef CONFIG_KERNEL_MCS
         test_eq(seL4_MessageInfo_get_length(info), (seL4_Word) seL4_Timeout_Length);
         test_check(seL4_isTimeoutFault_tag(info));
@@ -976,7 +973,7 @@ static int test_timeout_fault_in_server(env_t env)
 
     /* create the client */
     create_helper_thread(env, &client);
-    set_helper_sched_params(env, &client, 0.1 * US_IN_S, US_IN_S, client_data);
+    set_helper_sched_params(env, &client, 100 * US_IN_MS, 101 * US_IN_MS, client_data);
     start_helper(env, &client, (helper_fn_t) timeout_fault_client_fn, ep, 0, 0, 0);
 
     /* Ensure the client doesn't preempt the server when the server is
@@ -1041,7 +1038,7 @@ static int test_timeout_fault_nested_servers(env_t env)
 
     error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0),
                                      client.thread.sched_context.cptr,
-                                     0.1 * US_IN_S, 0.5 * US_IN_S, 0, client_data);
+                                     100 * US_IN_MS, 101 * US_IN_MS, 0, client_data);
     test_eq(error, 0);
 
     start_helper(env, &client, (helper_fn_t) timeout_fault_client_fn, client_proxy_ep, 0, 0, 0);
