@@ -1031,13 +1031,13 @@ DEFINE_TEST(SCHED0011, "Test scheduler accuracy",
 
 /* used by sched0012, 0013, 0014 */
 static void
-periodic_thread(int id, volatile unsigned long *counters)
+periodic_thread(int id, volatile unsigned long *counters, unsigned long limit)
 {
     counters[id] = 0;
 
     while (1) {
         counters[id]++;
-        test_leq(counters[id], (unsigned long) 10000);
+        test_leq(counters[id], limit);
         printf("Tick\n");
         seL4_Yield();
     }
@@ -1058,7 +1058,7 @@ int test_one_periodic_thread(env_t env)
     error = set_helper_sched_params(env, &helper, 0.2 * US_IN_S, US_IN_S, 0);
     test_eq(error, seL4_NoError);
 
-    start_helper(env, &helper, (helper_fn_t) periodic_thread, 0, (seL4_Word) &counter, 0, 0);
+    start_helper(env, &helper, (helper_fn_t) periodic_thread, 0, (seL4_Word) &counter, 10, 0);
 
     while (counter < 5) {
         printf("Tock %ld\n", counter);
@@ -1090,7 +1090,7 @@ test_two_periodic_threads(env_t env)
     set_helper_sched_params(env, &helpers[1], 99 * US_IN_MS, 200 * US_IN_MS, 0);
 
     for (int i = 0; i < num_threads; i++) {
-        start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 0, 0);
+        start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 10, 0);
     }
 
     sel4test_sleep(env, 150 * NS_IN_MS);
@@ -1133,7 +1133,7 @@ int test_ordering_periodic_threads(env_t env)
     set_helper_sched_params(env, &helpers[2], 20 * US_IN_MS, 100 * US_IN_MS, 0);
 
     for (int i = 0; i < num_threads; i++) {
-        start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 0, 0);
+        start_helper(env, &helpers[i], (helper_fn_t) periodic_thread, i, (seL4_Word) counters, 100, 0);
     }
 
     /* stop once 2 reaches 11 increments */
