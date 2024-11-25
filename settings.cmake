@@ -82,6 +82,7 @@ if(NOT Sel4testAllowSettingsOverride)
         OR KernelPlatformQuartz64
         OR KernelPlatformRocketchip
         OR KernelPlatformRocketchipZCU102
+        OR KernelPlatformCheshire
         OR (SIMULATION AND (KernelArchRiscV OR KernelArchARM))
     )
         # Frequency settings of the ZynqMP make the ltimer tests problematic

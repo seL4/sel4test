@@ -15,7 +15,8 @@ static const frame_type_t frame_types[] = {
     * so we can't allocate a 1GiB page for this test.
     * Polarfire has 1GiB of memory can't allocate a 1GiB page for user space */
 #if __riscv_xlen == 64 && !defined(CONFIG_PLAT_ROCKETCHIP) \
- && !defined(CONFIG_PLAT_ARIANE) &&!defined(CONFIG_PLAT_POLARFIRE)
+ && !defined(CONFIG_PLAT_ARIANE) &&!defined(CONFIG_PLAT_POLARFIRE) \
+ && !defined(CONFIG_PLAT_CHESHIRE)
     { seL4_RISCV_Giga_Page, 0, seL4_HugePageBits, },
 #endif
     { seL4_RISCV_Mega_Page, 0, seL4_LargePageBits, },
