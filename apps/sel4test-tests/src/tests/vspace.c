@@ -10,7 +10,6 @@
 #include <platsupport/arch/tsc.h>
 #endif
 
-#define N_ASID_POOLS ((int)BIT(seL4_NumASIDPoolsBits))
 #define ASID_POOL_SIZE ((int)BIT(seL4_ASIDPoolIndexBits))
 
 #include "../helpers.h"
@@ -160,7 +159,7 @@ test_alloc_multi_asid_pools(env_t env)
     cspacepath_t path;
     int i, ret;
 
-    for (i = 0; i < N_ASID_POOLS - 1; i++) {    /* Obviously there is already one ASID allocated */
+    for (i = 0; i < seL4_ASIDPoolMaxNewPools; i++) {
         pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
         test_assert(pool);
         ret = vka_cspace_alloc_path(vka, &path);
@@ -179,7 +178,7 @@ test_run_out_asid_pools(env_t env)
     cspacepath_t path;
     int i, ret;
 
-    for (i = 0; i < N_ASID_POOLS - 1; i++) {
+    for (i = 0; i < seL4_ASIDPoolMaxNewPools; i++) {
         pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
         test_assert(pool);
         ret = vka_cspace_alloc_path(vka, &path);
@@ -242,7 +241,7 @@ static int test_create_asid_pools_and_touch(env_t env)
     helper_thread_t t;
     int i, ret;
 
-    for (i = 0; i < N_ASID_POOLS - 1; i++) {
+    for (i = 0; i < seL4_ASIDPoolMaxNewPools; i++) {
         pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
         test_assert(pool);
         ret = vka_cspace_alloc_path(vka, &poolCap);
