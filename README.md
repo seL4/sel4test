@@ -10,7 +10,9 @@ Library for creating and running tests for seL4.
 
 ## Setup
 
-See the [Getting Started](https://docs.sel4.systems/GettingStarted.html) page for instructions for installing required Host dependencies and how to checkout, build and run the tests in seL4test (this project).
+See the [build instructions][build] page for instructions for installing
+required Host dependencies and how to checkout, build and run the tests in
+seL4test (this project).
 
 ## Usage
 
@@ -39,3 +41,5 @@ To define a larger test in `sel4test-tests`:
     such as the `DEFINE_TEST` macro. They are declared [here](https://github.com/seL4/seL4_libs/blob/master/libsel4test/include/sel4test/test.h#L88).
 
 For an example, take a look at [`trivial.c`](https://github.com/seL4/sel4test/blob/master/apps/sel4test-tests/src/tests/trivial.c) in `sel4test`.
+
+[build]: https://docs.sel4.systems/Resources#setting-up-your-machine
