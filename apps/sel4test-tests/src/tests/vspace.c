@@ -183,9 +183,15 @@ test_run_out_asid_pools(env_t env)
         pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
         test_assert(pool);
         ret = vka_cspace_alloc_path(vka, &path);
+        test_eq(ret, seL4_NoError);
         ret = seL4_ARCH_ASIDControl_MakePool(env->asid_ctrl, pool, env->cspace_root, path.capPtr, path.capDepth);
         test_eq(ret, seL4_NoError);
     }
+
+    pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
+    test_assert(pool);
+    ret = vka_cspace_alloc_path(vka, &path);
+    test_eq(ret, seL4_NoError);
     /* We do one more pool allocation that is supposed to fail (at this point there shouldn't be any more available) */
     ret = seL4_ARCH_ASIDControl_MakePool(env->asid_ctrl, pool, env->cspace_root, path.capPtr, path.capDepth);
     test_eq(ret, seL4_DeleteFirst);
