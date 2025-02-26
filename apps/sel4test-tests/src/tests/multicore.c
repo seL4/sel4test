@@ -14,7 +14,7 @@
 
 #include "../helpers.h"
 
-static int counter_func(volatile seL4_Word *counter)
+static int counter_func(_Atomic seL4_Word *counter)
 {
     while (1) {
         (*counter)++;
@@ -25,7 +25,7 @@ static int counter_func(volatile seL4_Word *counter)
 int smp_test_tcb_resume(env_t env)
 {
     helper_thread_t t1;
-    volatile seL4_Word counter;
+    _Atomic seL4_Word counter;
     ZF_LOGD("smp_test_tcb_resume\n");
     create_helper_thread(env, &t1);
 
@@ -85,7 +85,7 @@ DEFINE_TEST(MULTICORE0001, "Test suspending and resuming a thread on different c
 int smp_test_tcb_move(env_t env)
 {
     helper_thread_t t1;
-    volatile seL4_Word counter;
+    _Atomic seL4_Word counter;
     ZF_LOGD("smp_test_tcb_move\n");
     create_helper_thread(env, &t1);
 
@@ -125,7 +125,7 @@ DEFINE_TEST(MULTICORE0002, "Test thread is runnable on all available cores (0 + 
 int smp_test_tcb_delete(env_t env)
 {
     helper_thread_t t1;
-    volatile seL4_Word counter;
+    _Atomic seL4_Word counter;
     ZF_LOGD("smp_test_tcb_delete\n");
     create_helper_thread(env, &t1);
 
@@ -185,7 +185,7 @@ faulter_func(volatile seL4_Word shared_mem)
     return 0;
 }
 
-static int handler_func(seL4_CPtr fault_ep, volatile seL4_Word *pf)
+static int handler_func(seL4_CPtr fault_ep, _Atomic seL4_Word *pf)
 {
     seL4_MessageInfo_t tag;
     seL4_Word sender_badge = 0;
@@ -199,7 +199,7 @@ static int handler_func(seL4_CPtr fault_ep, volatile seL4_Word *pf)
 static int smp_test_tlb_instance(env_t env, bool inter_as)
 {
     int error;
-    volatile seL4_Word tag;
+    _Atomic seL4_Word tag;
     volatile seL4_Word shared_mem = 0;
     ZF_LOGD("smp_test_tlb\n");
 
