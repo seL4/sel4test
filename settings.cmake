@@ -48,6 +48,13 @@ if(NOT Sel4testAllowSettingsOverride)
         set(KernelArmHypervisorSupport ON CACHE BOOL "" FORCE)
     endif()
 
+    if (KernelSel4ArchAarch32)
+        set(KernelArmTLSReg tpidruro CACHE STRING "" FORCE)
+    endif()
+    if (KernelSel4ArchAarch64)
+        set(KernelArmTLSReg tpidru CACHE STRING "" FORCE)
+    endif()
+
     if(KernelPlatformQEMUArmVirt OR KernelPlatformQEMURiscVVirt OR KernelPlatformSpike)
         set(SIMULATION ON CACHE BOOL "" FORCE)
     endif()
