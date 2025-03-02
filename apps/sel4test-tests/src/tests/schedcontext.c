@@ -732,8 +732,10 @@ test_revoke_sched_context_on_call_chain(env_t env)
 DEFINE_TEST(SCHED_CONTEXT_0013, "Test revoking a scheduling context on a call chain",
             test_revoke_sched_context_on_call_chain, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
 
-void sched_context_0014_helper_fn(_Atomic seL4_Word *counter)
+void sched_context_0014_helper_fn(void *arg0, void *arg1, void *ipc_buf)
 {
+    _Atomic seL4_Word *counter = arg0;
+
     while (1) {
         (*counter)++;
     }
@@ -742,24 +744,32 @@ void sched_context_0014_helper_fn(_Atomic seL4_Word *counter)
 /* Try to recreate race situation of issue 633 */
 int test_smp_delete_sched_context(env_t env)
 {
-    seL4_Error error;
-    helper_thread_t helper;
     _Atomic seL4_Word counter = 0;
     seL4_Word prev_counter = counter;
+    seL4_Error error;
+    sel4utils_thread_t thread;
+    sel4utils_thread_config_t config = thread_config_new(&env->simple);
+    sched_params_t *p = &config.sched_params;
+    seL4_Word core = CONFIG_MAX_NUM_NODES - 1;
 
-    create_helper_thread(env, &helper);
-    set_helper_priority(env, &helper, env->priority - 1);
+    config.no_ipc_buffer = true;
+    config.custom_stack_size = true;
+    config.stack_size = BIT(seL4_PageBits);
+
     /* Run it on another core and time it such that it runs out of budget during the SC free */
-    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, CONFIG_MAX_NUM_NODES - 1),
-                                     helper.thread.sched_context.cptr, MIN_BUDGET_US, 10 * US_IN_MS, 0, 0);
-    test_eq(error, seL4_NoError);
+    *p = sched_params_periodic(*p, &env->simple, core, 10 * US_IN_MS, MIN_BUDGET_US, 0, 0);
 
-    start_helper(env, &helper, (helper_fn_t)sched_context_0014_helper_fn, (seL4_Word)&counter, 0, 0, 0);
+    error = sel4utils_configure_thread_config(&env->vka, &env->vspace, &env->vspace, config, &thread);
+    assert(error == 0);
+
+    /* Don't use start_helper, we want to run the helper function directly: */
+    error = sel4utils_start_thread(&thread, sched_context_0014_helper_fn, &counter, NULL, 1);
+    test_eq(error, seL4_NoError);
 
     /* Wait till helper runs */
     while (counter == prev_counter);
 
-    vka_free_object(&env->vka, &helper.thread.sched_context);
+    vka_free_object(&env->vka, &thread.sched_context);
 
     return sel4test_get_result();
 }
