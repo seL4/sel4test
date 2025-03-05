@@ -48,10 +48,10 @@ if(NOT Sel4testAllowSettingsOverride)
         set(KernelArmHypervisorSupport ON CACHE BOOL "" FORCE)
     endif()
 
-    if(KernelSel4ArchAarch32)
+    if (KernelSel4ArchAarch32)
         set(KernelArmTLSReg tpidruro CACHE STRING "" FORCE)
     endif()
-    if(KernelSel4ArchAarch64)
+    if (KernelSel4ArchAarch64)
         set(KernelArmTLSReg tpidru CACHE STRING "" FORCE)
     endif()
 
