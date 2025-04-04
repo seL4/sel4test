@@ -135,7 +135,7 @@ test_asid_pool_make(env_t env)
 {
     vka_t *vka = &env->vka;
     cspacepath_t path;
-    seL4_CPtr pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
+    seL4_CPtr pool = vka_alloc_untyped_leaky(vka, seL4_ASIDPoolBits);
     test_assert(pool);
     int ret = vka_cspace_alloc_path(vka, &path);
     ret = seL4_ARCH_ASIDControl_MakePool(env->asid_ctrl, pool, env->cspace_root, path.capPtr, path.capDepth);
@@ -161,7 +161,7 @@ test_alloc_multi_asid_pools(env_t env)
     int i, ret;
 
     for (i = 0; i < N_ASID_POOLS - 1; i++) {    /* Obviously there is already one ASID allocated */
-        pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
+        pool = vka_alloc_untyped_leaky(vka, seL4_ASIDPoolBits);
         test_assert(pool);
         ret = vka_cspace_alloc_path(vka, &path);
         ret = seL4_ARCH_ASIDControl_MakePool(env->asid_ctrl, pool, env->cspace_root, path.capPtr, path.capDepth);
@@ -180,7 +180,7 @@ test_run_out_asid_pools(env_t env)
     int i, ret;
 
     for (i = 0; i < N_ASID_POOLS - 1; i++) {
-        pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
+        pool = vka_alloc_untyped_leaky(vka, seL4_ASIDPoolBits);
         test_assert(pool);
         ret = vka_cspace_alloc_path(vka, &path);
         test_eq(ret, seL4_NoError);
@@ -188,7 +188,7 @@ test_run_out_asid_pools(env_t env)
         test_eq(ret, seL4_NoError);
     }
 
-    pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
+    pool = vka_alloc_untyped_leaky(vka, seL4_ASIDPoolBits);
     test_assert(pool);
     ret = vka_cspace_alloc_path(vka, &path);
     test_eq(ret, seL4_NoError);
@@ -208,7 +208,7 @@ test_overassign_asid_pool(env_t env)
     vka_object_t vspaceroot;
     int i, ret;
 
-    pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
+    pool = vka_alloc_untyped_leaky(vka, seL4_ASIDPoolBits);
     test_assert(pool);
     ret = vka_cspace_alloc_path(vka, &path);
     ret = seL4_ARCH_ASIDControl_MakePool(env->asid_ctrl, pool, env->cspace_root, path.capPtr, path.capDepth);
@@ -249,7 +249,7 @@ static int test_create_asid_pools_and_touch(env_t env)
     int i, ret;
 
     for (i = 0; i < N_ASID_POOLS - 1; i++) {
-        pool = vka_alloc_untyped_leaky(vka, seL4_PageBits);
+        pool = vka_alloc_untyped_leaky(vka, seL4_ASIDPoolBits);
         test_assert(pool);
         ret = vka_cspace_alloc_path(vka, &poolCap);
         ret = seL4_ARCH_ASIDControl_MakePool(env->asid_ctrl, pool, env->cspace_root, poolCap.capPtr, poolCap.capDepth);
