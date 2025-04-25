@@ -90,19 +90,16 @@ static int test_page_flush(env_t env)
     test_assert(*ptrc == 0xDEADBEEF);
     error = seL4_ARM_Page_Invalidate_Data(framec, 0, PAGE_SIZE_4K);
     assert(!error);
-
-    /* In case the invalidation performs an implicit clean, write a new
-       value to RAM and make sure the cached read retrieves it
-       Remember to drain any store buffer!
-    */
-    *ptr = 0xBEEFCAFE;
-#if defined(CONFIG_ARCH_AARCH32)
-    asm volatile("dmb" ::: "memory");
-#elif defined(CONFIG_ARCH_AARCH64)
-    asm volatile("dmb sy" ::: "memory");
-#endif /* CONFIG_ARCH_AARCHxx */
-    test_assert(*ptrc == 0xBEEFCAFE);
-    test_assert(*ptr == 0xBEEFCAFE);
+    /*
+     * If invalidate works, both reads should get the uncached value.
+     *
+     * If invalidate does an implicit clean, both reads should get the cached value.
+     * The latter is also true if a random cache eviction happens before the call to
+     * seL4_ARM_Page_Invalidate_Data finishes.
+     *
+     * Whatever happens, both values should always be the same now.
+     */
+    test_assert(*ptr == *ptrc);
 
     return sel4test_get_result();
 }
@@ -232,15 +229,16 @@ static int test_page_directory_flush(env_t env)
     test_assert(*ptrc == 0xDEADBEEF);
     err = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstartc, vstartc + PAGE_SIZE_4K);
     assert(!err);
-    /* In case the invalidation performs an implicit clean, write a new
-       value to RAM and make sure the cached read retrieves it.
-       Need to do an invalidate before retrieving though to guard
-       against speculative loads */
-    *ptr = 0xBEEFCAFE;
-    err = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstartc, vstartc + PAGE_SIZE_4K);
-    assert(!err);
-    test_assert(*ptrc == 0xBEEFCAFE);
-    test_assert(*ptr == 0xBEEFCAFE);
+    /*
+     * If invalidate works, both reads should get the uncached value.
+     *
+     * If invalidate does an implicit clean, both reads should get the cached value.
+     * The latter is also true if a random cache eviction happens before the call to
+     * seL4_ARM_Page_Invalidate_Data finishes.
+     *
+     * Whatever happens, both values should always be the same now.
+     */
+    test_assert(*ptr == *ptrc);
 
     return sel4test_get_result();
 }
