@@ -10,24 +10,6 @@ project(sel4test-driver C)
 
 set(configure_string "")
 
-config_option(Sel4testHaveTimer HAVE_TIMER "Enable tests that require a timer driver" DEFAULT ON)
-
-config_option(Sel4testSimulation SIMULATION "Disable tests not suitable for simulation" DEFAULT OFF)
-
-config_option(
-    Sel4testHaveCache
-    HAVE_CACHE
-    "Enable tests that require a functioning cache"
-    DEFAULT
-    ON
-)
-if(Sel4testAllowSettingsOverride)
-    mark_as_advanced(CLEAR Sel4testHaveTimer Sel4testHaveCache)
-else()
-    mark_as_advanced(FORCE Sel4testHaveTimer Sel4testHaveCache)
-endif()
-add_config_library(sel4test-driver "${configure_string}")
-
 find_package(musllibc REQUIRED)
 find_package(util_libs REQUIRED)
 find_package(seL4_libs REQUIRED)
@@ -47,6 +29,40 @@ sel4_libs_import_libraries()
 set(LibNanopb ON CACHE BOOL "" FORCE)
 sel4_projects_libs_import_libraries()
 add_subdirectory(../../libsel4testsupport libsel4testsupport)
+
+if(
+    # Platform does not support timers
+    (NOT LibPlatSupportHaveTimer)
+    # Frequency settings of the ZynqMP make the ltimer tests problematic
+    OR KernelPlatformZynqmp
+    # Polarfire does not have a complete ltimer implementation
+    OR KernelPlatformPolarfire
+    # Quartz64 does not have a complete ltimer implementation
+    OR KernelPlatformQuartz64
+)
+    set(Sel4testHaveTimer OFF CACHE BOOL "" FORCE)
+else()
+    set(Sel4testHaveTimer ON CACHE BOOL "" FORCE)
+endif()
+
+config_option(Sel4testHaveTimer HAVE_TIMER "Enable tests that require a timer driver" DEFAULT ON)
+
+config_option(Sel4testSimulation SIMULATION "Disable tests not suitable for simulation" DEFAULT OFF)
+
+config_option(
+    Sel4testHaveCache
+    HAVE_CACHE
+    "Enable tests that require a functioning cache"
+    DEFAULT
+    ON
+)
+if(Sel4testAllowSettingsOverride)
+    mark_as_advanced(CLEAR Sel4testHaveTimer Sel4testHaveCache)
+else()
+    mark_as_advanced(FORCE Sel4testHaveTimer Sel4testHaveCache)
+endif()
+
+add_config_library(sel4test-driver "${configure_string}")
 
 file(
     GLOB
