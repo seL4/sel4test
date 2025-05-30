@@ -34,10 +34,12 @@ if(
     # Platform does not support timers
     (NOT LibPlatSupportHaveTimer)
     # Frequency settings of the ZynqMP make the ltimer tests problematic
-    OR KernelPlatformZynqmp
-    # Polarfire does not have a complete ltimer implementation
-    OR KernelPlatformPolarfire
-    # Quartz64 does not have a complete ltimer implementation
+    OR
+        KernelPlatformZynqmp
+        # Polarfire does not have a complete ltimer implementation
+    OR
+        KernelPlatformPolarfire
+        # Quartz64 does not have a complete ltimer implementation
     OR KernelPlatformQuartz64
 )
     set(Sel4testHaveTimer OFF CACHE BOOL "" FORCE)
