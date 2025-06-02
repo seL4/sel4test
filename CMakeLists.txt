@@ -6,7 +6,10 @@
 
 cmake_minimum_required(VERSION 3.16.0)
 
-include(settings.cmake)
+if(NOT SEL4TEST_DONT_USE_SETTINGS_CMAKE)
+    # use settings from the standard sel4test build
+    include(settings.cmake)
+endif()
 
 project(sel4test C CXX ASM)
 
