@@ -21,7 +21,7 @@
 #include <model/statedata.h>
 
 /* Default schedule. */
-const dschedule_t ksDomSchedule[] = {
+dschedule_t ksDomSchedule[] = {
     { .domain = 0, .length = 60 },
 #if CONFIG_NUM_DOMAINS > 1
     { .domain = 1, .length = 4 },
@@ -73,4 +73,4 @@ const dschedule_t ksDomSchedule[] = {
 #endif
 };
 
-const word_t ksDomScheduleLength = sizeof(ksDomSchedule) / sizeof(dschedule_t);
+word_t ksDomScheduleLength = sizeof(ksDomSchedule) / sizeof(dschedule_t);
