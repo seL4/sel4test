@@ -47,4 +47,4 @@ To define a larger test in `sel4test-tests`:
 
 For an example, take a look at [`trivial.c`](https://github.com/seL4/sel4test/blob/master/apps/sel4test-tests/src/tests/trivial.c) in `sel4test`.
 
-[build]: https://docs.sel4.systems/Resources#setting-up-your-machine
+[build]: https://docs.sel4.systems/projects/buildsystem/host-dependencies.html
