@@ -188,3 +188,110 @@ int smp_test_fpu(env_t env)
 }
 DEFINE_TEST(FPU0002, "Test FPU remain valid across core migration", smp_test_fpu,
             config_set(CONFIG_HAVE_TIMER) &&(CONFIG_MAX_NUM_NODES > 1))
+
+/* Basic seL4_TCB_SetFlags tests */
+int test_setflags(env_t env)
+{
+    helper_thread_t t;
+    seL4_Word error;
+    seL4_TCB_SetFlags_t res;
+
+    create_helper_thread(env, &t);
+
+    /* Check current flags */
+    res = seL4_TCB_SetFlags(t.thread.tcb.cptr, 0, 0);
+    test_check(res.error == seL4_NoError);
+    test_check(res.flags == 0);
+
+    /* Disable FPU */
+    res = seL4_TCB_SetFlags(t.thread.tcb.cptr, 0, seL4_TCBFlag_fpuDisabled);
+    test_check(res.error == seL4_NoError);
+    test_check(res.flags == seL4_TCBFlag_fpuDisabled);
+
+    /* Enable FPU */
+    res = seL4_TCB_SetFlags(t.thread.tcb.cptr, seL4_TCBFlag_fpuDisabled, 0);
+    test_check(res.error == seL4_NoError);
+    test_check(res.flags == 0);
+
+    cleanup_helper(env, &t);
+    return sel4test_get_result();
+}
+DEFINE_TEST(FPU0003, "Test seL4_TCB_SetFlags", test_setflags, config_set(CONFIG_HAVE_FPU))
+
+static int fpu_worker2(volatile seL4_Word *ex, volatile seL4_Word *stop)
+{
+    int run = 2;
+
+    do {
+        double a = fpu_calculation();
+
+        /* See smp_fpu_worker */
+        if (memcmp(&a, (seL4_Word *) ex, sizeof(double)) != 0) {
+            return 1;
+        }
+        /* Don't stop immediately */
+        if (*stop) {
+            run--;
+        }
+    } while (run);
+    return 0;
+}
+
+int test_disable_enable(env_t env)
+{
+    volatile seL4_Word stop = 0;
+    volatile double ex = fpu_calculation();
+    seL4_MessageInfo_t tag;
+    helper_thread_t t;
+    seL4_Word error;
+    seL4_TCB_SetFlags_t res;
+
+    create_helper_thread(env, &t);
+
+    /* Configure EP as fault EP */
+    error = seL4_TCB_SetSpace(t.thread.tcb.cptr, t.local_endpoint.cptr,
+                              env->cspace_root, 0,
+                              env->page_directory, 0);
+    test_error_eq(error, seL4_NoError);
+
+    start_helper(env, &t, (helper_fn_t)fpu_worker2, (seL4_Word)&ex, (seL4_Word)&stop, 0, 0);
+
+    /* Disable the FPU, this should fault the thread */
+    res = seL4_TCB_SetFlags(t.thread.tcb.cptr, 0, seL4_TCBFlag_fpuDisabled);
+    test_check(res.error == seL4_NoError);
+    test_check(res.flags == seL4_TCBFlag_fpuDisabled);
+
+    /* Notify helper to return (do it here in case the above doesn't fault) */
+    stop = 1;
+
+#ifdef __SOFTFP__
+    printf("Software floating points, skipping test\n");
+#else
+    /* Wait for task fault */
+    tag = api_recv(t.local_endpoint.cptr, NULL, t.thread.reply.cptr);
+
+#ifdef CONFIG_ARM_HYPERVISOR_SUPPORT
+    /* On Arm with HYP enabled, most user faults are reported as VCPU faults,
+     * even for normal user space processes... */
+    test_check(seL4_MessageInfo_get_label(tag) == seL4_Fault_VCPUFault);
+#else
+    test_check(seL4_MessageInfo_get_label(tag) == seL4_Fault_UserException);
+#endif
+
+    /* Re-enable the FPU */
+    res = seL4_TCB_SetFlags(t.thread.tcb.cptr, seL4_TCBFlag_fpuDisabled, 0);
+    test_check(res.error == seL4_NoError);
+    test_check(res.flags == 0);
+
+    /* Restart task */
+    api_reply(t.thread.reply.cptr, seL4_MessageInfo_new(0, 0, 0, 0));
+#endif //__SOFTFP__
+
+    /* Let it finish and check that calculation is correct */
+    test_check(wait_for_helper(&t) == 0);
+    cleanup_helper(env, &t);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(FPU0004, "Test disabling and re-enabling FPU", test_disable_enable,
+            config_set(CONFIG_HAVE_FPU))
