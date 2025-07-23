@@ -344,9 +344,9 @@ static int test_ipc_pair(env_t env, test_func_t fa, test_func_t fb, bool inter_a
                         }
 
                         test_result_t res = wait_for_helper(&thread_a);
-                        test_eq(res, SUCCESS);
+                        test_eq(res, (test_result_t)SUCCESS);
                         res = wait_for_helper(&thread_b);
-                        test_eq(res, SUCCESS);
+                        test_eq(res, (test_result_t)SUCCESS);
 
                         start_number += 0x71717171;
                     }
