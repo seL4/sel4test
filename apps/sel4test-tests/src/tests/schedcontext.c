@@ -764,7 +764,7 @@ int test_smp_delete_sched_context(env_t env)
 
     /* Don't use start_helper, we want to run the helper function directly: */
     error = sel4utils_start_thread(&thread, sched_context_0014_helper_fn, &counter, NULL, 1);
-    test_eq(error, seL4_NoError);
+    test_eq(error, (seL4_Error)seL4_NoError);
 
     /* Wait till helper runs */
     while (counter == prev_counter);
