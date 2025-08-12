@@ -1060,7 +1060,8 @@ static int test_timeout_fault_nested_servers(env_t env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(TIMEOUTFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers, config_set(CONFIG_KERNEL_MCS))
+DEFINE_TEST(TIMEOUTFAULT0003, "Nested timeout fault", test_timeout_fault_nested_servers,
+            config_set(CONFIG_KERNEL_MCS) && !config_set(CONFIG_SIMULATION))
 
 static void vm_enter(void)
 {
