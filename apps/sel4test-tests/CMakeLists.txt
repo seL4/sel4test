@@ -28,6 +28,7 @@ file(
 )
 
 add_executable(sel4test-tests EXCLUDE_FROM_ALL ${deps})
+set_source_files_properties(src/tests/trivial.c PROPERTIES COMPILE_OPTIONS "-fno-stack-protector")
 # special handling for "arm_hyp", it's really "aarch32"
 set(_inc_folder_KernelSel4Arch "${KernelSel4Arch}")
 if("${KernelSel4Arch}" STREQUAL "arm_hyp")
@@ -57,3 +58,6 @@ target_link_libraries(
         sel4serialserver_tests
     PRIVATE sel4test-driver_Config
 )
+
+# add memcpy microbenchmark
+target_sources(sel4test-tests PRIVATE src/tests/bench_memcpy.c)
