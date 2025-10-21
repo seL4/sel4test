@@ -657,9 +657,9 @@ static int test_overmap_small(env_t env)
     cspacepath_t path;
     int error;
 
-    seL4_CPtr pgd = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageGlobalDirectoryObject, 0);
-    seL4_CPtr pud = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageUpperDirectoryObject, 0);
-    seL4_CPtr pd = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageDirectoryObject, 0);
+    seL4_CPtr pgd = vka_alloc_object_leaky(&env->vka, seL4_ARM_VSpaceObject, 0);
+    seL4_CPtr pud = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageTableObject, 0);
+    seL4_CPtr pd = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageTableObject, 0);
     seL4_CPtr pt = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageTableObject, 0);
     seL4_CPtr frame = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
     seL4_CPtr frame2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_SmallPageObject, 0);
@@ -678,12 +678,12 @@ static int test_overmap_small(env_t env)
     seL4_ARM_ASIDPool_Assign(env->asid_pool, vspace);
 #if seL4_PGDBits > 0
     /* map pud into page global directory */
-    error = seL4_ARM_PageUpperDirectory_Map(pud, vspace, map_addr, seL4_ARM_Default_VMAttributes);
+    error = seL4_ARM_PageTable_Map(pud, vspace, map_addr, seL4_ARM_Default_VMAttributes);
     test_error_eq(error, seL4_NoError);
 #endif
 
     /* map pd into page upper directory */
-    error = seL4_ARM_PageDirectory_Map(pd, vspace, map_addr, seL4_ARM_Default_VMAttributes);
+    error = seL4_ARM_PageTable_Map(pd, vspace, map_addr, seL4_ARM_Default_VMAttributes);
     test_error_eq(error, seL4_NoError);
 
     /* map page table into page directory */
@@ -712,9 +712,9 @@ static int test_overmap_large(env_t env)
     cspacepath_t path;
     int error;
 
-    seL4_CPtr pgd = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageGlobalDirectoryObject, 0);
-    seL4_CPtr pud = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageUpperDirectoryObject, 0);
-    seL4_CPtr pd = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageDirectoryObject, 0);
+    seL4_CPtr pgd = vka_alloc_object_leaky(&env->vka, seL4_ARM_VSpaceObject, 0);
+    seL4_CPtr pud = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageTableObject, 0);
+    seL4_CPtr pd = vka_alloc_object_leaky(&env->vka, seL4_ARM_PageTableObject, 0);
     seL4_CPtr frame = vka_alloc_object_leaky(&env->vka, seL4_ARM_LargePageObject, 0);
     seL4_CPtr frame2 = vka_alloc_object_leaky(&env->vka, seL4_ARM_LargePageObject, 0);
     /* Under an Arm Hyp configuration where the CPU only supports 40bit physical addressing, we
@@ -731,12 +731,12 @@ static int test_overmap_large(env_t env)
     seL4_ARM_ASIDPool_Assign(env->asid_pool, vspace);
 #if seL4_PGDBits > 0
     /* map pud into page global directory */
-    error = seL4_ARM_PageUpperDirectory_Map(pud, vspace, map_addr, seL4_ARM_Default_VMAttributes);
+    error = seL4_ARM_PageTable_Map(pud, vspace, map_addr, seL4_ARM_Default_VMAttributes);
     test_error_eq(error, seL4_NoError);
 #endif
 
     /* map pd into page upper directory */
-    error = seL4_ARM_PageDirectory_Map(pd, vspace, map_addr, seL4_ARM_Default_VMAttributes);
+    error = seL4_ARM_PageTable_Map(pd, vspace, map_addr, seL4_ARM_Default_VMAttributes);
     test_error_eq(error, seL4_NoError);
 
     /* map frame into the page table */
