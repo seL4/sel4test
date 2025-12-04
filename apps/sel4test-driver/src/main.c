@@ -486,15 +486,9 @@ void *main_continued(void *arg UNUSED)
  * this function be refactored out of sel4test-driver in its current form. */
 /* Number of objects to track allocation of. Currently all serial devices but
  * bcm2711 and bcm2837 are initialised with a single Frame object.  In future
- * devices some other devices may need more than 1.
+ * devices some other devices may need more than two, so keep some margin.
  */
-#if defined(CONFIG_PLAT_BCM2711) || defined(CONFIG_PLAT_BCM2837)
-/* bcm2711 and bcm2837 need 2 allocations for serial driver -
- * one for GPIO pinmux and one for UART. */
-#define NUM_ALLOC_AT_TO_TRACK 2
-#else
-#define NUM_ALLOC_AT_TO_TRACK 1
-#endif
+#define MAX_ALLOC_AT_TO_TRACK 4
 /* Static global to store the original vka_utspace_alloc_at function. It
  * isn't expected for this to dynamically change after initialisation.*/
 static vka_utspace_alloc_at_fn vka_utspace_alloc_at_base;
