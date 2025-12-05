@@ -484,10 +484,11 @@ void *main_continued(void *arg UNUSED)
 
 /* Note that the following globals are place here because it is not expected that
  * this function be refactored out of sel4test-driver in its current form. */
-/* Number of objects to track allocation of. Currently all serial devices are
- * initialised with a single Frame object.  Future devices may need more than 1.
+/* Number of objects to track allocation of. Currently all serial devices but
+ * bcm2711 and bcm2837 are initialised with a single Frame object.  In future
+ * devices some other devices may need more than two, so keep some margin.
  */
-#define NUM_ALLOC_AT_TO_TRACK 1
+#define MAX_ALLOC_AT_TO_TRACK 4
 /* Static global to store the original vka_utspace_alloc_at function. It
  * isn't expected for this to dynamically change after initialisation.*/
 static vka_utspace_alloc_at_fn vka_utspace_alloc_at_base;
@@ -503,7 +504,7 @@ typedef struct uspace_alloc_at_args {
     cspacepath_t dest;
 } uspace_alloc_at_args_t;
 /* This instance of vka_utspace_alloc_at_fn will keep a record of allocations up
- * to NUM_ALLOC_AT_TO_TRACK while serial_utspace_record is set. When serial_utspace_record
+ * to MAX_ALLOC_AT_TO_TRACK while serial_utspace_record is set. When serial_utspace_record
  * is unset, any allocations matching recorded allocations will instead copy the cap
  * that was originally allocated. These subsequent allocations cannot be freed using
  * vka_utspace_free and instead the caps would have to be manually deleted.
@@ -511,7 +512,7 @@ typedef struct uspace_alloc_at_args {
 static int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,
                                       uintptr_t paddr, seL4_Word *cookie)
 {
-    static uspace_alloc_at_args_t args_prev[NUM_ALLOC_AT_TO_TRACK] = {};
+    static uspace_alloc_at_args_t args_prev[MAX_ALLOC_AT_TO_TRACK] = {};
     static size_t num_alloc = 0;
 
     ZF_LOGF_IF(!vka_utspace_alloc_at_base, "vka_utspace_alloc_at_base not initialised.");
@@ -525,7 +526,7 @@ static int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4
         }
         return vka_utspace_alloc_at_base(data, dest, type, size_bits, paddr, cookie);
     } else {
-        ZF_LOGF_IF(num_alloc >= NUM_ALLOC_AT_TO_TRACK, "Trying to allocate too many utspace objects");
+        ZF_LOGF_IF(num_alloc >= MAX_ALLOC_AT_TO_TRACK, "Trying to allocate too many utspace objects");
         int ret = vka_utspace_alloc_at_base(data, dest, type, size_bits, paddr, cookie);
         if (ret) {
             return ret;
