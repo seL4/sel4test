@@ -504,7 +504,7 @@ typedef struct uspace_alloc_at_args {
     cspacepath_t dest;
 } uspace_alloc_at_args_t;
 /* This instance of vka_utspace_alloc_at_fn will keep a record of allocations up
- * to NUM_ALLOC_AT_TO_TRACK while serial_utspace_record is set. When serial_utspace_record
+ * to MAX_ALLOC_AT_TO_TRACK while serial_utspace_record is set. When serial_utspace_record
  * is unset, any allocations matching recorded allocations will instead copy the cap
  * that was originally allocated. These subsequent allocations cannot be freed using
  * vka_utspace_free and instead the caps would have to be manually deleted.
@@ -512,7 +512,7 @@ typedef struct uspace_alloc_at_args {
 static int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4_Word type, seL4_Word size_bits,
                                       uintptr_t paddr, seL4_Word *cookie)
 {
-    static uspace_alloc_at_args_t args_prev[NUM_ALLOC_AT_TO_TRACK] = {};
+    static uspace_alloc_at_args_t args_prev[MAX_ALLOC_AT_TO_TRACK] = {};
     static size_t num_alloc = 0;
 
     ZF_LOGF_IF(!vka_utspace_alloc_at_base, "vka_utspace_alloc_at_base not initialised.");
@@ -526,7 +526,7 @@ static int serial_utspace_alloc_at_fn(void *data, const cspacepath_t *dest, seL4
         }
         return vka_utspace_alloc_at_base(data, dest, type, size_bits, paddr, cookie);
     } else {
-        ZF_LOGF_IF(num_alloc >= NUM_ALLOC_AT_TO_TRACK, "Trying to allocate too many utspace objects");
+        ZF_LOGF_IF(num_alloc >= MAX_ALLOC_AT_TO_TRACK, "Trying to allocate too many utspace objects");
         int ret = vka_utspace_alloc_at_base(data, dest, type, size_bits, paddr, cookie);
         if (ret) {
             return ret;
