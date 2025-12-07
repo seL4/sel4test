@@ -1081,7 +1081,7 @@ static int test_vm_enter_non_vm(env_t env)
     err = api_tcb_set_space(get_helper_tcb(&helper), fault_ep, env->cspace_root,
                             api_make_guard_skip_word(guard),
                             env->page_directory, seL4_NilData);
-    test_eq(err, 0);
+    test_eq(err, (seL4_Error)seL4_NoError);
 
     seL4_CPtr reply = vka_alloc_reply_leaky(&env->vka);
     start_helper(env, &helper, (helper_fn_t) vm_enter, 0, 0, 0, 0);
