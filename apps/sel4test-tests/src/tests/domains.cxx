@@ -20,6 +20,59 @@ extern "C" {
 
 }
 
+#ifdef CONFIG_MCS
+#ifndef CONFIG_TIMER_FREQUENCY
+/* Probably x86, just use 1 GHz, doesn't really matter anyway */
+#define CONFIG_TIMER_FREQUENCY (1000 * 1000 * 1000)
+#endif
+/* Duration is in timer ticks: */
+#define DURATION (CONFIG_TIMER_FREQUENCY / 1000)
+
+#else
+/* Duration is in scheduler ticks: */
+#define DURATION 1
+#endif
+
+/* This is a domain schedule that is suitable for the domains tests in sel4test. All
+ * sel4test actually needs is for every domain to be executable for some period of time
+ * in order for the tests to make progress.
+ *
+ * We pick 2 ticks as the shortest period so that tests can make some progress if they exist,
+ * and we pick some variety in the first four domains so that not everything is equal.
+ */
+#define D0 (DURATION * 10)
+#define D1 (DURATION * 4)
+#define D2 (DURATION * 3)
+#define D3 (DURATION * 2)
+
+/* Create the domain schedule for this test, match old domain_schedule.c */
+static void init_domain_schedules(struct env *env)
+{
+    int error;
+    seL4_Time duration[] = {D0, D1, D2};
+
+    assert(CONFIG_NUM_DOMAINS <= CONFIG_NUM_DOMAIN_SCHEDULES);
+    for (seL4_Word i = 0; i < CONFIG_NUM_DOMAINS; ++i) {
+        seL4_Time d = i < 3 ? duration[i] : D3;
+        error = seL4_DomainSet_ScheduleConfigure(env->domain, i, i, d);
+        assert(error == seL4_NoError);
+    }
+    /* Force a reload of the updated config: */
+    seL4_DomainSet_ScheduleSetStart(env->domain, 0);
+}
+
+static void cleanup_domain_schedules(struct env *env)
+{
+    int error;
+
+    /* Set maximum duration: */
+    error = seL4_DomainSet_ScheduleConfigure(env->domain, 0, 0, 0x00ffffffffffffUL);
+    assert(error == seL4_NoError);
+    /* Set end marker: */
+    error = seL4_DomainSet_ScheduleConfigure(env->domain, 0, 1, 0);
+    assert(error == seL4_NoError);
+}
+
 #define POLL_DELAY_NS 4000000
 
 typedef int (*test_func_t)(seL4_Word /* id */, env_t env /* env */);
@@ -73,9 +126,10 @@ template<bool shift, typename F>
 static int
 test_domains(struct env *env, F func)
 {
-
     UNUSED int error;
     helper_thread_t thread[CONFIG_NUM_DOMAINS];
+
+    init_domain_schedules(env);
 
     for (int i = 0; i < CONFIG_NUM_DOMAINS; ++i) {
         create_helper_thread(env, &thread[i]);
@@ -98,7 +152,7 @@ test_domains(struct env *env, F func)
         wait_for_helper(&thread[i]);
         cleanup_helper(env, &thread[i]);
     }
-
+    cleanup_domain_schedules(env);
     return sel4test_get_result();
 }
 
