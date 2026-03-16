@@ -458,7 +458,7 @@ void *main_continued(void *arg UNUSED)
     /* parse elf region data about the test image to pass to the tests app */
     num_elf_regions = sel4utils_elf_num_regions(&tests_elf);
     assert(num_elf_regions <= MAX_REGIONS);
-    sel4utils_elf_reserve(NULL, &tests_elf, elf_regions);
+    sel4utils_elf_reserve(&env.vspace, &tests_elf, elf_regions);
 
     /* copy the region list for the process to clone itself */
     memcpy(env.init->elf_regions, elf_regions, sizeof(sel4utils_elf_region_t) * num_elf_regions);
