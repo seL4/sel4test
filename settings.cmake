@@ -77,9 +77,9 @@ if(NOT Sel4testAllowSettingsOverride)
         set(Sel4testHaveCache ON CACHE BOOL "" FORCE)
     endif()
 
-    # Check the hardware debug API non simulated (except for ia32, which can be simulated),
-    # or platforms that don't support it.
-    if(((NOT SIMULATION) OR KernelSel4ArchIA32) AND NOT KernelHardwareDebugAPIUnsupported)
+    # Test hardware debug API on non-simulation debug configs.
+    # IA32 simulation does support it, so allow there.
+    if(DEBUG AND ((NOT SIMULATION) OR KernelSel4ArchIA32) AND NOT KernelHardwareDebugAPIUnsupported)
         set(HardwareDebugAPI ON CACHE BOOL "" FORCE)
     else()
         set(HardwareDebugAPI OFF CACHE BOOL "" FORCE)
