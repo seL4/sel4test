@@ -1644,23 +1644,14 @@ int sched0022_to_fn(struct env *env, helper_thread_t *thread, seL4_CPtr ep)
     seL4_MessageInfo_t tag = {0};
     seL4_MessageInfo_ptr_set_length(&tag, 2);
 
-    /* change to core 1 */
-    seL4_Error error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 1),
-                                                thread->thread.sched_context.cptr,
-                                                10000,
-                                                10000,
-                                                0,
-                                                0);
-    seL4_SetMR(0, error);
-    /* and back to core 0 */
-    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0),
-                                     thread->thread.sched_context.cptr,
-                                     10000,
-                                     10000,
-                                     0,
-                                     0);
+    /* change our affinity to core 1 then back to core 0 and report errors */
 
+    int error = set_helper_affinity_fallible(env, thread, /* core */ 1);
+    seL4_SetMR(0, error);
+
+    error = set_helper_affinity_fallible(env, thread, /* core */ 0);
     seL4_SetMR(1, error);
+
     seL4_Send(ep, tag);
     return 0;
 }
@@ -1668,7 +1659,7 @@ int sched0022_to_fn(struct env *env, helper_thread_t *thread, seL4_CPtr ep)
 /* Test that a helper thread can move itself back from another core.
  * Save the return values and check them in test thread.
  */
-static int test_changing_affinity(struct env *env)
+static int test_changing_affinity_self(struct env *env)
 {
     int error;
     helper_thread_t t0;
@@ -1695,5 +1686,5 @@ static int test_changing_affinity(struct env *env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0022, "test changing a helper threads core", test_changing_affinity,
-            (config_set(CONFIG_KERNEL_MCS) &&(CONFIG_MAX_NUM_NODES > 1)));
+DEFINE_TEST(SCHED0022, "test helper thread changing its own core", test_changing_affinity_self,
+            (CONFIG_MAX_NUM_NODES > 1));
