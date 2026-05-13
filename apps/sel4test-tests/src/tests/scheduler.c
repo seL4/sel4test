@@ -1788,3 +1788,36 @@ static int test_resume_suspended_remote_task(struct env *env)
 }
 DEFINE_TEST(SCHED0024, "test resuming a suspended remote task",
             test_resume_suspended_remote_task, (CONFIG_MAX_NUM_NODES > 1));
+
+int test_yieldTo_remote(env_t env)
+{
+    int error;
+    helper_thread_t to, from;
+    volatile seL4_SchedContext_YieldTo_t ret;
+
+    create_helper_thread(env, &to);
+    create_helper_thread(env, &from);
+
+    start_helper(env, &to, (helper_fn_t) sched0018_to_fn, 0, 0, 0, 0);
+    start_helper(env, &from, (helper_fn_t) sched0017_helper_fn, to.thread.sched_context.cptr, (seL4_Word) &ret, 0, 0);
+
+    /* To on a different core than From */
+    set_helper_affinity(env, &to, 1);
+    set_helper_affinity(env, &from, 0);
+
+    set_helper_mcp(env, &to, seL4_MaxPrio);
+    set_helper_mcp(env, &from, seL4_MaxPrio);
+    error = set_helper_sched_params(env, &to, 500 * US_IN_MS, 500 * US_IN_MS, 0);
+    test_eq(error, seL4_NoError);
+    error = set_helper_sched_params(env, &from, 500 * US_IN_MS, 500 * US_IN_MS, 0);
+    test_eq(error, seL4_NoError);
+
+    ZF_LOGD("Wait for from\n");
+    wait_for_helper(&from);
+    test_eq(ret.error, seL4_NoError);
+    test_geq(ret.consumed, 0llu);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0025, "Test seL4_SchedContext_YieldTo remote",
+            test_yieldTo_remote, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 1));
