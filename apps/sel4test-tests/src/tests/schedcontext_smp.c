@@ -347,3 +347,77 @@ int test_update_remote_sc_with_budget(env_t env)
 }
 DEFINE_TEST(SCHED_CONTEXT_SMP_004, "update a remote task's SC to have budget to run immediately.",
             test_update_remote_sc_with_budget, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 1));
+
+void sched_context_smp_005_helper_fn(volatile int *state, seL4_CPtr ntfn, seL4_CPtr ep)
+{
+    *state = 1;
+    /* wait on ntfn */
+    seL4_Wait(ntfn, NULL);
+    *state = 2;
+
+    /* wait on ep */
+    seL4_Wait(ep, NULL);
+    *state = 3;
+
+    /* perform a send so we generate a reply that server can use to wake us up */
+    seL4_Call(ep, seL4_MessageInfo_new(0, 0, 0, 0));
+    *state = 4;
+}
+
+void wait_eq_timeout(volatile int *state, int value, int timeout)
+{
+    int count = 0;
+    while (true) {
+        if (*state == value) {
+            return;
+        } else if (count >= timeout) {
+            /* register the failure */
+            test_lt(count, timeout);
+            return;
+        }
+
+        count++;
+    }
+}
+
+int test_blocking_remote_task_activation(env_t env)
+{
+    seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr ntfn = vka_alloc_notification_leaky(&env->vka);
+    seL4_CPtr reply = vka_alloc_reply_leaky(&env->vka);
+
+    /* fine to use this cross core because of single-copy atomicity on an aligned (32-bit) variable */
+    volatile int state = 0;
+
+    /* make remote helper */
+    helper_thread_t helper;
+    create_helper_thread(env, &helper);
+    set_helper_affinity(env, &helper, 1);
+    start_helper(env, &helper, (helper_fn_t)sched_context_smp_005_helper_fn,
+                 (seL4_Word)&state, ntfn, ep, 0);
+
+    /* wait like a whole second (at 1GHz) to start */
+    wait_eq_timeout(&state, 1, 1 * NS_IN_S);
+
+    /* test notification waking blocked remote */
+    seL4_Signal(ntfn);
+    /* wait a bit for the next state */
+    wait_eq_timeout(&state, 2, 1 * US_IN_S);
+
+    /* test endpoint waking blocked remote */
+    seL4_Send(ep, seL4_MessageInfo_new(0, 0, 0, 0));
+    /* wait a bit for the next state */
+    wait_eq_timeout(&state, 3, 1 * US_IN_S);
+
+    (void)seL4_Recv(ep, NULL, reply);
+
+    /* test reply waiting blocked remote */
+    seL4_Send(reply, seL4_MessageInfo_new(0, 0, 0, 0));
+    wait_eq_timeout(&state, 4, 1 * US_IN_S);
+
+    cleanup_helper(env, &helper);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT_SMP_005, "test activation of blocking remote tasks (call/reply/signal)",
+            test_blocking_remote_task_activation, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 1));
