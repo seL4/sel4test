@@ -421,3 +421,239 @@ int test_blocking_remote_task_activation(env_t env)
 }
 DEFINE_TEST(SCHED_CONTEXT_SMP_005, "test activation of blocking remote tasks (call/reply/signal)",
             test_blocking_remote_task_activation, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 1));
+
+#define SC_SMP_006_EP   1
+#define SC_SMP_006_NTFN 2
+
+int sched_context_smp_006_helper_fn(seL4_CPtr ep, seL4_CPtr reply, seL4_CPtr ntfn, seL4_CPtr tcb)
+{
+    seL4_Word sender;
+
+    /* This ReplyRecv will cause passive server-ification */
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
+    tag = seL4_ReplyRecv(ep, tag, &sender, reply);
+    test_eq(sender, SC_SMP_006_EP);
+
+    test_eq(0, seL4_DebugGetThreadAffinity(tcb));
+
+    /* Now running on the SC of our `seL4_Call`er we signal our bound ntfn before
+     * ReplyRecv'ing */
+    seL4_Signal(ntfn);
+
+    /* After this we will be running on the notification SC on a different core */
+    tag = seL4_ReplyRecv(ep, tag, &sender, reply);
+    test_eq(sender, SC_SMP_006_NTFN);
+
+    test_eq(1, seL4_DebugGetThreadAffinity(tcb));
+
+    return sel4test_get_result();
+}
+
+int test_passive_remote_task_signal_migration_bound(env_t env)
+{
+    int error;
+    seL4_CPtr unbadged_ep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr unbadged_ntfn = vka_alloc_notification_leaky(&env->vka);
+    seL4_CPtr reply = vka_alloc_reply_leaky(&env->vka);
+    /* badge_endpoint does work for a ntfn too */
+    seL4_CPtr ntfn = badge_endpoint(env, SC_SMP_006_NTFN, unbadged_ntfn);
+    seL4_CPtr ep = badge_endpoint(env, SC_SMP_006_EP, unbadged_ep);
+
+    /* make helper */
+    helper_thread_t helper;
+    create_helper_thread(env, &helper);
+
+    /* make the helper (and the bound ntfn sc) run on the second core */
+    set_helper_affinity(env, &helper, 1);
+
+    /* setup a bound notification */
+    error = seL4_TCB_BindNotification(get_helper_tcb(&helper), ntfn);
+    test_eq(error, seL4_NoError);
+
+    /* do lazy rebind for passive */
+    error = api_sc_bind(get_helper_sched_context(&helper), ntfn);
+    test_eq(error, seL4_NoError);
+
+    /* set helper to higher prio so it runs until blocked above us. */
+    set_helper_priority(env, &helper, env->priority + 1);
+
+    start_helper(env, &helper, (helper_fn_t)sched_context_smp_006_helper_fn,
+                 ep, reply, ntfn, get_helper_tcb(&helper));
+
+    /* Make it run on our core and then continue with migration via signal on self */
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
+    tag = seL4_Call(ep, tag);
+
+    error = wait_for_helper(&helper);
+    test_eq(error, seL4_NoError);
+
+    cleanup_helper(env, &helper);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT_SMP_006, "signal on bound notification causing core migration passive task (current task)",
+            test_passive_remote_task_signal_migration_bound, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 1));
+
+int sched_context_smp_007_helper_fn(seL4_CPtr ep, seL4_CPtr reply, seL4_CPtr ntfn, seL4_CPtr tcb)
+{
+    seL4_Word sender;
+
+    /* This ReplyRecv will cause passive server-ification */
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
+    tag = seL4_ReplyRecv(ep, tag, &sender, reply);
+    test_eq(sender, SC_SMP_006_EP);
+
+    test_eq(0, seL4_DebugGetThreadAffinity(tcb));
+
+    seL4_Signal(ntfn);
+    /* wait on the notification as an alternative to bound notification ep wait */
+    seL4_Wait(ntfn, NULL);
+
+    test_eq(1, seL4_DebugGetThreadAffinity(tcb));
+
+    return sel4test_get_result();
+}
+
+int test_passive_remote_task_signal_migration_wait(env_t env)
+{
+    int error;
+    seL4_CPtr unbadged_ep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr unbadged_ntfn = vka_alloc_notification_leaky(&env->vka);
+    seL4_CPtr reply = vka_alloc_reply_leaky(&env->vka);
+    /* badge_endpoint does work for a ntfn too */
+    seL4_CPtr ntfn = badge_endpoint(env, SC_SMP_006_NTFN, unbadged_ntfn);
+    seL4_CPtr ep = badge_endpoint(env, SC_SMP_006_EP, unbadged_ep);
+
+    /* make helper */
+    helper_thread_t helper;
+    create_helper_thread(env, &helper);
+
+    /* make the helper (and the bound ntfn sc) run on the second core */
+    set_helper_affinity(env, &helper, 1);
+
+    /* setup a bound notification */
+    error = seL4_TCB_BindNotification(get_helper_tcb(&helper), ntfn);
+    test_eq(error, seL4_NoError);
+
+    /* do lazy rebind for passive */
+    error = api_sc_bind(get_helper_sched_context(&helper), ntfn);
+    test_eq(error, seL4_NoError);
+
+    /* set helper to higher prio so it runs until blocked above us. */
+    set_helper_priority(env, &helper, env->priority + 1);
+
+    start_helper(env, &helper, (helper_fn_t)sched_context_smp_007_helper_fn,
+                 ep, reply, ntfn, get_helper_tcb(&helper));
+
+    /* Make it run on our core and then continue with migration via signal on self */
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
+    tag = seL4_Call(ep, tag);
+
+    error = wait_for_helper(&helper);
+    test_eq(error, seL4_NoError);
+
+    cleanup_helper(env, &helper);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT_SMP_007, "signal causing (seL4_Wait) core migration current passive task",
+            test_passive_remote_task_signal_migration_wait, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 1));
+
+int sched_context_smp_008_helper_fn(seL4_CPtr ep, seL4_CPtr reply, seL4_CPtr ntfn_to_helper, seL4_CPtr tcb)
+{
+    seL4_Word sender;
+
+    /* Tell helper 2 we're ready and also do passive server-ification */
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
+    tag = seL4_NBSendRecv(ntfn_to_helper, tag, ep, NULL, reply);
+
+    /* now running on core 2 (helper 2's core) */
+    test_eq(2, seL4_DebugGetThreadAffinity(tcb));
+
+    /* respond to helper 2 and wait for the notification from core 0 */
+    tag = seL4_ReplyRecv(ep, tag, &sender, reply);
+    test_eq(sender, SC_SMP_006_NTFN);
+
+    test_eq(1, seL4_DebugGetThreadAffinity(tcb));
+
+    return sel4test_get_result();
+}
+
+int sched_context_smp_008_core2_helper_fn(seL4_CPtr ep, seL4_CPtr ntfn_from_helper)
+{
+    /* wait for the other helper to be ready - so that when it does the
+     * passive server Recv() it goes into a blocked state, instead of immediately
+     * progressing as this helper already made the ep into a send state */
+    seL4_Wait(ntfn_from_helper, NULL);
+
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
+    /* Call helper 1 and make it migrate to core 2 */
+    (void)seL4_Call(ep, tag);
+    /* die */
+    return 0;
+}
+
+int test_passive_remote_task_migration(env_t env)
+{
+    int error;
+    seL4_CPtr unbadged_ep = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr unbadged_ntfn = vka_alloc_notification_leaky(&env->vka);
+    seL4_CPtr reply = vka_alloc_reply_leaky(&env->vka);
+    /* badge_endpoint does work for a ntfn too */
+    seL4_CPtr ntfn = badge_endpoint(env, SC_SMP_006_NTFN, unbadged_ntfn);
+    seL4_CPtr ep = badge_endpoint(env, SC_SMP_006_EP, unbadged_ep);
+    seL4_CPtr ntfn_between_helpers = vka_alloc_notification_leaky(&env->vka);
+
+    /* make helper */
+    helper_thread_t helper_1, helper_2;
+    create_helper_thread(env, &helper_1);
+    create_helper_thread(env, &helper_2);
+
+    /* make the bound ntfn sc (and initial server setup) run on the second core */
+    set_helper_affinity(env, &helper_1, 1);
+    set_helper_affinity(env, &helper_2, 2);
+
+    /* setup a bound notification */
+    error = seL4_TCB_BindNotification(get_helper_tcb(&helper_1), ntfn);
+    test_eq(error, seL4_NoError);
+
+    /* do lazy rebind for passive */
+    error = api_sc_bind(get_helper_sched_context(&helper_1), ntfn);
+    test_eq(error, seL4_NoError);
+
+    /**
+     * Situation at start:
+     *
+     *  Core 0:              Core 1:                             Core 2
+     *   test program      helper 1 (blocked on signal)       helper 2 (that calls 1)
+     *
+     * Helper 1/2 run; helper 2 blocks waiting for helper 1 to NBSendRecv.
+     * This means helper 2 passive-server-ifies before helper 2 runs.
+     * Helper 2 performs seL4_Call(helper 1). This causes helper 1 to run
+     * on core 2. Then helper 1 rplies to helper 2, which tells core 0 to signal
+     * helper 1 and cause a migration to core 1.
+     *
+     **/
+
+    start_helper(env, &helper_1, (helper_fn_t)sched_context_smp_008_helper_fn,
+                 ep, reply, ntfn_between_helpers, get_helper_tcb(&helper_1));
+    start_helper(env, &helper_2, (helper_fn_t)sched_context_smp_008_core2_helper_fn,
+                 ep, ntfn_between_helpers, 0, 0);
+
+    /* wait for helper 2 to start and die */
+    error = wait_for_helper(&helper_2);
+    test_eq(error, seL4_NoError);
+
+    seL4_Signal(ntfn);
+
+    /* wait for helper to die */
+    error = wait_for_helper(&helper_1);
+    test_eq(error, seL4_NoError);
+
+    cleanup_helper(env, &helper_1);
+    cleanup_helper(env, &helper_2);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT_SMP_008, "signal on bound notification remote task causing core migration (two remote cores)",
+            test_passive_remote_task_migration, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 2));
