@@ -12,6 +12,30 @@
 
 #include "../helpers.h"
 
+/* FIXME: this is a temporary hack and should be exported via libsel4.
+ *        https://github.com/seL4/seL4/issues/1659
+ */
+#ifndef MAX_PERIOD_US
+/* Conservative, but long enough (~ half an hour) */
+#define MAX_PERIOD_US (1ULL << 31)
+#endif
+
+#ifndef MIN_BUDGET_US
+#ifdef CONFIG_PLAT_TK1
+#define MIN_BUDGET_US (2 * 100)
+#else
+#define MIN_BUDGET_US (2 * 10)
+#endif
+#endif
+
+static inline seL4_CPtr badge_endpoint(env_t env, seL4_Word badge, seL4_CPtr ep)
+{
+    seL4_CPtr slot = get_free_slot(env);
+    int error = cnode_mint(env, ep, slot, seL4_AllRights, badge);
+    test_error_eq(error, seL4_NoError);
+    return slot;
+}
+
 void sched_context_smp_001_recipient_fn(seL4_CPtr ep, void *arg1, void *arg2, void *arg3)
 {
     /* Basically, say yes we ran */
@@ -250,3 +274,76 @@ int test_passive_thread_start_smp(env_t env)
 }
 DEFINE_TEST(SCHED_CONTEXT_SMP_002, "test resuming a passive thread and binding scheduling context on another core",
             test_passive_thread_start_smp, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 1));
+
+/*
+ * Once https://github.com/seL4/seL4/issues/1617 is fixed, an equivalent of
+ * BIND0007 should be added here as SCHED_CONTEXT_SMP_003.
+ */
+
+void sched_context_smp_004_helper_fn(env_t env, seL4_CPtr ep)
+{
+    /* Make sure this has run for at least MIN_BUDGET_US by poll-waiting that long */
+    uint64_t start_ns = sel4test_timestamp(env);
+    uint64_t end_ns = start_ns + MIN_BUDGET_US * NS_IN_US;
+    while (sel4test_timestamp(env) < end_ns) {
+        for (int i = 0; i < 1000; i++) {
+            asm volatile("nop" ::: "memory");
+        }
+    }
+
+    seL4_Send(ep, seL4_MessageInfo_new(0, 0, 0, 0));
+}
+
+int test_update_remote_sc_with_budget(env_t env)
+{
+
+    /**
+     * Idea behind this: a remote thread might have run out of a budget.
+     * If we make a remote thread that has a tiny budget (the minimum)
+     * but a very long period (the maximum) then once it will runout it will
+     * basically never refill: so, if we reconfigure the SC to have full
+     * bandwidth (budget = period) then it should start running again.
+     **/
+
+    int error;
+    helper_thread_t helper;
+    seL4_CPtr ep_unbadged = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr ep = badge_endpoint(env, 0x100, ep_unbadged);
+
+    create_helper_thread(env, &helper);
+
+    /* make the helper run on the remote core with no budget */
+    error = seL4_SchedControl_Configure(
+        /* schedcontrol */ simple_get_sched_ctrl(&env->simple, 1),
+        /* schedcontext */ get_helper_sched_context(&helper),
+        /* budget */ MIN_BUDGET_US, /* period */ MAX_PERIOD_US, /* refills */ 0, /* badge */ 0);
+    ZF_LOGF_IF(error, "should be able to configure SC");
+
+    start_helper(env, &helper, (helper_fn_t)sched_context_smp_004_helper_fn, (seL4_Word)env, ep, 0, 0);
+
+    /* Mostly a hack: wait at least twice MIN_BUDGET_US */
+    sel4test_sleep(env, 2 * MIN_BUDGET_US * NS_IN_US);
+
+    seL4_Word sender_badge;
+    seL4_NBWait(ep, &sender_badge);
+    /* if the badge is zero then NBWait failed (see doNBRecvFailedTransfer)
+     * and so it must haven't run up to seL4_Send. but we've waited at least
+     * 2x as long as we needed for this remote helper to to have run if it
+     * did have the budget. basically this is testing that the remote thread got
+     * blocked due to not having enough budget. */
+    test_eq(sender_badge, 0);
+
+    /* give the helper on the remote core infinite budget, so it should run again */
+    error = seL4_SchedControl_Configure(
+        /* schedcontrol */ simple_get_sched_ctrl(&env->simple, 1),
+        /* schedcontext */ get_helper_sched_context(&helper),
+        /* budget */ MAX_PERIOD_US, /* period */ MAX_PERIOD_US, /* refills */ 0, /* badge */ 0);
+
+    seL4_Wait(ep, NULL);
+
+    cleanup_helper(env, &helper);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT_SMP_004, "update a remote task's SC to have budget to run immediately.",
+            test_update_remote_sc_with_budget, config_set(CONFIG_HAVE_TIMER) && config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 1));
