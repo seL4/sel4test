@@ -1821,3 +1821,66 @@ int test_yieldTo_remote(env_t env)
 }
 DEFINE_TEST(SCHED0025, "Test seL4_SchedContext_YieldTo remote",
             test_yieldTo_remote, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 1));
+
+void sched_0026_helper_fn(volatile uint64_t *counter, seL4_CPtr ntfn)
+{
+    /* tell server we started */
+    seL4_Signal(ntfn);
+
+    /* Infinitely loop taking up budget */
+    while (true) {
+        *counter += 1;
+    }
+}
+
+/* Test moving a helper thread between remote cores */
+static int test_changing_affinity_remote(struct env *env)
+{
+    int error;
+    helper_thread_t helper;
+    seL4_CPtr ntfn;
+    volatile uint64_t counter = 0;
+
+    ntfn = vka_alloc_notification_leaky(&env->vka);
+    create_helper_thread(env, &helper);
+
+    /* make the budget/period such that only 1 timer interrupt per hour is required,
+     * so that the helper should never enter the kernel unnecessarily
+     * as we don't need round robin. */
+    error = set_helper_sched_params(env, &helper, 3600 * US_IN_S, 3600 * US_IN_S, 0);
+    test_eq(error, seL4_NoError);
+
+    /* start on core 1 */
+    set_helper_affinity(env, &helper, 1);
+
+    start_helper(env, &helper, (helper_fn_t)sched_0026_helper_fn, (seL4_Word)&counter, ntfn, 0, 0);
+
+    /* wait for it to start helper */
+    seL4_Wait(ntfn, NULL);
+
+    for (volatile int i = 0; i < 1000; i++) { }
+
+    uint64_t local_count_0 = counter;
+    /* it should have run some amount */
+    test_gt(local_count_0, 0);
+
+    /* move remote task to another remote core */
+    set_helper_affinity(env, &helper, 2);
+
+    uint64_t local_count_1 = counter;
+    /* should have incremented some more */
+    test_gt(local_count_1, local_count_0);
+
+    for (volatile int i = 0; i < 1000; i++) { }
+
+    /* it should still be incrementing */
+    uint64_t local_count_2 = counter;
+    /* should have incremented some more */
+    test_gt(local_count_2, local_count_1);
+
+    cleanup_helper(env, &helper);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0026, "test migrating remote tasks", test_changing_affinity_remote,
+            (CONFIG_MAX_NUM_NODES > 2));
