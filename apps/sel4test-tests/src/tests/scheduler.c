@@ -1740,3 +1740,51 @@ static int test_set_higher_prio_remote(struct env *env)
 }
 DEFINE_TEST(SCHED0023, "test set prio to a higher prio runs higher prio thread remote core",
             test_set_higher_prio, (CONFIG_MAX_NUM_NODES > 1));
+
+void sched_0024_helper_fn(volatile int *state, seL4_CPtr ntfn)
+{
+    /* tell the test that we're ready (non-blocking as cross-core) */
+    seL4_Signal(ntfn);
+
+    /* start spinning so we can be suspend+resume somewhere OK */
+    while (*state != 1);
+
+    /* tell the test that the resume worked */
+    *state = 2;
+    seL4_Signal(ntfn);
+}
+
+static int test_resume_suspended_remote_task(struct env *env)
+{
+    helper_thread_t thread;
+    int error;
+    seL4_CPtr ntfn = vka_alloc_notification_leaky(&env->vka);
+
+    create_helper_thread(env, &thread);
+    set_helper_affinity(env, &thread, 1);
+
+    /* fine to use this cross core because of single-copy atomicity on an aligned (32-bit) variable */
+    volatile int state = 0;
+
+    /* start our remote helper */
+    start_helper(env, &thread, (helper_fn_t) sched_0024_helper_fn, (seL4_Word)&state, ntfn, 0, 0);
+
+    /* wait for remote helper to tell us it is ready - it should then be spinning */
+    seL4_Wait(ntfn, NULL);
+
+    error = seL4_TCB_Suspend(get_helper_tcb(&thread));
+    test_error_eq(error, seL4_NoError);
+
+    /* resume the remote thread now */
+    state = 1;
+    error = seL4_TCB_Resume(get_helper_tcb(&thread));
+    test_error_eq(error, seL4_NoError);
+
+    /* helper should run and set state to 2 */
+    seL4_Wait(ntfn, NULL);
+    test_eq(state, 2);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0024, "test resuming a suspended remote task",
+            test_resume_suspended_remote_task, (CONFIG_MAX_NUM_NODES > 1));
