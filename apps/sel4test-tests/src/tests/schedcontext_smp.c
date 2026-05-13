@@ -136,15 +136,17 @@ int sched_context_smp_002_helper_fn(void)
     return 1;
 }
 
-void sched_context_smp_002_lazy_fn(seL4_CPtr notification_in, seL4_CPtr notification_out)
+void sched_context_smp_002_lazy_fn(seL4_CPtr endpoint, seL4_CPtr notification)
 {
-    seL4_Signal(notification_out);
+    seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
+    (void)seL4_NBSendWait(endpoint, tag, notification, NULL);
+}
 
-    seL4_Wait(notification_in, NULL);
+void sched_context_smp_002_high_priority_helper(seL4_CPtr endpoint_cross, seL4_CPtr ep_hi_to_low)
+{
+    (void)seL4_Wait(endpoint_cross, NULL);
 
-    seL4_Signal(notification_out);
-
-    seL4_Wait(notification_in, NULL);
+    seL4_Send(ep_hi_to_low, seL4_MessageInfo_new(0, 0, 0, 0));
 }
 
 int test_passive_thread_start_smp(env_t env)
@@ -217,18 +219,32 @@ int test_passive_thread_start_smp(env_t env)
     error = api_sc_bind(sc_remote, helper.thread.tcb.cptr);
     test_eq(error, seL4_IllegalOperation);
 
-    seL4_CPtr notification_in = vka_alloc_notification_leaky(&env->vka);
-    start_helper(env, &helper, (helper_fn_t)sched_context_smp_002_lazy_fn, notification, notification_in, 0, 0);
+    /* To be able to reproduce the test in SCHED_CONTEXT_007 where we rebind the
+     * TCB SC to test that it has been returned away, it is difficult to do
+     * deterministically. The best solution I can think of is to start a higher
+     * priority thread on this core that waits on an endpoint; this test thread
+     * should then only continue once that is blocked. Then the other core thread
+     * can perform an NBSendWait which should result in returning the TCB SC.
+     * This will then allow us to in this thread wait for the higher priority
+     * local thread to signal us, and so we can guarantee at this point the
+     * remote thread will be blocked on Wait.
+     */
 
-    /* Unfortunately, unlike SCHED_CONTEXT_0007 we can't test that we can rebind the
-     * TCB SC to test that this is the case, because there's no way to atomically
-     * or deterministically wait for the helper thread on the other core to run
-     * the seL4_Wait().
-     * However we can check that it has run and that it can run again after
-     * being signalled. */
-    seL4_Wait(notification_in, NULL);
-    seL4_Signal(notification);
-    seL4_Wait(notification_in, NULL);
+    helper_thread_t hi_helper;
+    create_helper_thread(env, &hi_helper);
+    set_helper_priority(env, &hi_helper, env->priority + 1);
+    seL4_CPtr endpoint_cross = vka_alloc_endpoint_leaky(&env->vka);
+    seL4_CPtr endpoint_hi_low = vka_alloc_endpoint_leaky(&env->vka);
+    /* this will run and receive first */
+    start_helper(env, &hi_helper, (helper_fn_t)sched_context_smp_002_high_priority_helper, endpoint_cross, endpoint_hi_low, 0, 0);
+
+    start_helper(env, &helper, (helper_fn_t)sched_context_smp_002_lazy_fn, endpoint_cross, notification, 0, 0);
+
+    seL4_Wait(endpoint_hi_low, NULL);
+
+    /* the tcb should have been unbound lazily when the helper called seL4_Wait */
+    error = api_sc_bind(get_helper_sched_context(&helper), get_helper_tcb(&helper));
+    test_eq(error, seL4_NoError);
 
     return sel4test_get_result();
 }
