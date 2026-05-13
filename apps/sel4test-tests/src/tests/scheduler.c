@@ -1688,3 +1688,55 @@ static int test_changing_affinity_self(struct env *env)
 }
 DEFINE_TEST(SCHED0022, "test helper thread changing its own core", test_changing_affinity_self,
             (CONFIG_MAX_NUM_NODES > 1));
+
+void sched_0023_helper_high_fn(void)
+{
+    /* Infinitely loop taking up budget */
+    while (true) {
+        asm volatile("nop" ::: "memory");
+    }
+}
+
+void sched_0023_helper_low_fn(volatile int *state, seL4_CPtr ntfn)
+{
+    *state = 2;
+    seL4_Signal(ntfn);
+}
+
+static int test_set_higher_prio_remote(struct env *env)
+{
+    helper_thread_t high_thread, low_thread;
+    seL4_CPtr ntfn = vka_alloc_notification_leaky(&env->vka);
+
+    create_helper_thread(env, &high_thread);
+    create_helper_thread(env, &low_thread);
+
+    assert(CONFIG_NUM_PRIORITIES > 3);
+
+    set_helper_priority(env, &high_thread, 2);
+    set_helper_priority(env, &low_thread, 1);
+
+    set_helper_affinity(env, &high_thread, 1);
+    set_helper_affinity(env, &low_thread, 1);
+
+    /* fine to use this cross core because of single-copy atomicity on an aligned (32-bit) variable */
+    volatile int state = 0;
+
+    /* start our two remote helpers */
+    start_helper(env, &high_thread, (helper_fn_t) sched_0023_helper_high_fn, 0, 0, 0, 0);
+    start_helper(env, &low_thread, (helper_fn_t) sched_0023_helper_low_fn, (seL4_Word)&state, ntfn, 0, 0);
+
+    /* check that the low function hasn't run and update the state */
+    test_eq(state, 0);
+
+    /* raise the helper priority of low above high */
+    set_helper_priority(env, &low_thread, 3);
+
+    /* helper should run and set state to 2 */
+    seL4_Wait(ntfn, NULL);
+    test_eq(state, 2);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0023, "test set prio to a higher prio runs higher prio thread remote core",
+            test_set_higher_prio, (CONFIG_MAX_NUM_NODES > 1));
