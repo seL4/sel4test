@@ -657,3 +657,88 @@ int test_passive_remote_task_migration(env_t env)
 }
 DEFINE_TEST(SCHED_CONTEXT_SMP_008, "signal on bound notification remote task causing core migration (two remote cores)",
             test_passive_remote_task_migration, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 2));
+
+void sc_smp_009_helper_fn(volatile uint64_t *counter, seL4_CPtr ntfn)
+{
+    /* tell remote we are started now */
+    seL4_Signal(ntfn);
+
+    /* Infinitely loop taking up budget */
+    while (true) {
+        *counter += 1;
+    }
+}
+
+int test_update_remote_sc_with_no_budget(env_t env)
+{
+
+    /**
+     * Idea behind this: a remote thread might have run out of a budget.
+     * If we make a remote thread that has a tiny budget (the minimum)
+     * but a very long period (the maximum) then once it will runout it will
+     * basically never refill: so, if we reconfigure the SC to have full
+     * bandwidth (budget = period) then it should start running again.
+     **/
+
+    int error;
+    helper_thread_t helper;
+    volatile uint64_t counter = 0;
+    seL4_CPtr ntfn;
+
+    ntfn = vka_alloc_notification_leaky(&env->vka);
+    create_helper_thread(env, &helper);
+
+    /* give the helper infinite budget */
+    error = seL4_SchedControl_Configure(
+        /* schedcontrol */ simple_get_sched_ctrl(&env->simple, 1),
+        /* schedcontext */ get_helper_sched_context(&helper),
+        /* budget */ MAX_PERIOD_US, /* period */ MAX_PERIOD_US, /* refills */ 0, /* badge */ 0);
+    ZF_LOGF_IF(error, "should be able to configure SC");
+
+    start_helper(env, &helper, (helper_fn_t)sc_smp_009_helper_fn, (seL4_Word)&counter, ntfn, 0, 0);
+
+    /* wait for it to tell us it is ready */
+    seL4_Wait(ntfn, NULL);
+
+    /* wait a little while for the other core to run */
+    for (volatile int i = 0; i < 1000; i++) { }
+
+    uint64_t local_count_0 = counter;
+    test_gt(local_count_0, 0);
+
+    /* remove the remote helper's budget. it should stop counting immediately.
+       specifically: since it has infinite budget if we don't make it stop rather
+       quickly then it means it kept going. the idea is that if we don't stall
+       the remote TCB it will continue to run and never need to drop back into
+       the kernel as no timer interrupts are scheduled for over an hour. */
+    error = seL4_SchedControl_Configure(
+        /* schedcontrol */ simple_get_sched_ctrl(&env->simple, 1),
+        /* schedcontext */ get_helper_sched_context(&helper),
+        /* budget */ MIN_BUDGET_US, /* period */ MAX_PERIOD_US, /* refills */ 0, /* badge */ 0);
+    test_error_eq(error, seL4_NoError);
+
+    uint64_t local_count_1 = counter;
+    test_gt(local_count_1, local_count_0);
+
+    /* wait a little while for the core to run and expire its budget */
+    // TODO: do it with a timeout fault?
+    for (volatile int i = 0; i < 1000000; i++) { }
+
+    uint64_t local_count_2 = counter;
+    if (local_count_2 == local_count_1) {
+        /* already might have stopped pre the 1000000 wait */
+        goto skip;
+    }
+    /* wait a bit more and see what happens */
+    for (volatile int i = 0; i < 1000; i++) { }
+
+    uint64_t local_count_3 = counter;
+    test_gt(local_count_3, local_count_2);
+
+skip:
+    cleanup_helper(env, &helper);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED_CONTEXT_SMP_009, "update a remote task's SC to remove budget to run immediately.",
+            test_update_remote_sc_with_no_budget, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 1));
