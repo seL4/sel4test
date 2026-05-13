@@ -1736,9 +1736,32 @@ static int test_set_higher_prio_remote(struct env *env)
     seL4_Wait(ntfn, NULL);
     test_eq(state, 2);
 
+    /* ==== part 2: lowering instead of raising */
+
+    /* reset the priorities and state */
+    state = 0;
+    set_helper_priority(env, &high_thread, 3);
+    set_helper_priority(env, &low_thread, 2);
+
+    /* restart the low function */
+    start_helper(env, &low_thread, (helper_fn_t) sched_0023_helper_low_fn, (seL4_Word)&state, ntfn, 0, 0);
+
+    /* check that the low function hasn't run and update the state */
+    test_eq(state, 0);
+
+    /* lower the prio of high below low*/
+    set_helper_priority(env, &high_thread, 1);
+
+    /* helper should run and set state to 2 */
+    seL4_Wait(ntfn, NULL);
+    test_eq(state, 2);
+
+    cleanup_helper(env, &high_thread);
+    cleanup_helper(env, &low_thread);
+
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0023, "test set prio to a higher prio runs higher prio thread remote core",
+DEFINE_TEST(SCHED0023, "test set prio to higher/lower on remote core",
             test_set_higher_prio, (CONFIG_MAX_NUM_NODES > 1));
 
 void sched_0024_helper_fn(volatile int *state, seL4_CPtr ntfn)
