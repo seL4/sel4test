@@ -500,6 +500,9 @@ int sched_context_smp_007_helper_fn(seL4_CPtr ep, seL4_CPtr reply, seL4_CPtr ntf
 {
     seL4_Word sender;
 
+    /* we start running on the SC of the notification, i.e. core 1 */
+    test_eq(1, seL4_DebugGetThreadAffinity(tcb));
+
     /* This ReplyRecv will cause passive server-ification */
     seL4_MessageInfo_t tag = seL4_MessageInfo_new(0, 0, 0, 0);
     tag = seL4_ReplyRecv(ep, tag, &sender, reply);
@@ -508,8 +511,9 @@ int sched_context_smp_007_helper_fn(seL4_CPtr ep, seL4_CPtr reply, seL4_CPtr ntf
     test_eq(0, seL4_DebugGetThreadAffinity(tcb));
 
     seL4_Signal(ntfn);
-    /* wait on the notification as an alternative to bound notification ep wait */
-    seL4_Wait(ntfn, NULL);
+
+    /* reply (to donate away our SC) and then wait on our notification */
+    tag = seL4_NBSendWait(reply, tag, ntfn, NULL);
 
     test_eq(1, seL4_DebugGetThreadAffinity(tcb));
 
