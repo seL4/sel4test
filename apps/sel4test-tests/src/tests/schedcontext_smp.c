@@ -28,6 +28,8 @@
 #endif
 #endif
 
+#ifdef CONFIG_KERNEL_MCS
+
 static inline seL4_CPtr badge_endpoint(env_t env, seL4_Word badge, seL4_CPtr ep)
 {
     seL4_CPtr slot = get_free_slot(env);
@@ -729,3 +731,5 @@ int test_update_remote_sc_with_no_budget(env_t env)
 }
 DEFINE_TEST(SCHED_CONTEXT_SMP_009, "update a remote task's SC to remove budget to run immediately.",
             test_update_remote_sc_with_no_budget, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 1));
+
+#endif /* CONFIG_KERNEL_MCS */

@@ -1812,6 +1812,7 @@ static int test_resume_suspended_remote_task(struct env *env)
 DEFINE_TEST(SCHED0024, "test resuming a suspended remote task",
             test_resume_suspended_remote_task, (CONFIG_MAX_NUM_NODES > 1));
 
+#ifdef CONFIG_KERNEL_MCS
 int test_yieldTo_remote(env_t env)
 {
     int error;
@@ -1844,6 +1845,7 @@ int test_yieldTo_remote(env_t env)
 }
 DEFINE_TEST(SCHED0025, "Test seL4_SchedContext_YieldTo remote",
             test_yieldTo_remote, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 1));
+#endif /* CONFIG_KERNEL_MCS */
 
 void sched_0026_helper_fn(volatile uint64_t *counter, seL4_CPtr ntfn)
 {
@@ -1906,4 +1908,4 @@ static int test_changing_affinity_remote(struct env *env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0026, "test migrating remote tasks", test_changing_affinity_remote,
-            (CONFIG_MAX_NUM_NODES > 2));
+            config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 2));
