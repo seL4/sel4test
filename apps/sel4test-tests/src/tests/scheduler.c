@@ -1644,23 +1644,14 @@ int sched0022_to_fn(struct env *env, helper_thread_t *thread, seL4_CPtr ep)
     seL4_MessageInfo_t tag = {0};
     seL4_MessageInfo_ptr_set_length(&tag, 2);
 
-    /* change to core 1 */
-    seL4_Error error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 1),
-                                                thread->thread.sched_context.cptr,
-                                                10000,
-                                                10000,
-                                                0,
-                                                0);
-    seL4_SetMR(0, error);
-    /* and back to core 0 */
-    error = api_sched_ctrl_configure(simple_get_sched_ctrl(&env->simple, 0),
-                                     thread->thread.sched_context.cptr,
-                                     10000,
-                                     10000,
-                                     0,
-                                     0);
+    /* change our affinity to core 1 then back to core 0 and report errors */
 
+    int error = set_helper_affinity_fallible(env, thread, /* core */ 1);
+    seL4_SetMR(0, error);
+
+    error = set_helper_affinity_fallible(env, thread, /* core */ 0);
     seL4_SetMR(1, error);
+
     seL4_Send(ep, tag);
     return 0;
 }
@@ -1668,7 +1659,7 @@ int sched0022_to_fn(struct env *env, helper_thread_t *thread, seL4_CPtr ep)
 /* Test that a helper thread can move itself back from another core.
  * Save the return values and check them in test thread.
  */
-static int test_changing_affinity(struct env *env)
+static int test_changing_affinity_self(struct env *env)
 {
     int error;
     helper_thread_t t0;
@@ -1695,5 +1686,226 @@ static int test_changing_affinity(struct env *env)
 
     return sel4test_get_result();
 }
-DEFINE_TEST(SCHED0022, "test changing a helper threads core", test_changing_affinity,
-            (config_set(CONFIG_KERNEL_MCS) &&(CONFIG_MAX_NUM_NODES > 1)));
+DEFINE_TEST(SCHED0022, "test helper thread changing its own core", test_changing_affinity_self,
+            (CONFIG_MAX_NUM_NODES > 1));
+
+void sched_0023_helper_high_fn(void)
+{
+    /* Infinitely loop taking up budget */
+    while (true) {
+        asm volatile("nop" ::: "memory");
+    }
+}
+
+void sched_0023_helper_low_fn(volatile int *state, seL4_CPtr ntfn)
+{
+    *state = 2;
+    seL4_Signal(ntfn);
+}
+
+static int test_set_higher_prio_remote(struct env *env)
+{
+    helper_thread_t high_thread, low_thread;
+    seL4_CPtr ntfn = vka_alloc_notification_leaky(&env->vka);
+
+    create_helper_thread(env, &high_thread);
+    create_helper_thread(env, &low_thread);
+
+    assert(CONFIG_NUM_PRIORITIES > 3);
+
+    set_helper_priority(env, &high_thread, 2);
+    set_helper_priority(env, &low_thread, 1);
+
+    set_helper_affinity(env, &high_thread, 1);
+    set_helper_affinity(env, &low_thread, 1);
+
+    /* fine to use this cross core because of single-copy atomicity on an aligned (32-bit) variable */
+    volatile int state = 0;
+
+    /* start our two remote helpers */
+    start_helper(env, &high_thread, (helper_fn_t) sched_0023_helper_high_fn, 0, 0, 0, 0);
+    start_helper(env, &low_thread, (helper_fn_t) sched_0023_helper_low_fn, (seL4_Word)&state, ntfn, 0, 0);
+
+    /* check that the low function hasn't run and update the state */
+    test_eq(state, 0);
+
+    /* raise the helper priority of low above high */
+    set_helper_priority(env, &low_thread, 3);
+
+    /* helper should run and set state to 2 */
+    seL4_Wait(ntfn, NULL);
+    test_eq(state, 2);
+
+    /* ==== part 2: lowering instead of raising */
+
+    /* reset the priorities and state */
+    state = 0;
+    set_helper_priority(env, &high_thread, 3);
+    set_helper_priority(env, &low_thread, 2);
+
+    /* restart the low function */
+    start_helper(env, &low_thread, (helper_fn_t) sched_0023_helper_low_fn, (seL4_Word)&state, ntfn, 0, 0);
+
+    /* check that the low function hasn't run and update the state */
+    test_eq(state, 0);
+
+    /* lower the prio of high below low*/
+    set_helper_priority(env, &high_thread, 1);
+
+    /* helper should run and set state to 2 */
+    seL4_Wait(ntfn, NULL);
+    test_eq(state, 2);
+
+    cleanup_helper(env, &high_thread);
+    cleanup_helper(env, &low_thread);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0023, "test set prio to higher/lower on remote core",
+            test_set_higher_prio, (CONFIG_MAX_NUM_NODES > 1));
+
+void sched_0024_helper_fn(volatile int *state, seL4_CPtr ntfn)
+{
+    /* tell the test that we're ready (non-blocking as cross-core) */
+    seL4_Signal(ntfn);
+
+    /* start spinning so we can be suspend+resume somewhere OK */
+    while (*state != 1);
+
+    /* tell the test that the resume worked */
+    *state = 2;
+    seL4_Signal(ntfn);
+}
+
+static int test_resume_suspended_remote_task(struct env *env)
+{
+    helper_thread_t thread;
+    int error;
+    seL4_CPtr ntfn = vka_alloc_notification_leaky(&env->vka);
+
+    create_helper_thread(env, &thread);
+    set_helper_affinity(env, &thread, 1);
+
+    /* fine to use this cross core because of single-copy atomicity on an aligned (32-bit) variable */
+    volatile int state = 0;
+
+    /* start our remote helper */
+    start_helper(env, &thread, (helper_fn_t) sched_0024_helper_fn, (seL4_Word)&state, ntfn, 0, 0);
+
+    /* wait for remote helper to tell us it is ready - it should then be spinning */
+    seL4_Wait(ntfn, NULL);
+
+    error = seL4_TCB_Suspend(get_helper_tcb(&thread));
+    test_error_eq(error, seL4_NoError);
+
+    /* resume the remote thread now */
+    state = 1;
+    error = seL4_TCB_Resume(get_helper_tcb(&thread));
+    test_error_eq(error, seL4_NoError);
+
+    /* helper should run and set state to 2 */
+    seL4_Wait(ntfn, NULL);
+    test_eq(state, 2);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0024, "test resuming a suspended remote task",
+            test_resume_suspended_remote_task, (CONFIG_MAX_NUM_NODES > 1));
+
+#ifdef CONFIG_KERNEL_MCS
+int test_yieldTo_remote(env_t env)
+{
+    int error;
+    helper_thread_t to, from;
+    volatile seL4_SchedContext_YieldTo_t ret;
+
+    create_helper_thread(env, &to);
+    create_helper_thread(env, &from);
+
+    start_helper(env, &to, (helper_fn_t) sched0018_to_fn, 0, 0, 0, 0);
+    start_helper(env, &from, (helper_fn_t) sched0017_helper_fn, to.thread.sched_context.cptr, (seL4_Word) &ret, 0, 0);
+
+    /* To on a different core than From */
+    set_helper_affinity(env, &to, 1);
+    set_helper_affinity(env, &from, 0);
+
+    set_helper_mcp(env, &to, seL4_MaxPrio);
+    set_helper_mcp(env, &from, seL4_MaxPrio);
+    error = set_helper_sched_params(env, &to, 500 * US_IN_MS, 500 * US_IN_MS, 0);
+    test_eq(error, seL4_NoError);
+    error = set_helper_sched_params(env, &from, 500 * US_IN_MS, 500 * US_IN_MS, 0);
+    test_eq(error, seL4_NoError);
+
+    ZF_LOGD("Wait for from\n");
+    wait_for_helper(&from);
+    test_eq(ret.error, seL4_NoError);
+    test_geq(ret.consumed, 0llu);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0025, "Test seL4_SchedContext_YieldTo remote",
+            test_yieldTo_remote, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 1));
+#endif /* CONFIG_KERNEL_MCS */
+
+void sched_0026_helper_fn(volatile uint64_t *counter, seL4_CPtr ntfn)
+{
+    /* tell server we started */
+    seL4_Signal(ntfn);
+
+    /* Infinitely loop taking up budget */
+    while (true) {
+        *counter += 1;
+    }
+}
+
+/* Test moving a helper thread between remote cores */
+static int test_changing_affinity_remote(struct env *env)
+{
+    int error;
+    helper_thread_t helper;
+    seL4_CPtr ntfn;
+    volatile uint64_t counter = 0;
+
+    ntfn = vka_alloc_notification_leaky(&env->vka);
+    create_helper_thread(env, &helper);
+
+    /* make the budget/period such that only 1 timer interrupt per hour is required,
+     * so that the helper should never enter the kernel unnecessarily
+     * as we don't need round robin. */
+    error = set_helper_sched_params(env, &helper, 3600 * US_IN_S, 3600 * US_IN_S, 0);
+    test_eq(error, seL4_NoError);
+
+    /* start on core 1 */
+    set_helper_affinity(env, &helper, 1);
+
+    start_helper(env, &helper, (helper_fn_t)sched_0026_helper_fn, (seL4_Word)&counter, ntfn, 0, 0);
+
+    /* wait for it to start helper */
+    seL4_Wait(ntfn, NULL);
+
+    for (volatile int i = 0; i < 1000; i++) { }
+
+    uint64_t local_count_0 = counter;
+    /* it should have run some amount */
+    test_gt(local_count_0, 0);
+
+    /* move remote task to another remote core */
+    set_helper_affinity(env, &helper, 2);
+
+    uint64_t local_count_1 = counter;
+    /* should have incremented some more */
+    test_gt(local_count_1, local_count_0);
+
+    for (volatile int i = 0; i < 1000; i++) { }
+
+    /* it should still be incrementing */
+    uint64_t local_count_2 = counter;
+    /* should have incremented some more */
+    test_gt(local_count_2, local_count_1);
+
+    cleanup_helper(env, &helper);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(SCHED0026, "test migrating remote tasks", test_changing_affinity_remote,
+            config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 2));
