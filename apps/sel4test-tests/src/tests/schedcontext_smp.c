@@ -658,15 +658,15 @@ int test_passive_remote_task_migration(env_t env)
 DEFINE_TEST(SCHED_CONTEXT_SMP_008, "signal on bound notification remote task causing core migration (two remote cores)",
             test_passive_remote_task_migration, config_set(CONFIG_KERNEL_MCS) && (CONFIG_MAX_NUM_NODES > 2));
 
-void sc_smp_009_helper_fn(volatile uint64_t *counter, seL4_CPtr ntfn)
+void sc_smp_009_helper_fn(seL4_CPtr ntfn)
 {
     /* tell remote we are started now */
     seL4_Signal(ntfn);
 
     /* Infinitely loop taking up budget */
     while (true) {
-        *counter += 1;
-    }
+        asm volatile("nop" ::: "memory");
+    };
 }
 
 int test_update_remote_sc_with_no_budget(env_t env)
@@ -682,10 +682,15 @@ int test_update_remote_sc_with_no_budget(env_t env)
 
     int error;
     helper_thread_t helper;
-    volatile uint64_t counter = 0;
     seL4_CPtr ntfn;
+    seL4_CPtr timeout_ep;
+    seL4_CPtr timeout_reply;
+    seL4_MessageInfo_t tag;
 
     ntfn = vka_alloc_notification_leaky(&env->vka);
+    timeout_ep = vka_alloc_endpoint_leaky(&env->vka);
+    timeout_reply = vka_alloc_reply_leaky(&env->vka);
+
     create_helper_thread(env, &helper);
 
     /* give the helper infinite budget */
@@ -695,16 +700,13 @@ int test_update_remote_sc_with_no_budget(env_t env)
         /* budget */ MAX_PERIOD_US, /* period */ MAX_PERIOD_US, /* refills */ 0, /* badge */ 0);
     ZF_LOGF_IF(error, "should be able to configure SC");
 
-    start_helper(env, &helper, (helper_fn_t)sc_smp_009_helper_fn, (seL4_Word)&counter, ntfn, 0, 0);
+    /* configure a timeout EP so we know when it's budget expire s*/
+    set_helper_tfep(env, &helper, timeout_ep);
+
+    start_helper(env, &helper, (helper_fn_t)sc_smp_009_helper_fn, ntfn, 0, 0, 0);
 
     /* wait for it to tell us it is ready */
     seL4_Wait(ntfn, NULL);
-
-    /* wait a little while for the other core to run */
-    for (volatile int i = 0; i < 1000; i++) { }
-
-    uint64_t local_count_0 = counter;
-    test_gt(local_count_0, 0);
 
     /* remove the remote helper's budget. it should stop counting immediately.
        specifically: since it has infinite budget if we don't make it stop rather
@@ -717,25 +719,10 @@ int test_update_remote_sc_with_no_budget(env_t env)
         /* budget */ MIN_BUDGET_US, /* period */ MAX_PERIOD_US, /* refills */ 0, /* badge */ 0);
     test_error_eq(error, seL4_NoError);
 
-    uint64_t local_count_1 = counter;
-    test_gt(local_count_1, local_count_0);
+    tag = seL4_Recv(timeout_ep, NULL, timeout_reply);
+    seL4_Fault_t fault = seL4_getFault(tag);
+    test_eq(seL4_Fault_get_seL4_FaultType(fault), seL4_Fault_Timeout);
 
-    /* wait a little while for the core to run and expire its budget */
-    // TODO: do it with a timeout fault?
-    for (volatile int i = 0; i < 1000000; i++) { }
-
-    uint64_t local_count_2 = counter;
-    if (local_count_2 == local_count_1) {
-        /* already might have stopped pre the 1000000 wait */
-        goto skip;
-    }
-    /* wait a bit more and see what happens */
-    for (volatile int i = 0; i < 1000; i++) { }
-
-    uint64_t local_count_3 = counter;
-    test_gt(local_count_3, local_count_2);
-
-skip:
     cleanup_helper(env, &helper);
 
     return sel4test_get_result();
