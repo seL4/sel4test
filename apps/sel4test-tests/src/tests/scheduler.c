@@ -1027,7 +1027,9 @@ int test_scheduler_accuracy(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0011, "Test scheduler accuracy",
-            test_scheduler_accuracy, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
+            test_scheduler_accuracy, config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER)
+            /* This test is flakey under QEMU simulation: see https://github.com/seL4/ci-actions/pull/233 */
+            && !config_set(CONFIG_SIMULATION))
 
 /* used by sched0012, 0013, 0014 */
 static void
@@ -1152,7 +1154,9 @@ int test_ordering_periodic_threads(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(SCHED0014, "Test periodic thread ordering", test_ordering_periodic_threads,
-            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER))
+            config_set(CONFIG_KERNEL_MCS) &&config_set(CONFIG_HAVE_TIMER)
+            /* This test is flakey under QEMU simulation: see https://github.com/seL4/ci-actions/pull/233 */
+            && !config_set(CONFIG_SIMULATION))
 
 static void
 sched0015_helper(int id, env_t env, volatile unsigned long long *counters)
