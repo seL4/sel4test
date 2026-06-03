@@ -5,6 +5,8 @@
  */
 
 #include <autoconf.h>
+#include <sel4test-driver/gen_config.h>
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
