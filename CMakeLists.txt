@@ -18,25 +18,23 @@ find_package(elfloader-tool REQUIRED)
 # need to be increased in the future
 set(KernelRootCNodeSizeBits 13 CACHE INTERNAL "")
 
-# Set our custom domain schedule
-set(KernelDomainSchedule "${CMAKE_CURRENT_LIST_DIR}/domain_schedule.c" CACHE INTERNAL "")
 sel4_import_kernel()
 
 if((NOT Sel4testAllowSettingsOverride) AND (KernelArchARM OR KernelArchRiscV))
-    # Elfloader settings that correspond to how Data61 sets its boards up.
-    ApplyData61ElfLoaderSettings(${KernelPlatform} ${KernelSel4Arch})
+  # Elfloader settings that correspond to how Data61 sets its boards up.
+  ApplyData61ElfLoaderSettings(${KernelPlatform} ${KernelSel4Arch})
 endif()
 elfloader_import_project()
 
 add_subdirectory(apps/sel4test-driver)
 
 if(SIMULATION)
-    include(simulation)
-    if(KernelSel4ArchX86_64)
-        SetSimulationScriptProperty(MEM_SIZE "3G")
-    endif()
-    if(KernelPlatformQEMUArmVirt)
-        SetSimulationScriptProperty(MEM_SIZE "2G")
-    endif()
-    GenerateSimulateScript()
+  include(simulation)
+  if(KernelSel4ArchX86_64)
+    SetSimulationScriptProperty(MEM_SIZE "3G")
+  endif()
+  if(KernelPlatformQEMUArmVirt)
+    SetSimulationScriptProperty(MEM_SIZE "2G")
+  endif()
+  GenerateSimulateScript()
 endif()

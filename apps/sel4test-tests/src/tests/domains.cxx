@@ -20,6 +20,123 @@ extern "C" {
 
 }
 
+#ifdef CONFIG_KERNEL_MCS
+
+#ifndef CONFIG_TIMER_FREQUENCY
+/* Probably x86, just use 1 GHz, doesn't really matter anyway */
+#define CONFIG_TIMER_FREQUENCY (1000 * 1000 * 1000)
+#endif
+
+/* Duration is in timer ticks: */
+#define DURATION (CONFIG_TIMER_FREQUENCY / 1000)
+
+#else
+
+/* For non-MCS duration is in scheduler ticks: */
+#define DURATION 1
+
+#endif // CONFIG_KERNEL_MCS
+
+/* This is a domain schedule that is suitable for the domains tests in sel4test. All
+ * sel4test actually needs is for every domain to be executable for some period of time
+ * in order for the tests to make progress.
+ *
+ * We pick 2 ticks as the shortest period so that tests can make some progress if they exist,
+ * and we pick some variety in the first four domains so that not everything is equal.
+ */
+#define D0 (DURATION * 10)
+#define D1 (DURATION * 4)
+#define D2 (DURATION * 3)
+#define D3 (DURATION * 2)
+
+/* Put new schedule at the end: */
+#define OFF (CONFIG_NUM_DOMAIN_SCHEDULES - CONFIG_NUM_DOMAINS - 1)
+
+/* Create the domain schedule for this test, match old domain_schedule.c */
+static int configure_domain_schedules(struct env *env)
+{
+    int error;
+    seL4_Time duration[] = {D0, D1, D2};
+
+    /* Test seL4_DomainSet_ScheduleSetStart: */
+
+    /* Setting it to the default index should succeed: */
+    error = seL4_DomainSet_ScheduleSetStart(env->domain, 0);
+    assert(error == seL4_NoError);
+    /* Wrong index should fail: */
+    error = seL4_DomainSet_ScheduleSetStart(env->domain, -1ul);
+    assert(error == seL4_RangeError);
+    error = seL4_DomainSet_ScheduleSetStart(env->domain, CONFIG_NUM_DOMAIN_SCHEDULES);
+    assert(error == seL4_RangeError);
+    /* Starting schedule must not be an end marker: */
+    error = seL4_DomainSet_ScheduleSetStart(env->domain, 1);
+    assert(error == seL4_InvalidArgument);
+
+    /*
+     * Tests are agnostic to the number of domains, but they assume there is at
+     * least one schedule entry per domain available:
+     */
+    assert(CONFIG_NUM_DOMAINS < CONFIG_NUM_DOMAIN_SCHEDULES);
+
+    /* Test seL4_DomainSet_ScheduleConfigure: */
+
+    /* Wrong index should fail: */
+    error = seL4_DomainSet_ScheduleConfigure(env->domain, -1ul, 0, D0);
+    assert(error == seL4_RangeError);
+    /* Minus one because last index is reserved as end marker and can't be modified: */
+    error = seL4_DomainSet_ScheduleConfigure(env->domain, CONFIG_NUM_DOMAIN_SCHEDULES - 1, 0, D0);
+    assert(error == seL4_RangeError);
+    /* Starting schedule's duration must not be zero: */
+    error = seL4_DomainSet_ScheduleConfigure(env->domain, 0, 0, 0);
+    assert(error == seL4_InvalidArgument);
+    /* Wrong domain should fail: */
+    error = seL4_DomainSet_ScheduleConfigure(env->domain, 0, -1, D0);
+    assert(error == seL4_RangeError);
+    error = seL4_DomainSet_ScheduleConfigure(env->domain, 0, CONFIG_NUM_DOMAINS + 1, D0);
+    assert(error == seL4_RangeError);
+    /* Both domain and duration must be zero for end markers: */
+    error = seL4_DomainSet_ScheduleConfigure(env->domain, 1, 1, 0);
+    assert(error == seL4_InvalidArgument);
+    /* Duration must fit in 56 bits: */
+    error = seL4_DomainSet_ScheduleConfigure(env->domain, 0, 0, SEL4_TIME_UINT_TYPE(1) << 56);
+    assert(error == seL4_InvalidArgument);
+
+    /* Fill all unused entries with max time to catch implementation bugs: */
+    for (seL4_Word i = 1; i < OFF; ++i) {
+        error = seL4_DomainSet_ScheduleConfigure(env->domain, i, 0, 0x00ffffffffffffULL);
+        assert(error == seL4_NoError);
+    }
+    /* Configure domain schedule to what the other domain tests assume: */
+    for (seL4_Word i = 0; i < CONFIG_NUM_DOMAINS; ++i) {
+        seL4_Time d = i < 3 ? duration[i] : D3;
+        error = seL4_DomainSet_ScheduleConfigure(env->domain, i + OFF, i, d);
+        assert(error == seL4_NoError);
+    }
+    /* Force a reload of the updated config: */
+    error = seL4_DomainSet_ScheduleSetStart(env->domain, OFF);
+    assert(error == seL4_NoError);
+    return SUCCESS;
+}
+DEFINE_TEST(DOMAINS0000, "Configure domain schedule", configure_domain_schedules, CONFIG_NUM_DOMAINS > 1)
+
+/* Reset domain schedule to bootup default: */
+static int cleanup_domain_schedules(struct env *env)
+{
+    int error;
+
+    /* Set maximum duration: */
+    error = seL4_DomainSet_ScheduleConfigure(env->domain, 0, 0, 0x00ffffffffffffULL);
+    assert(error == seL4_NoError);
+    /* Reset starting index: */
+    error = seL4_DomainSet_ScheduleSetStart(env->domain, 0);
+    assert(error == seL4_NoError);
+    /* Set end marker: */
+    error = seL4_DomainSet_ScheduleConfigure(env->domain, 1, 0, 0);
+    assert(error == seL4_NoError);
+    return SUCCESS;
+}
+DEFINE_TEST(DOMAINS9999, "Reset domain schedule", cleanup_domain_schedules, CONFIG_NUM_DOMAINS > 1)
+
 #define POLL_DELAY_NS 4000000
 
 typedef int (*test_func_t)(seL4_Word /* id */, env_t env /* env */);
@@ -31,6 +148,8 @@ own_domain_success(struct env *env)
 
     error = seL4_DomainSet_Set(env->domain, CONFIG_NUM_DOMAINS - 1,
                                env->tcb);
+    /* Reset our domain */
+    seL4_DomainSet_Set(env->domain, 0, env->tcb);
     return (error == seL4_NoError) ? SUCCESS : FAILURE;
 }
 
@@ -73,7 +192,6 @@ template<bool shift, typename F>
 static int
 test_domains(struct env *env, F func)
 {
-
     UNUSED int error;
     helper_thread_t thread[CONFIG_NUM_DOMAINS];
 
@@ -98,7 +216,6 @@ test_domains(struct env *env, F func)
         wait_for_helper(&thread[i]);
         cleanup_helper(env, &thread[i]);
     }
-
     return sel4test_get_result();
 }
 

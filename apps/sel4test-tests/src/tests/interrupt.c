@@ -120,7 +120,9 @@ static int test_interrupt_notification_and_tcb_sc(env_t env)
 }
 DEFINE_TEST(INTERRUPT0003,
             "Test interrupts with scheduling context donation from notification object and without (two clients)",
-            test_interrupt_notification_and_tcb_sc, config_set(CONFIG_HAVE_TIMER) &&config_set(CONFIG_KERNEL_MCS));
+            test_interrupt_notification_and_tcb_sc, config_set(CONFIG_HAVE_TIMER) &&config_set(CONFIG_KERNEL_MCS)
+            /* This test is flakey under QEMU simulation: see https://github.com/seL4/ci-actions/pull/233 */
+            && !config_set(CONFIG_SIMULATION));
 
 /* test that if niether the thread or notification object have a scheduling context, nothing happens */
 static int test_interrupt_no_sc(env_t env)
@@ -212,7 +214,9 @@ int test_interrupt_notification_sc_two_clients(env_t env)
     return sel4test_get_result();
 }
 DEFINE_TEST(INTERRUPT0005, "Test the same scheduling context cannot be loaned to different threads",
-            test_interrupt_notification_sc_two_clients, config_set(CONFIG_HAVE_TIMER) &&config_set(CONFIG_KERNEL_MCS));
+            test_interrupt_notification_sc_two_clients, config_set(CONFIG_HAVE_TIMER) &&config_set(CONFIG_KERNEL_MCS)
+            /* This test is flakey under QEMU simulation: see https://github.com/seL4/ci-actions/pull/233 */
+            && !config_set(CONFIG_SIMULATION));
 
 /* test deleting the scheduling context stops the notification from donating it */
 static int test_interrupt_delete_sc(env_t env)
