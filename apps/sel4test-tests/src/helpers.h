@@ -71,7 +71,12 @@ void set_helper_priority(env_t env, helper_thread_t *thread, seL4_Word prio);
 /* set a helper threads max control priority */
 void set_helper_mcp(env_t env, helper_thread_t *thread, seL4_Word mcp);
 
-/* set a helper threads core affinity. This will have no effect on passive threads. */
+/* set a helper threads core affinity. This will have no effect on passive threads (MCS).
+ * if it fails, return an error. */
+int set_helper_affinity_fallible(env_t env, helper_thread_t *thread, seL4_Word affinity);
+
+/* set a helper threads core affinity. This will have no effect on passive threads (MCS).
+ * if it fails, calls ZF_LOGF. */
 void set_helper_affinity(env_t env, helper_thread_t *thread, seL4_Word affinity);
 
 /* if CONFIG_KERNEL_MCS is set, set the helpers scheduling parameters */

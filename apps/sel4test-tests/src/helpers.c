@@ -376,16 +376,26 @@ void set_helper_mcp(env_t env, helper_thread_t *thread, seL4_Word mcp)
     assert(error == seL4_NoError);
 }
 
-void set_helper_affinity(UNUSED env_t env, helper_thread_t *thread, seL4_Word affinity)
+int set_helper_affinity_fallible(UNUSED env_t env, helper_thread_t *thread, seL4_Word affinity)
 {
 #ifdef CONFIG_KERNEL_MCS
     seL4_Time timeslice = CONFIG_BOOT_THREAD_TIME_SLICE * US_IN_S;
-    int error = seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, affinity),
-                                            thread->thread.sched_context.cptr,
-                                            timeslice, timeslice, 0, 0);
-    ZF_LOGF_IF(error, "Failed to configure scheduling context");
+    return seL4_SchedControl_Configure(simple_get_sched_ctrl(&env->simple, affinity),
+                                       thread->thread.sched_context.cptr,
+                                       timeslice, timeslice, 0, 0);
 #elif CONFIG_MAX_NUM_NODES > 1
-    int error = seL4_TCB_SetAffinity(thread->thread.tcb.cptr, affinity);
+    return seL4_TCB_SetAffinity(thread->thread.tcb.cptr, affinity);
+#else
+    assert(affinity == 0);
+#endif
+}
+
+void set_helper_affinity(UNUSED env_t env, helper_thread_t *thread, seL4_Word affinity)
+{
+    int error = set_helper_affinity_fallible(env, thread, affinity);
+#ifdef CONFIG_KERNEL_MCS
+    ZF_LOGF_IF(error, "Failed to configure scheduling context for affinity");
+#elif CONFIG_MAX_NUM_NODES > 1
     ZF_LOGF_IF(error, "Failed to set tcb affinity");
 #endif
 }
