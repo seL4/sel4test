@@ -325,3 +325,111 @@ static int test_page_uncached_after_retype(env_t env)
 DEFINE_TEST(CACHEFLUSH0004, "Test that mapping a frame uncached doesn't see stale data after retype",
             test_page_uncached_after_retype,
             config_set(CONFIG_HAVE_CACHE))
+
+#ifdef CONFIG_ARCH_ARM
+static int test_flush_outside_window(env_t env)
+{
+    seL4_CPtr frame;
+    vka_object_t frame_object;
+    uintptr_t vstart;
+    vka_t *vka;
+    int error;
+
+    vka = &env->vka;
+
+    void *vaddr;
+
+    reservation_t reservation;
+
+    reservation = vspace_reserve_range(&env->vspace,
+                                       PAGE_SIZE_4K, seL4_AllRights, /* uncached */ 0, &vaddr);
+    assert(reservation.res);
+
+    vstart = (uintptr_t)vaddr;
+    assert(IS_ALIGNED(vstart, seL4_PageBits));
+
+    /* Assume that the kernel window doesn't cover the top of the device frames.
+       This is true for AArch64.
+     */
+    uintptr_t paddr = CONFIG_PADDR_USER_DEVICE_TOP - PAGE_SIZE_4K;
+    assert(IS_ALIGNED(paddr, seL4_PageBits));
+
+    /* Create a frame */
+    error = vka_alloc_frame_at(vka, PAGE_BITS_4K, paddr, &frame_object);
+    assert(!error);
+    frame = frame_object.cptr;
+    test_assert(frame != seL4_CapNull);
+
+    /* map in the frame */
+    error = vspace_map_pages_at_vaddr(&env->vspace, &frame, NULL, vaddr, 1, seL4_PageBits, reservation);
+    test_error_eq(error, seL4_NoError);
+
+    /* test frame cap based operations */
+    error = seL4_ARM_Page_Clean_Data(frame, 0, PAGE_SIZE_4K);
+#if defined(CONFIG_ARM_HYPERVISOR_SUPPORT)
+    test_eq(error, seL4_IllegalOperation);
+#else
+    test_eq(error, seL4_NoError);
+#endif
+
+    error = seL4_ARM_Page_Invalidate_Data(frame, 0, PAGE_SIZE_4K);
+#if defined(CONFIG_ARM_HYPERVISOR_SUPPORT)
+    test_eq(error, seL4_IllegalOperation);
+#else
+    test_eq(error, seL4_NoError);
+#endif
+
+    error = seL4_ARM_Page_CleanInvalidate_Data(frame, 0, PAGE_SIZE_4K);
+#if defined(CONFIG_ARM_HYPERVISOR_SUPPORT)
+    test_eq(error, seL4_IllegalOperation);
+#else
+    test_eq(error, seL4_NoError);
+#endif
+
+    error = seL4_ARM_Page_Unify_Instruction(frame, 0, PAGE_SIZE_4K);
+#if defined(CONFIG_ARM_HYPERVISOR_SUPPORT)
+    test_eq(error, seL4_IllegalOperation);
+#else
+    test_eq(error, seL4_NoError);
+#endif
+
+    /* test vspace based operations.
+     * For EL1 (AArch32 & AArch64) we switch to the address space to perform CMO, so
+     * this is fine to access memory outside the 'normal' kernel memory.
+     * For EL2, we can't do this as kernel and user page tables are separate, so
+     * memory not in the PPtr window can't be accessed.
+     */
+    error = seL4_ARCH_PageDirectory_Clean_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+#if defined(CONFIG_ARM_HYPERVISOR_SUPPORT)
+    test_eq(error, seL4_IllegalOperation);
+#else
+    test_eq(error, seL4_NoError);
+#endif
+
+    error = seL4_ARCH_PageDirectory_Invalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+#if defined(CONFIG_ARM_HYPERVISOR_SUPPORT)
+    test_eq(error, seL4_IllegalOperation);
+#else
+    test_eq(error, seL4_NoError);
+#endif
+
+    error = seL4_ARCH_PageDirectory_CleanInvalidate_Data(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+#if defined(CONFIG_ARM_HYPERVISOR_SUPPORT)
+    test_eq(error, seL4_IllegalOperation);
+#else
+    test_eq(error, seL4_NoError);
+#endif
+
+    error = seL4_ARCH_PageDirectory_Unify_Instruction(env->page_directory, vstart, vstart + PAGE_SIZE_4K);
+#if defined(CONFIG_ARM_HYPERVISOR_SUPPORT)
+    test_eq(error, seL4_IllegalOperation);
+#else
+    test_eq(error, seL4_NoError);
+#endif
+
+    return sel4test_get_result();
+}
+
+DEFINE_TEST(CACHEFLUSH0005, "Test that cache maintenance outside the kernel window is disallowed",
+            test_flush_outside_window, true)
+#endif
