@@ -292,3 +292,135 @@ test_notification_binding_with_sc(env_t env)
 }
 DEFINE_TEST(BIND006, "Test passing thread notification binding with a scheduling context",
             test_notification_binding_with_sc, config_set(CONFIG_KERNEL_MCS))
+
+static int
+test_active_notification_binding_with_sc(env_t env)
+{
+    seL4_CPtr endpoint, notification;
+    int error;
+    helper_thread_t helper;
+    volatile int state = 0;
+
+    endpoint = vka_alloc_endpoint_leaky(&env->vka);
+    notification = vka_alloc_notification_leaky(&env->vka);
+
+    create_helper_thread(env, &helper);
+
+    /* set our prio lower so the helper thread runs when we start it */
+    set_helper_priority(env, &helper, 10);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
+    test_eq(error, seL4_NoError);
+
+    error = seL4_TCB_BindNotification(helper.thread.tcb.cptr, notification);
+    test_eq(error, seL4_NoError);
+
+    /* start the helper so it is waiting on the endpoint */
+    start_helper(env, &helper, (helper_fn_t) bind0005_helper, endpoint,
+                 (seL4_Word) &state, 0, 0);
+    test_eq(state, 1);
+
+    /* clear its sc */
+    error = api_sc_unbind(helper.thread.sched_context.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* signal it */
+    seL4_Signal(notification);
+    /* it should not progress until it has an SC */
+    test_eq(state, 1);
+
+    error = api_sc_bind(helper.thread.sched_context.cptr, notification);
+    test_eq(error, seL4_NoError);
+
+    /* now it should have got the signal.
+     * However: due to a kernel design issue https://github.com/seL4/seL4/issues/1617
+     * instead it blocks forever.
+     */
+    // test_eq(state, 2);
+    test_eq(state, 1);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(BIND007, "Test unbind TCB / rebind ntfn (passive server migration) with an active notification",
+            test_active_notification_binding_with_sc, config_set(CONFIG_KERNEL_MCS));
+
+static void
+bind0008_helper(seL4_CPtr endpoint, volatile int *state)
+{
+    *state = 1;
+    seL4_Wait(endpoint, NULL);
+    *state = 2;
+    seL4_Wait(endpoint, NULL);
+    *state = 3;
+}
+
+
+static int
+test_active_notification_binding_with_sc_lazy_rebind(env_t env)
+{
+    seL4_CPtr endpoint, notification;
+    int error;
+    helper_thread_t helper;
+    volatile int state = 0;
+
+    endpoint = vka_alloc_endpoint_leaky(&env->vka);
+    notification = vka_alloc_notification_leaky(&env->vka);
+
+    create_helper_thread(env, &helper);
+
+    /* set our prio lower so the helper thread runs when we start it */
+    set_helper_priority(env, &helper, 10);
+    error = seL4_TCB_SetPriority(env->tcb, env->tcb, 9);
+    test_eq(error, seL4_NoError);
+
+    /* set up a bound notification (so endpoint wait <-> notification) */
+    error = seL4_TCB_BindNotification(helper.thread.tcb.cptr, notification);
+    test_eq(error, seL4_NoError);
+
+    /* start the helper so it is waiting on the endpoint */
+    start_helper(env, &helper, (helper_fn_t) bind0008_helper, endpoint,
+                 (seL4_Word) &state, 0, 0);
+    test_eq(state, 1);
+
+    /* lower the helper priority so it won't be running */
+    set_helper_priority(env, &helper, 8);
+
+    /* signal the notification - will progress to running on the TCB's SC */
+    seL4_Signal(notification);
+
+    /* it should not progress until it is higher priority than us */
+    test_eq(state, 1);
+
+    /* check SC still bound to TCB */
+    error = api_sc_bind(helper.thread.sched_context.cptr, helper.thread.tcb.cptr);
+    test_eq(error, seL4_IllegalOperation);
+
+    /* perform lazy rebind */
+    error = api_sc_bind(helper.thread.sched_context.cptr, notification);
+    test_eq(error, seL4_NoError);
+
+    /* allow helper to run by bumping its priority */
+    set_helper_priority(env, &helper, 10);
+
+    /* it should now be waiting on its endpoint and will have unbound its TCB SC */
+    test_eq(state, 2);
+
+    /* bind and unbind TCB SC to demonstrate that it had been unbound */
+    error = api_sc_bind(helper.thread.sched_context.cptr, helper.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    error = api_sc_unbind_object(helper.thread.sched_context.cptr, helper.thread.tcb.cptr);
+    test_eq(error, seL4_NoError);
+
+    /* the notification should still be bound */
+    error = api_sc_bind(helper.thread.sched_context.cptr, notification);
+    test_eq(error, seL4_IllegalOperation);
+
+    /* signal so it should continue */
+    seL4_Signal(notification);
+
+    test_eq(state, 3);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(BIND008, "Test lazy SC rebind (passive server migration) with an active notification",
+            test_active_notification_binding_with_sc_lazy_rebind, config_set(CONFIG_KERNEL_MCS));
