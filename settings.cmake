@@ -53,6 +53,12 @@ if(NOT Sel4testAllowSettingsOverride)
     set(SIMULATION ON CACHE BOOL "" FORCE)
   endif()
 
+  if(KernelPlatformMP2)
+    # The STM32MP2 platform has a watchdog timer enabled at boot, which
+    # requires SMC calls to operate.
+    set(KernelAllowSMCCalls ON CACHE BOOL "" FORCE)
+  endif()
+
   if(SIMULATION)
     ApplyCommonSimulationSettings(${KernelSel4Arch})
   else()
