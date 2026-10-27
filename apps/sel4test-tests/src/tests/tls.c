@@ -189,3 +189,38 @@ DEFINE_TEST(
     test_sel4utils_thread_tls,
     true
 )
+
+#ifdef CONFIG_ARCH_X86_64
+/* Make sure that setTLSBase sanitises non-canonical values so that such values
+ * are never written into the hardware register. This only applies to x64 */
+static int test_tcb_settlsbase_sanitised(env_t env)
+{
+    helper_thread_t t;
+    seL4_UserContext regs;
+    const seL4_Word nregs = sizeof(regs) / sizeof(seL4_Word);
+    const seL4_Word canonical = 0x00007ffffffff000ul;
+    const seL4_Word noncanonical = 0x0000800000000000ul;
+
+    create_helper_thread(env, &t);
+    seL4_CPtr tcb = get_helper_tcb(&t);
+
+    /* canonical values are written unchanged */
+    test_eq(seL4_TCB_SetTLSBase(tcb, canonical), seL4_NoError);
+    test_eq(seL4_TCB_ReadRegisters(tcb, false, 0, nregs, &regs), seL4_NoError);
+    test_eq(regs.fs_base, canonical);
+
+    /* non-canonical values should be replaced with 0 */
+    test_eq(seL4_TCB_SetTLSBase(tcb, noncanonical), seL4_NoError);
+    test_eq(seL4_TCB_ReadRegisters(tcb, false, 0, nregs, &regs), seL4_NoError);
+    test_eq(regs.fs_base, (seL4_Word)0);
+
+    cleanup_helper(env, &t);
+    return sel4test_get_result();
+}
+DEFINE_TEST(
+    TLS0007,
+    "TCB_SetTLSBase sanitises non-canonical values",
+    test_tcb_settlsbase_sanitised,
+    true
+)
+#endif /* CONFIG_ARCH_X86_64 */
