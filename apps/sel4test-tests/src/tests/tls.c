@@ -226,7 +226,7 @@ DEFINE_TEST(
 )
 #endif /* CONFIG_ARCH_X86_64 */
 
-#ifdef CONFIG_ARCH_AARCH64
+#ifdef CONFIG_ARCH_ARM
 typedef struct tls_stall_state {
     bool stop;
     seL4_Word iterations;
@@ -239,12 +239,13 @@ static int tls_remote_stall_helper(seL4_Word state_arg, seL4_Word ep,
 {
     tls_stall_state_t *state = (tls_stall_state_t *)state_arg;
     seL4_Word original;
+#ifdef CONFIG_ARCH_AARCH64
     asm volatile("mrs %0, tpidr_el0" : "=r"(original));
+#else
+    asm volatile("mrc p15, 0, %0, c13, c0, 2" : "=r"(original));
+#endif
 
     for (seL4_Word expected = 1; !__atomic_load_n(&state->stop, __ATOMIC_ACQUIRE); expected++) {
-        register seL4_Word dest asm("x0") = ep;
-        register seL4_Word info asm("x1") = 0;
-        register seL4_Word syscall asm("x7") = seL4_SysNBSend;
         seL4_Word observed;
 
         /* Use a different thread pointer on every entry: reusing the same
@@ -252,11 +253,27 @@ static int tls_remote_stall_helper(seL4_Word state_arg, seL4_Word ep,
          * together so no C runtime code uses the temporary thread pointer.
          * NBSend to an endpoint without receivers returns immediately and
          * does not relinquish an MCS thread's remaining budget. */
+#ifdef CONFIG_ARCH_AARCH64
+        register seL4_Word dest asm("x0") = ep;
+        register seL4_Word info asm("x1") = 0;
+        register seL4_Word syscall asm("x7") = seL4_SysNBSend;
+#else
+        register seL4_Word dest asm("r0") = ep;
+        register seL4_Word info asm("r1") = 0;
+        register seL4_Word syscall asm("r7") = seL4_SysNBSend;
+#endif
         asm volatile(
+#ifdef CONFIG_ARCH_AARCH64
             "msr tpidr_el0, %[expected]\n"
             "svc #0\n"
             "mrs %[observed], tpidr_el0\n"
             "msr tpidr_el0, %[original]\n"
+#else
+            "mcr p15, 0, %[expected], c13, c0, 2\n"
+            "swi #0\n"
+            "mrc p15, 0, %[observed], c13, c0, 2\n"
+            "mcr p15, 0, %[original], c13, c0, 2\n"
+#endif
             : [observed] "=&r"(observed), "+r"(dest), "+r"(info)
             : [expected] "r"(expected), [original] "r"(original), "r"(syscall)
             : "memory"
@@ -310,6 +327,6 @@ static int test_tls_remote_stall(env_t env)
     }
     return sel4test_get_result();
 }
-DEFINE_TEST(TLS0008, "AArch64 TLS survives remote stalls during kernel entry", test_tls_remote_stall,
+DEFINE_TEST(TLS0008, "ARM TLS survives remote stalls during kernel entry", test_tls_remote_stall,
             CONFIG_MAX_NUM_NODES > 1)
-#endif /* CONFIG_ARCH_AARCH64 */
+#endif /* CONFIG_ARCH_ARM */
