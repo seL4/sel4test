@@ -1,5 +1,6 @@
 /*
  * Copyright 2017, Data61, CSIRO (ABN 41 687 119 230)
+ * Copyright 2026, Heyang Zhou
  *
  * SPDX-License-Identifier: BSD-2-Clause
  */
@@ -224,3 +225,91 @@ DEFINE_TEST(
     true
 )
 #endif /* CONFIG_ARCH_X86_64 */
+
+#ifdef CONFIG_ARCH_AARCH64
+typedef struct tls_stall_state {
+    bool stop;
+    seL4_Word iterations;
+    seL4_Word expected;
+    seL4_Word observed;
+} tls_stall_state_t;
+
+static int tls_remote_stall_helper(seL4_Word state_arg, seL4_Word ep,
+                                   UNUSED seL4_Word arg3, UNUSED seL4_Word arg4)
+{
+    tls_stall_state_t *state = (tls_stall_state_t *)state_arg;
+    seL4_Word original;
+    asm volatile("mrs %0, tpidr_el0" : "=r"(original));
+
+    for (seL4_Word expected = 1; !__atomic_load_n(&state->stop, __ATOMIC_ACQUIRE); expected++) {
+        register seL4_Word dest asm("x0") = ep;
+        register seL4_Word info asm("x1") = 0;
+        register seL4_Word syscall asm("x7") = seL4_SysNBSend;
+        seL4_Word observed;
+
+        /* Use a different thread pointer on every entry: reusing the same
+         * value would hide a missed save. Keep the syscall and TLS accesses
+         * together so no C runtime code uses the temporary thread pointer.
+         * NBSend to an endpoint without receivers returns immediately and
+         * does not relinquish an MCS thread's remaining budget. */
+        asm volatile(
+            "msr tpidr_el0, %[expected]\n"
+            "svc #0\n"
+            "mrs %[observed], tpidr_el0\n"
+            "msr tpidr_el0, %[original]\n"
+            : [observed] "=&r"(observed), "+r"(dest), "+r"(info)
+            : [expected] "r"(expected), [original] "r"(original), "r"(syscall)
+            : "memory"
+        );
+
+        state->iterations++;
+        if (observed != expected) {
+            state->expected = expected;
+            state->observed = observed;
+            return FAILURE;
+        }
+    }
+    return SUCCESS;
+}
+
+static int test_tls_remote_stall(env_t env)
+{
+    test_assert(env->cores > 1);
+    helper_thread_t threads[env->cores - 1];
+    tls_stall_state_t states[env->cores - 1];
+    seL4_UserContext regs;
+    const seL4_Word nregs = sizeof(regs) / sizeof(seL4_Word);
+    seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
+    memset(states, 0, sizeof(states));
+
+    for (int i = 0; i < env->cores - 1; i++) {
+        create_helper_thread(env, &threads[i]);
+        set_helper_affinity(env, &threads[i], i + 1);
+        start_helper(env, &threads[i], tls_remote_stall_helper, (seL4_Word)&states[i], ep, 0, 0);
+    }
+
+    /* Reading a running remote TCB stalls its core. Race these operations
+     * against syscall entry while the other cores contend for the kernel
+     * lock. A stall serviced inside lock acquisition can bypass the C entry
+     * hook, so TLS must have been saved before attempting to take the lock. */
+    for (int iteration = 0; iteration < 10000; iteration++) {
+        for (int i = 0; i < env->cores - 1; i++) {
+            test_eq(seL4_TCB_ReadRegisters(get_helper_tcb(&threads[i]), false, 0, nregs, &regs), seL4_NoError);
+        }
+    }
+
+    for (int i = 0; i < env->cores - 1; i++) {
+        __atomic_store_n(&states[i].stop, true, __ATOMIC_RELEASE);
+    }
+    for (int i = 0; i < env->cores - 1; i++) {
+        int result = wait_for_helper(&threads[i]);
+        cleanup_helper(env, &threads[i]);
+        test_check(states[i].iterations > 0);
+        test_eq(states[i].observed, states[i].expected);
+        test_eq(result, SUCCESS);
+    }
+    return sel4test_get_result();
+}
+DEFINE_TEST(TLS0008, "AArch64 TLS survives remote stalls during kernel entry", test_tls_remote_stall,
+            CONFIG_MAX_NUM_NODES > 1)
+#endif /* CONFIG_ARCH_AARCH64 */
