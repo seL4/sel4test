@@ -10,7 +10,10 @@
 /* This file contains tests related to multicore. */
 
 #include <stdio.h>
+#include <string.h>
 #include <sel4/sel4.h>
+#include <vka/object.h>
+#include <sel4utils/mapping.h>
 
 #include "../helpers.h"
 
@@ -337,3 +340,145 @@ int smp_test_tcb_clh(env_t env)
 }
 DEFINE_TEST(MULTICORE0004, "Test core stalling is behaving properly (flaky)", smp_test_tcb_clh,
             CONFIG_MAX_NUM_NODES > 1)
+
+#ifdef CONFIG_ARCH_X86_64
+
+#define STALE_CALL_ITERATIONS 200000
+/* Counter steps between kernel entries: enough to still be counting when
+ * the test core reads the registers after a stall that did not happen. */
+#define STALE_CALL_STEPS      256
+/* Range of the busy-wait before each register read, in loop iterations. */
+#define STALE_CALL_DELAYS     32768
+
+typedef struct stale_call_state {
+    seL4_Word stop;
+    seL4_Word seen;
+    seL4_Word rewound;
+    seL4_CPtr ep;
+} stale_call_state_t;
+
+/* Count in r14 and check that the count never goes back, as it would if
+ * the test core wrote back a register image that it read while this thread
+ * was still running. Enter the kernel with NBSend to an endpoint without
+ * receivers every STALE_CALL_STEPS steps, to wait for the kernel lock
+ * while the test core makes remote calls. Nothing here uses the stack: the
+ * stack pointer is restored from rbx after each system call. */
+static int stale_call_counter(seL4_Word state_arg, UNUSED seL4_Word arg2, UNUSED seL4_Word arg3,
+                              UNUSED seL4_Word arg4)
+{
+    stale_call_state_t *state = (stale_call_state_t *)state_arg;
+
+    asm volatile(
+        "    movq    %[state], %%r13       \n"
+        "    movq    8(%%r13), %%r14       \n"
+        "1:  movq    %[steps], %%r12       \n"
+        "4:  incq    %%r14                 \n"
+        "    cmpq    8(%%r13), %%r14       \n"
+        "    jbe     2f                    \n"
+        "    movq    %%r14, 8(%%r13)       \n"
+        "    decq    %%r12                 \n"
+        "    jnz     4b                    \n"
+        "    cmpq    $0, 0(%%r13)          \n"
+        "    jne     3f                    \n"
+        "    movq    24(%%r13), %%rdi      \n"
+        "    xorl    %%esi, %%esi          \n"
+        "    movq    %[sys], %%rdx         \n"
+        "    movq    %%rsp, %%rbx          \n"
+        "    syscall                       \n"
+        "    movq    %%rbx, %%rsp          \n"
+        "    jmp     1b                    \n"
+        "2:  movq    %%r14, 16(%%r13)      \n"
+        "3:                                \n"
+        :
+        : [state] "r"(state), [sys] "i"(seL4_SysNBSend), [steps] "i"(STALE_CALL_STEPS)
+        : "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11", "r12", "r13", "r14", "r15",
+        "memory", "cc"
+    );
+    return SUCCESS;
+}
+
+/* Regression test for remote calls taken from a late IPI. A core that runs
+ * a remote call from the kernel lock's wait loop still receives the
+ * hardware IPI of that call later, on its way back to user level. If that
+ * IPI is handled while the next remote call is being set up, the kernel
+ * must not run the previous call's operation in the new round. Here the
+ * previous call is a TLB invalidation and the next one stalls the core of
+ * a running thread to read its registers and suspend it: run in its place,
+ * the invalidation leaves the thread running, so the registers read are
+ * those of its last kernel entry, and writing them back rewinds it.
+ *
+ * The race is narrow: the late IPI must read the previous call between the
+ * test core's write of the next call and its write of the ipi flag, and the
+ * reading core checks the flag only a few instructions after reading the
+ * call. The test can only make this likely, not certain: it fails when the
+ * reading core is delayed inside that window, e.g. by a VM exit under
+ * QEMU/KVM, and may pass on an affected kernel, in particular on hardware. */
+static int smp_test_stale_remote_call(env_t env)
+{
+    test_assert(env->cores > 1);
+    int counters = env->cores - 1;
+    helper_thread_t threads[counters];
+    stale_call_state_t states[counters];
+    seL4_UserContext regs;
+    const seL4_Word nregs = sizeof(regs) / sizeof(seL4_Word);
+    seL4_CPtr ep = vka_alloc_endpoint_leaky(&env->vka);
+    bool mapped = true;
+
+    /* Mapping and unmapping this page invalidates the TLBs of every core
+     * that this VSpace has run on. */
+    void *page = vspace_new_pages(&env->vspace, seL4_AllRights, 1, seL4_PageBits);
+    test_assert(page != NULL);
+    seL4_CPtr page_cap = vspace_get_cap(&env->vspace, page);
+
+    memset(states, 0, sizeof(states));
+    for (int i = 0; i < counters; i++) {
+        states[i].ep = ep;
+        create_helper_thread(env, &threads[i]);
+        set_helper_affinity(env, &threads[i], i + 1);
+        start_helper(env, &threads[i], stale_call_counter, (seL4_Word) &states[i], 0, 0, 0);
+    }
+
+    for (int it = 0; it < STALE_CALL_ITERATIONS; it++) {
+        int i = it % counters;
+        seL4_CPtr tcb = get_helper_tcb(&threads[i]);
+
+        if (__atomic_load_n(&states[i].rewound, __ATOMIC_ACQUIRE)) {
+            break;
+        }
+        if (mapped) {
+            test_error_eq(seL4_ARCH_Page_Unmap(page_cap), seL4_NoError);
+        } else {
+            test_error_eq(seL4_ARCH_Page_Map(page_cap, env->page_directory, (seL4_Word) page,
+                                             seL4_AllRights, seL4_ARCH_Default_VMAttributes), seL4_NoError);
+        }
+        mapped = !mapped;
+        /* Vary when the next call is set up relative to the late IPI of the
+         * invalidation, whose delivery time depends on the platform. */
+        for (volatile int d = 0; d < (it / counters) % STALE_CALL_DELAYS; d++);
+        /* The thread stays suspended from the read to the write, so writing
+         * back what was read changes nothing. */
+        test_error_eq(seL4_TCB_ReadRegisters(tcb, true, 0, nregs, &regs), seL4_NoError);
+        test_error_eq(seL4_TCB_WriteRegisters(tcb, true, 0, nregs, &regs), seL4_NoError);
+    }
+
+    for (int i = 0; i < counters; i++) {
+        __atomic_store_n(&states[i].stop, 1, __ATOMIC_RELEASE);
+    }
+    for (int i = 0; i < counters; i++) {
+        test_eq(wait_for_helper(&threads[i]), SUCCESS);
+        cleanup_helper(env, &threads[i]);
+        printf("core %d: counted to %lu, rewound to %lu\n", i + 1,
+               (unsigned long) states[i].seen, (unsigned long) states[i].rewound);
+        test_check(states[i].seen > 0);
+        test_eq(states[i].rewound, (seL4_Word) 0);
+    }
+    if (!mapped) {
+        test_error_eq(seL4_ARCH_Page_Map(page_cap, env->page_directory, (seL4_Word) page,
+                                         seL4_AllRights, seL4_ARCH_Default_VMAttributes), seL4_NoError);
+    }
+    return sel4test_get_result();
+}
+DEFINE_TEST(MULTICORE0006, "Test remote calls are not run from a late IPI", smp_test_stale_remote_call,
+            CONFIG_MAX_NUM_NODES > 1)
+
+#endif /* CONFIG_ARCH_X86_64 */
