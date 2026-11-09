@@ -167,3 +167,56 @@ int test_dissociate_sanitise(env_t env)
 DEFINE_TEST(VCPU0003, "Dissociating a VCPU sanitises the status register of the TCB",
             test_dissociate_sanitise, true)
 #endif
+
+#ifdef CONFIG_VTX
+/*
+ * VCPU0004: deleting a TCB must clear the VCPU's back pointer. Exercise both
+ * paths that consume that pointer later: replacing the association and
+ * deleting the VCPU. Reallocating and associating another TCB after the first
+ * deletion makes stale-pointer reuse observable on debug kernels.
+ */
+int test_vcpu_tcb_delete(env_t env)
+{
+    vka_object_t tcb1, tcb2, tcb3, tcb4, vcpu1, vcpu2, vcpu3;
+    int error;
+
+    error = vka_alloc_tcb(&env->vka, &tcb1);
+    test_eq(error, 0);
+    error = vka_alloc_vcpu(&env->vka, &vcpu1);
+    test_eq(error, 0);
+
+    error = seL4_X86_VCPU_SetTCB(vcpu1.cptr, tcb1.cptr);
+    test_eq(error, seL4_NoError);
+    vka_free_object(&env->vka, &tcb1);
+
+    /* Encourage reuse of the deleted TCB's memory for a live VCPU binding. */
+    error = vka_alloc_tcb(&env->vka, &tcb2);
+    test_eq(error, 0);
+    error = vka_alloc_vcpu(&env->vka, &vcpu2);
+    test_eq(error, 0);
+    error = seL4_X86_VCPU_SetTCB(vcpu2.cptr, tcb2.cptr);
+    test_eq(error, seL4_NoError);
+
+    error = vka_alloc_tcb(&env->vka, &tcb3);
+    test_eq(error, 0);
+    error = seL4_X86_VCPU_SetTCB(vcpu1.cptr, tcb3.cptr);
+    test_eq(error, seL4_NoError);
+    vka_free_object(&env->vka, &vcpu1);
+    vka_free_object(&env->vka, &vcpu2);
+    vka_free_object(&env->vka, &tcb2);
+    vka_free_object(&env->vka, &tcb3);
+
+    error = vka_alloc_tcb(&env->vka, &tcb4);
+    test_eq(error, 0);
+    error = vka_alloc_vcpu(&env->vka, &vcpu3);
+    test_eq(error, 0);
+    error = seL4_X86_VCPU_SetTCB(vcpu3.cptr, tcb4.cptr);
+    test_eq(error, seL4_NoError);
+    vka_free_object(&env->vka, &tcb4);
+    vka_free_object(&env->vka, &vcpu3);
+
+    return sel4test_get_result();
+}
+DEFINE_TEST(VCPU0004, "Deleting an associated TCB clears the VCPU association",
+            test_vcpu_tcb_delete, config_set(CONFIG_VTX))
+#endif /* CONFIG_VTX */
