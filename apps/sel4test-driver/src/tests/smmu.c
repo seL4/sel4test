@@ -19,6 +19,14 @@
 
 #ifdef CONFIG_ARM_SMMU
 
+#ifdef CONFIG_PLAT_ZYNQMP
+#define SMMU_TEST_INVALID_SID  6144
+#define SMMU_TEST_MAX_VALID_CB 15
+#else
+#define SMMU_TEST_INVALID_SID  1780
+#define SMMU_TEST_MAX_VALID_CB 63
+#endif
+
 sel4utils_process_t smmu_process;
 static void create_smmu_vspace(driver_env_t env)
 {
@@ -62,8 +70,8 @@ static int test_smmu_control_caps(driver_env_t env)
     /*testing the creating a SID with a magic number*/
     error = vka_cspace_alloc_path(&env->vka, &slot_path);
     ZF_LOGF_IF(error, "Failed to allocate cnode slot for SID in a magic number");
-    error = seL4_ARM_SIDControl_GetSID(simple_get_sid_ctrl(&env->simple), 1780, slot_path.root, slot_path.capPtr,
-                                       slot_path.capDepth);
+    error = seL4_ARM_SIDControl_GetSID(simple_get_sid_ctrl(&env->simple), SMMU_TEST_INVALID_SID, slot_path.root,
+                                       slot_path.capPtr, slot_path.capDepth);
     ZF_LOGF_IF(!error, "the can allocate a SID with a magic number");
 
     /*testing copy SID caps*/
@@ -75,7 +83,8 @@ static int test_smmu_control_caps(driver_env_t env)
     error = vka_cnode_copy(&dest_path, &src_path, seL4_AllRights);
     ZF_LOGF_IF(error, "Failed to copy SID cap 0");
 
-    /*get the context bank cap that manages CB 0 and 63 (max CB number is 64)*/
+    /* get the context bank cap that manages CB 0 and SMMU_TEST_MAX_VALID_CB
+     * (max CB number is 64 for TX2 and 16 for ZynqMP)*/
     error = vka_cspace_alloc_path(&env->vka, &slot_path);
     ZF_LOGF_IF(error, "Failed to allocate cnode slot for CB0");
     error = seL4_ARM_CBControl_GetCB(simple_get_cb_ctrl(&env->simple), 0, slot_path.root, slot_path.capPtr,
@@ -84,10 +93,10 @@ static int test_smmu_control_caps(driver_env_t env)
     cb_cap = slot_path.capPtr;
 
     error = vka_cspace_alloc_path(&env->vka, &slot_path);
-    ZF_LOGF_IF(error, "Failed to allocate cnode slot for CB63");
-    error = seL4_ARM_CBControl_GetCB(simple_get_cb_ctrl(&env->simple), 63, slot_path.root, slot_path.capPtr,
-                                     slot_path.capDepth);
-    ZF_LOGF_IF(error, "Failed to allocate CB cap 63");
+    ZF_LOGF_IF(error, "Failed to allocate cnode slot for CB%d", SMMU_TEST_MAX_VALID_CB);
+    error = seL4_ARM_CBControl_GetCB(simple_get_cb_ctrl(&env->simple), SMMU_TEST_MAX_VALID_CB, slot_path.root,
+                                     slot_path.capPtr, slot_path.capDepth);
+    ZF_LOGF_IF(error, "Failed to allocate CB cap %d", SMMU_TEST_MAX_VALID_CB);
     cb_cap_2 = slot_path.capPtr;
 
     /*testing allocating a context bank cap with a magic number*/
