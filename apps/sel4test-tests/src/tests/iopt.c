@@ -167,11 +167,11 @@ test_iopt_map_remap_top_pt(env_t env)
     error = seL4_X86_IOPageTable_Map(pts.pts[EXPECTED_PT_DEPTH], iospace, IOPT_MAP_BASE);
     test_eq(error, seL4_NoError);
 
-    /* it should retain its old mappings, and mapping in a new PT should fail */
+    /* it should discard its old mappings, and mapping in a new PT should succeed */
     pt = vka_alloc_io_page_table_leaky(&env->vka);
     test_assert(pt);
     error = seL4_X86_IOPageTable_Map(pt, iospace, IOPT_MAP_BASE);
-    test_assert(error != seL4_NoError);
+    test_assert(error == seL4_NoError);
 
     delete_iospace(env, iospace);
     return sel4test_get_result();
@@ -215,11 +215,11 @@ test_iopt_map_remap_pt(env_t env)
     error = seL4_X86_IOPageTable_Map(pts.pts[pts.depth - 1], iospace, IOPT_MAP_BASE);
     test_eq(error, seL4_NoError);
 
-    /* it should retain its old mappings, and mapping in a new frame should fail */
+    /* it should discard its old mappings, and mapping in a new frame should succeed */
     frame = vka_alloc_frame_leaky(&env->vka, seL4_PageBits);
     test_assert(frame);
     error = seL4_X86_Page_MapIO(frame, iospace, seL4_AllRights, IOPT_MAP_BASE);
-    test_assert(error != seL4_NoError);
+    test_assert(error == seL4_NoError);
 
     delete_iospace(env, iospace);
     return sel4test_get_result();
